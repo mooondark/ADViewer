@@ -18,4 +18,5 @@
 v1.47d
 
 **Note: this viewer requires the use of the Advance Design [API](https://github.com/Graitec-Group/advance-design-api)**
-**A license is also required to use it, and AD2027 software or higher must be installed**
+
+**A license is also required to use it, and AD2027 or higher must be installed**
