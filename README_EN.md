@@ -13,7 +13,7 @@
 
 ## Documentation
 - [Version history](CHANGELOG.md)
-- 
+
 ## Latest version
 v1.47d
 
