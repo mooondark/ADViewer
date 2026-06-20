@@ -1,5 +1,7 @@
 # Advance Design 3D Viewer
 
+[🇫🇷] [🇬🇧](README_EN.md)
+
 Visualiseur 3D pour les modèles Advance Design.
 
 ## Fonctionnalités
