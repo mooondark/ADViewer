@@ -18,6 +18,6 @@ Visualiseur 3D pour les modèles Advance Design.
 
 v1.47d
 
-**Attention, ce visualisateur nécessite l'utilisation de l'API d'Advance Design**
+**Attention, ce visualisateur nécessite l'utilisation de l'[API](https://github.com/Graitec-Group/advance-design-api) d'Advance Design**
 
 **Une licence est également nécessaire afin de l'utiliser, et le logiciel AD2027 ou supérieur doit être installé**
