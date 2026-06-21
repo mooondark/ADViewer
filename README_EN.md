@@ -15,7 +15,7 @@
 - [Version history](CHANGELOG.md)
 
 ## Latest version
-v1.47d
+[![GitHub release](https://img.shields.io/github/v/release/mooondark/ADViewer)](https://github.com/mooondark/ADViewer/releases)
 
 **Note: this viewer requires the use of the Advance Design [API](https://github.com/Graitec-Group/advance-design-api)**
 
