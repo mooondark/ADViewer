@@ -18,7 +18,7 @@ Visualiseur 3D pour les modèles Advance Design.
 
 ## Dernière version
 
-v1.47d
+[![GitHub release](https://img.shields.io/github/v/release/mooondark/ADViewer)](https://github.com/mooondark/ADViewer/releases)
 
 **Attention, ce visualiseur nécessite l'utilisation de l'[API](https://github.com/Graitec-Group/advance-design-api) d'Advance Design**
 
