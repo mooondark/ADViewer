@@ -1,5 +1,21 @@
 # Changelog ADViewer
 
+## v1.49
+### Modification de l'onglet métré
+- Ajout d'un **ascenseur** quand la liste des sections ou des épaisseurs dépasse la taille de la fenêtre,
+- Système de **repli/dépli** pour chaque bloc de métré
+
+---
+
+## v1.48
+### Modification du menu Fichier
+Ajout d'une entrée **"À propos"**
+- Lien vers ce dépôt,
+- Lien vers le dépôt de l'API,
+- Lien vers le site de l'éditeur du logiciel Advance Design
+
+---
+
 ## v1.47
 ### Métré par matériau
 - Métré linéaire regroupé par matériau.
