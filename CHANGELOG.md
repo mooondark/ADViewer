@@ -1,11 +1,33 @@
 # Changelog ADViewer
 
+## v1.52
+
+### Filtre par épaisseur (éléments planaires)
+- Ajout d'un troisième onglet **"Par épaisseur"** dans la boîte de dialogue de filtre, dédié aux éléments planaires.
+- Correction visuelle : le trait barré de l'icône "Annuler filtre" est rendu avec un stylet de largeur 2 pour une meilleure lisibilité.
+
+## v1.51
+
+### Bouton "Annuler filtre"
+- Ajout d'un bouton **Annuler filtre** (icône filtre barré) à côté du bouton Filtre existant.
+- Un clic remet toutes les sections et tous les matériaux à l'état "tout sélectionné" et rafraîchit la vue.
+
+### Mémorisation de l'onglet actif du dialogue de filtre
+- Le dialogue `FilterDialog` rouvre sur le dernier onglet consulté (sections ou matériaux).
+
+## v1.50
+
+### Filtre structurel (sections / matériaux)
+- Nouvelle boîte de dialogue **Filtre** avec deux onglets :
+  - **Par section** — liste à cases à cocher affichée en grille 3 colonnes (éléments linéaires).
+  - **Par matériaux** — liste à cases à cocher en colonne (éléments linéaires et planaires).
+  - Boutons **Sélectionner tout / Désélectionner tout** sur chaque onglet.
+- Nouveau bouton **Filtre** (icône entonnoir) dans la carte d'actions du panneau latéral.
+
 ## v1.49
 ### Modification de l'onglet métré
 - Ajout d'un **ascenseur** quand la liste des sections ou des épaisseurs dépasse la taille de la fenêtre,
 - Système de **repli/dépli** pour chaque bloc de métré
-
----
 
 ## v1.48
 ### Modification du menu Fichier
