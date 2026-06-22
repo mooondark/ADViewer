@@ -2,7 +2,7 @@
 
 ## v1.52
 
-### Filtre par épaisseur (éléments planaires)
+### Filtre par épaisseur (éléments surfaciques)
 - Ajout d'un troisième onglet **"Par épaisseur"** dans la boîte de dialogue de filtre, dédié aux éléments planaires.
 - Correction visuelle : le trait barré de l'icône "Annuler filtre" est rendu avec un stylet de largeur 2 pour une meilleure lisibilité.
 
