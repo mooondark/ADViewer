@@ -1,5 +1,11 @@
 # Changelog ADViewer
 
+## v1.53
+
+### Passage vers qt-material
+- Reconstruction de l'UI en qt-material pour un meilleur rendu.
+- Correction de la boite de dialogue "Styles et épaisseurs"
+
 ## v1.52
 
 ### Filtre par épaisseur (éléments surfaciques)
