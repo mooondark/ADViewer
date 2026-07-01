@@ -1,6 +1,6 @@
 # Changelog ADViewer
 
-## v1.55
+## v1.56
 
 ### Ajout d'un onglet Résultat
 - Chargement des cas de charges et combinaisons,
