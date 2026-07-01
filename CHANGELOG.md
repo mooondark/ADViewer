@@ -1,5 +1,12 @@
 # Changelog ADViewer
 
+## v1.55
+
+### Ajout d'un onglet Résultat
+- Chargement des cas de charges et combinaisons,
+- Vérification de la présence de résultats (et affichage de cette présence ou non dans le journal),
+- Affichage des efforts et déplacement pour les appuis ponctuels.
+
 ## v1.53
 
 ### Passage vers qt-material
