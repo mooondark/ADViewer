@@ -11,6 +11,7 @@ Visualiseur 3D pour les modèles Advance Design.
 - Extraction des propriétés
 - Métré automatique
 - Métré par matériau
+- Résultats sur appui ponctuel
 
 ## Documentation
 
