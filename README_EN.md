@@ -10,6 +10,7 @@
 - Property extraction
 - Automatic quantity takeoff
 - Quantity takeoff by material
+- Results on ponctual support
 
 ## Documentation
 - [Version history](CHANGELOG.md)
