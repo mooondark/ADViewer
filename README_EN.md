@@ -4,6 +4,9 @@
 
 3D viewer for Advance Design models.
 
+<img width="1920" height="1152" alt="image" src="https://github.com/user-attachments/assets/64290d31-24e7-4a19-bb2f-bcbfdd04ddcc" />
+
+
 ## Features
 - 3D visualization
 - Object selection
