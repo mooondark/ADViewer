@@ -1,5 +1,49 @@
 # Changelog ADViewer
 
+## v1.63
+
+### Optimisation #7
+- Optimisation des fonctions de chargement.
+
+## v1.62
+
+### Optimisation #6
+- UI : Découpage en blocs
+
+## v1.61
+
+### Optimisation #5
+- Découpage extract_model_geometry(...) en une vraie pipeline lisible, avec des sous-fonctions dédiées pour les identifiants, les objets, la résolution des références, les cas/combinaisons, puis la construction de la géométrie finale.
+
+## v1.60
+
+### Optimisation #4
+- Ajout de ResultsCaseEntry et ModelDataDict.
+- Normalisation centralisée des listes, dictionnaires, booléens, compteurs et chemin du modèle via build_model_data(...).
+- Construction plus homogène des entrées de cas/combinaisons via normalize_results_case_entry(...).
+
+## v1.59
+
+### Optimisation #3
+- Ajout de ProjectSessionManager et de create_project_session(...).
+- LoadModelWorker possède désormais sa propre session et la transmet à extract_model_geometry(...).
+- LoadAnalysisResultsWorker ne reçoit plus seulement host, mais la session projet active, avec validation via can_read_results().
+- MainWindow utilise self.project_session au lieu de manipuler directement current_open_project_path et current_open_project_has_results.
+
+## v1.58
+
+### Optimisation #2
+- Ajout de AdvanceDesignApiClient.
+- Centralisation de la logique HTTP dans ._post(...) avec gestion commune des erreurs.
+- Conservation d’une compatibilité avec le code existant grâce à get_api_client(host) et aux wrappers historiques.
+
+## v1.57
+
+### Optimisation #1
+- Suppression des installations automatiques de requests, PySide6, vtk et qt_material au runtime.
+- Remplacement par des erreurs explicites si une dépendance manque, ce qui est plus propre pour un usage réel et pour PyInstaller.
+- Ajustement de quelques except Exception vers des exceptions plus ciblées, notamment sur l’AppUserModelID Windows et l’arrêt du process serveur.
+
 ## v1.56
 
 ### Ajout d'un onglet Résultat
