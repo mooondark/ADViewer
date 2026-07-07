@@ -8,7 +8,7 @@
 ## v1.64
 
 ### Optimisation graphique
-- Ajout des de l'affichage **couleurs par section**
+- Ajout des de l'affichage **couleur par section**
 - Ajout de raccourcis clavier pour les vues prédéfinies
 
 ## v1.63
