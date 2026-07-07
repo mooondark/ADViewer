@@ -1,5 +1,16 @@
 # Changelog ADViewer
 
+## v1.65
+
+### Affichage des résultats
+- Ajout de l'affichage des **torseurs** sur les appuis linéaires.
+
+## v1.64
+
+### Optimisation graphique
+- Ajout des de l'affichage **couleurs par section**
+- Ajout de raccourcis clavier pour les vues prédéfinies
+
 ## v1.63
 
 ### Optimisation #7
