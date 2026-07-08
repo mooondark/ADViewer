@@ -1,8 +1,17 @@
 # Changelog ADViewer
 
+**⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
+
+## v1.66
+
+## Affichage des résultats sur les appuis surfaciques
+- Ajout de l'affichage des **torseurs** sur les appuis surfaciques
+- Ajout de l'affichage de la position du centre de gravité de l'appui (graphique et texte)
+- Correction d'un bug d'affichage en vue de dessus/dessous
+
 ## v1.65
 
-### Affichage des résultats
+### Affichage des résultats sur les appuis linéaires
 - Ajout de l'affichage des **torseurs** sur les appuis linéaires.
 
 ## v1.64
