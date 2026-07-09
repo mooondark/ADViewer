@@ -2,9 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## v1.67
+
+### Affichage des résultats sur les voiles
+- Affichage des torseurs haut et bas
+- Affichage des torseurs gauche et droite
+- Affichage des dimensions du voile
+
 ## v1.66
 
-## Affichage des résultats sur les appuis surfaciques
+### Affichage des résultats sur les appuis surfaciques
 - Ajout de l'affichage des **torseurs** sur les appuis surfaciques
 - Ajout de l'affichage de la position du centre de gravité de l'appui (graphique et texte)
 - Correction d'un bug d'affichage en vue de dessus/dessous
