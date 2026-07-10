@@ -2,6 +2,13 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## v1.69
+
+### Affichage des résultats sur les filaires
+- Affichage des diagrammes de résultats (déplacements, efforts, contraintes),
+- Affichage des valeurs min et max
+- Ajout d'une fonction d'isolation des éléments
+
 ## v1.67
 
 ### Affichage des résultats sur les voiles
