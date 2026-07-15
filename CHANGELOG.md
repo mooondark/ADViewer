@@ -2,6 +2,12 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## v1.70
+
+### Version anglaise / English version available
+- Amélioration des dictionnaires (UI/Log/Error)
+- Ajout d'une version anglaise
+
 ## v1.69
 
 ### Affichage des résultats sur les filaires
