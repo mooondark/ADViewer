@@ -4,7 +4,7 @@
 
 3D viewer for Advance Design models.
 
-<img width="1552" height="1052" alt="image" src="https://github.com/user-attachments/assets/7351fd1c-cc49-476e-b69d-c81e08f9991a" />
+<img width="1552" height="1090" alt="image" src="https://github.com/user-attachments/assets/23886c38-8ae4-4244-ab3c-52ed3355aee9" />
 
 
 ## Features
