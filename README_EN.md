@@ -13,7 +13,7 @@
 - Property extraction
 - Automatic quantity takeoff
 - Quantity takeoff by material
-- Results on ponctual support
+- Results on supports (ponctual, linear and planar), on walls (resultant forces) and on linear elements (diagrams)
 
 ## Documentation
 - [Version history](CHANGELOG.md)
