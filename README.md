@@ -13,7 +13,7 @@ Visualiseur 3D pour les modèles Advance Design.
 - Extraction des propriétés
 - Métré automatique
 - Métré par matériau
-- Résultats sur appui ponctuel
+- Résultats sur appuis (ponctuels, linéaires et surfaciques), résultats sur les voiles (torseurs) et sur les éléments filaires (diagrammes)
 
 ## Documentation
 
