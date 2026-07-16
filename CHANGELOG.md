@@ -2,6 +2,11 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## v1.70g
+
+### Hotfix
+- Amélioration de la traduction
+
 ## v1.70
 
 ### Version anglaise / English version available
