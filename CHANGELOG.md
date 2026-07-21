@@ -2,6 +2,20 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## v1.72
+
+### Nouvelles fonctions
+- Export des résultats **déplacements/efforts/contraintes** sur les éléments filaires au format **xlsx**
+- Ajout d'une fonction afin d'afficher la vue 3D en perspective (fonctionnement d'origine, déforme légèrement la structure) ou 3D orthogonal (longueurs vraies)
+
+## v1.72 (English version)
+
+### New Features
+- Export **displacements/forces/stresses** results for linear elements in **xlsx** format
+- Added a feature to display the 3D view in perspective (default behavior, slightly distorts the structure) or orthogonal 3D (true lengths)
+
+------------
+
 ## v1.70g
 
 ### Hotfix
