@@ -14,6 +14,7 @@
 - Automatic quantity takeoff
 - Quantity takeoff by material
 - Results on supports (ponctual, linear and planar), on walls (resultant forces) and on linear elements (diagrams)
+- IFC Export
 
 ## Documentation
 - [Version history](CHANGELOG.md)
