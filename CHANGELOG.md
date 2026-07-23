@@ -9,7 +9,7 @@
 - Inclu :
   - Éléments surfaciques (constants uniquement, les pentes ne sont pas prises en charge),
   - Appuis ponctuels/linéaires et surfaciques (Représentation uniquement),
-  - Éléments filaires : sections constantes, variables, prise en charge des excentrements (standards, pas définis manuellement), sections composées, profilés minces (pour l'instant Z, Omega, Sigma)
+  - Éléments filaires : Jarrets, sections constantes, variables, prise en charge des excentrements (standards, pas définis manuellement), sections composées, profilés minces (pour l'instant Z, Omega, Sigma)
 - Manquant ou non pris en charge : Autres sections de profilés minces (C, L, Zeta, etc), certain catalogues de profilés métalliques peuvent avoir des dimensions incorrectes (utiliser de préférence le talogue European profiles).
 
 Si une section n'est pas prise en charge, elle sera affichée en tant que section rectangulaire.
@@ -19,7 +19,7 @@ Si une section n'est pas prise en charge, elle sera affichée en tant que sectio
 - Includes:
   - Planar elements (constant cross-sections only; slopes are not supported),
   - Point/linear and planar supports (representation only),
-  - Linear elements: constant and variable cross-sections, support of eccentricities (standard, not manually defined), combined cross-sections, CF profiles (currently Z, Omega, Sigma)
+  - Linear elements: Haunch, constant and variable cross-sections, support of eccentricities (standard, not manually defined), combined cross-sections, CF profiles (currently Z, Omega, Sigma)
 - Missing or not supported: Other CF sections (C, L, Zeta, etc.); certain profile libraries may have incorrect dimensions (preferably use the European Profiles library).
 
 If a section is not supported, it will be displayed as a rectangular section.
