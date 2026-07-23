@@ -14,6 +14,7 @@ Visualiseur 3D pour les modèles Advance Design.
 - Métré automatique
 - Métré par matériau
 - Résultats sur appuis (ponctuels, linéaires et surfaciques), résultats sur les voiles (torseurs) et sur les éléments filaires (diagrammes)
+- Export IFC
 
 ## Documentation
 
