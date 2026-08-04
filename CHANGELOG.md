@@ -10,7 +10,7 @@
   - Éléments surfaciques (constants uniquement, les pentes ne sont pas prises en charge),
   - Appuis ponctuels/linéaires et surfaciques (Représentation uniquement),
   - Éléments filaires : Jarrets, sections constantes, variables, prise en charge des excentrements (standards, pas définis manuellement), sections composées, profilés minces (pour l'instant Z, Omega, Sigma)
-- Manquant ou non pris en charge : Autres sections de profilés minces (C, L, Zeta, etc), certain catalogues de profilés métalliques peuvent avoir des dimensions incorrectes (utiliser de préférence le talogue European profiles).
+- Manquant ou non pris en charge : Autres sections de profilés minces (C, L, Zeta, etc), certain catalogues de profilés métalliques peuvent avoir des dimensions incorrectes (utiliser de préférence le catalogue European profiles).
 
 Si une section n'est pas prise en charge, elle sera affichée en tant que section rectangulaire.
 
