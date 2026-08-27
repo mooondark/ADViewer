@@ -2,6 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.80
+
+### Affichage du maillage
+- Publication du code,
+- Ajout de l'affichage des mailles sur les éléments surfaciques si le modèle est déjà calculé.
+
+### Diplay meshes on planar elements
+- Code released,
+- Added mesh display on planar elements if the model has already been calculated.
+
 ## v1.75
 
 ### Export IFC
