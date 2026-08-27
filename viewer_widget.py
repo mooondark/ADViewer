@@ -26,6 +26,8 @@ from viewer_config import (
     SUPPORT_LINEAR_LINE_WIDTH, SUPPORT_PLANAR_LINE_WIDTH,
     INITIAL_TRANSPARENCY_PERCENT,
     DEFAULT_VIEW_PROJECTION,
+    MESH_LINE_WIDTH,
+    MESH_COLOR,
     _DARK_VTK_BG,
 )
 
@@ -312,6 +314,9 @@ class VTKViewerWidget(QFrame):
         self._support_planar_actor = None
         self._support_planar_faces_actor = None
         self._support_planar_centroid_actor = None
+        self._mesh_actor = None
+        self._mesh_nodes: list = []
+        self._mesh_by_eid: dict = {}
 
         self._show_lines = True
         self._show_planars = True
@@ -320,6 +325,7 @@ class VTKViewerWidget(QFrame):
         self._show_support_linear = True
         self._show_support_planar = True
         self._show_marker = True
+        self._show_mesh = False
         self._color_by_section = False
         self._section_color_map = {}
         self._display_mode = "wire_hidden"
@@ -352,6 +358,8 @@ class VTKViewerWidget(QFrame):
         self.support_planar_color = (1.0, 0.92, 0.20)
         self.selection_color = (1.0, 0.0, 0.0)
         self.selection_line_width = 3.5
+        self.mesh_color = MESH_COLOR
+        self.mesh_line_width = MESH_LINE_WIDTH
 
         self._transparency_percent = INITIAL_TRANSPARENCY_PERCENT
         self.planar_faces_base_opacity = 0.35
@@ -1693,6 +1701,9 @@ class VTKViewerWidget(QFrame):
             role = self._selected_item["role"] if self._selected_item else ""
             actor.SetVisibility(1 if self._selected_role_visible(role, face=face_like) else 0)
 
+        if self._mesh_actor:
+            self._mesh_actor.SetVisibility(1 if self._show_mesh else 0)
+
         self._apply_face_opacity_state()
         self.render_window.Render()
 
@@ -1728,6 +1739,97 @@ class VTKViewerWidget(QFrame):
                 self.orientation_widget.InteractiveOff()
             else:
                 self.orientation_widget.SetEnabled(0)
+        self.render_window.Render()
+
+    def set_show_mesh(self, visible: bool):
+        self._show_mesh = visible
+        self._apply_visibility_state()
+
+    def set_mesh_style(self, color, line_width: float):
+        self.mesh_color = tuple(float(v) for v in color)
+        self.mesh_line_width = max(0.1, float(line_width))
+        if self._mesh_actor:
+            self._mesh_actor.GetProperty().SetColor(*self.mesh_color)
+            self._mesh_actor.GetProperty().SetLineWidth(self.mesh_line_width)
+            self.render_window.Render()
+
+    def load_mesh(self, nodes, connectivity):
+        """Construit l'acteur de maillage FEM à partir des noeuds et de la connectivité.
+
+        Args:
+            nodes: liste de (x, y, z) — positions des noeuds.
+            connectivity: liste de listes d'indices de noeuds.
+                Les indices peuvent être base-0 ou base-1 (convention FEM AD) ;
+                la détection est automatique (si le max dépasse len(nodes)-1
+                on suppose base-1 et on soustrait 1).
+        """
+        if self._mesh_actor is not None:
+            self.renderer.RemoveActor(self._mesh_actor)
+            self._mesh_actor = None
+
+        if not nodes or not connectivity:
+            self.render_window.Render()
+            return
+
+        n_pts = len(nodes)
+
+        # Détection base-0 vs base-1 : si au moins un indice >= n_pts, c'est base-1
+        max_idx = max((idx for face in connectivity for idx in face), default=0)
+        offset = 1 if max_idx >= n_pts else 0
+
+        pts = vtk.vtkPoints()
+        for x, y, z in nodes:
+            pts.InsertNextPoint(float(x), float(y), float(z))
+
+        cells = vtk.vtkCellArray()
+        valid_faces = 0
+        for face in connectivity:
+            adjusted = [int(idx) - offset for idx in face]
+            # Écarte les faces avec des indices hors limites
+            if any(i < 0 or i >= n_pts for i in adjusted):
+                continue
+            n = len(adjusted)
+            if n == 3:
+                tri = vtk.vtkTriangle()
+                for i, idx in enumerate(adjusted):
+                    tri.GetPointIds().SetId(i, idx)
+                cells.InsertNextCell(tri)
+            elif n == 4:
+                quad = vtk.vtkQuad()
+                for i, idx in enumerate(adjusted):
+                    quad.GetPointIds().SetId(i, idx)
+                cells.InsertNextCell(quad)
+            else:
+                poly = vtk.vtkPolygon()
+                poly.GetPointIds().SetNumberOfIds(n)
+                for i, idx in enumerate(adjusted):
+                    poly.GetPointIds().SetId(i, idx)
+                cells.InsertNextCell(poly)
+            valid_faces += 1
+
+        if valid_faces == 0:
+            self.render_window.Render()
+            return
+
+        pd = vtk.vtkPolyData()
+        pd.SetPoints(pts)
+        pd.SetPolys(cells)
+
+        edges = vtk.vtkExtractEdges()
+        edges.SetInputData(pd)
+        edges.Update()
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(edges.GetOutputPort())
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(*self.mesh_color)
+        actor.GetProperty().SetLineWidth(self.mesh_line_width)
+        actor.SetVisibility(1 if self._show_mesh else 0)
+
+        self._mesh_actor = actor
+        self.renderer.AddActor(actor)
         self.render_window.Render()
 
     def set_display_mode(self, mode: str):
@@ -2064,6 +2166,39 @@ class VTKViewerWidget(QFrame):
 
     def has_isolated_selection(self) -> bool:
         return bool(self._isolated_selection)
+
+    def get_visible_planar_eids(self) -> list:
+        """Retourne les EIDs des éléments surfaciques actuellement visibles (filtres + isolation)."""
+        indexes = self._filtered_planar_indexes()
+        all_eids = list(self._model_data.get("planar_eids", []) or [])
+        return [int(all_eids[i]) for i in indexes if 0 <= i < len(all_eids) and all_eids[i] is not None]
+
+    def get_visible_linear_eids(self) -> list:
+        """Retourne les EIDs des éléments filaires actuellement visibles (filtres + isolation)."""
+        indexes = self._filtered_line_indexes()
+        all_eids = list(self._model_data.get("line_eids", []) or [])
+        return [int(all_eids[i]) for i in indexes if 0 <= i < len(all_eids) and all_eids[i] is not None]
+
+    def refresh_mesh(self, all_nodes: list, all_connectivity_by_eid: dict):
+        """Reconstruit le maillage VTK en ne gardant que les éléments visibles.
+
+        Args:
+            all_nodes: liste complète de (x, y, z) — positions de tous les nœuds FEM.
+            all_connectivity_by_eid: dict {eid: [[n0,n1,n2], ...]} — faces par EID.
+        """
+        visible_planar = set(self.get_visible_planar_eids())
+        visible_linear = set(self.get_visible_linear_eids())
+        visible = visible_planar | visible_linear
+
+        filtered_connectivity = []
+        for eid, faces in (all_connectivity_by_eid or {}).items():
+            if int(eid) in visible:
+                filtered_connectivity.extend(faces)
+
+        # S'assurer que le flag est activé avant de (re)construire l'acteur,
+        # puisque load_mesh utilise _show_mesh pour fixer la visibilité initiale.
+        self._show_mesh = True
+        self.load_mesh(all_nodes, filtered_connectivity)
 
     def set_linear_result_scale_factor(self, scale_factor: float):
         try:

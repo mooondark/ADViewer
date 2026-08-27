@@ -81,6 +81,8 @@ class ModelDataDict(TypedDict, total=False):
     project_closed: bool
     project_kept_open: bool
     has_analysis_results: bool
+    fem_nodes: list       # liste de (x, y, z) — positions des nœuds FEM
+    fem_by_eid: dict      # dict {eid: [[n0,n1,n2], ...]} — faces par EID d'élément
 
 
 def normalize_results_case_entry(kind: str, eid, label: str) -> ResultsCaseEntry:
@@ -102,11 +104,13 @@ def build_model_data(payload: dict) -> ModelDataDict:
         "linear_supports", "linear_support_eids", "linear_support_properties",
         "planar_supports", "planar_support_eids", "planar_support_properties",
         "results_cases_combinations",
+        "fem_nodes",
     ]
     for key in list_keys:
         value = data.get(key)
         data[key] = list(value) if isinstance(value, (list, tuple)) else []
     data["all_material_by_eid"] = dict(data.get("all_material_by_eid") or {})
+    data["fem_by_eid"] = dict(data.get("fem_by_eid") or {})
     data["load_area_takeoff"] = data.get("load_area_takeoff") if data.get("load_area_takeoff") is not None else []
     data["normalized_path"] = normalize_windows_path(str(data.get("normalized_path") or "")) if data.get("normalized_path") else ""
     data["project_closed"] = bool(data.get("project_closed"))
@@ -1806,6 +1810,77 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
     }
 
 
+def read_fem_mesh(host: str, element_eids: list = None) -> tuple:
+    """Récupère les nœuds et la connectivité du maillage FEM depuis l'API.
+
+    Retourne un tuple ``(nodes, mesh_by_eid)`` :
+    - ``nodes``      : liste de tuples ``(x, y, z)`` — positions des nœuds.
+    - ``mesh_by_eid``: dict ``{eid: [[n0,n1,n2], ...]}`` — faces par EID d'élément.
+
+    En cas d'erreur ou de maillage vide, retourne ``([], {})``.
+    """
+    try:
+        raw_nodes = get_mesh_nodes(host)
+    except Exception:
+        return [], {}
+
+    if not raw_nodes:
+        return [], {}
+
+    nodes = []
+    for pt in raw_nodes:
+        if not isinstance(pt, dict):
+            continue
+        try:
+            nodes.append((float(pt.get("x", 0.0)), float(pt.get("y", 0.0)), float(pt.get("z", 0.0))))
+        except (TypeError, ValueError):
+            nodes.append((0.0, 0.0, 0.0))
+
+    try:
+        raw_conn = get_mesh_connectivity(host, element_eids)
+    except Exception:
+        return nodes, {}
+
+    # Chaque MeshElement : { "id": {"value": eid}, "connectivity": Int32Matrix }
+    # Int32Matrix (column-major) : { "_data": [...], "rows": nœuds/élément, "cols": nb éléments }
+    mesh_by_eid: dict = {}
+    for elem in (raw_conn or []):
+        if not isinstance(elem, dict):
+            continue
+
+        # Récupération de l'EID
+        id_obj = elem.get("id") or {}
+        eid = int(id_obj.get("value", 0)) if isinstance(id_obj, dict) else None
+        if not eid:
+            continue
+
+        matrix = elem.get("connectivity") or {}
+        if not isinstance(matrix, dict):
+            continue
+
+        raw_data = matrix.get("_data") or []
+        rows = int(matrix.get("rows") or 0)   # nœuds par face
+        cols = int(matrix.get("cols") or 0)   # nombre de faces
+
+        if not raw_data or rows < 3:
+            continue
+
+        if cols <= 0 and rows > 0:
+            cols = len(raw_data) // rows
+
+        faces = []
+        for j in range(cols):
+            start = j * rows
+            face = [int(raw_data[start + i]) for i in range(rows) if start + i < len(raw_data)]
+            if len(face) >= 3:
+                faces.append(face)
+
+        if faces:
+            mesh_by_eid[eid] = faces
+
+    return nodes, mesh_by_eid
+
+
 def extract_model_geometry(host: str, fto_path: str, progress_callback=None, session_manager=None) -> ModelDataDict:
     def progress(value: int, message: str = ""):
         if callable(progress_callback):
@@ -1839,6 +1914,19 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         has_analysis_results = diagnose_results_availability(host)
         session.mark_results_state(has_analysis_results)
 
+        # Lecture du maillage FEM si des résultats sont disponibles
+        fem_nodes: list = []
+        fem_by_eid: dict = {}
+        if has_analysis_results:
+            progress(71, "Lecture du maillage FEM...")
+            linear_ids = [int(eid) for eid in (ids_data.get("linear_ids") or []) if eid is not None]
+            planar_ids = [int(eid) for eid in (ids_data.get("planar_ids") or []) if eid is not None]
+            all_element_eids = linear_ids + planar_ids
+            try:
+                fem_nodes, fem_by_eid = read_fem_mesh(host, element_eids=all_element_eids)
+            except Exception:
+                fem_nodes, fem_by_eid = [], {}
+
         progress(72, tr_ui("progress_convert_geometry"))
         geometry_payload = _build_geometry_payload(ids_data, objects_data, refs_data)
 
@@ -1847,6 +1935,8 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
             **geometry_payload,
             "normalized_path": session.fto_path,
             "results_cases_combinations": results_cases_combinations,
+            "fem_nodes": fem_nodes,
+            "fem_by_eid": fem_by_eid,
         })
         result.update(session.export_state())
         result = build_model_data(result)
@@ -1890,7 +1980,7 @@ class LoadModelWorker(QThread):
                 self.host,
                 self.fto_path,
                 progress_callback=self._emit_progress,
-                session_manager=self.session_manager
+                session_manager=self.session_manager,
             )
 
             if model_data.get("project_kept_open"):

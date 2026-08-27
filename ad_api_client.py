@@ -279,6 +279,38 @@ class AdvanceDesignApiClient:
             label=f"GetResults({result_type})",
         ).get("data", []) or []
 
+    def get_mesh_nodes(self) -> list:
+        """Retourne la liste des positions 3D des nœuds du maillage FEM.
+
+        Endpoint : POST /api/Model/analysis/GetMeshNodesPosition
+        Retourne : liste de Pt3D — chaque élément est un dict avec les clés
+        ``x``, ``y``, ``z`` (ou ``X``, ``Y``, ``Z`` selon la version API).
+        """
+        data = self._post(
+            "/api/Model/analysis/GetMeshNodesPosition",
+            json_payload={},
+            timeout=60,
+            label="GetMeshNodesPosition",
+        )
+        return data.get("data", []) or []
+
+    def get_mesh_connectivity(self, element_eids: list = None) -> list:
+        """Retourne la connectivité du maillage FEM (topologie éléments finis).
+
+        Endpoint : POST /api/Model/analysis/GetMeshConnectivity
+        Retourne : liste de MeshElement — chaque élément contient une matrice
+        ``Int32Matrix`` de connectivité (indices de nœuds, base 0 ou base 1
+        selon l'API — à normaliser côté appelant).
+        """
+        payload = [int(eid) for eid in (element_eids or []) if eid is not None]
+        data = self._post(
+            "/api/Model/analysis/GetMeshConnectivity",
+            json_payload=payload if payload else [],
+            timeout=60,
+            label="GetMeshConnectivity",
+        )
+        return data.get("data", []) or []
+
 
 # ======================================================================
 #  Wrappers module-level (interface procédurale)
@@ -330,3 +362,13 @@ def get_informational_elements_objects(host: str, ids: list) -> list:
 
 def get_results(host: str, result_type: str, analysis_case_id: int, element_ids: list) -> list:
     return get_api_client(host).get_results(result_type, analysis_case_id, element_ids)
+
+
+def get_mesh_nodes(host: str) -> list:
+    """Retourne la liste des positions 3D des nœuds du maillage FEM."""
+    return get_api_client(host).get_mesh_nodes()
+
+
+def get_mesh_connectivity(host: str, element_eids: list = None) -> list:
+    """Retourne la connectivité du maillage FEM (topologie éléments finis)."""
+    return get_api_client(host).get_mesh_connectivity(element_eids)

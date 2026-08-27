@@ -122,12 +122,14 @@ class SettingsDialog(QDialog):
         support_planar_color,
         selection_line_width: float,
         selection_color,
+        mesh_width: float,
+        mesh_color,
         parent=None
     ):
         super().__init__(parent)
         self.setWindowTitle(tr_ui("settings_title"))
         self.setModal(True)
-        self.resize(540, 360)
+        self.resize(540, 380)
 
         self.linear_color = linear_color
         self.planar_color = planar_color
@@ -137,6 +139,7 @@ class SettingsDialog(QDialog):
         self.support_linear_color = support_linear_color
         self.support_planar_color = support_planar_color
         self.selection_color = selection_color
+        self.mesh_color = mesh_color
 
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -164,6 +167,7 @@ class SettingsDialog(QDialog):
         self.spin_support_linear = self._make_width_spin(support_linear_line_width)
         self.spin_support_planar = self._make_width_spin(support_planar_line_width)
         self.spin_selection = self._make_width_spin(selection_line_width)
+        self.spin_mesh = self._make_width_spin(mesh_width)
 
         self._add_row(grid, 0, tr_ui("settings_label_linear"),            tr_ui("settings_label_thickness"), self.spin_linear,                "linear_color",           self.linear_color)
         self._add_row(grid, 1, tr_ui("settings_label_planar"),            tr_ui("settings_label_thickness"), self.spin_planar,                "planar_color",           self.planar_color)
@@ -174,6 +178,7 @@ class SettingsDialog(QDialog):
         self._add_row(grid, 6, tr_ui("settings_label_support_linear"),    tr_ui("settings_label_thickness"), self.spin_support_linear,        "support_linear_color",   self.support_linear_color)
         self._add_row(grid, 7, tr_ui("settings_label_support_planar"),    tr_ui("settings_label_thickness"), self.spin_support_planar,        "support_planar_color",   self.support_planar_color)
         self._add_row(grid, 8, tr_ui("settings_selection"),               tr_ui("settings_label_thickness"), self.spin_selection,            "selection_color",        self.selection_color)
+        self._add_row(grid, 9, tr_ui("settings_label_mesh"),              tr_ui("settings_label_thickness"), self.spin_mesh,                 "mesh_color",             self.mesh_color)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
@@ -269,6 +274,7 @@ class SettingsDialog(QDialog):
             "support_linear_line_width": self.spin_support_linear.value(),
             "support_planar_line_width": self.spin_support_planar.value(),
             "selection_line_width": self.spin_selection.value(),
+            "mesh_width": self.spin_mesh.value(),
             "linear_color": self.linear_color,
             "planar_color": self.planar_color,
             "opening_color": self.opening_color,
@@ -277,6 +283,7 @@ class SettingsDialog(QDialog):
             "support_linear_color": self.support_linear_color,
             "support_planar_color": self.support_planar_color,
             "selection_color": self.selection_color,
+            "mesh_color": self.mesh_color,
         }
 
 
@@ -752,6 +759,8 @@ class MainWindow(QMainWindow):
         self.current_analysis_result_component_label = "d"
         self.current_model_has_analysis_results = False
         self.project_session = None
+        self._fem_nodes: list = []
+        self._fem_connectivity_by_eid: dict = {}
         self.results_sections_state = {
             "linear_section": True,
             "linear_material": True,
@@ -815,6 +824,7 @@ class MainWindow(QMainWindow):
             "support_linear_line_width": str(self.viewer.support_linear_line_width),
             "support_planar_line_width": str(self.viewer.support_planar_line_width),
             "selection_line_width": str(self.viewer.selection_line_width),
+            "mesh_width": str(self.viewer.mesh_line_width),
         }
         cfg["colors"] = {
             "linear_color": self._format_color(self.viewer.linear_color),
@@ -825,6 +835,7 @@ class MainWindow(QMainWindow):
             "support_linear_color": self._format_color(self.viewer.support_linear_color),
             "support_planar_color": self._format_color(self.viewer.support_planar_color),
             "selection_color": self._format_color(self.viewer.selection_color),
+            "mesh_color": self._format_color(self.viewer.mesh_color),
         }
 
         with open(self._config_path(), "w", encoding="utf-8") as f:
@@ -890,6 +901,10 @@ class MainWindow(QMainWindow):
             self.viewer.set_selection_style(
                 self._parse_color(colors.get("selection_color", self._format_color(self.viewer.selection_color)), self.viewer.selection_color),
                 float(styles.get("selection_line_width", self.viewer.selection_line_width)),
+            )
+            self.viewer.set_mesh_style(
+                self._parse_color(colors.get("mesh_color", self._format_color(self.viewer.mesh_color)), self.viewer.mesh_color),
+                float(styles.get("mesh_width", self.viewer.mesh_line_width)),
             )
             self.apply_view_projection(self.view_projection_mode, save=False)
             pass
@@ -1392,6 +1407,12 @@ class MainWindow(QMainWindow):
         self.chk_marker.setChecked(True)
         self.chk_marker.toggled.connect(self.on_toggle_marker)
         action_card.layout.addWidget(self.chk_marker)
+
+        self.chk_mesh = QCheckBox(tr_ui("show_mesh"))
+        self.chk_mesh.setChecked(False)
+        self.chk_mesh.setEnabled(False)
+        self.chk_mesh.toggled.connect(self.on_toggle_mesh)
+        action_card.layout.addWidget(self.chk_mesh)
 
         self.chk_color_by_section = QCheckBox(tr_ui("color_by_section"))
         self.chk_color_by_section.setChecked(True)
@@ -2856,6 +2877,7 @@ class MainWindow(QMainWindow):
             self.selected_materials = set(str(v) for v in materials)
             self.viewer.set_structural_filters(self.selected_sections, self.selected_thicknesses, self.selected_materials)
             self._update_display_checkboxes()
+            self._refresh_mesh_display()
 
     def clear_structural_filters(self):
         if self.current_model_data is None or self.viewer is None:
@@ -2865,6 +2887,7 @@ class MainWindow(QMainWindow):
         self.selected_materials = set(self.current_materials)
         self.viewer.set_structural_filters(self.selected_sections, self.selected_thicknesses, self.selected_materials)
         self._update_display_checkboxes()
+        self._refresh_mesh_display()
 
     def _make_isolate_icon(self, active: bool):
         size = 18
@@ -2919,6 +2942,7 @@ class MainWindow(QMainWindow):
             self.viewer.set_isolated_selection(None)
             self._apply_isolate_button_icon(False)
             self._update_display_checkboxes()
+            self._refresh_mesh_display()
             return
         selection = dict(self.current_analysis_selection or {})
         role = str(selection.get("role") or "").strip()
@@ -2930,6 +2954,7 @@ class MainWindow(QMainWindow):
         self.viewer.set_isolated_selection({"role": role, "index": index})
         self._apply_isolate_button_icon(True)
         self._update_display_checkboxes()
+        self._refresh_mesh_display()
 
     def on_analysis_scale_changed(self, value: float):
         if self.viewer is not None:
@@ -2970,6 +2995,28 @@ class MainWindow(QMainWindow):
         self.chk_support_linear.setText(self._format_display_checkbox_text("show_support_linear", counts["support_linear"]))
         self.chk_support_planar.setText(self._format_display_checkbox_text("show_support_planar", counts["support_planar"]))
         self.chk_marker.setText(tr_ui("show_marker"))
+        # Le maillage n'est disponible que si le fichier chargé possède des résultats.
+        # setEnabled(False) grise aussi le libellé nativement sous Qt.
+        # On ne touche PAS à setChecked ici — l'état coché est préservé lors des
+        # filtres/isolation. La réinitialisation à décoché se fait uniquement dans
+        # set_loading(True) au début d'un nouveau chargement.
+        has_results = bool(self.current_model_has_analysis_results)
+        if self.chk_mesh is not None:
+            self.chk_mesh.setEnabled(has_results)
+
+    def _refresh_mesh_display(self):
+        """Reconstruit le maillage VTK pour ne montrer que les éléments visibles.
+
+        N'est appelé que si la case 'Afficher le maillage' est cochée et que
+        des données FEM sont disponibles. Sans effet sinon.
+        """
+        if self.viewer is None:
+            return
+        if self.chk_mesh is None or not self.chk_mesh.isChecked():
+            return
+        if not self._fem_nodes or not self._fem_connectivity_by_eid:
+            return
+        self.viewer.refresh_mesh(self._fem_nodes, self._fem_connectivity_by_eid)
 
     def clear_log(self):
         self.log_edit.clear()
@@ -3185,6 +3232,8 @@ class MainWindow(QMainWindow):
             self.viewer.support_planar_color,
             self.viewer.selection_line_width,
             self.viewer.selection_color,
+            self.viewer.mesh_line_width,
+            self.viewer.mesh_color,
             self
         )
         if dlg.exec() == QDialog.Accepted:
@@ -3214,6 +3263,10 @@ class MainWindow(QMainWindow):
             self.viewer.set_selection_style(
                 values["selection_color"],
                 values["selection_line_width"]
+            )
+            self.viewer.set_mesh_style(
+                values["mesh_color"],
+                values["mesh_width"]
             )
 
             self.log(
@@ -3266,6 +3319,14 @@ class MainWindow(QMainWindow):
         if self.viewer:
             self.viewer.set_show_marker(checked)
         self.log(tr_log("show_marker_on" if checked else "show_marker_off"), "info")
+
+    def on_toggle_mesh(self, checked: bool):
+        if self.viewer:
+            if checked:
+                self._refresh_mesh_display()
+            else:
+                self.viewer.set_show_mesh(False)
+        self.log(tr_log("show_mesh_on" if checked else "show_mesh_off"), "info")
 
     def on_toggle_color_by_section(self, checked: bool):
         if self.viewer:
@@ -3359,6 +3420,19 @@ class MainWindow(QMainWindow):
             if w is not None:
                 w.setEnabled(not loading)
 
+        # chk_mesh est géré séparément : il doit toujours être décoché et grisé
+        # pendant le chargement, et rester grisé après si aucun résultat n'est dispo.
+        if self.chk_mesh is not None:
+            if loading:
+                self.chk_mesh.setEnabled(False)
+                self.chk_mesh.blockSignals(True)
+                self.chk_mesh.setChecked(False)
+                self.chk_mesh.blockSignals(False)
+            else:
+                # L'état définitif est appliqué par _update_display_checkboxes
+                # appelé dans on_model_loaded / on_model_error.
+                pass
+
         if loading:
             self.load_btn.setText(tr_ui("loading"))
             if self.load_progress_container is not None:
@@ -3427,6 +3501,23 @@ class MainWindow(QMainWindow):
         self.viewer.set_isolated_selection(None)
         self._apply_isolate_button_icon(False)
         self.viewer.set_structural_filters(self.selected_sections, self.selected_thicknesses, self.selected_materials)
+
+        # Chargement du maillage FEM si disponible
+        self._fem_nodes = list((model_data or {}).get("fem_nodes", []) or [])
+        self._fem_connectivity_by_eid = dict((model_data or {}).get("fem_by_eid", {}) or {})
+        if self._fem_nodes and self._fem_connectivity_by_eid:
+            total_faces = sum(len(f) for f in self._fem_connectivity_by_eid.values())
+            self.log("Maillage FEM : {} nœuds, {} éléments ({} mailles).".format(
+                len(self._fem_nodes), len(self._fem_connectivity_by_eid), total_faces), "ok")
+            # Le maillage VTK sera construit à la demande via on_toggle_mesh /
+            # _refresh_mesh_display. On efface tout acteur résiduel pour l'instant.
+            self.viewer.load_mesh([], [])
+        else:
+            self._fem_nodes = []
+            self._fem_connectivity_by_eid = {}
+            self.viewer.load_mesh([], [])
+            if (model_data or {}).get("has_analysis_results"):
+                self.log("Maillage FEM : aucune donnée reçue de l'API.", "warn")
         self._set_properties_message("Sélectionnez un élément pour afficher ses propriétés.")
         self._render_results(model_data)
         self._set_analysis_results_status((model_data or {}).get("has_analysis_results"))
@@ -3474,6 +3565,15 @@ class MainWindow(QMainWindow):
         self._set_analysis_results_status(False)
         self._update_analysis_results_value_combo(None)
         self._set_analysis_results_output_message("Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.")
+        if self.chk_mesh is not None:
+            self.chk_mesh.setEnabled(False)
+            self.chk_mesh.blockSignals(True)
+            self.chk_mesh.setChecked(False)
+            self.chk_mesh.blockSignals(False)
+        self._fem_nodes = []
+        self._fem_connectivity_by_eid = {}
+        if self.viewer is not None:
+            self.viewer.load_mesh([], [])
         text = error_text.strip()
         low = text.lower()
 

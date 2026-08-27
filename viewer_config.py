@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.76"
+APP_VERSION = "1.80"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -195,6 +195,9 @@ SUPPORT_PLANAR_LINE_WIDTH = 2.5
 
 INITIAL_TRANSPARENCY_PERCENT = 30
 
+MESH_LINE_WIDTH = 1.0
+MESH_COLOR = (0.0, 1.0, 0.0)  # #00ff00
+
 
 # ======================================================================
 #  Listes de types d'éléments
@@ -283,6 +286,7 @@ MSG_UI = {
     "show_support_linear": "Afficher appuis linéaires",
     "show_support_planar": "Afficher appuis surfaciques",
     "show_marker": "Afficher repère",
+    "show_mesh": "Afficher le maillage",
     "color_by_section": "Couleur par section",
 
     "view3d": "Vue 3D",
@@ -410,6 +414,7 @@ MSG_UI = {
     "settings_label_support_punctual": "Appui ponctuel",
     "settings_label_support_linear": "Appui linéaire",
     "settings_label_support_planar": "Appui surfacique",
+    "settings_label_mesh": "Maillage FEM",
     "settings_label_thickness": "Épaisseur",
     "settings_label_size": "Taille",
     "settings_linear": "Épaisseur filaires",
@@ -538,6 +543,8 @@ MSG_LOG = {
     "show_support_planar_off": "Affichage appuis surfaciques : désactivé",
     "show_marker_on": "Affichage repère : activé",
     "show_marker_off": "Affichage repère : désactivé",
+    "show_mesh_on": "Affichage maillage FEM : activé",
+    "show_mesh_off": "Affichage maillage FEM : désactivé",
 
     "mode_wireframe": "Mode de visualisation : filaire",
     "mode_hidden_faces": "Mode de visualisation : faces cachées",
