@@ -376,7 +376,7 @@ class AboutDialog(QDialog):
 
 
 class FilterDialog(QDialog):
-    def __init__(self, sections, thicknesses, materials, selected_sections, selected_thicknesses, selected_materials, initial_tab=0, parent=None):
+    def __init__(self, sections, thicknesses, materials, selected_sections, selected_thicknesses, selected_materials, initial_tab=0, parent=None, *, section_counts=None, thickness_counts=None, material_counts=None):
         super().__init__(parent)
         self.setWindowTitle("Filtre")
         self.setModal(True)
@@ -384,6 +384,14 @@ class FilterDialog(QDialog):
         self._section_checkboxes = []
         self._thickness_checkboxes = []
         self._material_checkboxes = []
+
+        section_counts   = section_counts   or {}
+        thickness_counts = thickness_counts or {}
+        material_counts  = material_counts  or {}
+
+        def _label(name, counts):
+            c = counts.get(str(name))
+            return f"{name}  ({c})" if c is not None else str(name)
 
         layout = QVBoxLayout(self)
         tabs = QTabWidget()
@@ -410,7 +418,8 @@ class FilterDialog(QDialog):
         columns = 3
         rows = max(1, math.ceil(max(1, len(sections or [])) / columns))
         for idx, name in enumerate(sections or []):
-            cb = QCheckBox(str(name))
+            cb = QCheckBox(_label(name, section_counts))
+            cb.setProperty("_filter_value", str(name))
             cb.setChecked(str(name) in selected_sections)
             self._section_checkboxes.append(cb)
             row = idx % rows
@@ -437,7 +446,8 @@ class FilterDialog(QDialog):
         thickness_box.setContentsMargins(2, 2, 2, 2)
         thickness_box.setSpacing(3)
         for name in thicknesses or []:
-            cb = QCheckBox(str(name))
+            cb = QCheckBox(_label(name, thickness_counts))
+            cb.setProperty("_filter_value", str(name))
             cb.setChecked(str(name) in selected_thicknesses)
             self._thickness_checkboxes.append(cb)
             thickness_box.addWidget(cb)
@@ -463,7 +473,8 @@ class FilterDialog(QDialog):
         materials_box.setContentsMargins(2, 2, 2, 2)
         materials_box.setSpacing(3)
         for name in materials or []:
-            cb = QCheckBox(str(name))
+            cb = QCheckBox(_label(name, material_counts))
+            cb.setProperty("_filter_value", str(name))
             cb.setChecked(str(name) in selected_materials)
             self._material_checkboxes.append(cb)
             materials_box.addWidget(cb)
@@ -490,10 +501,13 @@ class FilterDialog(QDialog):
             cb.setChecked(bool(value))
 
     def get_values(self):
+        def _val(cb):
+            v = cb.property("_filter_value")
+            return v if v is not None else cb.text()
         return (
-            [cb.text() for cb in self._section_checkboxes if cb.isChecked()],
-            [cb.text() for cb in self._thickness_checkboxes if cb.isChecked()],
-            [cb.text() for cb in self._material_checkboxes if cb.isChecked()],
+            [_val(cb) for cb in self._section_checkboxes if cb.isChecked()],
+            [_val(cb) for cb in self._thickness_checkboxes if cb.isChecked()],
+            [_val(cb) for cb in self._material_checkboxes if cb.isChecked()],
         )
 
     def get_active_tab_index(self):
@@ -733,6 +747,9 @@ class MainWindow(QMainWindow):
         self.current_sections = []
         self.current_thicknesses = []
         self.current_materials = []
+        self.current_section_counts: dict = {}
+        self.current_thickness_counts: dict = {}
+        self.current_material_counts: dict = {}
         self.selected_sections = set()
         self.selected_thicknesses = set()
         self.selected_materials = set()
@@ -2384,6 +2401,55 @@ class MainWindow(QMainWindow):
         layout.addWidget(table)
         layout.addStretch(1)
 
+    def _render_load_area_properties(self, data: dict):
+        if self.properties_container is None:
+            return
+        layout = self.properties_container.layout()
+        if layout is None:
+            layout = QVBoxLayout(self.properties_container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(8)
+        self._clear_layout_widgets(layout)
+
+        user_id = data.get("user_id")
+        base = tr_ui("prop_load_area")
+        title = f"{base} n°{user_id}" if user_id not in (None, "") else base
+        self._add_properties_type_label(layout, title)
+        self._add_properties_spacer(layout, 8)
+
+        def _resolve(tr_key, raw):
+            if tr_key:
+                return tr_ui(tr_key)
+            return raw or ""
+
+        text_rows = [
+            (tr_ui("prop_load_area_type"),            _resolve(data.get("climatic_tr_key", ""),  data.get("climatic_raw", ""))),
+            (tr_ui("prop_load_area_transfer_method"), _resolve(data.get("transfer_tr_key", ""),  data.get("transfer_raw", ""))),
+            (tr_ui("prop_load_area_span_direction"),  _resolve(data.get("span_tr_key", ""),      data.get("span_raw", ""))),
+        ]
+        text_table = self._create_properties_table(len(text_rows))
+        for row, (name, value) in enumerate(text_rows):
+            self._set_table_name_item(text_table, row, name)
+            self._set_table_value_item(text_table, row, str(value))
+        self._finalize_properties_table(text_table)
+        layout.addWidget(text_table)
+
+        self._add_properties_spacer(layout, 6)
+
+        bool_rows = [
+            (tr_ui("prop_load_area_rigid_diafragm"), data.get("rigid_diafragm", False)),
+            (tr_ui("prop_load_area_self_weight"),    data.get("self_weight",    False)),
+            (tr_ui("prop_load_area_snow"),           data.get("snow",           False)),
+            (tr_ui("prop_load_area_wind"),           data.get("wind",           False)),
+        ]
+        bool_table = self._create_properties_table(len(bool_rows))
+        for row, (name, value) in enumerate(bool_rows):
+            self._set_table_name_item(bool_table, row, name)
+            self._set_table_checkbox(bool_table, row, bool(value))
+        self._finalize_properties_table(bool_table)
+        layout.addWidget(bool_table)
+        layout.addStretch(1)
+
     def _render_punctual_support_properties(self, data: dict):
         if self.properties_container is None:
             return
@@ -2796,6 +2862,17 @@ class MainWindow(QMainWindow):
                 self._set_properties_message("Aucune propriété disponible pour cet élément surfacique.")
             return
 
+        if role == "load_areas":
+            items = []
+            if isinstance(self.current_model_data, dict):
+                items = list(self.current_model_data.get("load_area_properties", []) or [])
+            index = int(selection.get("index", -1))
+            if 0 <= index < len(items):
+                self._render_load_area_properties(items[index])
+            else:
+                self._set_properties_message(tr_ui("prop_no_load_area"))
+            return
+
         self._set_properties_message("Propriétés disponibles pour les éléments filaires, surfaciques et les appuis.")
 
     def _install_view_shortcuts(self):
@@ -2854,7 +2931,23 @@ class MainWindow(QMainWindow):
         sections = sorted({str((p or {}).get("section", "N/A")) for p in line_props})
         thicknesses = sorted({str((p or {}).get("thickness", "N/A")) for p in planar_props})
         materials = sorted({str((p or {}).get("material", "N/A")) for p in (line_props + planar_props)})
-        return sections, thicknesses, materials
+
+        section_counts: dict = {}
+        for p in line_props:
+            k = str((p or {}).get("section", "N/A"))
+            section_counts[k] = section_counts.get(k, 0) + 1
+
+        thickness_counts: dict = {}
+        for p in planar_props:
+            k = str((p or {}).get("thickness", "N/A"))
+            thickness_counts[k] = thickness_counts.get(k, 0) + 1
+
+        material_counts: dict = {}
+        for p in (line_props + planar_props):
+            k = str((p or {}).get("material", "N/A"))
+            material_counts[k] = material_counts.get(k, 0) + 1
+
+        return sections, thicknesses, materials, section_counts, thickness_counts, material_counts
 
     def open_filter_dialog(self):
         if self.current_model_data is None or self.viewer is None:
@@ -2868,6 +2961,9 @@ class MainWindow(QMainWindow):
             self.selected_materials,
             self.filter_dialog_tab_index,
             self,
+            section_counts=self.current_section_counts,
+            thickness_counts=self.current_thickness_counts,
+            material_counts=self.current_material_counts,
         )
         if dlg.exec() == QDialog.Accepted:
             sections, thicknesses, materials = dlg.get_values()
@@ -3486,7 +3582,8 @@ class MainWindow(QMainWindow):
     def on_model_loaded(self, model_data: ModelDataDict):
         self.current_model_data = model_data
         self._sync_project_session_state(model_data)
-        self.current_sections, self.current_thicknesses, self.current_materials = self._extract_filter_choices(model_data)
+        (self.current_sections, self.current_thicknesses, self.current_materials,
+         self.current_section_counts, self.current_thickness_counts, self.current_material_counts) = self._extract_filter_choices(model_data)
         self.selected_sections = set(self.current_sections)
         self.selected_thicknesses = set(self.current_thicknesses)
         self.selected_materials = set(self.current_materials)

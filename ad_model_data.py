@@ -831,6 +831,78 @@ def extract_load_area_geometry(el: dict):
     }
 
 
+_CLIMATIC_TYPE_TR_KEYS = {
+    "CG_LOADAREA_BUILDING":                  "prop_load_area_climatic_building",
+    "CG_LOADAREA_PROTRUDING_ROOF":           "prop_load_area_climatic_protruding_roof",
+    "CG_LOADAREA_PARAPET":                   "prop_load_area_climatic_parapet",
+    "CG_LOADAREA_ISOLATED_1_SLOPED_ROOF":    "prop_load_area_climatic_isolated_1_sloped",
+    "CG_LOADAREA_ISOLATED_2_SLOPED_ROOF":    "prop_load_area_climatic_isolated_2_sloped",
+    "CG_LOADAREA_PANEL":                     "prop_load_area_climatic_panel",
+    "CG_LOADAREA_FOR_SCAFFOLDING":           "prop_load_area_climatic_scaffolding",
+    "CG_LOADAREA_SHED_VERTICAL_ROOF":        "prop_load_area_climatic_shed_vertical",
+    "CG_LOADAREA_AWNING":                    "prop_load_area_climatic_awning",
+    "CG_LOADAREA_VAULTED_ROOFS_AND_DOME":    "prop_load_area_climatic_vaulted",
+    "CG_LOADAREA_LOWER_ANGLE_INCLINED_WALL": "prop_load_area_climatic_inclined_wall",
+    "CG_LOADAREA_FREE_STANDING_WALL":        "prop_load_area_climatic_free_standing_wall",
+}
+
+_TRANSFER_METHOD_TR_KEYS = {
+    "eLoadTransferMethodFailureLines": "prop_load_area_transfer_failure_lines",
+    "eLoadTransferMethodFemTransfer":  "prop_load_area_transfer_fem",
+    "eLoadTransferMethodAuto":         "prop_load_area_transfer_auto",
+}
+
+_SPAN_DIRECTION_TR_KEYS = {
+    "eFloorDeckLoadSpanDirectionX":  "prop_load_area_span_x",
+    "eFloorDeckLoadSpanDirectionY":  "prop_load_area_span_y",
+    "eFloorDeckLoadSpanDirectionXY": "prop_load_area_span_xy",
+}
+
+
+def extract_load_area_properties(el: dict) -> dict:
+    """Extrait les propriétés d'une paroi (ElementLoadArea) pour l'onglet Propriétés.
+
+    Structure JSON réelle retournée par l'API :
+        el.loadTransferProperties.loadTransferMethodType
+        el.loadTransferProperties.loadTransferSpanDirectionType
+        el.mechanicalProperties.rigidDiafragm
+        el.mechanicalProperties.selfWeightAuto
+        el.climaticProperties.climaticType
+        el.climaticProperties.availableForSnow
+        el.climaticProperties.availableForWind
+    """
+    user_id = _extract_user_id(el)
+
+    lt   = _dict_get_ci(el, "loadTransferProperties") or {}
+    mech = _dict_get_ci(el, "mechanicalProperties")   or {}
+    clim = _dict_get_ci(el, "climaticProperties")     or {}
+
+    climatic_raw = str(_dict_get_ci(clim, "climaticType", default="") or "")
+    transfer_raw = str(_dict_get_ci(lt,   "loadTransferMethodType", default="") or "")
+    span_raw     = str(_dict_get_ci(lt,   "loadTransferSpanDirectionType",
+                                    default="eFloorDeckLoadSpanDirectionXY") or "eFloorDeckLoadSpanDirectionXY")
+
+    rigid_diafragm = _to_bool(_dict_get_ci(mech, "rigidDiafragm", default=False))
+    self_weight    = _to_bool(_dict_get_ci(mech, "selfWeightAuto", "selfWeight", "hasSelfWeight", default=False))
+    snow           = _to_bool(_dict_get_ci(clim, "availableForSnow", default=False))
+    wind           = _to_bool(_dict_get_ci(clim, "availableForWind", default=False))
+
+    return {
+        "kind":            "load_area",
+        "user_id":         user_id,
+        "climatic_tr_key": _CLIMATIC_TYPE_TR_KEYS.get(climatic_raw, ""),
+        "climatic_raw":    climatic_raw,
+        "transfer_tr_key": _TRANSFER_METHOD_TR_KEYS.get(transfer_raw, ""),
+        "transfer_raw":    transfer_raw,
+        "span_tr_key":     _SPAN_DIRECTION_TR_KEYS.get(span_raw, ""),
+        "span_raw":        span_raw,
+        "rigid_diafragm":  rigid_diafragm,
+        "self_weight":     self_weight,
+        "snow":            snow,
+        "wind":            wind,
+    }
+
+
 def _dict_get_ci(data, *names, default=None):
     """Recherche insensible à la casse dans un dict.
 
@@ -1697,6 +1769,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
     planar_eids = []
     planar_properties = []
     load_areas = []
+    load_area_properties = []
     punctual_supports = []
     punctual_support_eids = []
     punctual_support_properties = []
@@ -1736,6 +1809,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
         if not geom:
             continue
         load_areas.append(geom)
+        load_area_properties.append(extract_load_area_properties(el))
 
     for support_eid, el in zip(punctual_support_ids, punctual_support_elements):
         pt = el.get("geomPt")
@@ -1775,6 +1849,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
         "planar_eids": planar_eids,
         "planar_properties": planar_properties,
         "load_areas": load_areas,
+        "load_area_properties": load_area_properties,
         "linear_takeoff": linear_takeoff,
         "linear_material_takeoff": linear_material_takeoff,
         "planar_takeoff": planar_takeoff,

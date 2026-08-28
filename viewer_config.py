@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.80"
+APP_VERSION = "1.81"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -328,6 +328,33 @@ MSG_UI = {
     "prop_relaxation_end_2": "Relaxation Extrémité 2",
     "prop_no_linear": "Aucune propriété disponible pour cet élément filaire.",
     "prop_no_planar": "Aucune propriété disponible pour cet élément surfacique.",
+    "prop_no_load_area": "Aucune propriété disponible pour cette paroi.",
+    "prop_load_area": "Paroi",
+    "prop_load_area_type": "Type",
+    "prop_load_area_transfer_method": "Méthode de transfert",
+    "prop_load_area_span_direction": "Sens de portée",
+    "prop_load_area_rigid_diafragm": "Membrane rigide",
+    "prop_load_area_self_weight": "Poids propre",
+    "prop_load_area_snow": "Neige",
+    "prop_load_area_wind": "Vent",
+    "prop_load_area_climatic_building": "Bâtiment",
+    "prop_load_area_climatic_protruding_roof": "Avancée de toiture",
+    "prop_load_area_climatic_parapet": "Acrotère",
+    "prop_load_area_climatic_isolated_1_sloped": "Toiture isolée 1 versant",
+    "prop_load_area_climatic_isolated_2_sloped": "Toiture isolée 2 versants",
+    "prop_load_area_climatic_panel": "Panneau de signalisation",
+    "prop_load_area_climatic_scaffolding": "Structure en treillis ou échafaudage",
+    "prop_load_area_climatic_shed_vertical": "Toiture verticale (sheds)",
+    "prop_load_area_climatic_awning": "Auvent",
+    "prop_load_area_climatic_vaulted": "Toitures en voûtes",
+    "prop_load_area_climatic_inclined_wall": "Paroi inclinée 45°–75°",
+    "prop_load_area_climatic_free_standing_wall": "Mur isolé",
+    "prop_load_area_transfer_failure_lines": "Lignes de rupture",
+    "prop_load_area_transfer_fem": "Méthode MEF",
+    "prop_load_area_transfer_auto": "Auto",
+    "prop_load_area_span_x": "x",
+    "prop_load_area_span_y": "y",
+    "prop_load_area_span_xy": "xy",
     "prop_linear_element": "Élément filaire",
     "prop_planar_element": "Élément surfacique",
     "prop_punctual_support": "Appui ponctuel",
