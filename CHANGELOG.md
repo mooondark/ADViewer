@@ -2,6 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.81
+
+### Modification de la fonction Filtrer et ajout Parois
+- Affichage du nombre d'éléments concernés par la sélection dans la boite de dialogue des filtres,
+- Ajout de l'affichage des propriétés des parois.
+
+### Changes to the Filter Function and Properties of loadareas
+- Display of the number of elements affected by the selection in the filter dialog box,
+- Addition of the display of loadarea properties.
+
 ## 1.80
 
 ### Affichage du maillage
