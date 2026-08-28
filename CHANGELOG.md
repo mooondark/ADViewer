@@ -2,6 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.82
+
+### Amélioration de l'affichage des résultats sur les élément filaire
+- Les diagrammes sont maintenant colorés,
+- Correction de la position de l'affichage des valeurs min.
+
+### Better result display for linear elements
+- Diagramms are now colored,
+- Bad min value display position fixed.
+
 ## 1.81
 
 ### Modification de la fonction Filtrer et ajout Parois

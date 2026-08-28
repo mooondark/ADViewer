@@ -1162,7 +1162,44 @@ class VTKViewerWidget(QFrame):
         if hasattr(self, "render_window") and self.render_window is not None:
             self.render_window.Render()
 
-    def set_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None):
+    @staticmethod
+    def _diagram_value_to_color(value: float, min_val: float, max_val: float):
+        """Mappe une valeur scalaire vers une couleur style Advance Design.
+
+        Bleu foncé = valeur minimale du diagramme (quel que soit son signe)
+        Rouge      = valeur maximale du diagramme (quel que soit son signe)
+
+        Ainsi un diagramme entièrement positif aura quand même son min en bleu
+        et son max en rouge.
+        """
+        # Palette : bleu foncé → bleu clair → cyan → vert → jaune → orange → rouge
+        stops = [
+            (0.0, (0.0,  0.0,  0.55)),
+            (0.2, (0.0,  0.50, 1.0)),
+            (0.4, (0.0,  0.85, 0.85)),
+            (0.5, (0.30, 0.85, 0.30)),
+            (0.6, (1.0,  0.85, 0.0)),
+            (0.8, (1.0,  0.45, 0.0)),
+            (1.0, (0.85, 0.0,  0.0)),
+        ]
+        span = max_val - min_val
+        if span < 1e-12:
+            # Toutes les valeurs identiques → couleur médiane (vert)
+            return (0.30, 0.85, 0.30)
+        t = max(0.0, min(1.0, (value - min_val) / span))
+        for i in range(len(stops) - 1):
+            t0, c0 = stops[i]
+            t1, c1 = stops[i + 1]
+            if t0 <= t <= t1:
+                alpha = (t - t0) / (t1 - t0) if (t1 - t0) > 1e-12 else 0.0
+                return (
+                    c0[0] + alpha * (c1[0] - c0[0]),
+                    c0[1] + alpha * (c1[1] - c0[1]),
+                    c0[2] + alpha * (c1[2] - c0[2]),
+                )
+        return stops[-1][1]
+
+    def set_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = ""):
         self.clear_result_diagram()
         if not isinstance(line_points, (list, tuple)) or len(line_points) != 2:
             return
@@ -1204,7 +1241,10 @@ class VTKViewerWidget(QFrame):
         scale_height = max(0.25, 0.15 * length)
         scale_height *= max(1e-6, float(getattr(self, "_linear_result_scale_factor", 1.0)))
 
-        max_abs = max(abs(float((entry or {}).get("value", 0.0))) for entry in series)
+        all_values = [float((entry or {}).get("value", 0.0)) for entry in series]
+        max_abs = max(abs(v) for v in all_values)
+        min_val = min(all_values)
+        max_val = max(all_values)
         amplitude_scale = (scale_height / max_abs) if max_abs > 1e-12 else 0.0
 
         baseline_points = []
@@ -1226,7 +1266,7 @@ class VTKViewerWidget(QFrame):
             )
             baseline_points.append(base)
             diagram_points.append(tip)
-            stems.append((base, tip))
+            stems.append((base, tip, value))
             samples.append({"value": value, "abscissa": abscissa, "tip": tip})
 
         def build_polyline(points_list):
@@ -1245,20 +1285,100 @@ class VTKViewerWidget(QFrame):
             poly.SetLines(cells)
             return poly
 
-        def build_segments(segments_list):
+        def build_colored_stems(segments_list):
+            """Construit les tiges avec couleur par valeur (style AD)."""
             points = vtk.vtkPoints()
             cells = vtk.vtkCellArray()
-            for start, end in segments_list:
+            colors = vtk.vtkUnsignedCharArray()
+            colors.SetName("Colors")
+            colors.SetNumberOfComponents(3)
+            for start, end, value in segments_list:
+                rgb = self._diagram_value_to_color(value, min_val, max_val)
                 pid0 = points.InsertNextPoint(*start)
                 pid1 = points.InsertNextPoint(*end)
                 line = vtk.vtkLine()
                 line.GetPointIds().SetId(0, pid0)
                 line.GetPointIds().SetId(1, pid1)
                 cells.InsertNextCell(line)
+                r, g, b = int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255)
+                colors.InsertNextTuple3(r, g, b)
             poly = vtk.vtkPolyData()
             poly.SetPoints(points)
             poly.SetLines(cells)
+            poly.GetCellData().SetScalars(colors)
             return poly
+
+        def build_filled_diagram(base_pts, tip_pts, values):
+            """Construit les triangles de remplissage coloré entre baseline et courbe.
+
+            Utilise des couleurs par sommet (point data) avec interpolation VTK,
+            ce qui produit un dégradé parfaitement continu sans bandes visibles
+            aux jointures entre segments.
+            La baseline reçoit systématiquement la même couleur que son tip
+            (valeur de l'abscisse correspondante) pour éviter les artefacts.
+            """
+            if len(base_pts) < 2:
+                return None
+            n = len(base_pts)
+            points = vtk.vtkPoints()
+            colors = vtk.vtkUnsignedCharArray()
+            colors.SetName("Colors")
+            colors.SetNumberOfComponents(3)
+
+            # Insérer tous les points de la baseline puis tous ceux de la courbe.
+            # Index baseline : 0..n-1   Index tip : n..2n-1
+            for i in range(n):
+                points.InsertNextPoint(*base_pts[i])
+                rgb = self._diagram_value_to_color(values[i], min_val, max_val)
+                colors.InsertNextTuple3(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
+            for i in range(n):
+                points.InsertNextPoint(*tip_pts[i])
+                rgb = self._diagram_value_to_color(values[i], min_val, max_val)
+                colors.InsertNextTuple3(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
+
+            cells = vtk.vtkCellArray()
+            for i in range(n - 1):
+                b0, b1 = i,     i + 1
+                t0, t1 = n + i, n + i + 1
+                # Triangle 1 : b0, t0, t1
+                tri1 = vtk.vtkTriangle()
+                tri1.GetPointIds().SetId(0, b0)
+                tri1.GetPointIds().SetId(1, t0)
+                tri1.GetPointIds().SetId(2, t1)
+                cells.InsertNextCell(tri1)
+                # Triangle 2 : b0, t1, b1
+                tri2 = vtk.vtkTriangle()
+                tri2.GetPointIds().SetId(0, b0)
+                tri2.GetPointIds().SetId(1, t1)
+                tri2.GetPointIds().SetId(2, b1)
+                cells.InsertNextCell(tri2)
+
+            poly = vtk.vtkPolyData()
+            poly.SetPoints(points)
+            poly.SetPolys(cells)
+            poly.GetPointData().SetScalars(colors)
+            return poly
+
+        def make_colored_polydata_actor(polydata, line_width=1.0, opacity=1.0, use_point_colors=False):
+            if polydata is None or polydata.GetNumberOfCells() == 0:
+                return None
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(polydata)
+            if use_point_colors:
+                mapper.SetScalarModeToUsePointData()
+            else:
+                mapper.SetScalarModeToUseCellData()
+            mapper.SetColorModeToDirectScalars()
+            mapper.ScalarVisibilityOn()
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.PickableOff()
+            prop = actor.GetProperty()
+            prop.SetOpacity(opacity)
+            prop.SetLineWidth(line_width)
+            return actor
+
+        unit_str = str(unit or "").strip()
 
         def _format_diagram_label_value(text_value):
             try:
@@ -1266,10 +1386,14 @@ class VTKViewerWidget(QFrame):
             except Exception:
                 return str(text_value)
             if abs(value) < 0.001:
-                return "+0" if value >= 0.0 else "-0"
-            return f"{value:.3f}"
+                formatted = "+0" if value >= 0.0 else "-0"
+            else:
+                formatted = f"{value:.3f}"
+            return f"{formatted} {unit_str}" if unit_str else formatted
 
         def add_billboard_label(text_value, point, color, offset_factor=0.06):
+            """Place le label à la pointe du diagramme, décalé dans le sens de la valeur
+            (positif = côté normal, négatif = côté opposé)."""
             if point is None:
                 return None
             try:
@@ -1277,10 +1401,14 @@ class VTKViewerWidget(QFrame):
             except Exception:
                 return None
             offset = max(0.03, scale_height * offset_factor)
+            try:
+                sign = 1.0 if float(text_value) >= 0.0 else -1.0
+            except Exception:
+                sign = 1.0
             pos = (
-                float(point[0]) + normal[0] * offset,
-                float(point[1]) + normal[1] * offset,
-                float(point[2]) + normal[2] * offset,
+                float(point[0]) + normal[0] * offset * sign,
+                float(point[1]) + normal[1] * offset * sign,
+                float(point[2]) + normal[2] * offset * sign,
             )
             actor.SetInput(_format_diagram_label_value(text_value))
             actor.SetPosition(*pos)
@@ -1298,25 +1426,47 @@ class VTKViewerWidget(QFrame):
             return actor
 
         actors = []
-        baseline_actor = self._make_wire_actor(build_polyline(baseline_points), (0.45, 0.45, 0.45), 1.5)
-        stems_actor = self._make_wire_actor(build_segments(stems), (0.80, 0.40, 0.15), 1.3)
-        diagram_actor = self._make_wire_actor(build_polyline(diagram_points), (0.05, 0.45, 0.95), max(2.0, self.linear_line_width + 1.0))
-        for actor in (baseline_actor, stems_actor, diagram_actor):
-            if actor is None:
-                continue
-            actor.PickableOff()
-            actors.append(self._add_actor(actor, role=None, pickable=False))
+        values_list = [s["value"] for s in samples]
 
+        # 1. Remplissage coloré (style AD) — triangles entre baseline et courbe
+        fill_poly = build_filled_diagram(baseline_points, diagram_points, values_list)
+        fill_actor = make_colored_polydata_actor(fill_poly, opacity=0.82, use_point_colors=True)
+        if fill_actor is not None:
+            fill_actor.GetProperty().SetRepresentationToSurface()
+            fill_actor.GetProperty().LightingOff()
+            actors.append(self._add_actor(fill_actor, role=None, pickable=False))
+
+        # 2. Tiges colorées par valeur
+        stems_poly = build_colored_stems(stems)
+        stems_actor = make_colored_polydata_actor(stems_poly, line_width=1.2)
+        if stems_actor is not None:
+            actors.append(self._add_actor(stems_actor, role=None, pickable=False))
+
+        # 3. Ligne de base (axe de l'élément)
+        baseline_actor = self._make_wire_actor(build_polyline(baseline_points), (0.35, 0.35, 0.35), 1.5)
+        if baseline_actor is not None:
+            baseline_actor.PickableOff()
+            actors.append(self._add_actor(baseline_actor, role=None, pickable=False))
+
+        # 4. Courbe enveloppe (contour du diagramme)
+        diagram_actor = self._make_wire_actor(build_polyline(diagram_points), (0.10, 0.10, 0.10), max(1.5, self.linear_line_width))
+        if diagram_actor is not None:
+            diagram_actor.PickableOff()
+            actors.append(self._add_actor(diagram_actor, role=None, pickable=False))
+
+        # 5. Étiquettes min/max
         if samples:
             min_sample = min(samples, key=lambda item: float(item["value"]))
             max_sample = max(samples, key=lambda item: float(item["value"]))
             if abs(float(max_sample["value"]) - float(min_sample["value"])) <= 1e-12:
-                label_actor = add_billboard_label(max_sample["value"], max_sample["tip"], (1.0, 0.0, 0.0))
+                label_actor = add_billboard_label(max_sample["value"], max_sample["tip"], (0.85, 0.0, 0.0))
                 if label_actor is not None:
                     actors.append(label_actor)
             else:
-                min_actor = add_billboard_label(min_sample["value"], min_sample["tip"], (0.05, 0.35, 1.0))
-                max_actor = add_billboard_label(max_sample["value"], max_sample["tip"], (1.0, 0.0, 0.0))
+                min_color = self._diagram_value_to_color(min_sample["value"], min_val, max_val)
+                max_color = self._diagram_value_to_color(max_sample["value"], min_val, max_val)
+                min_actor = add_billboard_label(min_sample["value"], min_sample["tip"], min_color)
+                max_actor = add_billboard_label(max_sample["value"], max_sample["tip"], max_color)
                 if min_actor is not None:
                     actors.append(min_actor)
                 if max_actor is not None:

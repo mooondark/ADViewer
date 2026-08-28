@@ -2746,8 +2746,8 @@ class MainWindow(QMainWindow):
             payload = dict(payload)
             payload["selection"] = dict(self.current_analysis_selection or {})
             self.current_linear_diagram_payload = payload
-            self.viewer.set_linear_result_diagram(lines[line_index], series, str(payload.get("title") or ""), line_property)
             unit = str(payload.get("unit") or "").strip()
+            self.viewer.set_linear_result_diagram(lines[line_index], series, str(payload.get("title") or ""), line_property, unit=unit)
             max_abs = max(abs(float((entry or {}).get("value", 0.0))) for entry in series)
             suffix = f" {unit}" if unit else ""
             display_family = self.analysis_results_value_combo.currentText().strip() if self.analysis_results_value_combo is not None else _analysis_result_display_label(str(payload.get("family_label") or ""))
@@ -3074,7 +3074,8 @@ class MainWindow(QMainWindow):
         if not series:
             self.viewer.clear_result_diagram()
             return
-        self.viewer.set_linear_result_diagram(lines[line_index], series, str(payload.get("title") or ""), line_property)
+        unit = str(payload.get("unit") or "").strip()
+        self.viewer.set_linear_result_diagram(lines[line_index], series, str(payload.get("title") or ""), line_property, unit=unit)
 
     def _format_display_checkbox_text(self, key, count=None):
         label = tr_ui(key)
