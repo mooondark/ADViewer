@@ -2388,17 +2388,68 @@ class MainWindow(QMainWindow):
         self._add_properties_type_label(layout, str(data.get("type_label", tr_ui("prop_planar_element"))))
         self._add_properties_spacer(layout, 8)
 
-        rows = list(data.get("rows", []) or [])
-        if not rows:
-            self._set_properties_message(tr_ui("prop_no_planar"))
-            return
+        prop_rows = list(data.get("prop_rows") or [])
+        mesh_rows = list(data.get("mesh_rows") or [])
 
-        table = self._create_properties_table(len(rows))
-        for row, (name, value_text) in enumerate(rows):
-            self._set_table_name_item(table, row, str(name))
-            self._set_table_value_item(table, row, str(value_text))
-        self._finalize_properties_table(table)
-        layout.addWidget(table)
+        # Fallback vers l'ancien format "rows" si prop_rows absent
+        if not prop_rows:
+            legacy = list(data.get("rows") or [])
+            if not legacy:
+                self._set_properties_message(tr_ui("prop_no_planar"))
+                return
+            prop_rows = [(lbl, "text", val) for lbl, val in legacy]
+
+        def _fill_table(rows):
+            """Crée et remplit une table unifiée (texte + checkbox dans une seule table)."""
+            t = self._create_properties_table(len(rows))
+            for r, entry in enumerate(rows):
+                label, kind, value = entry
+                self._set_table_name_item(t, r, str(label))
+                if kind == "bool":
+                    self._set_table_checkbox(t, r, bool(value))
+                else:
+                    self._set_table_value_item(t, r, str(value))
+            return t
+
+        def _apply_col0(table, width):
+            """Force la largeur col-0 et recalcule setFixedWidth après _finalize_properties_table."""
+            table.setColumnWidth(0, width)
+            frame = table.frameWidth() * 2
+            total_w = frame + sum(table.columnWidth(i) for i in range(table.columnCount()))
+            table.setMinimumWidth(total_w)
+            table.setMaximumWidth(total_w)
+            table.setFixedWidth(total_w)
+
+        # ── Construire les deux tables ────────────────────────────────────
+        t_prop = _fill_table(prop_rows)
+        t_mesh = _fill_table(mesh_rows) if mesh_rows else None
+
+        # Finaliser (calcule hauteurs + col-0 locale à chaque table)
+        self._finalize_properties_table(t_prop)
+        if t_mesh is not None:
+            self._finalize_properties_table(t_mesh)
+
+        # Calculer le col-0 global : max sur les labels des DEUX tables
+        fm = t_prop.fontMetrics()
+        col0_w = t_prop.columnWidth(0)  # déjà calculé par _finalize pour t_prop
+        if t_mesh is not None:
+            for r in range(t_mesh.rowCount()):
+                item = t_mesh.item(r, 0)
+                if item is not None:
+                    col0_w = max(col0_w, fm.horizontalAdvance(item.text()) + 18)
+
+        # Appliquer le col-0 commun aux deux tables (recalcule setFixedWidth)
+        _apply_col0(t_prop, col0_w)
+        if t_mesh is not None:
+            _apply_col0(t_mesh, col0_w)
+
+        layout.addWidget(t_prop)
+
+        if t_mesh is not None:
+            self._add_properties_spacer(layout, 6)
+            self._add_properties_section_title(layout, tr_ui("prop_mesh_section"))
+            layout.addWidget(t_mesh)
+
         layout.addStretch(1)
 
     def _render_load_area_properties(self, data: dict):

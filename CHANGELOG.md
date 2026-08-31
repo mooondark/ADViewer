@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.83
+
+### Surfaciques
+- Propriétés étendues : nombre de sommets, excentricité (et prise en compte de cette dernière dans les calculs), propriétés du maillage de l'élément,
+
+### Planar elements
+- New properties : number of vertex, excentricity (and considering it in FEM), mesh properties of the selected element.
+
 ## 1.82
 
 ### Amélioration de l'affichage des résultats sur les élément filaire

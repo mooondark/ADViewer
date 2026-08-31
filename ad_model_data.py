@@ -755,33 +755,111 @@ def _format_length_cm(value) -> str:
         return "N/A"
 
 
+def _format_thickness_smart(value) -> str:
+    """Affiche en cm (1 décimale) si >= 1 cm, sinon en mm (1 décimale)."""
+    try:
+        m = float(value)
+        cm = m * 100.0
+        if cm >= 1.0:
+            return f"{cm:.1f} cm"
+        return f"{m * 1000.0:.1f} mm"
+    except Exception:
+        return "N/A"
+
+
+def _format_eccentricity_cm(value) -> str:
+    try:
+        return f"{float(value) * 100.0:.2f} cm"
+    except Exception:
+        return "N/A"
+
+
+def _mesh_type_label(raw) -> str:
+    mapping = {
+        "complete":      "prop_mesh_type_complete",
+        "triangulation": "prop_mesh_type_triangulation",
+        "none":          "prop_mesh_type_none",
+    }
+    key = mapping.get((raw or "").lower())
+    return tr_ui(key) if key else (raw or "N/A")
+
+
+def _mesh_density_label(raw) -> str:
+    mapping = {
+        "global":       "prop_mesh_density_global",
+        "simplified":   "prop_mesh_density_simplified",
+        "detailed":     "prop_mesh_density_detailed",
+        "element_size": "prop_mesh_density_element_size",
+    }
+    key = mapping.get((raw or "").lower())
+    return tr_ui(key) if key else (raw or "N/A")
+
+
 def extract_planar_element_properties(el: dict, material_by_eid: dict):
     if not isinstance(el, dict):
         return {
             "kind": "planar_element",
             "type_label": tr_ui("prop_planar_element"),
-            "rows": [(tr_ui("prop_material_na"), "N/A"), (tr_ui("prop_thickness"), "N/A"), (tr_ui("prop_slope_x"), "N/A"), (tr_ui("prop_slope_y"), "N/A")],
+            "prop_rows": [(tr_ui("prop_material_na"), "text", "N/A"),
+                          (tr_ui("prop_thickness"),   "text", "N/A"),
+                          (tr_ui("prop_slope_x"),     "text", "N/A"),
+                          (tr_ui("prop_slope_y"),     "text", "N/A")],
+            "mesh_rows": [],
+            "rows": [],
             "thickness": "N/A",
         }
 
     material_eid = _extract_ref_eid(el, "material")
     material = material_by_eid.get(material_eid, "N/A") if material_eid is not None else "N/A"
-    thickness = _format_length_cm(_dict_get_ci(el, "thicknessIn1stVertex", "thickness"))
-    slope_x = _dict_get_ci(el, "slopeX")
-    slope_y = _dict_get_ci(el, "slopeY")
+    thickness = _format_thickness_smart(_dict_get_ci(el, "thicknessIn1stVertex", "thickness"))
+    slope_x = _format_numeric(_dict_get_ci(el, "slopeX"))
+    slope_y = _format_numeric(_dict_get_ci(el, "slopeY"))
+    eccentricity = _format_eccentricity_cm(_dict_get_ci(el, "eccentricity"))
+    eccentricity_fem = bool(_dict_get_ci(el, "eccentricityCOnsideredAlsoForFEM",
+                                         "eccentricityConsideredAlsoForFEM") or False)
+    vertices_count = str(len(el.get("geomPtsList") or []))
+
+    mesh = _dict_get_ci(el, "meshProperties")
+    if isinstance(mesh, dict):
+        mesh_auto    = bool(mesh.get("automaticMesh", True))
+        mesh_type    = _mesh_type_label(mesh.get("meshType"))
+        mesh_density = _mesh_density_label(mesh.get("meshDensity"))
+    else:
+        mesh_auto    = True
+        mesh_type    = "N/A"
+        mesh_density = "N/A"
 
     type_label = _find_planar_type_label(el)
     user_id = _extract_user_id(el)
+
+    prop_rows = [
+        (tr_ui("prop_vertices"),        "text", vertices_count),
+        (tr_ui("prop_material"),        "text", material),
+        (tr_ui("prop_thickness"),       "text", thickness),
+        (tr_ui("prop_slope_x"),         "text", slope_x),
+        (tr_ui("prop_slope_y"),         "text", slope_y),
+        (tr_ui("prop_eccentricity"),    "text", eccentricity),
+        (tr_ui("prop_eccentricity_fem"), "bool", eccentricity_fem),
+    ]
+    mesh_rows = [
+        (tr_ui("prop_mesh_automatic"), "bool", mesh_auto),
+        (tr_ui("prop_mesh_type"),      "text", mesh_type),
+        (tr_ui("prop_mesh_density"),   "text", mesh_density),
+    ]
+
     return {
         "kind": "planar_element",
         "type_label": _label_with_user_id(type_label, user_id),
         "base_type_label": type_label,
         "user_id": user_id,
+        "prop_rows": prop_rows,
+        "mesh_rows": mesh_rows,
+        # Champs legacy conservés pour filtres / métrés
         "rows": [
-            (tr_ui("prop_material"), material),
+            (tr_ui("prop_material"),  material),
             (tr_ui("prop_thickness"), thickness),
-            ("Pente X", _format_numeric(slope_x)),
-            ("Pente Y", _format_numeric(slope_y)),
+            (tr_ui("prop_slope_x"),   slope_x),
+            (tr_ui("prop_slope_y"),   slope_y),
         ],
         "material": material,
         "material_eid": material_eid,

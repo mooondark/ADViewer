@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.81"
+APP_VERSION = "1.83"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -363,6 +363,20 @@ MSG_UI = {
     "prop_thickness": "Épaisseur",
     "prop_slope_x": "Pente X",
     "prop_slope_y": "Pente Y",
+    "prop_vertices": "Nb de sommets",
+    "prop_eccentricity": "Excentricité",
+    "prop_eccentricity_fem": "Ex. prise en compte (calcul)",
+    "prop_mesh_section": "Maillage",
+    "prop_mesh_automatic": "Automatique",
+    "prop_mesh_type": "Type",
+    "prop_mesh_density": "Densité",
+    "prop_mesh_type_complete": "Complet",
+    "prop_mesh_type_triangulation": "Triangulation",
+    "prop_mesh_type_none": "Aucun (nœuds aux sommets)",
+    "prop_mesh_density_global": "Global",
+    "prop_mesh_density_simplified": "Simplifié",
+    "prop_mesh_density_detailed": "Détaillé",
+    "prop_mesh_density_element_size": "Taille d'élément fixe",
     "prop_not_supported": "Non pris en charge",
     "prop_support_punctual_unsupported": "Appui ponctuel non pris en charge",
     "prop_support_punctual_advanced": "Appui ponctuel avancé",
