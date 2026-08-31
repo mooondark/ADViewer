@@ -260,7 +260,9 @@ class ConstrainedOrbitStyle(vtk.vtkInteractorStyleUser):
 
 
 class VTKViewerWidget(QFrame):
-    selectionChanged = Signal(dict)
+    # Émet la liste complète des items sélectionnés : [{"role": str, "index": int}, ...]
+    # Liste vide = aucune sélection.
+    selectionChanged = Signal(list)
     ELEMENT_INDEX_ARRAY = "element_index"
 
     def __init__(self, parent=None):
@@ -290,7 +292,8 @@ class VTKViewerWidget(QFrame):
         self._selection_overlay_actors = []
         self._diagram_overlay_actors = []
         self._diagram_label_actors = []
-        self._selected_item = None
+        self._selected_item = None       # compatibilité (premier item ou None)
+        self._selected_items = []        # liste complète : [{"role": str, "index": int}, ...]
         self._selection_candidates = []
         self._selection_candidate_keys = []
         self._selection_cycle_index = -1
@@ -368,7 +371,7 @@ class VTKViewerWidget(QFrame):
         self._filter_section_names = None
         self._filter_thickness_names = None
         self._filter_material_names = None
-        self._isolated_selection = None
+        self._isolated_selection = []   # liste de {"role","index"} — vide = pas d'isolation
         self._linear_result_scale_factor = 1.0
         self._projection_mode = DEFAULT_VIEW_PROJECTION
 
@@ -383,7 +386,12 @@ class VTKViewerWidget(QFrame):
 
         self.interactor.AddObserver("RightButtonPressEvent", self._on_right_button_press, 1.0)
         self.interactor.AddObserver("LeftButtonPressEvent", self._on_left_button_press, 1.0)
+        self.interactor.AddObserver("LeftButtonReleaseEvent", self._on_left_button_release, 1.0)
         self.interactor.AddObserver("KeyPressEvent", self._on_key_press, 1.0)
+
+        # Position du dernier press gauche — pour distinguer clic de glisser
+        self._left_press_pos = None
+        self._left_press_ctrl = False
 
         self.vtk_widget.Initialize()
         self.vtk_widget.Start()
@@ -1142,16 +1150,16 @@ class VTKViewerWidget(QFrame):
         return overlays
 
     def _refresh_selection_overlay(self):
-        current = self._selected_item
         self._clear_selection_overlay()
-        if not current:
+        if not self._selected_items:
             self.render_window.Render()
             return
-        overlays = self._make_selection_overlay_actors(current["role"], current["index"])
-        for actor in overlays:
-            self.renderer.AddActor(actor)
-            self._actors.append(actor)
-            self._selection_overlay_actors.append(actor)
+        for item in self._selected_items:
+            overlays = self._make_selection_overlay_actors(item["role"], item["index"])
+            for actor in overlays:
+                self.renderer.AddActor(actor)
+                self._actors.append(actor)
+                self._selection_overlay_actors.append(actor)
         self._apply_visibility_state()
 
     def clear_result_diagram(self):
@@ -1199,23 +1207,28 @@ class VTKViewerWidget(QFrame):
                 )
         return stops[-1][1]
 
-    def set_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = ""):
-        self.clear_result_diagram()
+    def _build_linear_diagram_actors(self, line_points, series, title: str = "", line_property: dict = None, unit: str = ""):
+        """Construit et ajoute au renderer les acteurs VTK d'un diagramme filaire.
+
+        Retourne la liste des acteurs créés (overlay + labels), sans toucher aux
+        listes _diagram_overlay_actors / _diagram_label_actors existantes.
+        Cela permet d'appeler cette méthode de manière additive.
+        """
         if not isinstance(line_points, (list, tuple)) or len(line_points) != 2:
-            return
+            return []
         if not isinstance(series, list) or len(series) < 2:
-            return
+            return []
 
         try:
             p1 = tuple(float(v) for v in line_points[0])
             p2 = tuple(float(v) for v in line_points[1])
         except Exception:
-            return
+            return []
 
         axis = (p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2])
         length = math.sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2])
         if length <= 1e-9:
-            return
+            return []
         u = (axis[0] / length, axis[1] / length, axis[2] / length)
 
         local_axes = ((line_property or {}).get("local_axes") or {}) if isinstance(line_property, dict) else {}
@@ -1228,7 +1241,7 @@ class VTKViewerWidget(QFrame):
         if normal is None:
             normal = _normalize_vector3(_cross_vector3(u, (0.0, 1.0, 0.0)))
         if normal is None:
-            return
+            return []
         rotated_normal = _rotate_vector_around_axis(normal, u, -math.pi / 2.0)
         normal = _normalize_vector3(rotated_normal) or normal
         title_key = str(title or "").strip().lower()
@@ -1286,16 +1299,15 @@ class VTKViewerWidget(QFrame):
             return poly
 
         def build_colored_stems(segments_list):
-            """Construit les tiges avec couleur par valeur (style AD)."""
-            points = vtk.vtkPoints()
+            pts = vtk.vtkPoints()
             cells = vtk.vtkCellArray()
             colors = vtk.vtkUnsignedCharArray()
             colors.SetName("Colors")
             colors.SetNumberOfComponents(3)
             for start, end, value in segments_list:
                 rgb = self._diagram_value_to_color(value, min_val, max_val)
-                pid0 = points.InsertNextPoint(*start)
-                pid1 = points.InsertNextPoint(*end)
+                pid0 = pts.InsertNextPoint(*start)
+                pid1 = pts.InsertNextPoint(*end)
                 line = vtk.vtkLine()
                 line.GetPointIds().SetId(0, pid0)
                 line.GetPointIds().SetId(1, pid1)
@@ -1303,58 +1315,43 @@ class VTKViewerWidget(QFrame):
                 r, g, b = int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255)
                 colors.InsertNextTuple3(r, g, b)
             poly = vtk.vtkPolyData()
-            poly.SetPoints(points)
+            poly.SetPoints(pts)
             poly.SetLines(cells)
             poly.GetCellData().SetScalars(colors)
             return poly
 
         def build_filled_diagram(base_pts, tip_pts, values):
-            """Construit les triangles de remplissage coloré entre baseline et courbe.
-
-            Utilise des couleurs par sommet (point data) avec interpolation VTK,
-            ce qui produit un dégradé parfaitement continu sans bandes visibles
-            aux jointures entre segments.
-            La baseline reçoit systématiquement la même couleur que son tip
-            (valeur de l'abscisse correspondante) pour éviter les artefacts.
-            """
             if len(base_pts) < 2:
                 return None
             n = len(base_pts)
-            points = vtk.vtkPoints()
+            pts = vtk.vtkPoints()
             colors = vtk.vtkUnsignedCharArray()
             colors.SetName("Colors")
             colors.SetNumberOfComponents(3)
-
-            # Insérer tous les points de la baseline puis tous ceux de la courbe.
-            # Index baseline : 0..n-1   Index tip : n..2n-1
             for i in range(n):
-                points.InsertNextPoint(*base_pts[i])
+                pts.InsertNextPoint(*base_pts[i])
                 rgb = self._diagram_value_to_color(values[i], min_val, max_val)
                 colors.InsertNextTuple3(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
             for i in range(n):
-                points.InsertNextPoint(*tip_pts[i])
+                pts.InsertNextPoint(*tip_pts[i])
                 rgb = self._diagram_value_to_color(values[i], min_val, max_val)
                 colors.InsertNextTuple3(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
-
             cells = vtk.vtkCellArray()
             for i in range(n - 1):
                 b0, b1 = i,     i + 1
                 t0, t1 = n + i, n + i + 1
-                # Triangle 1 : b0, t0, t1
                 tri1 = vtk.vtkTriangle()
                 tri1.GetPointIds().SetId(0, b0)
                 tri1.GetPointIds().SetId(1, t0)
                 tri1.GetPointIds().SetId(2, t1)
                 cells.InsertNextCell(tri1)
-                # Triangle 2 : b0, t1, b1
                 tri2 = vtk.vtkTriangle()
                 tri2.GetPointIds().SetId(0, b0)
                 tri2.GetPointIds().SetId(1, t1)
                 tri2.GetPointIds().SetId(2, b1)
                 cells.InsertNextCell(tri2)
-
             poly = vtk.vtkPolyData()
-            poly.SetPoints(points)
+            poly.SetPoints(pts)
             poly.SetPolys(cells)
             poly.GetPointData().SetScalars(colors)
             return poly
@@ -1391,9 +1388,9 @@ class VTKViewerWidget(QFrame):
                 formatted = f"{value:.3f}"
             return f"{formatted} {unit_str}" if unit_str else formatted
 
+        new_label_actors = []
+
         def add_billboard_label(text_value, point, color, offset_factor=0.06):
-            """Place le label à la pointe du diagramme, décalé dans le sens de la valeur
-            (positif = côté normal, négatif = côté opposé)."""
             if point is None:
                 return None
             try:
@@ -1422,65 +1419,82 @@ class VTKViewerWidget(QFrame):
             actor.PickableOff()
             self.renderer.AddActor(actor)
             self._actors.append(actor)
-            self._diagram_label_actors.append(actor)
+            new_label_actors.append(actor)
             return actor
 
-        actors = []
+        new_actors = []
         values_list = [s["value"] for s in samples]
 
-        # 1. Remplissage coloré (style AD) — triangles entre baseline et courbe
         fill_poly = build_filled_diagram(baseline_points, diagram_points, values_list)
         fill_actor = make_colored_polydata_actor(fill_poly, opacity=0.82, use_point_colors=True)
         if fill_actor is not None:
             fill_actor.GetProperty().SetRepresentationToSurface()
             fill_actor.GetProperty().LightingOff()
-            actors.append(self._add_actor(fill_actor, role=None, pickable=False))
+            new_actors.append(self._add_actor(fill_actor, role=None, pickable=False))
 
-        # 2. Tiges colorées par valeur
         stems_poly = build_colored_stems(stems)
         stems_actor = make_colored_polydata_actor(stems_poly, line_width=1.2)
         if stems_actor is not None:
-            actors.append(self._add_actor(stems_actor, role=None, pickable=False))
+            new_actors.append(self._add_actor(stems_actor, role=None, pickable=False))
 
-        # 3. Ligne de base (axe de l'élément)
         baseline_actor = self._make_wire_actor(build_polyline(baseline_points), (0.35, 0.35, 0.35), 1.5)
         if baseline_actor is not None:
             baseline_actor.PickableOff()
-            actors.append(self._add_actor(baseline_actor, role=None, pickable=False))
+            new_actors.append(self._add_actor(baseline_actor, role=None, pickable=False))
 
-        # 4. Courbe enveloppe (contour du diagramme)
         diagram_actor = self._make_wire_actor(build_polyline(diagram_points), (0.10, 0.10, 0.10), max(1.5, self.linear_line_width))
         if diagram_actor is not None:
             diagram_actor.PickableOff()
-            actors.append(self._add_actor(diagram_actor, role=None, pickable=False))
+            new_actors.append(self._add_actor(diagram_actor, role=None, pickable=False))
 
-        # 5. Étiquettes min/max
         if samples:
             min_sample = min(samples, key=lambda item: float(item["value"]))
             max_sample = max(samples, key=lambda item: float(item["value"]))
             if abs(float(max_sample["value"]) - float(min_sample["value"])) <= 1e-12:
                 label_actor = add_billboard_label(max_sample["value"], max_sample["tip"], (0.85, 0.0, 0.0))
                 if label_actor is not None:
-                    actors.append(label_actor)
+                    new_actors.append(label_actor)
             else:
                 min_color = self._diagram_value_to_color(min_sample["value"], min_val, max_val)
                 max_color = self._diagram_value_to_color(max_sample["value"], min_val, max_val)
                 min_actor = add_billboard_label(min_sample["value"], min_sample["tip"], min_color)
                 max_actor = add_billboard_label(max_sample["value"], max_sample["tip"], max_color)
                 if min_actor is not None:
-                    actors.append(min_actor)
+                    new_actors.append(min_actor)
                 if max_actor is not None:
-                    actors.append(max_actor)
+                    new_actors.append(max_actor)
 
-        self._diagram_overlay_actors = [actor for actor in actors if actor is not None]
+        # Enregistrer les labels dans la liste officielle (pour apply_theme, etc.)
+        self._diagram_label_actors.extend(new_label_actors)
+
+        return [a for a in new_actors if a is not None]
+
+    def set_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = ""):
+        """Remplace le diagramme courant (clear + reconstruction d'un seul élément)."""
+        self.clear_result_diagram()
+        actors = self._build_linear_diagram_actors(line_points, series, title, line_property, unit=unit)
+        self._diagram_overlay_actors = actors
+        self.render_window.Render()
+
+    def add_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = ""):
+        """Ajoute un diagramme filaire SANS effacer les diagrammes existants.
+
+        Utilisé pour la sélection multiple de filaires : chaque filaire est
+        chargé séquentiellement et superposé dans la vue.
+        Les acteurs sont ajoutés directement au renderer, puis enregistrés
+        dans _diagram_overlay_actors pour que clear_result_diagram() les retire.
+        """
+        actors = self._build_linear_diagram_actors(line_points, series, title, line_property, unit=unit)
+        self._diagram_overlay_actors.extend(actors)
         self.render_window.Render()
 
     def clear_selection(self):
         self._selected_item = None
+        self._selected_items = []
         self._selection_candidates = []
         self._selection_candidate_keys = []
         self._selection_cycle_index = -1
-        self.selectionChanged.emit({})
+        self.selectionChanged.emit([])
         self._refresh_selection_overlay()
 
     def set_selection_style(self, selection_color, selection_line_width: float):
@@ -1488,47 +1502,85 @@ class VTKViewerWidget(QFrame):
         self.selection_line_width = max(0.1, float(selection_line_width))
         self._refresh_selection_overlay()
 
-    def _select_item(self, role: str, index: int):
-        self._selected_item = {"role": role, "index": int(index)}
-        self.selectionChanged.emit(dict(self._selected_item))
+    def _select_item(self, role: str, index: int, additive: bool = False):
+        """Sélectionne un élément. Si additive=True (Ctrl), ajoute/retire de la sélection."""
+        new_item = {"role": role, "index": int(index)}
+        key = (role, int(index))
+        if additive:
+            existing_keys = [(item["role"], item["index"]) for item in self._selected_items]
+            if key in existing_keys:
+                # Retirer l'item de la sélection
+                self._selected_items = [it for it in self._selected_items if (it["role"], it["index"]) != key]
+            else:
+                self._selected_items.append(new_item)
+        else:
+            self._selected_items = [new_item]
+        # _selected_item = premier item pour compatibilité
+        self._selected_item = self._selected_items[0] if self._selected_items else None
+        self.selectionChanged.emit(list(self._selected_items))
         self._refresh_selection_overlay()
         return True
 
     def _on_right_button_press(self, obj, event):
         self.vtk_widget.setFocus()
         x, y = self.interactor.GetEventPosition()
+        ctrl = bool(self.interactor.GetControlKey())
         candidates = self._pick_selection_candidates(x, y)
         if candidates:
             candidate_keys = [(c["role"], int(c["index"])) for c in candidates]
-            if candidate_keys == self._selection_candidate_keys:
+            if not ctrl and candidate_keys == self._selection_candidate_keys:
                 self._selection_cycle_index = (self._selection_cycle_index + 1) % len(candidates)
             else:
                 self._selection_candidates = candidates
                 self._selection_candidate_keys = candidate_keys
                 self._selection_cycle_index = 0
             selected = candidates[self._selection_cycle_index]
-            self._select_item(selected["role"], selected["index"])
+            self._select_item(selected["role"], selected["index"], additive=ctrl)
             return
         self.interactor_style.OnRightButtonDown()
 
     def _on_left_button_press(self, obj, event):
         self.vtk_widget.setFocus()
         x, y = self.interactor.GetEventPosition()
+        ctrl = bool(self.interactor.GetControlKey())
+        self._left_press_pos = (x, y)
+        self._left_press_ctrl = ctrl
         candidates = self._pick_selection_candidates(x, y)
         if candidates:
             self._selection_candidates = candidates
             self._selection_candidate_keys = [(c["role"], int(c["index"])) for c in candidates]
             self._selection_cycle_index = 0
             selected = candidates[0]
-            self._select_item(selected["role"], selected["index"])
+            self._select_item(selected["role"], selected["index"], additive=ctrl)
             return
+        # Zone vide : ne pas déselectionner ici — attendre le release
+        # pour distinguer clic simple (déselectionner) de glisser (orbite).
         self.interactor_style.OnLeftButtonDown()
+
+    def _on_left_button_release(self, obj, event):
+        x, y = self.interactor.GetEventPosition()
+        press_pos = self._left_press_pos
+        self._left_press_pos = None
+        if press_pos is None:
+            return
+        # Vérifier que c'est un clic stationnaire (pas un glisser)
+        dx = abs(x - press_pos[0])
+        dy = abs(y - press_pos[1])
+        if dx <= 3 and dy <= 3 and not self._left_press_ctrl:
+            # Clic dans zone vide sans Ctrl et sans mouvement → déselectionner
+            candidates = self._pick_selection_candidates(x, y)
+            if not candidates:
+                self.clear_selection()
 
     def _on_key_press(self, obj, event):
         key = self.interactor.GetKeySym() if self.interactor is not None else ""
         if key in ("Escape", "escape"):
             self.clear_selection()
             return
+
+    def get_selected_items(self) -> list:
+        """Retourne la liste des items actuellement sélectionnés : [{"role", "index"}, ...]."""
+        return list(self._selected_items)
 
     def get_display_counts(self):
         return {
@@ -1589,6 +1641,7 @@ class VTKViewerWidget(QFrame):
         self._selection_overlay_actors = []
         self._diagram_overlay_actors = []
         self._selected_item = None
+        self._selected_items = []
         self._selection_candidates = []
         self._selection_candidate_keys = []
         self._selection_cycle_index = -1
@@ -1619,7 +1672,7 @@ class VTKViewerWidget(QFrame):
         self._filter_section_names = None
         self._filter_thickness_names = None
         self._filter_material_names = None
-        self._isolated_selection = None
+        self._isolated_selection = []
         self._apply_visibility_state()
 
     def fit_view(self):
@@ -2146,13 +2199,23 @@ class VTKViewerWidget(QFrame):
         items = list(self._model_data.get("line_properties", []))
         if not items:
             return []
-        isolated = self._isolated_selection or {}
-        isolated_role = str(isolated.get("role") or "").strip()
-        if isolated_role:
-            if isolated_role in ("lines", "line", "linear", "element_linear"):
-                idx = int(isolated.get("index", -1))
-                return [idx] if 0 <= idx < len(items) else []
-            return []
+        isolated = list(self._isolated_selection or [])
+        if isolated:
+            LINEAR_ROLES = {"lines", "line", "linear", "element_linear"}
+            # Collecter tous les indexes de filaires isolés
+            line_indexes = set()
+            has_any = False
+            for entry in isolated:
+                role = str(entry.get("role") or "").strip()
+                has_any = True
+                if role in LINEAR_ROLES:
+                    idx = int(entry.get("index", -1))
+                    if 0 <= idx < len(items):
+                        line_indexes.add(idx)
+            if has_any and not line_indexes:
+                # Isolation active mais sur d'autres types → aucun filaire visible
+                return []
+            return sorted(line_indexes)
         section_names = self._filter_section_names
         material_names = self._filter_material_names
         indexes = []
@@ -2168,13 +2231,21 @@ class VTKViewerWidget(QFrame):
         items = list(self._model_data.get("planar_properties", []))
         if not items:
             return []
-        isolated = self._isolated_selection or {}
-        isolated_role = str(isolated.get("role") or "").strip()
-        if isolated_role:
-            if isolated_role in ("planars", "planar", "element_planar"):
-                idx = int(isolated.get("index", -1))
-                return [idx] if 0 <= idx < len(items) else []
-            return []
+        isolated = list(self._isolated_selection or [])
+        if isolated:
+            PLANAR_ROLES = {"planars", "planar", "element_planar"}
+            planar_indexes = set()
+            has_any = False
+            for entry in isolated:
+                role = str(entry.get("role") or "").strip()
+                has_any = True
+                if role in PLANAR_ROLES:
+                    idx = int(entry.get("index", -1))
+                    if 0 <= idx < len(items):
+                        planar_indexes.add(idx)
+            if has_any and not planar_indexes:
+                return []
+            return sorted(planar_indexes)
         thickness_names = self._filter_thickness_names
         material_names = self._filter_material_names
         indexes = []
@@ -2195,32 +2266,40 @@ class VTKViewerWidget(QFrame):
         planar_indexes = self._filtered_planar_indexes()
         filtered_lines = self._select_items_by_indexes(self._model_data.get("lines", []), line_indexes)
         filtered_planars = self._select_items_by_indexes(self._model_data.get("planars", []), planar_indexes)
-        isolated = self._isolated_selection or {}
-        isolated_role = str(isolated.get("role") or "").strip()
-        isolated_index = int(isolated.get("index", -1))
+        isolated = list(self._isolated_selection or [])
+        is_isolated = bool(isolated)
 
         load_areas = list(self._model_data.get("load_areas", []) or [])
         punctual_supports = list(self._model_data.get("punctual_supports", []) or [])
         linear_supports = list(self._model_data.get("linear_supports", []) or [])
         planar_supports = list(self._model_data.get("planar_supports", []) or [])
 
-        if isolated_role:
-            if isolated_role == "load_areas":
-                load_areas = self._select_items_by_indexes(load_areas, [isolated_index])
-            else:
-                load_areas = []
-            if isolated_role == "support_punctual":
-                punctual_supports = self._select_items_by_indexes(punctual_supports, [isolated_index])
-            else:
-                punctual_supports = []
-            if isolated_role == "support_linear":
-                linear_supports = self._select_items_by_indexes(linear_supports, [isolated_index])
-            else:
-                linear_supports = []
-            if isolated_role == "support_planar":
-                planar_supports = self._select_items_by_indexes(planar_supports, [isolated_index])
-            else:
-                planar_supports = []
+        if is_isolated:
+            # Collecter les indexes par type à partir de la liste d'isolation
+            load_area_idxs = []
+            punctual_idxs = []
+            linear_sup_idxs = []
+            planar_sup_idxs = []
+            for entry in isolated:
+                role = str(entry.get("role") or "").strip()
+                idx = int(entry.get("index", -1))
+                if role == "load_areas" and idx >= 0:
+                    load_area_idxs.append(idx)
+                elif role == "support_punctual" and idx >= 0:
+                    punctual_idxs.append(idx)
+                elif role == "support_linear" and idx >= 0:
+                    linear_sup_idxs.append(idx)
+                elif role == "support_planar" and idx >= 0:
+                    planar_sup_idxs.append(idx)
+            load_areas = self._select_items_by_indexes(load_areas, load_area_idxs)
+            punctual_supports = self._select_items_by_indexes(punctual_supports, punctual_idxs)
+            linear_supports = self._select_items_by_indexes(linear_supports, linear_sup_idxs)
+            planar_supports = self._select_items_by_indexes(planar_supports, planar_sup_idxs)
+
+        # Déterminer si des appuis surfaciques sont isolés (pour le centroïde)
+        isolated_has_planar_support = any(
+            str(e.get("role") or "") == "support_planar" for e in isolated
+        ) if is_isolated else False
 
         self.lines_count = len(filtered_lines)
         self.planars_count = len(filtered_planars)
@@ -2290,7 +2369,7 @@ class VTKViewerWidget(QFrame):
             role="support_planar",
             pickable=True,
         )
-        if isolated_role != "support_planar":
+        if not isolated_has_planar_support:
             self.clear_planar_support_result_centroid()
         self._apply_visibility_state()
         self.renderer.ResetCameraClippingRange()
@@ -2302,16 +2381,31 @@ class VTKViewerWidget(QFrame):
         self._filter_material_names = None if material_names is None else set(str(v) for v in material_names)
         self._rebuild_filtered_structural_actors()
 
-    def set_isolated_selection(self, selection: dict | None):
-        if not isinstance(selection, dict):
-            self._isolated_selection = None
-        else:
+    def set_isolated_selection(self, selection):
+        """Isole un ou plusieurs éléments.
+
+        Accepte :
+        - None  → annule l'isolation
+        - dict  {"role": str, "index": int} → isole un seul élément (compatibilité)
+        - list  [{"role": str, "index": int}, ...] → isole plusieurs éléments
+        """
+        if selection is None:
+            self._isolated_selection = []
+        elif isinstance(selection, dict):
             role = str(selection.get("role") or "").strip()
             index = int(selection.get("index", -1))
-            if role and index >= 0:
-                self._isolated_selection = {"role": role, "index": index}
-            else:
-                self._isolated_selection = None
+            self._isolated_selection = [{"role": role, "index": index}] if role and index >= 0 else []
+        elif isinstance(selection, list):
+            valid = []
+            for item in selection:
+                if isinstance(item, dict):
+                    role = str(item.get("role") or "").strip()
+                    index = int(item.get("index", -1))
+                    if role and index >= 0:
+                        valid.append({"role": role, "index": index})
+            self._isolated_selection = valid
+        else:
+            self._isolated_selection = []
         self._rebuild_filtered_structural_actors()
 
     def has_isolated_selection(self) -> bool:

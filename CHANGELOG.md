@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.84
+
+### Sélection multiple
+- Ajout d'une fonction de sélection multiple avec ctrl+clic gauche,
+- Isolation sur sélection multiple,
+- Visualisation des diagrammes sur une sélection multiple d'élement filaires.
+
+### Multiple selection
+- New multiple selection added via ctrl+left clic,
+- Isolate function now supports multiple elements,
+- Result visualisation for linear elements on a multime selection.
+
 ## 1.83
 
 ### Surfaciques

@@ -769,6 +769,9 @@ class MainWindow(QMainWindow):
         self.current_linear_diagram_payload = None
         self.current_results_cases_combinations = []
         self.current_analysis_selection = {}
+        self._current_multi_selection = []   # liste complète lors d'une sélection multiple
+        self._multi_linear_pending = []      # file d'attente pour chargement multi-filaires
+        self._multi_linear_params = {}       # paramètres partagés du chargement multi
         self.analysis_results_worker = None
         self.current_analysis_result_value_label = tr_ui("analysis_result_displacements")
         self.current_analysis_result_type_label = tr_ui("analysis_result_displacements")
@@ -2745,18 +2748,68 @@ class MainWindow(QMainWindow):
         if role in ("lines", "line", "linear", "element_linear") and not value_key:
             self._set_analysis_results_output_message(tr_ui("analysis_results_invalid_linear_value"))
             return
-        if self.viewer is not None and role in ("lines", "line", "linear", "element_linear"):
-            self.viewer.clear_result_diagram()
-        centroid_info = None
+
         if self.viewer is not None:
-            if role == "support_planar":
-                try:
-                    centroid_info = self.viewer.get_planar_support_centroid_info(int(current_selection.get("index", -1)))
-                except Exception:
-                    centroid_info = None
-            else:
-                self.viewer.clear_planar_support_result_centroid()
+            self.viewer.clear_result_diagram()
+            self.viewer.clear_planar_support_result_centroid()
+
         analysis_case_id = int((case_entry or {}).get("eid", (case_entry or {}).get("id", 0)) or 0)
+        self.current_analysis_result_family_key = family_key
+        self.current_analysis_result_type_label = family_label or _analysis_result_display_label(family_key)
+        self.current_analysis_result_value_label = self.current_analysis_result_type_label
+        self.current_analysis_result_component_label = value_key or value_label
+
+        # --- Sélection multiple de filaires : charger chaque élément ---
+        LINEAR_ROLES = {"lines", "line", "linear", "element_linear"}
+        multi = list(self._current_multi_selection or [])
+        is_multi_linear = (
+            len(multi) > 1
+            and all(str(it.get("role") or "") in LINEAR_ROLES for it in multi)
+            and role in LINEAR_ROLES
+        )
+
+        if is_multi_linear:
+            # Récupérer tous les EIDs et positions des filaires sélectionnés
+            all_line_eids = list((self.current_model_data or {}).get("line_eids", []) or [])
+            all_lines = list((self.current_model_data or {}).get("lines", []) or [])
+            all_line_props = list((self.current_model_data or {}).get("line_properties", []) or [])
+            targets = []
+            for it in multi:
+                idx = int(it.get("index", -1))
+                if 0 <= idx < len(all_line_eids) and all_line_eids[idx] is not None:
+                    targets.append({
+                        "index": idx,
+                        "eid": int(all_line_eids[idx]),
+                        "role": it.get("role"),
+                    })
+            if not targets:
+                self._set_analysis_results_output_message(tr_ui("analysis_results_select_supported_element_and_case"))
+                return
+            self.analysis_results_apply_btn.setEnabled(False)
+            self._set_analysis_results_output_message(tr_ui("analysis_results_loading"))
+            self._multi_linear_pending = list(targets)
+            self._multi_linear_params = {
+                "case_id": analysis_case_id,
+                "family_key": family_key,
+                "value_key": value_key,
+                "all_lines": all_lines,
+                "all_line_props": all_line_props,
+                "family_label": family_label,
+                "value_label": value_label,
+                "loaded_count": 0,
+                "total": len(targets),
+            }
+            self._start_next_multi_linear_worker()
+            return
+
+        # --- Sélection unique ---
+        centroid_info = None
+        if self.viewer is not None and role == "support_planar":
+            try:
+                centroid_info = self.viewer.get_planar_support_centroid_info(int(current_selection.get("index", -1)))
+            except Exception:
+                centroid_info = None
+
         self.analysis_results_apply_btn.setEnabled(False)
         self._set_analysis_results_output_message(tr_ui("analysis_results_loading"))
         self.analysis_results_worker = LoadAnalysisResultsWorker(
@@ -2767,14 +2820,65 @@ class MainWindow(QMainWindow):
             role,
             value_key,
         )
-        self.current_analysis_result_family_key = family_key
-        self.current_analysis_result_type_label = family_label or _analysis_result_display_label(family_key)
-        self.current_analysis_result_value_label = self.current_analysis_result_type_label
-        self.current_analysis_result_component_label = value_key or value_label
         self.analysis_results_worker.success.connect(lambda payload, role=role, centroid=centroid_info: self._on_analysis_results_loaded(payload, role, centroid))
         self.analysis_results_worker.error.connect(self._on_analysis_results_error)
         self.analysis_results_worker.finished.connect(self._on_analysis_results_worker_finished)
         self.analysis_results_worker.start()
+
+    def _start_next_multi_linear_worker(self):
+        """Lance le worker pour le prochain filaire de la file multi-sélection."""
+        params = self._multi_linear_params
+        pending = self._multi_linear_pending
+        if not pending or self.project_session is None:
+            if self.analysis_results_apply_btn is not None:
+                self.analysis_results_apply_btn.setEnabled(True)
+            loaded = params.get("loaded_count", 0)
+            total = params.get("total", 0)
+            if loaded == total and total > 0:
+                display_family = params.get("family_label") or _analysis_result_display_label(params.get("family_key", ""))
+                display_comp = params.get("value_label") or params.get("value_key", "")
+                display_title = f"{display_family} {display_comp}" if display_comp else display_family
+                self._set_analysis_results_output_message(
+                    f"Diagrammes affichés : {display_title} ({loaded}/{total} éléments)."
+                )
+            return
+        target = pending.pop(0)
+        worker = LoadAnalysisResultsWorker(
+            self.project_session,
+            int(target["eid"]),
+            int(params["case_id"]),
+            str(params["family_key"]),
+            str(target["role"]),
+            str(params["value_key"]),
+        )
+        worker.success.connect(lambda payload, t=target: self._on_multi_linear_result_loaded(payload, t))
+        worker.error.connect(lambda err: self._on_multi_linear_result_error(err))
+        worker.finished.connect(lambda: self._start_next_multi_linear_worker())
+        self.analysis_results_worker = worker
+        worker.start()
+
+    def _on_multi_linear_result_loaded(self, payload, target: dict):
+        """Appelé quand le résultat d'un filaire en sélection multiple est chargé."""
+        if not isinstance(payload, dict) or payload.get("kind") != "linear_diagram":
+            return
+        params = self._multi_linear_params
+        params["loaded_count"] = params.get("loaded_count", 0) + 1
+        series = list(payload.get("series") or [])
+        if not series or self.viewer is None:
+            return
+        idx = int(target.get("index", -1))
+        all_lines = params.get("all_lines", [])
+        all_props = params.get("all_line_props", [])
+        if idx < 0 or idx >= len(all_lines):
+            return
+        line_property = all_props[idx] if 0 <= idx < len(all_props) else {}
+        unit = str(payload.get("unit") or "").strip()
+        # Ajouter le diagramme sans effacer les précédents (add_linear_result_diagram)
+        self.viewer.add_linear_result_diagram(all_lines[idx], series, str(payload.get("title") or ""), line_property, unit=unit)
+
+    def _on_multi_linear_result_error(self, error_text: str):
+        params = getattr(self, "_multi_linear_params", {})
+        params["loaded_count"] = params.get("loaded_count", 0) + 1
 
     def _on_analysis_results_loaded(self, payload, support_role: str = "", centroid_info=None):
         role = str(support_role or (self.current_analysis_selection or {}).get("role") or "").strip()
@@ -2845,86 +2949,126 @@ class MainWindow(QMainWindow):
         self.analysis_results_worker = None
         self._update_analysis_results_apply_button()
 
-    def on_viewer_selection_changed(self, selection: dict):
+    def on_viewer_selection_changed(self, selection_list: list):
+        """Gestionnaire de changement de sélection.
+
+        Reçoit une liste de dicts {"role": str, "index": int}.
+        Liste vide = aucune sélection.
+        """
         self.current_linear_diagram_payload = None
         if self.viewer is not None:
             self.viewer.clear_planar_support_result_centroid()
             self.viewer.clear_result_diagram()
         if self.viewer is not None and not self.viewer.has_isolated_selection():
             self._apply_isolate_button_icon(False)
-        self._update_analysis_results_value_combo(selection)
-        if not selection:
+
+        # --- Aucune sélection ---
+        if not selection_list:
+            self.current_analysis_selection = {}
+            self._update_analysis_results_value_combo({})
             self._set_properties_message(tr_ui("select_element"))
             return
 
-        role = selection.get("role")
-        if role in ("lines", "line", "linear", "element_linear"):
-            items = []
-            if isinstance(self.current_model_data, dict):
-                items = list(self.current_model_data.get("line_properties", []) or [])
-            index = int(selection.get("index", -1))
-            if 0 <= index < len(items):
-                self._render_linear_element_properties(items[index])
-            else:
-                self._set_properties_message("Aucune propriété disponible pour cet élément filaire.")
+        # --- Sélection unique ---
+        if len(selection_list) == 1:
+            selection = selection_list[0]
+            self._update_analysis_results_value_combo(selection)
+            role = selection.get("role")
+
+            if role in ("lines", "line", "linear", "element_linear"):
+                items = list((self.current_model_data or {}).get("line_properties", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(items):
+                    self._render_linear_element_properties(items[index])
+                else:
+                    self._set_properties_message(tr_ui("prop_no_linear"))
+                return
+
+            if role == "support_punctual":
+                items = list((self.current_model_data or {}).get("punctual_support_properties", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(items):
+                    self._render_punctual_support_properties(items[index])
+                else:
+                    self._set_properties_message("Aucune propriété disponible pour cet appui ponctuel.")
+                return
+
+            if role == "support_linear":
+                items = list((self.current_model_data or {}).get("linear_support_properties", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(items):
+                    self._render_punctual_support_properties(items[index])
+                else:
+                    self._set_properties_message("Aucune propriété disponible pour cet appui linéaire.")
+                return
+
+            if role == "support_planar":
+                items = list((self.current_model_data or {}).get("planar_support_properties", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(items):
+                    self._render_punctual_support_properties(items[index])
+                else:
+                    self._set_properties_message("Aucune propriété disponible pour cet appui surfacique.")
+                return
+
+            if role in ("planars", "planar", "element_planar"):
+                items = list((self.current_model_data or {}).get("planar_properties", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(items):
+                    self._render_planar_element_properties(items[index])
+                else:
+                    self._set_properties_message(tr_ui("prop_no_planar"))
+                return
+
+            if role == "load_areas":
+                items = list((self.current_model_data or {}).get("load_area_properties", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(items):
+                    self._render_load_area_properties(items[index])
+                else:
+                    self._set_properties_message(tr_ui("prop_no_load_area"))
+                return
+
+            self._set_properties_message("Propriétés disponibles pour les éléments filaires, surfaciques et les appuis.")
             return
 
-        if role == "support_punctual":
-            items = []
-            if isinstance(self.current_model_data, dict):
-                items = list(self.current_model_data.get("punctual_support_properties", []) or [])
-            index = int(selection.get("index", -1))
-            if 0 <= index < len(items):
-                self._render_punctual_support_properties(items[index])
-            else:
-                self._set_properties_message("Aucune propriété disponible pour cet appui ponctuel.")
-            return
+        # --- Sélection multiple (len >= 2) ---
+        count = len(selection_list)
+        roles = set(item.get("role") for item in selection_list)
 
-        if role == "support_linear":
-            items = []
-            if isinstance(self.current_model_data, dict):
-                items = list(self.current_model_data.get("linear_support_properties", []) or [])
-            index = int(selection.get("index", -1))
-            if 0 <= index < len(items):
-                self._render_punctual_support_properties(items[index])
+        # Déterminer si homogène : tous "lines" / tous "planars" / tous supports identiques
+        LINEAR_ROLES = {"lines", "line", "linear", "element_linear"}
+        PLANAR_ROLES = {"planars", "planar", "element_planar"}
+        all_roles_normalized = set()
+        for r in roles:
+            if r in LINEAR_ROLES:
+                all_roles_normalized.add("lines")
+            elif r in PLANAR_ROLES:
+                all_roles_normalized.add("planars")
             else:
-                self._set_properties_message("Aucune propriété disponible pour cet appui linéaire.")
-            return
+                all_roles_normalized.add(r)
 
-        if role == "support_planar":
-            items = []
-            if isinstance(self.current_model_data, dict):
-                items = list(self.current_model_data.get("planar_support_properties", []) or [])
-            index = int(selection.get("index", -1))
-            if 0 <= index < len(items):
-                self._render_punctual_support_properties(items[index])
-            else:
-                self._set_properties_message("Aucune propriété disponible pour cet appui surfacique.")
-            return
+        is_homogeneous = len(all_roles_normalized) == 1
+        unified_role = next(iter(all_roles_normalized)) if is_homogeneous else None
 
-        if role in ("planars", "planar", "element_planar"):
-            items = []
-            if isinstance(self.current_model_data, dict):
-                items = list(self.current_model_data.get("planar_properties", []) or [])
-            index = int(selection.get("index", -1))
-            if 0 <= index < len(items):
-                self._render_planar_element_properties(items[index])
-            else:
-                self._set_properties_message("Aucune propriété disponible pour cet élément surfacique.")
-            return
+        # Panneau Propriétés : toujours "sélection multiple"
+        self._set_properties_message(tr_ui("multi_select_properties_unavailable"))
 
-        if role == "load_areas":
-            items = []
-            if isinstance(self.current_model_data, dict):
-                items = list(self.current_model_data.get("load_area_properties", []) or [])
-            index = int(selection.get("index", -1))
-            if 0 <= index < len(items):
-                self._render_load_area_properties(items[index])
-            else:
-                self._set_properties_message(tr_ui("prop_no_load_area"))
-            return
-
-        self._set_properties_message("Propriétés disponibles pour les éléments filaires, surfaciques et les appuis.")
+        # Résultats d'analyse : seulement si homogène filaires
+        if is_homogeneous and unified_role == "lines":
+            # Utiliser le premier item pour les combos (les résultats seront chargés et superposés)
+            first = selection_list[0]
+            self._update_analysis_results_value_combo(first)
+            # Stocker tous les items sélectionnés pour le chargement multi-diagramme
+            self.current_analysis_selection = dict(first)
+            self._current_multi_selection = list(selection_list)
+            self._set_analysis_results_output_message(tr_ui("multi_select_results_linear_hint"))
+        else:
+            # Hétérogène ou non-filaire : griser les résultats
+            self._update_analysis_results_value_combo({})
+            self.current_analysis_selection = {}
+            self._current_multi_selection = list(selection_list)
+            self._set_analysis_results_output_message(tr_ui("multi_select_results_heterogeneous"))
 
     def _install_view_shortcuts(self):
         if self.shortcut_view_front_back is not None:
@@ -3091,14 +3235,21 @@ class MainWindow(QMainWindow):
             self._update_display_checkboxes()
             self._refresh_mesh_display()
             return
-        selection = dict(self.current_analysis_selection or {})
-        role = str(selection.get("role") or "").strip()
-        index = int(selection.get("index", -1))
-        if not role or index < 0:
+        # Récupérer tous les items sélectionnés
+        selected_items = self.viewer.get_selected_items() if self.viewer is not None else []
+        if not selected_items:
+            # Repli sur current_analysis_selection si aucune sélection viewer active
+            selection = dict(self.current_analysis_selection or {})
+            role = str(selection.get("role") or "").strip()
+            index = int(selection.get("index", -1))
+            if role and index >= 0:
+                selected_items = [{"role": role, "index": index}]
+        if not selected_items:
             self._set_analysis_results_output_message("Sélectionnez un élément avant d'activer l'isolation.")
             self._apply_isolate_button_icon(False)
             return
-        self.viewer.set_isolated_selection({"role": role, "index": index})
+        # Passer la liste complète — set_isolated_selection accepte une list
+        self.viewer.set_isolated_selection(selected_items)
         self._apply_isolate_button_icon(True)
         self._update_display_checkboxes()
         self._refresh_mesh_display()

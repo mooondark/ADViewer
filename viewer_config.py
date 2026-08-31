@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.83"
+APP_VERSION = "1.84"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -293,6 +293,11 @@ MSG_UI = {
     "journal": "Journal",
     "properties": "Propriétés",
     "select_element": "Sélectionnez un élément.",
+    "multi_select_properties_unavailable": "Sélection multiple - impossible d'afficher les propriétés.",
+    "multi_select_results_heterogeneous": "Sélection hétérogène - résultats non disponibles.",
+    "multi_select_results_linear_hint": "Sélection multiple de filaires - choisissez un type de résultat et cliquez sur Appliquer.",
+    "multi_select_count": "{count} éléments sélectionnés",
+    "multi_select_add_hint": "Ctrl+clic pour ajouter/retirer de la sélection",
     "takeoff": "Métré",
     "results": "Résultats",
     "clear": "Effacer",
