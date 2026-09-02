@@ -9,7 +9,7 @@
 - Affichage graphique des efforts et moments,
 - Affichage des valeurs des charges dans l'onglet propriétés
 
-### Display of Point Loads
+### Display of Linear Loads
 - Select load cases and scale,
 - Graphical display of forces and moments,
 - Display of load values in the properties tab
