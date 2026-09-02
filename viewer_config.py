@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.85"
+APP_VERSION = "1.86"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -201,6 +201,11 @@ MESH_COLOR = (0.0, 1.0, 0.0)  # #00ff00
 # Charges ponctuelles
 PUNCTUAL_LOAD_COLOR = (1.0, 0.45, 0.0)   # orange vif
 PUNCTUAL_LOAD_SCALE = 1.0                 # facteur d'échelle par défaut (m par kN_max)
+
+# Charges linéaires
+LINEAR_LOAD_COLOR = (1.0, 0.765, 0.059)  # #ffc30f
+LINEAR_LOAD_SCALE = 1.0                  # facteur d'échelle par défaut (m par kN_max)
+LINEAR_LOAD_ARROW_WIDTH = 0.02           # rayon de tige en mètres (défaut)
 
 
 # ======================================================================
@@ -439,8 +444,9 @@ MSG_UI = {
     "analysis_results_export_not_available": "Export impossible pour la sélection courante.",
     "analysis_results_export_no_data": "Aucune donnée de résultat à exporter pour cet élément.",
     "loads_panel_title": "Charges",
+    "loads_general_title": "Général",
     "loads_punctual_title": "Charges ponctuelles",
-    "loads_punctual_scale": "Échelle (m/kN_max)",
+    "loads_punctual_scale": "Echelle (m/kN_max)",
     "loads_load_case_filter": "Cas de charge",
     "loads_load_case_all": "Tous",
     "loads_punctual_count": "{count} charge(s) ponctuelle(s)",
@@ -449,6 +455,10 @@ MSG_UI = {
     "loads_punctual_fx": "Fx",
     "loads_punctual_fy": "Fy",
     "loads_punctual_fz": "Fz",
+    "loads_linear_title": "Charges linéaires",
+    "loads_linear_scale": "Echelle (m/kN_max)",
+    "loads_linear_count": "{count} charge(s) linéaire(s)",
+    "loads_linear_empty": "Aucune charge linéaire dans le modèle.",
 
     "prop_punctual_load": "Charge ponctuelle",
     "prop_punctual_load_fx": "Fx",
@@ -462,6 +472,21 @@ MSG_UI = {
     "prop_punctual_load_unit_kn":  "kN",
     "prop_punctual_load_unit_knm": "kN·m",
     "prop_no_punctual_load": "Aucune propriété disponible pour cette charge.",
+
+    "prop_linear_load": "Charge linéaire",
+    "prop_linear_load_fx": "Fx",
+    "prop_linear_load_fy": "Fy",
+    "prop_linear_load_fz": "Fz",
+    "prop_linear_load_f":  "F résultante",
+    "prop_linear_load_mx": "Mx",
+    "prop_linear_load_my": "My",
+    "prop_linear_load_mz": "Mz",
+    "prop_linear_load_coeff1": "Coefficient 1",
+    "prop_linear_load_coeff2": "Coefficient 2",
+    "prop_linear_load_unit_knm": "kN/m",
+    "prop_linear_load_unit_knm2": "kN.m/m",
+    "prop_no_linear_load": "Aucune propriété disponible pour cette charge linéaire.",
+    "show_linear_loads": "Afficher charges linéaires",
 
     "filter_select_all": "Sélectionner tout",
     "filter_select_none": "Désélectionner tout",
@@ -484,6 +509,7 @@ MSG_UI = {
     "progress_check_results": "Vérification des résultats de calcul...",
     "progress_convert_geometry": "Conversion des géométries...",
     "progress_read_punctual_loads": "Lecture des charges ponctuelles...",
+    "progress_read_linear_loads": "Lecture des charges linéaires...",
     "progress_prepare_results": "Préparation des résultats...",
     "progress_close_project": "Fermeture du projet...",
 
@@ -501,6 +527,7 @@ MSG_UI = {
     "settings_label_support_planar": "Appui surfacique",
     "settings_label_mesh": "Maillage FEM",
     "settings_label_punctual_load_arrows": "Charges ponctuelles",
+    "settings_label_linear_load_arrows": "Charges linéaires",
     "settings_label_thickness": "Épaisseur",
     "settings_label_size": "Taille",
     "settings_linear": "Épaisseur filaires",
@@ -578,8 +605,11 @@ MSG_LOG = {
     "ids_load_area": "Parois trouvées : {count}",
     "ids_support_punctual": "Appuis ponctuels trouvés : {count}",
     "ids_punctual_loads": "Charges ponctuelles trouvées : {count}",
+    "ids_linear_loads": "Charges linéaires trouvées : {count}",
     "show_punctual_loads_on": "Affichage charges ponctuelles : activé",
     "show_punctual_loads_off": "Affichage charges ponctuelles : désactivé",
+    "show_linear_loads_on": "Affichage charges linéaires : activé",
+    "show_linear_loads_off": "Affichage charges linéaires : désactivé",
     "ids_support_linear": "Appuis filaires trouvés : {count}",
     "ids_support_planar": "Appuis surfaciques trouvés : {count}",
     "resolved_materials": "Matériaux résolus : {resolved}/{total}.",

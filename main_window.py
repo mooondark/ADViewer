@@ -126,6 +126,8 @@ class SettingsDialog(QDialog):
         mesh_color,
         punctual_load_arrow_width: float,
         punctual_load_color,
+        linear_load_arrow_width: float,
+        linear_load_color,
         parent=None
     ):
         super().__init__(parent)
@@ -143,6 +145,7 @@ class SettingsDialog(QDialog):
         self.selection_color = selection_color
         self.mesh_color = mesh_color
         self.punctual_load_color = punctual_load_color
+        self.linear_load_color = linear_load_color
 
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -180,6 +183,14 @@ class SettingsDialog(QDialog):
         self.spin_punctual_load_arrow_width.setValue(punctual_load_arrow_width)
         self.spin_punctual_load_arrow_width.setFixedWidth(110)
 
+        # Charge linéaire — épaisseur en mètres (rayon tige)
+        self.spin_linear_load_arrow_width = QDoubleSpinBox()
+        self.spin_linear_load_arrow_width.setRange(0.005, 2.0)
+        self.spin_linear_load_arrow_width.setDecimals(3)
+        self.spin_linear_load_arrow_width.setSingleStep(0.005)
+        self.spin_linear_load_arrow_width.setValue(linear_load_arrow_width)
+        self.spin_linear_load_arrow_width.setFixedWidth(110)
+
         self._add_row(grid,  0, tr_ui("settings_label_linear"),                tr_ui("settings_label_thickness"), self.spin_linear,                      "linear_color",            self.linear_color)
         self._add_row(grid,  1, tr_ui("settings_label_planar"),                tr_ui("settings_label_thickness"), self.spin_planar,                      "planar_color",            self.planar_color)
         self._add_row(grid,  2, tr_ui("settings_label_opening"),               tr_ui("settings_label_thickness"), self.spin_opening,                     "opening_color",           self.opening_color)
@@ -191,6 +202,7 @@ class SettingsDialog(QDialog):
         self._add_row(grid,  8, tr_ui("settings_selection"),                   tr_ui("settings_label_thickness"), self.spin_selection,                   "selection_color",         self.selection_color)
         self._add_row(grid,  9, tr_ui("settings_label_mesh"),                  tr_ui("settings_label_thickness"), self.spin_mesh,                        "mesh_color",              self.mesh_color)
         self._add_row(grid, 10, tr_ui("settings_label_punctual_load_arrows"),  tr_ui("settings_label_thickness"), self.spin_punctual_load_arrow_width,   "punctual_load_color",     self.punctual_load_color)
+        self._add_row(grid, 11, tr_ui("settings_label_linear_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_linear_load_arrow_width,     "linear_load_color",       self.linear_load_color)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
@@ -288,6 +300,7 @@ class SettingsDialog(QDialog):
             "selection_line_width": self.spin_selection.value(),
             "mesh_width": self.spin_mesh.value(),
             "punctual_load_arrow_width": self.spin_punctual_load_arrow_width.value(),
+            "linear_load_arrow_width": self.spin_linear_load_arrow_width.value(),
             "linear_color": self.linear_color,
             "planar_color": self.planar_color,
             "opening_color": self.opening_color,
@@ -298,6 +311,7 @@ class SettingsDialog(QDialog):
             "selection_color": self.selection_color,
             "mesh_color": self.mesh_color,
             "punctual_load_color": self.punctual_load_color,
+            "linear_load_color": self.linear_load_color,
         }
 
 
@@ -800,6 +814,11 @@ class MainWindow(QMainWindow):
         self.chk_punctual_loads = None
         self.cmb_punctual_load_case = None
         self.spin_punctual_load_scale = None
+        # Charges linéaires
+        self._linear_load_cases: list = []
+        self.chk_linear_loads = None
+        self.cmb_linear_load_case = None
+        self.spin_linear_load_scale = None
         self.results_sections_state = {
             "linear_section": True,
             "linear_material": True,
@@ -865,6 +884,7 @@ class MainWindow(QMainWindow):
             "selection_line_width": str(self.viewer.selection_line_width),
             "mesh_width": str(self.viewer.mesh_line_width),
             "punctual_load_arrow_width": str(self.viewer.punctual_load_arrow_width),
+            "linear_load_arrow_width": str(self.viewer.linear_load_arrow_width),
         }
         cfg["colors"] = {
             "linear_color": self._format_color(self.viewer.linear_color),
@@ -877,6 +897,7 @@ class MainWindow(QMainWindow):
             "selection_color": self._format_color(self.viewer.selection_color),
             "mesh_color": self._format_color(self.viewer.mesh_color),
             "punctual_load_color": self._format_color(self.viewer.punctual_load_color),
+            "linear_load_color": self._format_color(self.viewer.linear_load_color),
         }
 
         with open(self._config_path(), "w", encoding="utf-8") as f:
@@ -950,6 +971,10 @@ class MainWindow(QMainWindow):
             self.viewer.set_punctual_load_style(
                 self._parse_color(colors.get("punctual_load_color", self._format_color(self.viewer.punctual_load_color)), self.viewer.punctual_load_color),
                 float(styles.get("punctual_load_arrow_width", self.viewer.punctual_load_arrow_width)),
+            )
+            self.viewer.set_linear_load_style(
+                self._parse_color(colors.get("linear_load_color", self._format_color(self.viewer.linear_load_color)), self.viewer.linear_load_color),
+                float(styles.get("linear_load_arrow_width", self.viewer.linear_load_arrow_width)),
             )
             self.apply_view_projection(self.view_projection_mode, save=False)
             pass
@@ -1465,6 +1490,12 @@ class MainWindow(QMainWindow):
         self.chk_punctual_loads.toggled.connect(self.on_toggle_punctual_loads)
         action_card.layout.addWidget(self.chk_punctual_loads)
 
+        self.chk_linear_loads = QCheckBox(tr_ui("show_linear_loads"))
+        self.chk_linear_loads.setChecked(False)
+        self.chk_linear_loads.setEnabled(False)
+        self.chk_linear_loads.toggled.connect(self.on_toggle_linear_loads)
+        action_card.layout.addWidget(self.chk_linear_loads)
+
         self.chk_color_by_section = QCheckBox(tr_ui("color_by_section"))
         self.chk_color_by_section.setChecked(True)
         self.chk_color_by_section.toggled.connect(self.on_toggle_color_by_section)
@@ -1651,12 +1682,12 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(6, 6, 6, 6)
         layout.setSpacing(6)
 
-        # --- Titre section charges ponctuelles ---
-        title = QLabel(tr_ui("loads_punctual_title"))
-        title.setObjectName("cardTitle")
-        layout.addWidget(title)
+        # --- Titre général ---
+        title_general = QLabel(tr_ui("loads_general_title"))
+        title_general.setObjectName("cardTitle")
+        layout.addWidget(title_general)
 
-        # --- Filtre cas de charge ---
+        # --- Filtre cas de charge (commun aux deux types) ---
         lc_label = QLabel(tr_ui("loads_load_case_filter"))
         layout.addWidget(lc_label)
         self.cmb_punctual_load_case = QComboBox()
@@ -1664,7 +1695,12 @@ class MainWindow(QMainWindow):
         self.cmb_punctual_load_case.currentIndexChanged.connect(self._on_punctual_load_case_changed)
         layout.addWidget(self.cmb_punctual_load_case)
 
-        # --- Échelle ---
+        # --- Titre charges ponctuelles ---
+        title_punctual = QLabel(tr_ui("loads_punctual_title"))
+        title_punctual.setObjectName("cardTitle")
+        layout.addWidget(title_punctual)
+
+        # --- Echelle ponctuelles ---
         scale_row = QHBoxLayout()
         scale_row.setContentsMargins(0, 0, 0, 0)
         scale_row.setSpacing(6)
@@ -1681,11 +1717,39 @@ class MainWindow(QMainWindow):
         scale_row.addStretch(1)
         layout.addLayout(scale_row)
 
-        # --- Message d'état ---
-        self._loads_status_label = QLabel(tr_ui("loads_punctual_empty"))
-        self._loads_status_label.setWordWrap(True)
-        self._loads_status_label.setStyleSheet(f"color:{FG_DIM};")
-        layout.addWidget(self._loads_status_label)
+        # --- Message d'état charges ponctuelles ---
+        self._loads_punctual_status_label = QLabel(tr_ui("loads_punctual_empty"))
+        self._loads_punctual_status_label.setWordWrap(True)
+        self._loads_punctual_status_label.setStyleSheet(f"color:{FG_DIM};")
+        layout.addWidget(self._loads_punctual_status_label)
+
+        # --- Titre charges linéaires ---
+        title_linear = QLabel(tr_ui("loads_linear_title"))
+        title_linear.setObjectName("cardTitle")
+        layout.addWidget(title_linear)
+
+        # --- Echelle linéaires ---
+        scale_row2 = QHBoxLayout()
+        scale_row2.setContentsMargins(0, 0, 0, 0)
+        scale_row2.setSpacing(6)
+        scale_label2 = QLabel(tr_ui("loads_linear_scale"))
+        scale_row2.addWidget(scale_label2)
+        self.spin_linear_load_scale = QDoubleSpinBox()
+        self.spin_linear_load_scale.setRange(0.1, 100.0)
+        self.spin_linear_load_scale.setDecimals(2)
+        self.spin_linear_load_scale.setSingleStep(0.1)
+        self.spin_linear_load_scale.setValue(1.0)
+        self.spin_linear_load_scale.setEnabled(False)
+        self.spin_linear_load_scale.valueChanged.connect(self._on_linear_load_scale_changed)
+        scale_row2.addWidget(self.spin_linear_load_scale)
+        scale_row2.addStretch(1)
+        layout.addLayout(scale_row2)
+
+        # --- Message d'état charges linéaires ---
+        self._loads_linear_status_label = QLabel(tr_ui("loads_linear_empty"))
+        self._loads_linear_status_label.setWordWrap(True)
+        self._loads_linear_status_label.setStyleSheet(f"color:{FG_DIM};")
+        layout.addWidget(self._loads_linear_status_label)
 
         layout.addStretch(1)
         return loads_tab
@@ -2636,6 +2700,63 @@ class MainWindow(QMainWindow):
         layout.addWidget(table)
         layout.addStretch(1)
 
+    def _render_linear_load_properties(self, load: dict):
+        """Affiche les propriétés d'une charge linéaire sélectionnée."""
+        import math
+        if self.properties_container is None:
+            return
+        layout = self.properties_container.layout()
+        if layout is None:
+            layout = QVBoxLayout(self.properties_container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(8)
+        self._clear_layout_widgets(layout)
+
+        # Titre : "Charge linéaire n°ID - Cas de charge"
+        user_id  = load.get("user_id")
+        lc_label = str(load.get("load_case_label") or "")
+        base = tr_ui("prop_linear_load")
+        id_part  = f" n\u00b0{user_id}" if user_id not in (None, "") else ""
+        lc_part  = f" - {lc_label}" if lc_label else ""
+        title = f"{base}{id_part}{lc_part}"
+        self._add_properties_type_label(layout, title)
+        self._add_properties_spacer(layout, 8)
+
+        fx   = float(load.get("fx") or 0.0)
+        fy   = float(load.get("fy") or 0.0)
+        fz   = float(load.get("fz") or 0.0)
+        mx   = float(load.get("mx") or 0.0)
+        my   = float(load.get("my") or 0.0)
+        mz   = float(load.get("mz") or 0.0)
+        f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
+        c1   = float(load.get("coeff1") or 1.0)
+        c2   = float(load.get("coeff2") or 1.0)
+
+        def _fmt(v): return f"{v:.4g}"
+
+        unit_f = tr_ui("prop_linear_load_unit_knm")
+        unit_m = tr_ui("prop_linear_load_unit_knm2")
+
+        rows = [
+            (tr_ui("prop_linear_load_fx"), f"{_fmt(fx)} {unit_f}"),
+            (tr_ui("prop_linear_load_fy"), f"{_fmt(fy)} {unit_f}"),
+            (tr_ui("prop_linear_load_fz"), f"{_fmt(fz)} {unit_f}"),
+            (tr_ui("prop_linear_load_f"),  f"{_fmt(f_res)} {unit_f}"),
+            (tr_ui("prop_linear_load_mx"), f"{_fmt(mx)} {unit_m}"),
+            (tr_ui("prop_linear_load_my"), f"{_fmt(my)} {unit_m}"),
+            (tr_ui("prop_linear_load_mz"), f"{_fmt(mz)} {unit_m}"),
+            (tr_ui("prop_linear_load_coeff1"), f"{c1:.2f}"),
+            (tr_ui("prop_linear_load_coeff2"), f"{c2:.2f}"),
+        ]
+
+        table = self._create_properties_table(len(rows))
+        for row, (name, value) in enumerate(rows):
+            self._set_table_name_item(table, row, name)
+            self._set_table_value_item(table, row, value)
+        self._finalize_properties_table(table)
+        layout.addWidget(table)
+        layout.addStretch(1)
+
     def _render_punctual_support_properties(self, data: dict):
         if self.properties_container is None:
             return
@@ -3170,6 +3291,15 @@ class MainWindow(QMainWindow):
                     self._set_properties_message(tr_ui("prop_no_punctual_load"))
                 return
 
+            if role == "linear_load":
+                loads = list((self.current_model_data or {}).get("linear_loads", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(loads):
+                    self._render_linear_load_properties(loads[index])
+                else:
+                    self._set_properties_message(tr_ui("prop_no_linear_load"))
+                return
+
             self._set_properties_message("Propriétés disponibles pour les éléments filaires, surfaciques et les appuis.")
             return
 
@@ -3438,6 +3568,9 @@ class MainWindow(QMainWindow):
         if self.chk_punctual_loads is not None:
             n = counts.get("punctual_loads", 0)
             self.chk_punctual_loads.setText(self._format_display_checkbox_text("show_punctual_loads", n))
+        if self.chk_linear_loads is not None:
+            n = counts.get("linear_loads", 0)
+            self.chk_linear_loads.setText(self._format_display_checkbox_text("show_linear_loads", n))
         # Le maillage n'est disponible que si le fichier chargé possède des résultats.
         has_results = bool(self.current_model_has_analysis_results)
         if self.chk_mesh is not None:
@@ -3675,6 +3808,8 @@ class MainWindow(QMainWindow):
             self.viewer.mesh_color,
             self.viewer.punctual_load_arrow_width,
             self.viewer.punctual_load_color,
+            self.viewer.linear_load_arrow_width,
+            self.viewer.linear_load_color,
             self
         )
         if dlg.exec() == QDialog.Accepted:
@@ -3712,6 +3847,10 @@ class MainWindow(QMainWindow):
             self.viewer.set_punctual_load_style(
                 values["punctual_load_color"],
                 values["punctual_load_arrow_width"],
+            )
+            self.viewer.set_linear_load_style(
+                values["linear_load_color"],
+                values["linear_load_arrow_width"],
             )
 
             self.log(
@@ -3778,19 +3917,31 @@ class MainWindow(QMainWindow):
             self.viewer.set_show_punctual_loads(checked)
         self.log(tr_log("show_punctual_loads_on" if checked else "show_punctual_loads_off"), "info")
 
+    def on_toggle_linear_loads(self, checked: bool):
+        if self.viewer:
+            self.viewer.set_show_linear_loads(checked)
+        self.log(tr_log("show_linear_loads_on" if checked else "show_linear_loads_off"), "info")
+
     def _populate_punctual_load_case_combo(self, load_cases: list):
-        """Peuple le combo de filtre par cas de charge des charges ponctuelles."""
+        """Peuple le combo de filtre par cas de charge (union charges ponctuelles + linéaires)."""
         if self.cmb_punctual_load_case is None:
             return
-        self.cmb_punctual_load_case.blockSignals(True)
-        self.cmb_punctual_load_case.clear()
-        # Premier item = tous les cas
-        self.cmb_punctual_load_case.addItem(tr_ui("loads_load_case_all"), None)
+        # Fusionner les cas des deux types (dédoublonnage par EID)
+        all_cases_by_eid = {}
         for lc in (load_cases or []):
             eid = lc.get("eid")
-            label = str(lc.get("label") or str(eid))
+            if eid not in all_cases_by_eid:
+                all_cases_by_eid[eid] = str(lc.get("label") or str(eid))
+        for lc in (self._linear_load_cases or []):
+            eid = lc.get("eid")
+            if eid not in all_cases_by_eid:
+                all_cases_by_eid[eid] = str(lc.get("label") or str(eid))
+        self.cmb_punctual_load_case.blockSignals(True)
+        self.cmb_punctual_load_case.clear()
+        self.cmb_punctual_load_case.addItem(tr_ui("loads_load_case_all"), None)
+        for eid, label in all_cases_by_eid.items():
             self.cmb_punctual_load_case.addItem(label, eid)
-        has_cases = bool(load_cases)
+        has_cases = bool(all_cases_by_eid)
         self.cmb_punctual_load_case.setEnabled(has_cases)
         self.cmb_punctual_load_case.blockSignals(False)
 
@@ -3799,11 +3950,18 @@ class MainWindow(QMainWindow):
             return
         case_eid = self.cmb_punctual_load_case.currentData()
         self.viewer.set_punctual_load_case_filter(case_eid)
+        # Appliquer aussi aux charges linéaires (filtre commun)
+        self.viewer.set_linear_load_case_filter(case_eid)
 
     def _on_punctual_load_scale_changed(self, value: float):
         if self.viewer is None:
             return
         self.viewer.set_punctual_load_scale(value)
+
+    def _on_linear_load_scale_changed(self, value: float):
+        if self.viewer is None:
+            return
+        self.viewer.set_linear_load_scale(value)
 
     def on_toggle_color_by_section(self, checked: bool):
         if self.viewer:
@@ -3921,6 +4079,14 @@ class MainWindow(QMainWindow):
             self.cmb_punctual_load_case.setEnabled(False)
         if self.spin_punctual_load_scale is not None and loading:
             self.spin_punctual_load_scale.setEnabled(False)
+        if self.chk_linear_loads is not None:
+            if loading:
+                self.chk_linear_loads.setEnabled(False)
+                self.chk_linear_loads.blockSignals(True)
+                self.chk_linear_loads.setChecked(False)
+                self.chk_linear_loads.blockSignals(False)
+        if self.spin_linear_load_scale is not None and loading:
+            self.spin_linear_load_scale.setEnabled(False)
 
         if loading:
             self.load_btn.setText(tr_ui("loading"))
@@ -4020,22 +4186,46 @@ class MainWindow(QMainWindow):
         punctual_loads = list((model_data or {}).get("punctual_loads", []) or [])
         self.viewer.load_punctual_loads(punctual_loads)
         self._populate_punctual_load_case_combo(self._punctual_load_cases)
-        has_loads = bool(punctual_loads)
+        has_punctual = bool(punctual_loads)
         if self.chk_punctual_loads is not None:
-            self.chk_punctual_loads.setEnabled(has_loads)
-            if not has_loads:
+            self.chk_punctual_loads.setEnabled(has_punctual)
+            if not has_punctual:
                 self.chk_punctual_loads.blockSignals(True)
                 self.chk_punctual_loads.setChecked(False)
                 self.chk_punctual_loads.blockSignals(False)
         if self.spin_punctual_load_scale is not None:
-            self.spin_punctual_load_scale.setEnabled(has_loads)
-        if hasattr(self, "_loads_status_label") and self._loads_status_label is not None:
-            if has_loads:
-                self._loads_status_label.setText(
+            self.spin_punctual_load_scale.setEnabled(has_punctual)
+        if hasattr(self, "_loads_punctual_status_label") and self._loads_punctual_status_label is not None:
+            if has_punctual:
+                self._loads_punctual_status_label.setText(
                     tr_ui("loads_punctual_count", count=len(punctual_loads))
                 )
             else:
-                self._loads_status_label.setText(tr_ui("loads_punctual_empty"))
+                self._loads_punctual_status_label.setText(tr_ui("loads_punctual_empty"))
+
+        # Charges linéaires
+        self._linear_load_cases = list((model_data or {}).get("linear_load_cases", []) or [])
+        linear_loads = list((model_data or {}).get("linear_loads", []) or [])
+        self.viewer.load_linear_loads(linear_loads)
+        has_linear = bool(linear_loads)
+        if self.chk_linear_loads is not None:
+            self.chk_linear_loads.setEnabled(has_linear)
+            if not has_linear:
+                self.chk_linear_loads.blockSignals(True)
+                self.chk_linear_loads.setChecked(False)
+                self.chk_linear_loads.blockSignals(False)
+        if self.spin_linear_load_scale is not None:
+            self.spin_linear_load_scale.setEnabled(has_linear)
+        if hasattr(self, "_loads_linear_status_label") and self._loads_linear_status_label is not None:
+            if has_linear:
+                self._loads_linear_status_label.setText(
+                    tr_ui("loads_linear_count", count=len(linear_loads))
+                )
+            else:
+                self._loads_linear_status_label.setText(tr_ui("loads_linear_empty"))
+
+        # Re-peupler la combo maintenant que les deux listes de cas sont connues
+        self._populate_punctual_load_case_combo(self._punctual_load_cases)
 
         self._update_display_checkboxes()
         self.viewer.apply_display_state(

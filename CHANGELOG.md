@@ -2,14 +2,26 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.86
+
+### Affichage des charges linéaires
+- Choix des cas de charges et de l'échelle,
+- Affichage graphique des efforts et moments,
+- Affichage des valeurs des charges dans l'onglet propriétés
+
+### Display of Point Loads
+- Select load cases and scale,
+- Graphical display of forces and moments,
+- Display of load values in the properties tab
+
 ## 1.85
 
-## Affichage des charges ponctuelles
+### Affichage des charges ponctuelles
 - Choix des cas de charges et de l'échelle dans un onglet dédié,
 - Affichage graphique des efforts et moments,
 - Affichage des valeurs des charges dans l'onglet propriétés
 
-## Display of Point Loads
+### Display of Point Loads
 - Select load cases and scale in a dedicated tab,
 - Graphical display of forces and moments,
 - Display of load values in the properties tab
