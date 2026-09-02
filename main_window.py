@@ -32,7 +32,7 @@ except ImportError as e:
 
 try:
     from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF
-    from PySide6.QtGui import QAction, QActionGroup, QTextCursor, QColor, QIcon, QPixmap, QPainter, QPen, QKeySequence, QShortcut
+    from PySide6.QtGui import QAction, QActionGroup, QTextCursor, QColor, QIcon, QPixmap, QPainter, QPen, QKeySequence, QShortcut, QPainterPath, QBrush, QPolygonF
     from PySide6.QtWidgets import (
         QApplication, QMainWindow, QWidget, QFileDialog, QFrame, QLabel,
         QPushButton, QLineEdit, QTextEdit, QVBoxLayout, QHBoxLayout,
@@ -977,123 +977,268 @@ class MainWindow(QMainWindow):
                 float(styles.get("linear_load_arrow_width", self.viewer.linear_load_arrow_width)),
             )
             self.apply_view_projection(self.view_projection_mode, save=False)
-            pass
+            self.apply_theme(loaded_theme)
         finally:
             self._suspend_config_save = False
         if config_updated:
             self.save_config()
+    # Donnees PNG (56x56) generees depuis les SVG fournis par l'utilisateur.
+    # Chaque entree est une chaine base64 representant l'image PNG.
+    _SVG_ICON_DATA = {
+        "front_back": (
+            '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'
+        ),
+        "left_right": (
+            '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'
+            'YoyDAAAAAElFTkSuQmCC'
+        ),
+        "top_bottom": (
+            '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'
+        ),
+        "iso": (
+            'iVBORw0KGgoAAAANSUhEUgAAADgAAAA4CAYAAACohjseAAAABmJLR0QA/wD/AP+gvaeTAAADIUlE'
+            'QVRoge3aPYgeRRzH8U9iXgRRSKF4hxpBJIXgRR80KrEwEN8IyYFaiAdGAgHLYKWIkNpOO7G2sUkK'
+            'Kw2K2omgIGhpoVHxDXxDo6LFzJp1fZ673Z3/+DwH94Xjntnd++18b2b22Z1ZttjcbAvIWMZSQE4U'
+            'f+JD/EW54ASvYxcuFGZFcDl2YL8kWcQE3+FLHC0NC+AYfpL+0ZPSsEbuKTHdvJRG7hi+Vih4C77B'
+            '0+X1CuFB/IDVXC4SnCb3bN4+D7pyFAjOarm3sTYmsJBpcowUXK9bPoTrhgYWMkuOEYKLOOZ+NF2O'
+            'gYJ95Pbi0r6BhWwkxwDBvi33Fh7tE1hIHzl6Cg7plmfzyWvSV44egpttzHVZV3Czy9ER3NHasYxz'
+            'eduh/DNv7pS+Y8+MDWgLLuXyiYEZp/EG3hlbiRncjd0K5Pi3IPyGVwdm/IIP8HlJRaawW3rsKaIr'
+            'OIbXAjKqsT0gYx8uC8ipQoTgS9Jz2EISIXge3wbkVCFiDP4ft2mjiWjBhSZC8HncEZBThQjBA7gh'
+            'IKcKEWPwND4KyKlChOC5gIxqRHTRFVwRkFOFCMEXcCQgpwoRgp/iq4CcKkSMwccDMqqx9UXfgxdx'
+            'MCCnClFX0b0BOVWIGIPP4JOAnCpECL4bkFGNiC56G/bkz1fiEdzV2n8ob2tuBpZy+UDrmMN42MWZ'
+            'gWtwe+c8D+RjmmWC63NOe97miDSX8w+lgvfjTRdvtvfhpLTi1PBY3tasQN2Uy+1ZgON523Iur+Ce'
+            'zrlO5GOuyuVbc/m+XL4EL+MP6SH8P0ykSdMhHMS9A/+mL2vS2mNfTuF7qUdNZYjgtQNOPJYhgjPl'
+            'xnTRo/hYGieLwCk8J/Wk97o7xwjeKM3DfFZWrxDWlesyZgzWZKMuuuGYo38LrkpXpkV4J4YBLddX'
+            '8Ak8Kb//NWcGdcs2m6GL9uqWbdZrwVW8Mrxe1Rjdcg3tFtwpTccPWVmNpt2Cg1uuYdbN9u+4Ov+e'
+            'N8Ut1zDBr9L93SKwhp+ltxpHv1zXvuyvSCu1F3LwvGlesj2M98eGbOt8vlnMM2IU5/HFvCuxxTz5'
+            'G9qimV6Q3VxVAAAAAElFTkSuQmCC'
+        ),
+        "filter": (
+            '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'
+            'cRkPAAAAAElFTkSuQmCC'
+        ),
+        "filter_clear": (
+            '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'
+            'ull2qbmKz2YAAAAASUVORK5CYII='
+        ),
+    }
+
     def _make_view_icon(self, kind: str) -> QIcon:
-        size = 24
-        pm = QPixmap(size, size)
+        """Cree une icone a partir des donnees PNG embarquees (converties depuis SVG)."""
+        import base64
+        # Correspondance kind -> cle dans _SVG_ICON_DATA
+        key_map = {
+            "front_back":   "front_back",
+            "left_right":   "left_right",
+            "top_bottom":   "top_bottom",
+            "iso":          "iso",
+            "isometric":    "iso",
+            "filter":       "filter",
+            "filter_clear": "filter_clear",
+        }
+        key = key_map.get(kind)
+        if key and key in self._SVG_ICON_DATA:
+            raw = base64.b64decode(''.join(self._SVG_ICON_DATA[key]))
+            pm = QPixmap()
+            pm.loadFromData(raw)
+            # Adapter la couleur si theme sombre : inverser uniquement RGB, pas le canal alpha
+            is_dark = getattr(self, 'theme_name', DEFAULT_THEME) == 'dark'
+            if is_dark:
+                from PySide6.QtGui import QImage
+                img = pm.toImage().convertToFormat(QImage.Format_ARGB32)
+                img.invertPixels(QImage.InvertRgb)
+                pm = QPixmap.fromImage(img)
+            return QIcon(pm)
+        # Fallback : icone vide
+        pm = QPixmap(28, 28)
         pm.fill(Qt.transparent)
-
-        painter = QPainter(pm)
-        painter.setRenderHint(QPainter.Antialiasing, True)
-
-        # Détecter le thème pour choisir la couleur d'icône
-        is_dark = getattr(self, 'theme_name', DEFAULT_THEME) == 'dark'
-
-        if is_dark:
-            # Thème sombre : fond légèrement plus clair sous l'icône pour détacher du bouton
-            # puis trait blanc épais par-dessus
-            bg_pen = QPen(QColor(60, 70, 90, 180))
-            bg_pen.setWidth(6)
-            bg_pen.setJoinStyle(Qt.RoundJoin)
-            bg_pen.setCapStyle(Qt.RoundCap)
-            painter.setPen(bg_pen)
-            self._paint_icon_shape(painter, kind, size, offset=1)
-
-            pen = QPen(QColor(220, 220, 230))
-            pen.setWidth(2)
-            pen.setJoinStyle(Qt.RoundJoin)
-            pen.setCapStyle(Qt.RoundCap)
-            painter.setPen(pen)
-            self._paint_icon_shape(painter, kind, size, offset=0)
-        else:
-            # Thème clair : icône foncée simple
-            pen = QPen(QColor(40, 40, 60))
-            pen.setWidth(2)
-            pen.setJoinStyle(Qt.RoundJoin)
-            pen.setCapStyle(Qt.RoundCap)
-            painter.setPen(pen)
-            self._paint_icon_shape(painter, kind, size, offset=0)
-
-        painter.end()
         return QIcon(pm)
 
-    def _paint_icon_shape(self, painter: QPainter, kind: str, size: int, offset: int = 0):
-        """Dessine la forme géométrique de l'icône (24x24)."""
-        o = offset
-        s = size
-        scale = s / 20.0
 
-        def sx(x): return int(round(x * scale)) + o
-        def sy(y): return int(round(y * scale)) + o
-
-        if kind == "front_back":
-            painter.drawRect(sx(6), sy(5), int(8*scale), int(10*scale))
-            painter.drawLine(sx(2), sy(10), sx(5), sy(10))
-            painter.drawLine(sx(4), sy(8), sx(2), sy(10))
-            painter.drawLine(sx(4), sy(12), sx(2), sy(10))
-            painter.drawLine(sx(15), sy(10), sx(18), sy(10))
-            painter.drawLine(sx(16), sy(8), sx(18), sy(10))
-            painter.drawLine(sx(16), sy(12), sx(18), sy(10))
-        elif kind == "left_right":
-            painter.drawLine(sx(4), sy(4), sx(4), sy(16))
-            painter.drawLine(sx(16), sy(4), sx(16), sy(16))
-            painter.drawLine(sx(6), sy(10), sx(14), sy(10))
-            painter.drawLine(sx(8), sy(8), sx(6), sy(10))
-            painter.drawLine(sx(8), sy(12), sx(6), sy(10))
-            painter.drawLine(sx(12), sy(8), sx(14), sy(10))
-            painter.drawLine(sx(12), sy(12), sx(14), sy(10))
-        elif kind == "top_bottom":
-            painter.drawLine(sx(4), sy(4), sx(16), sy(4))
-            painter.drawLine(sx(4), sy(16), sx(16), sy(16))
-            painter.drawLine(sx(10), sy(6), sx(10), sy(14))
-            painter.drawLine(sx(8), sy(8), sx(10), sy(6))
-            painter.drawLine(sx(12), sy(8), sx(10), sy(6))
-            painter.drawLine(sx(8), sy(12), sx(10), sy(14))
-            painter.drawLine(sx(12), sy(12), sx(10), sy(14))
-        elif kind == "filter":
-            painter.drawLine(sx(4), sy(4), sx(16), sy(4))
-            painter.drawLine(sx(4), sy(4), sx(9), sy(10))
-            painter.drawLine(sx(16), sy(4), sx(11), sy(10))
-            painter.drawLine(sx(9), sy(10), sx(9), sy(16))
-            painter.drawLine(sx(11), sy(10), sx(11), sy(16))
-            painter.drawLine(sx(9), sy(16), sx(11), sy(16))
-        elif kind == "filter_clear":
-            painter.drawLine(sx(4), sy(4), sx(16), sy(4))
-            painter.drawLine(sx(4), sy(4), sx(9), sy(10))
-            painter.drawLine(sx(16), sy(4), sx(11), sy(10))
-            painter.drawLine(sx(9), sy(10), sx(9), sy(16))
-            painter.drawLine(sx(11), sy(10), sx(11), sy(16))
-            painter.drawLine(sx(9), sy(16), sx(11), sy(16))
-            slash_pen = QPen(QColor(255, 80, 80))
-            slash_pen.setWidth(int(2*scale))
-            old_pen = painter.pen()
-            painter.setPen(slash_pen)
-            painter.drawLine(sx(3), sy(17), sx(17), sy(3))
-            painter.setPen(old_pen)
-        else:
-            painter.drawLine(sx(6), sy(4), sx(14), sy(4))
-            painter.drawLine(sx(14), sy(4), sx(17), sy(8))
-            painter.drawLine(sx(17), sy(8), sx(9), sy(8))
-            painter.drawLine(sx(9), sy(8), sx(6), sy(4))
-            painter.drawLine(sx(6), sy(4), sx(6), sy(12))
-            painter.drawLine(sx(6), sy(12), sx(9), sy(16))
-            painter.drawLine(sx(9), sy(16), sx(17), sy(16))
-            painter.drawLine(sx(17), sy(16), sx(17), sy(8))
-            painter.drawLine(sx(9), sy(8), sx(9), sy(16))
-
+    def _refresh_toolbar_icons(self):
+        """Reapplique les icones de la toolbar apres un changement de theme."""
+        btn_kinds = [
+            (self.view_front_btn,  "front_back"),
+            (self.view_left_btn,   "left_right"),
+            (self.view_top_btn,    "top_bottom"),
+            (self.view_iso_btn,    "iso"),
+            (self.filter_btn,      "filter"),
+            (self.clear_filter_btn,"filter_clear"),
+        ]
+        for btn, kind in btn_kinds:
+            if btn is not None:
+                btn.setIcon(self._make_view_icon(kind))
+        # Rafraichir aussi l'icone isoler
+        if self.isolate_btn is not None:
+            active = self.isolate_btn.isChecked()
+            self._apply_isolate_button_icon(active)
 
     def _setup_view_button(self, button, kind: str, tooltip: str):
         button.setText("")
         button.setToolTip(tooltip)
         button.setIcon(self._make_view_icon(kind))
-        button.setIconSize(QSize(18, 18))
-        button.setMinimumWidth(32)
-        button.setMinimumHeight(26)
-        button.setMaximumHeight(26)
+        button.setIconSize(QSize(24, 24))
+        button.setMinimumWidth(34)
+        button.setMinimumHeight(30)
+        button.setMaximumHeight(30)
         button.setObjectName("iconBtn")
 
     def _apply_style(self):
@@ -1386,8 +1531,8 @@ class MainWindow(QMainWindow):
         self.isolate_btn.setProperty("iconOnly", True)
         self.isolate_btn.setText("")
         self.isolate_btn.setToolTip(tr_ui("tooltip_isolate"))
-        self.isolate_btn.setMinimumWidth(34)
-        self.isolate_btn.setMaximumWidth(34)
+        self.isolate_btn.setMinimumWidth(36)
+        self.isolate_btn.setMaximumWidth(36)
         self.isolate_btn.clicked.connect(self.toggle_isolation)
         self._apply_isolate_button_icon(False)
 
@@ -3451,38 +3596,53 @@ class MainWindow(QMainWindow):
         self._refresh_mesh_display()
 
     def _make_isolate_icon(self, active: bool):
-        size = 18
+        """Icone isoler : element central mis en avant, voisins estompes."""
+        size = 28
         pix = QPixmap(size, size)
         pix.fill(Qt.transparent)
         painter = QPainter(pix)
         painter.setRenderHint(QPainter.Antialiasing, True)
-        stroke = QColor(ACCENT if active else FG)
-        faint = QColor(FG_DIM)
-        pen = QPen(stroke, 1.25)
-        pen_faint = QPen(faint, 1.15)
+
+        is_dark = getattr(self, 'theme_name', DEFAULT_THEME) == 'dark'
+        if is_dark:
+            stroke_dim = QColor(140, 150, 165)
+        else:
+            stroke_dim = QColor(150, 155, 170)
+
+        accent_color = QColor(ACCENT) if active else QColor(30, 100, 200)
+        cx, cy = size / 2.0, size / 2.0
+
+        # Elements secondaires estompes
+        pen_dim = QPen(stroke_dim, 1.0)
+        pen_dim.setJoinStyle(Qt.RoundJoin)
+        painter.setPen(pen_dim)
+        painter.setBrush(Qt.NoBrush)
+        small_w, small_h = 5.0, 4.0
+        for bx, by in [(cx - 10, cy - 8), (cx + 5, cy - 8),
+                       (cx - 10, cy + 4), (cx + 5, cy + 4)]:
+            painter.drawRoundedRect(QRectF(bx, by, small_w, small_h), 1, 1)
+
+        # Element central isole
+        pen_acc = QPen(accent_color, 2.0)
+        pen_acc.setJoinStyle(Qt.RoundJoin)
+        painter.setPen(pen_acc)
+        fill_color = QColor(accent_color)
+        fill_color.setAlpha(40)
+        painter.setBrush(QBrush(fill_color))
+        center_w, center_h = 10.0, 8.0
+        painter.drawRoundedRect(QRectF(cx - center_w / 2, cy - center_h / 2, center_w, center_h), 2, 2)
         painter.setBrush(Qt.NoBrush)
 
-        left_x = 1.4
-        left_w = 4.2
-        left_h = 3.1
-        left_ys = [1.2, 7.1, 13.0]
-
-        painter.setPen(pen)
-        for y in left_ys:
-            rect = QRectF(left_x, y, left_w, left_h)
-            painter.drawRect(rect)
-            painter.drawLine(rect.left() + 0.45, rect.top() + 0.45, rect.right() - 0.45, rect.bottom() - 0.45)
-            painter.drawLine(rect.right() - 0.45, rect.top() + 0.45, rect.left() + 0.45, rect.bottom() - 0.45)
-
-        painter.setPen(pen_faint)
-        y_mid = size / 2.0
-        painter.drawLine(7.0, y_mid, 11.0, y_mid)
-        painter.drawLine(10.0, y_mid - 1.6, 11.0, y_mid)
-        painter.drawLine(10.0, y_mid + 1.6, 11.0, y_mid)
-
-        painter.setPen(pen)
-        rect_right = QRectF(12.2, 7.1, 4.4, 3.1)
-        painter.drawRect(rect_right)
+        # Petits traits rayonnants
+        pen_ray = QPen(accent_color, 1.2)
+        pen_ray.setCapStyle(Qt.RoundCap)
+        painter.setPen(pen_ray)
+        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+            x0 = cx + dx * (center_w / 2 + 1.5)
+            y0 = cy + dy * (center_h / 2 + 1.5)
+            x1 = cx + dx * (center_w / 2 + 4.0)
+            y1 = cy + dy * (center_h / 2 + 4.0)
+            painter.drawLine(int(x0), int(y0), int(x1), int(y1))
 
         painter.end()
         return QIcon(pix)
@@ -3491,7 +3651,7 @@ class MainWindow(QMainWindow):
         if self.isolate_btn is None:
             return
         self.isolate_btn.setIcon(self._make_isolate_icon(bool(active)))
-        self.isolate_btn.setIconSize(QSize(18, 18))
+        self.isolate_btn.setIconSize(QSize(24, 24))
         self.isolate_btn.setChecked(bool(active))
         self.isolate_btn.setToolTip(tr_ui("tooltip_isolation_active") if active else tr_ui("tooltip_isolate"))
 
@@ -3662,6 +3822,7 @@ class MainWindow(QMainWindow):
 
         # Re-apply our custom tweaks on top
         self._apply_style()
+        self._refresh_toolbar_icons()
 
         if self.transparency_value_label is not None:
             self.transparency_value_label.setStyleSheet(f"color:{FG_DIM}; min-width:48px;")
@@ -4362,7 +4523,6 @@ def main():
     app.installTranslator(qt_translator)
 
     w = MainWindow(app=app)
-    w.apply_theme(DEFAULT_THEME)
     w.show()
     sys.exit(app.exec())
 

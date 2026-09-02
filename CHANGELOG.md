@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.87
+
+### Mise à jour des icônes
+Icônes plus simples et plus lisibles
+
+### Icons update
+More simple and more readable icons
+
 ## 1.86
 
 ### Affichage des charges linéaires
