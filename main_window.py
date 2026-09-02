@@ -124,12 +124,14 @@ class SettingsDialog(QDialog):
         selection_color,
         mesh_width: float,
         mesh_color,
+        punctual_load_arrow_width: float,
+        punctual_load_color,
         parent=None
     ):
         super().__init__(parent)
         self.setWindowTitle(tr_ui("settings_title"))
         self.setModal(True)
-        self.resize(540, 380)
+        self.resize(540, 420)
 
         self.linear_color = linear_color
         self.planar_color = planar_color
@@ -140,6 +142,7 @@ class SettingsDialog(QDialog):
         self.support_planar_color = support_planar_color
         self.selection_color = selection_color
         self.mesh_color = mesh_color
+        self.punctual_load_color = punctual_load_color
 
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -169,16 +172,25 @@ class SettingsDialog(QDialog):
         self.spin_selection = self._make_width_spin(selection_line_width)
         self.spin_mesh = self._make_width_spin(mesh_width)
 
-        self._add_row(grid, 0, tr_ui("settings_label_linear"),            tr_ui("settings_label_thickness"), self.spin_linear,                "linear_color",           self.linear_color)
-        self._add_row(grid, 1, tr_ui("settings_label_planar"),            tr_ui("settings_label_thickness"), self.spin_planar,                "planar_color",           self.planar_color)
-        self._add_row(grid, 2, tr_ui("settings_label_opening"),           tr_ui("settings_label_thickness"), self.spin_opening,               "opening_color",          self.opening_color)
-        self._add_row(grid, 3, tr_ui("settings_label_load_area"),         tr_ui("settings_label_thickness"), self.spin_load_area,             "load_area_color",        self.load_area_color)
-        self._add_row(grid, 4, tr_ui("settings_label_support_punctual"),  tr_ui("settings_label_size"),      self.spin_support_punctual_size)
-        self._add_row(grid, 5, tr_ui("settings_label_support_punctual"),  tr_ui("settings_label_thickness"), self.spin_support_punctual_width, "support_punctual_color", self.support_punctual_color)
-        self._add_row(grid, 6, tr_ui("settings_label_support_linear"),    tr_ui("settings_label_thickness"), self.spin_support_linear,        "support_linear_color",   self.support_linear_color)
-        self._add_row(grid, 7, tr_ui("settings_label_support_planar"),    tr_ui("settings_label_thickness"), self.spin_support_planar,        "support_planar_color",   self.support_planar_color)
-        self._add_row(grid, 8, tr_ui("settings_selection"),               tr_ui("settings_label_thickness"), self.spin_selection,            "selection_color",        self.selection_color)
-        self._add_row(grid, 9, tr_ui("settings_label_mesh"),              tr_ui("settings_label_thickness"), self.spin_mesh,                 "mesh_color",             self.mesh_color)
+        # Charge ponctuelle — épaisseur en mètres (rayon tige)
+        self.spin_punctual_load_arrow_width = QDoubleSpinBox()
+        self.spin_punctual_load_arrow_width.setRange(0.005, 2.0)
+        self.spin_punctual_load_arrow_width.setDecimals(3)
+        self.spin_punctual_load_arrow_width.setSingleStep(0.005)
+        self.spin_punctual_load_arrow_width.setValue(punctual_load_arrow_width)
+        self.spin_punctual_load_arrow_width.setFixedWidth(110)
+
+        self._add_row(grid,  0, tr_ui("settings_label_linear"),                tr_ui("settings_label_thickness"), self.spin_linear,                      "linear_color",            self.linear_color)
+        self._add_row(grid,  1, tr_ui("settings_label_planar"),                tr_ui("settings_label_thickness"), self.spin_planar,                      "planar_color",            self.planar_color)
+        self._add_row(grid,  2, tr_ui("settings_label_opening"),               tr_ui("settings_label_thickness"), self.spin_opening,                     "opening_color",           self.opening_color)
+        self._add_row(grid,  3, tr_ui("settings_label_load_area"),             tr_ui("settings_label_thickness"), self.spin_load_area,                   "load_area_color",         self.load_area_color)
+        self._add_row(grid,  4, tr_ui("settings_label_support_punctual"),      tr_ui("settings_label_size"),      self.spin_support_punctual_size)
+        self._add_row(grid,  5, tr_ui("settings_label_support_punctual"),      tr_ui("settings_label_thickness"), self.spin_support_punctual_width,      "support_punctual_color",  self.support_punctual_color)
+        self._add_row(grid,  6, tr_ui("settings_label_support_linear"),        tr_ui("settings_label_thickness"), self.spin_support_linear,              "support_linear_color",    self.support_linear_color)
+        self._add_row(grid,  7, tr_ui("settings_label_support_planar"),        tr_ui("settings_label_thickness"), self.spin_support_planar,              "support_planar_color",    self.support_planar_color)
+        self._add_row(grid,  8, tr_ui("settings_selection"),                   tr_ui("settings_label_thickness"), self.spin_selection,                   "selection_color",         self.selection_color)
+        self._add_row(grid,  9, tr_ui("settings_label_mesh"),                  tr_ui("settings_label_thickness"), self.spin_mesh,                        "mesh_color",              self.mesh_color)
+        self._add_row(grid, 10, tr_ui("settings_label_punctual_load_arrows"),  tr_ui("settings_label_thickness"), self.spin_punctual_load_arrow_width,   "punctual_load_color",     self.punctual_load_color)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
@@ -275,6 +287,7 @@ class SettingsDialog(QDialog):
             "support_planar_line_width": self.spin_support_planar.value(),
             "selection_line_width": self.spin_selection.value(),
             "mesh_width": self.spin_mesh.value(),
+            "punctual_load_arrow_width": self.spin_punctual_load_arrow_width.value(),
             "linear_color": self.linear_color,
             "planar_color": self.planar_color,
             "opening_color": self.opening_color,
@@ -284,6 +297,7 @@ class SettingsDialog(QDialog):
             "support_planar_color": self.support_planar_color,
             "selection_color": self.selection_color,
             "mesh_color": self.mesh_color,
+            "punctual_load_color": self.punctual_load_color,
         }
 
 
@@ -781,6 +795,11 @@ class MainWindow(QMainWindow):
         self.project_session = None
         self._fem_nodes: list = []
         self._fem_connectivity_by_eid: dict = {}
+        # Charges ponctuelles
+        self._punctual_load_cases: list = []   # [{eid, label}, ...]
+        self.chk_punctual_loads = None
+        self.cmb_punctual_load_case = None
+        self.spin_punctual_load_scale = None
         self.results_sections_state = {
             "linear_section": True,
             "linear_material": True,
@@ -845,6 +864,7 @@ class MainWindow(QMainWindow):
             "support_planar_line_width": str(self.viewer.support_planar_line_width),
             "selection_line_width": str(self.viewer.selection_line_width),
             "mesh_width": str(self.viewer.mesh_line_width),
+            "punctual_load_arrow_width": str(self.viewer.punctual_load_arrow_width),
         }
         cfg["colors"] = {
             "linear_color": self._format_color(self.viewer.linear_color),
@@ -856,6 +876,7 @@ class MainWindow(QMainWindow):
             "support_planar_color": self._format_color(self.viewer.support_planar_color),
             "selection_color": self._format_color(self.viewer.selection_color),
             "mesh_color": self._format_color(self.viewer.mesh_color),
+            "punctual_load_color": self._format_color(self.viewer.punctual_load_color),
         }
 
         with open(self._config_path(), "w", encoding="utf-8") as f:
@@ -925,6 +946,10 @@ class MainWindow(QMainWindow):
             self.viewer.set_mesh_style(
                 self._parse_color(colors.get("mesh_color", self._format_color(self.viewer.mesh_color)), self.viewer.mesh_color),
                 float(styles.get("mesh_width", self.viewer.mesh_line_width)),
+            )
+            self.viewer.set_punctual_load_style(
+                self._parse_color(colors.get("punctual_load_color", self._format_color(self.viewer.punctual_load_color)), self.viewer.punctual_load_color),
+                float(styles.get("punctual_load_arrow_width", self.viewer.punctual_load_arrow_width)),
             )
             self.apply_view_projection(self.view_projection_mode, save=False)
             pass
@@ -1434,6 +1459,12 @@ class MainWindow(QMainWindow):
         self.chk_mesh.toggled.connect(self.on_toggle_mesh)
         action_card.layout.addWidget(self.chk_mesh)
 
+        self.chk_punctual_loads = QCheckBox(tr_ui("show_punctual_loads"))
+        self.chk_punctual_loads.setChecked(False)
+        self.chk_punctual_loads.setEnabled(False)
+        self.chk_punctual_loads.toggled.connect(self.on_toggle_punctual_loads)
+        action_card.layout.addWidget(self.chk_punctual_loads)
+
         self.chk_color_by_section = QCheckBox(tr_ui("color_by_section"))
         self.chk_color_by_section.setChecked(True)
         self.chk_color_by_section.toggled.connect(self.on_toggle_color_by_section)
@@ -1613,12 +1644,58 @@ class MainWindow(QMainWindow):
         analysis_results_layout.addWidget(self.analysis_results_scroll)
         return analysis_results_tab
 
+    def _build_loads_tab(self):
+        """Onglet de visualisation des charges."""
+        loads_tab = QWidget()
+        layout = QVBoxLayout(loads_tab)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(6)
+
+        # --- Titre section charges ponctuelles ---
+        title = QLabel(tr_ui("loads_punctual_title"))
+        title.setObjectName("cardTitle")
+        layout.addWidget(title)
+
+        # --- Filtre cas de charge ---
+        lc_label = QLabel(tr_ui("loads_load_case_filter"))
+        layout.addWidget(lc_label)
+        self.cmb_punctual_load_case = QComboBox()
+        self.cmb_punctual_load_case.setEnabled(False)
+        self.cmb_punctual_load_case.currentIndexChanged.connect(self._on_punctual_load_case_changed)
+        layout.addWidget(self.cmb_punctual_load_case)
+
+        # --- Échelle ---
+        scale_row = QHBoxLayout()
+        scale_row.setContentsMargins(0, 0, 0, 0)
+        scale_row.setSpacing(6)
+        scale_label = QLabel(tr_ui("loads_punctual_scale"))
+        scale_row.addWidget(scale_label)
+        self.spin_punctual_load_scale = QDoubleSpinBox()
+        self.spin_punctual_load_scale.setRange(0.1, 100.0)
+        self.spin_punctual_load_scale.setDecimals(2)
+        self.spin_punctual_load_scale.setSingleStep(0.1)
+        self.spin_punctual_load_scale.setValue(1.0)
+        self.spin_punctual_load_scale.setEnabled(False)
+        self.spin_punctual_load_scale.valueChanged.connect(self._on_punctual_load_scale_changed)
+        scale_row.addWidget(self.spin_punctual_load_scale)
+        scale_row.addStretch(1)
+        layout.addLayout(scale_row)
+
+        # --- Message d'état ---
+        self._loads_status_label = QLabel(tr_ui("loads_punctual_empty"))
+        self._loads_status_label.setWordWrap(True)
+        self._loads_status_label.setStyleSheet(f"color:{FG_DIM};")
+        layout.addWidget(self._loads_status_label)
+
+        layout.addStretch(1)
+        return loads_tab
+
     def _build_side_tabs(self, right_splitter):
         side_tabs = QTabWidget()
         self.side_tabs = side_tabs
         side_tabs.setTabPosition(QTabWidget.North)
         side_tabs.setDocumentMode(False)
-        side_tabs.setMinimumWidth(336)
+        side_tabs.setMinimumWidth(390)
         side_tab_bar = side_tabs.tabBar()
         side_tab_bar.setExpanding(False)
         side_tab_bar.setUsesScrollButtons(False)
@@ -1628,11 +1705,13 @@ class MainWindow(QMainWindow):
         properties_tab = self._build_properties_tab()
         results_tab = self._build_results_tab()
         analysis_results_tab = self._build_analysis_results_tab()
+        loads_tab = self._build_loads_tab()
 
         side_tabs.addTab(log_tab, tr_ui("journal"))
         side_tabs.addTab(properties_tab, tr_ui("properties"))
         side_tabs.addTab(results_tab, tr_ui("takeoff"))
         side_tabs.addTab(analysis_results_tab, tr_ui("results"))
+        side_tabs.addTab(loads_tab, tr_ui("loads_panel_title"))
         side_tabs.currentChanged.connect(lambda _index: self._relocate_progress_container())
         right_splitter.addWidget(side_tabs)
         return side_tabs
@@ -1644,7 +1723,7 @@ class MainWindow(QMainWindow):
 
         right_splitter.setStretchFactor(0, 1)
         right_splitter.setStretchFactor(1, 0)
-        right_splitter.setSizes([860, 336])
+        right_splitter.setSizes([810, 390])
 
         self.viewer.set_faces_transparency(INITIAL_TRANSPARENCY_PERCENT)
         self.viewer.set_display_mode(self.cmb_display_mode.currentData())
@@ -2504,6 +2583,59 @@ class MainWindow(QMainWindow):
         layout.addWidget(bool_table)
         layout.addStretch(1)
 
+    def _render_punctual_load_properties(self, load: dict):
+        """Affiche les propriétés d'une charge ponctuelle sélectionnée."""
+        import math
+        if self.properties_container is None:
+            return
+        layout = self.properties_container.layout()
+        if layout is None:
+            layout = QVBoxLayout(self.properties_container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(8)
+        self._clear_layout_widgets(layout)
+
+        # Titre : "Charge ponctuelle N°id - Cas de charge"
+        user_id  = load.get("user_id")
+        lc_label = str(load.get("load_case_label") or "")
+        base = tr_ui("prop_punctual_load")
+        id_part  = f" n\u00b0{user_id}" if user_id not in (None, "") else ""
+        lc_part  = f" - {lc_label}" if lc_label else ""
+        title = f"{base}{id_part}{lc_part}"
+        self._add_properties_type_label(layout, title)
+        self._add_properties_spacer(layout, 8)
+
+        fx   = float(load.get("fx") or 0.0)
+        fy   = float(load.get("fy") or 0.0)
+        fz   = float(load.get("fz") or 0.0)
+        mx   = float(load.get("mx") or 0.0)
+        my   = float(load.get("my") or 0.0)
+        mz   = float(load.get("mz") or 0.0)
+        f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
+
+        def _fmt(v): return f"{v:.4g}"
+
+        unit_f = tr_ui("prop_punctual_load_unit_kn")
+        unit_m = tr_ui("prop_punctual_load_unit_knm")
+
+        rows = [
+            (tr_ui("prop_punctual_load_fx"), f"{_fmt(fx)} {unit_f}"),
+            (tr_ui("prop_punctual_load_fy"), f"{_fmt(fy)} {unit_f}"),
+            (tr_ui("prop_punctual_load_fz"), f"{_fmt(fz)} {unit_f}"),
+            (tr_ui("prop_punctual_load_f"),  f"{_fmt(f_res)} {unit_f}"),
+            (tr_ui("prop_punctual_load_mx"), f"{_fmt(mx)} {unit_m}"),
+            (tr_ui("prop_punctual_load_my"), f"{_fmt(my)} {unit_m}"),
+            (tr_ui("prop_punctual_load_mz"), f"{_fmt(mz)} {unit_m}"),
+        ]
+
+        table = self._create_properties_table(len(rows))
+        for row, (name, value) in enumerate(rows):
+            self._set_table_name_item(table, row, name)
+            self._set_table_value_item(table, row, value)
+        self._finalize_properties_table(table)
+        layout.addWidget(table)
+        layout.addStretch(1)
+
     def _render_punctual_support_properties(self, data: dict):
         if self.properties_container is None:
             return
@@ -3029,6 +3161,15 @@ class MainWindow(QMainWindow):
                     self._set_properties_message(tr_ui("prop_no_load_area"))
                 return
 
+            if role == "punctual_load":
+                loads = list((self.current_model_data or {}).get("punctual_loads", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(loads):
+                    self._render_punctual_load_properties(loads[index])
+                else:
+                    self._set_properties_message(tr_ui("prop_no_punctual_load"))
+                return
+
             self._set_properties_message("Propriétés disponibles pour les éléments filaires, surfaciques et les appuis.")
             return
 
@@ -3053,7 +3194,6 @@ class MainWindow(QMainWindow):
 
         # Panneau Propriétés : toujours "sélection multiple"
         self._set_properties_message(tr_ui("multi_select_properties_unavailable"))
-
         # Résultats d'analyse : seulement si homogène filaires
         if is_homogeneous and unified_role == "lines":
             # Utiliser le premier item pour les combos (les résultats seront chargés et superposés)
@@ -3294,11 +3434,11 @@ class MainWindow(QMainWindow):
         self.chk_support_linear.setText(self._format_display_checkbox_text("show_support_linear", counts["support_linear"]))
         self.chk_support_planar.setText(self._format_display_checkbox_text("show_support_planar", counts["support_planar"]))
         self.chk_marker.setText(tr_ui("show_marker"))
+        # chk_punctual_loads : libellé avec compteur
+        if self.chk_punctual_loads is not None:
+            n = counts.get("punctual_loads", 0)
+            self.chk_punctual_loads.setText(self._format_display_checkbox_text("show_punctual_loads", n))
         # Le maillage n'est disponible que si le fichier chargé possède des résultats.
-        # setEnabled(False) grise aussi le libellé nativement sous Qt.
-        # On ne touche PAS à setChecked ici — l'état coché est préservé lors des
-        # filtres/isolation. La réinitialisation à décoché se fait uniquement dans
-        # set_loading(True) au début d'un nouveau chargement.
         has_results = bool(self.current_model_has_analysis_results)
         if self.chk_mesh is not None:
             self.chk_mesh.setEnabled(has_results)
@@ -3533,6 +3673,8 @@ class MainWindow(QMainWindow):
             self.viewer.selection_color,
             self.viewer.mesh_line_width,
             self.viewer.mesh_color,
+            self.viewer.punctual_load_arrow_width,
+            self.viewer.punctual_load_color,
             self
         )
         if dlg.exec() == QDialog.Accepted:
@@ -3566,6 +3708,10 @@ class MainWindow(QMainWindow):
             self.viewer.set_mesh_style(
                 values["mesh_color"],
                 values["mesh_width"]
+            )
+            self.viewer.set_punctual_load_style(
+                values["punctual_load_color"],
+                values["punctual_load_arrow_width"],
             )
 
             self.log(
@@ -3626,6 +3772,38 @@ class MainWindow(QMainWindow):
             else:
                 self.viewer.set_show_mesh(False)
         self.log(tr_log("show_mesh_on" if checked else "show_mesh_off"), "info")
+
+    def on_toggle_punctual_loads(self, checked: bool):
+        if self.viewer:
+            self.viewer.set_show_punctual_loads(checked)
+        self.log(tr_log("show_punctual_loads_on" if checked else "show_punctual_loads_off"), "info")
+
+    def _populate_punctual_load_case_combo(self, load_cases: list):
+        """Peuple le combo de filtre par cas de charge des charges ponctuelles."""
+        if self.cmb_punctual_load_case is None:
+            return
+        self.cmb_punctual_load_case.blockSignals(True)
+        self.cmb_punctual_load_case.clear()
+        # Premier item = tous les cas
+        self.cmb_punctual_load_case.addItem(tr_ui("loads_load_case_all"), None)
+        for lc in (load_cases or []):
+            eid = lc.get("eid")
+            label = str(lc.get("label") or str(eid))
+            self.cmb_punctual_load_case.addItem(label, eid)
+        has_cases = bool(load_cases)
+        self.cmb_punctual_load_case.setEnabled(has_cases)
+        self.cmb_punctual_load_case.blockSignals(False)
+
+    def _on_punctual_load_case_changed(self, index: int):
+        if self.viewer is None or self.cmb_punctual_load_case is None:
+            return
+        case_eid = self.cmb_punctual_load_case.currentData()
+        self.viewer.set_punctual_load_case_filter(case_eid)
+
+    def _on_punctual_load_scale_changed(self, value: float):
+        if self.viewer is None:
+            return
+        self.viewer.set_punctual_load_scale(value)
 
     def on_toggle_color_by_section(self, checked: bool):
         if self.viewer:
@@ -3732,6 +3910,18 @@ class MainWindow(QMainWindow):
                 # appelé dans on_model_loaded / on_model_error.
                 pass
 
+        # chk_punctual_loads : grisé et décoché pendant le chargement
+        if self.chk_punctual_loads is not None:
+            if loading:
+                self.chk_punctual_loads.setEnabled(False)
+                self.chk_punctual_loads.blockSignals(True)
+                self.chk_punctual_loads.setChecked(False)
+                self.chk_punctual_loads.blockSignals(False)
+        if self.cmb_punctual_load_case is not None and loading:
+            self.cmb_punctual_load_case.setEnabled(False)
+        if self.spin_punctual_load_scale is not None and loading:
+            self.spin_punctual_load_scale.setEnabled(False)
+
         if loading:
             self.load_btn.setText(tr_ui("loading"))
             if self.load_progress_container is not None:
@@ -3824,6 +4014,29 @@ class MainWindow(QMainWindow):
         self._populate_results_case_combination_combo((model_data or {}).get("results_cases_combinations", []))
         self._update_analysis_results_value_combo(None)
         self._set_analysis_results_output_message("Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.")
+
+        # Charges ponctuelles
+        self._punctual_load_cases = list((model_data or {}).get("punctual_load_cases", []) or [])
+        punctual_loads = list((model_data or {}).get("punctual_loads", []) or [])
+        self.viewer.load_punctual_loads(punctual_loads)
+        self._populate_punctual_load_case_combo(self._punctual_load_cases)
+        has_loads = bool(punctual_loads)
+        if self.chk_punctual_loads is not None:
+            self.chk_punctual_loads.setEnabled(has_loads)
+            if not has_loads:
+                self.chk_punctual_loads.blockSignals(True)
+                self.chk_punctual_loads.setChecked(False)
+                self.chk_punctual_loads.blockSignals(False)
+        if self.spin_punctual_load_scale is not None:
+            self.spin_punctual_load_scale.setEnabled(has_loads)
+        if hasattr(self, "_loads_status_label") and self._loads_status_label is not None:
+            if has_loads:
+                self._loads_status_label.setText(
+                    tr_ui("loads_punctual_count", count=len(punctual_loads))
+                )
+            else:
+                self._loads_status_label.setText(tr_ui("loads_punctual_empty"))
+
         self._update_display_checkboxes()
         self.viewer.apply_display_state(
             show_lines=self.chk_lines.isChecked(),

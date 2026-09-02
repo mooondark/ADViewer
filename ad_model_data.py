@@ -83,6 +83,8 @@ class ModelDataDict(TypedDict, total=False):
     has_analysis_results: bool
     fem_nodes: list       # liste de (x, y, z) — positions des nœuds FEM
     fem_by_eid: dict      # dict {eid: [[n0,n1,n2], ...]} — faces par EID d'élément
+    punctual_loads: list  # liste de dicts {pos, fx, fy, fz, load_case_eid, load_case_label}
+    punctual_load_cases: list  # liste de dicts {eid, label} — cas de charge uniques
 
 
 def normalize_results_case_entry(kind: str, eid, label: str) -> ResultsCaseEntry:
@@ -105,6 +107,8 @@ def build_model_data(payload: dict) -> ModelDataDict:
         "planar_supports", "planar_support_eids", "planar_support_properties",
         "results_cases_combinations",
         "fem_nodes",
+        "punctual_loads",
+        "punctual_load_cases",
     ]
     for key in list_keys:
         value = data.get(key)
@@ -122,6 +126,7 @@ def build_model_data(payload: dict) -> ModelDataDict:
         "load_area_count", "punctual_support_count", "linear_support_count", "planar_support_count",
         "openings_count", "materials_resolved_count", "materials_eids_count",
         "linear_sections_resolved_count", "linear_section_eids_count",
+        "punctual_load_ids_count", "punctual_load_count",
     ]
     for key in int_keys:
         try:
@@ -1745,6 +1750,7 @@ def _read_model_identifiers(host: str) -> dict:
     punctual_support_ids = get_element_ids_for_types(host, PUNCTUAL_SUPPORT_TYPES)
     linear_support_ids = get_element_ids_for_types(host, LINEAR_SUPPORT_TYPES)
     planar_support_ids = get_element_ids_for_types(host, PLANAR_SUPPORT_TYPES)
+    punctual_load_ids = get_element_ids(host, "ElementLoadPunctual")
     return {
         "linear_ids": linear_ids,
         "planar_ids": planar_ids,
@@ -1752,6 +1758,7 @@ def _read_model_identifiers(host: str) -> dict:
         "punctual_support_ids": punctual_support_ids,
         "linear_support_ids": linear_support_ids,
         "planar_support_ids": planar_support_ids,
+        "punctual_load_ids": punctual_load_ids,
     }
 
 
@@ -1762,6 +1769,7 @@ def _read_model_objects(host: str, ids_data: dict) -> dict:
     punctual_support_elements = get_elements_objects(host, ids_data.get("punctual_support_ids", []))
     linear_support_elements = get_elements_objects(host, ids_data.get("linear_support_ids", []))
     planar_support_elements = get_elements_objects(host, ids_data.get("planar_support_ids", []))
+    punctual_load_elements = get_elements_objects(host, ids_data.get("punctual_load_ids", []))
     return {
         "linear_elements": linear_elements,
         "planar_elements": planar_elements,
@@ -1769,6 +1777,7 @@ def _read_model_objects(host: str, ids_data: dict) -> dict:
         "punctual_support_elements": punctual_support_elements,
         "linear_support_elements": linear_support_elements,
         "planar_support_elements": planar_support_elements,
+        "punctual_load_elements": punctual_load_elements,
     }
 
 
@@ -1816,6 +1825,132 @@ def _read_results_cases_data(host: str) -> list:
         combination_ids,
         combination_objects,
     )
+
+
+def _build_punctual_loads_payload(host: str, ids_data: dict, objects_data: dict) -> dict:
+    """Construit la liste des charges ponctuelles avec résolution des cas de charge.
+
+    Retourne un dict avec :
+    - ``punctual_loads``      : liste de dicts par charge (position, forces, cas)
+    - ``punctual_load_cases`` : liste de dicts {eid, label} — cas uniques triés
+    - ``punctual_load_ids_count`` / ``punctual_load_count`` : compteurs
+    """
+    punctual_load_ids = list(ids_data.get("punctual_load_ids", []) or [])
+    punctual_load_elements = list(objects_data.get("punctual_load_elements", []) or [])
+
+    if not punctual_load_ids or not punctual_load_elements:
+        return {
+            "punctual_loads": [],
+            "punctual_load_cases": [],
+            "punctual_load_ids_count": len(punctual_load_ids),
+            "punctual_load_count": 0,
+        }
+
+    # Collecter les EIDs de cas de charge référencés
+    lc_eids_needed = set()
+    for el in punctual_load_elements:
+        if not isinstance(el, dict):
+            continue
+        lc_ref = el.get("loadCase") or {}
+        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
+        if lc_eid is not None:
+            try:
+                lc_eids_needed.add(int(lc_eid))
+            except (TypeError, ValueError):
+                pass
+
+    # Résolution des cas de charge (GetInformationalElementsObject)
+    # On passe les EIDs dans un ordre déterministe et on zippe dans le même ordre.
+    lc_by_eid = {}
+    if lc_eids_needed:
+        try:
+            ordered_eids = list(lc_eids_needed)   # ordre d'insertion — stable Python 3.7+
+            lc_objects = get_informational_elements_objects(host, ordered_eids)
+            for lc_eid, lc_obj in zip(ordered_eids, lc_objects or []):
+                if not isinstance(lc_obj, dict):
+                    continue
+                user_id = lc_obj.get("userID")
+                name = _get_username(lc_obj) or str(lc_obj.get("name") or "").strip()
+                left = str(user_id).strip() if user_id not in (None, "") else str(lc_eid)
+                label = f"{left} : {name}" if name else left
+                lc_by_eid[int(lc_eid)] = label
+        except Exception:
+            pass
+
+    # Construire la liste des charges
+    punctual_loads = []
+    seen_lc_eids = {}  # eid → label, pour ordre d'apparition
+    for el in punctual_load_elements:
+        if not isinstance(el, dict):
+            continue
+        pt = el.get("geomPt") or {}
+        if not pt:
+            continue
+        try:
+            x = float(pt.get("x", 0.0))
+            y = float(pt.get("y", 0.0))
+            z = float(pt.get("z", 0.0))
+        except (TypeError, ValueError):
+            continue
+
+        fx = float(el.get("fx") or el.get("Fx") or 0.0) / 1000.0   # N -> kN
+        fy = float(el.get("fy") or el.get("Fy") or 0.0) / 1000.0
+        fz = float(el.get("fz") or el.get("Fz") or 0.0) / 1000.0
+
+        # Moments — l'API retourne un sous-dict {"mx": ..., "my": ..., "mz": ...}
+        # sous la clé "moment", mais peut aussi les exposer à plat selon la version.
+        moment_dict = el.get("moment") or {}
+        if isinstance(moment_dict, dict):
+            mx = float(moment_dict.get("mx") or moment_dict.get("Mx") or el.get("mx") or el.get("Mx") or 0.0) / 1000.0
+            my = float(moment_dict.get("my") or moment_dict.get("My") or el.get("my") or el.get("My") or 0.0) / 1000.0
+            mz = float(moment_dict.get("mz") or moment_dict.get("Mz") or el.get("mz") or el.get("Mz") or 0.0) / 1000.0
+        else:
+            mx = float(el.get("mx") or el.get("Mx") or 0.0) / 1000.0
+            my = float(el.get("my") or el.get("My") or 0.0) / 1000.0
+            mz = float(el.get("mz") or el.get("Mz") or 0.0) / 1000.0
+
+        # Identifiant utilisateur
+        user_id = el.get("userID") or el.get("userId") or el.get("userid")
+
+        # Cas de charge
+        lc_ref = el.get("loadCase") or {}
+        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
+        lc_eid_int = None
+        lc_label = ""
+        if lc_eid is not None:
+            try:
+                lc_eid_int = int(lc_eid)
+                lc_label = lc_by_eid.get(lc_eid_int, str(lc_eid_int))
+                if lc_eid_int not in seen_lc_eids:
+                    seen_lc_eids[lc_eid_int] = lc_label
+            except (TypeError, ValueError):
+                pass
+
+        punctual_loads.append({
+            "pos": (x, y, z),
+            "fx": fx,
+            "fy": fy,
+            "fz": fz,
+            "mx": mx,
+            "my": my,
+            "mz": mz,
+            "user_id": user_id,
+            "load_case_eid": lc_eid_int,
+            "load_case_label": lc_label,
+        })
+
+    # Cas de charge uniques, dans l'ordre d'apparition
+    punctual_load_cases = [
+        {"eid": eid, "label": label}
+        for eid, label in seen_lc_eids.items()
+    ]
+
+    return {
+        "punctual_loads": punctual_loads,
+        "punctual_load_cases": punctual_load_cases,
+        "punctual_load_ids_count": len(punctual_load_ids),
+        "punctual_load_count": len(punctual_loads),
+    }
 
 
 def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict) -> dict:
@@ -2083,9 +2218,13 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         progress(72, tr_ui("progress_convert_geometry"))
         geometry_payload = _build_geometry_payload(ids_data, objects_data, refs_data)
 
+        progress(80, tr_ui("progress_read_punctual_loads"))
+        punctual_loads_payload = _build_punctual_loads_payload(host, ids_data, objects_data)
+
         progress(88, tr_ui("progress_prepare_results"))
         result = build_model_data({
             **geometry_payload,
+            **punctual_loads_payload,
             "normalized_path": session.fto_path,
             "results_cases_combinations": results_cases_combinations,
             "fem_nodes": fem_nodes,
@@ -2146,6 +2285,7 @@ class LoadModelWorker(QThread):
             self.log.emit(tr_log("ids_planar", count=model_data["planar_ids_count"]), "info")
             self.log.emit(tr_log("ids_load_area", count=model_data["load_area_ids_count"]), "info")
             self.log.emit(tr_log("ids_support_punctual", count=model_data["punctual_support_ids_count"]), "info")
+            self.log.emit(tr_log("ids_punctual_loads", count=model_data["punctual_load_ids_count"]), "info")
             self.log.emit(tr_log("ids_support_linear", count=model_data["linear_support_ids_count"]), "info")
             self.log.emit(tr_log("ids_support_planar", count=model_data["planar_support_ids_count"]), "info")
             self.log.emit(

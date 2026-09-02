@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.84"
+APP_VERSION = "1.85"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -198,6 +198,10 @@ INITIAL_TRANSPARENCY_PERCENT = 30
 MESH_LINE_WIDTH = 1.0
 MESH_COLOR = (0.0, 1.0, 0.0)  # #00ff00
 
+# Charges ponctuelles
+PUNCTUAL_LOAD_COLOR = (1.0, 0.45, 0.0)   # orange vif
+PUNCTUAL_LOAD_SCALE = 1.0                 # facteur d'échelle par défaut (m par kN_max)
+
 
 # ======================================================================
 #  Listes de types d'éléments
@@ -287,6 +291,7 @@ MSG_UI = {
     "show_support_planar": "Afficher appuis surfaciques",
     "show_marker": "Afficher repère",
     "show_mesh": "Afficher le maillage",
+    "show_punctual_loads": "Afficher charges ponctuelles",
     "color_by_section": "Couleur par section",
 
     "view3d": "Vue 3D",
@@ -433,6 +438,31 @@ MSG_UI = {
     "analysis_results_export_sheet_stresses": "Contraintes",
     "analysis_results_export_not_available": "Export impossible pour la sélection courante.",
     "analysis_results_export_no_data": "Aucune donnée de résultat à exporter pour cet élément.",
+    "loads_panel_title": "Charges",
+    "loads_punctual_title": "Charges ponctuelles",
+    "loads_punctual_scale": "Échelle (m/kN_max)",
+    "loads_load_case_filter": "Cas de charge",
+    "loads_load_case_all": "Tous",
+    "loads_punctual_count": "{count} charge(s) ponctuelle(s)",
+    "loads_punctual_empty": "Aucune charge ponctuelle dans le modèle.",
+    "loads_punctual_no_case": "Aucun cas de charge disponible.",
+    "loads_punctual_fx": "Fx",
+    "loads_punctual_fy": "Fy",
+    "loads_punctual_fz": "Fz",
+
+    "prop_punctual_load": "Charge ponctuelle",
+    "prop_punctual_load_fx": "Fx",
+    "prop_punctual_load_fy": "Fy",
+    "prop_punctual_load_fz": "Fz",
+    "prop_punctual_load_f":  "F résultante",
+    "prop_punctual_load_mx": "Mx",
+    "prop_punctual_load_my": "My",
+    "prop_punctual_load_mz": "Mz",
+    "prop_punctual_load_case": "Cas de charge",
+    "prop_punctual_load_unit_kn":  "kN",
+    "prop_punctual_load_unit_knm": "kN·m",
+    "prop_no_punctual_load": "Aucune propriété disponible pour cette charge.",
+
     "filter_select_all": "Sélectionner tout",
     "filter_select_none": "Désélectionner tout",
     "filter_by_section": "Par section",
@@ -453,6 +483,7 @@ MSG_UI = {
     "progress_read_cases": "Lecture des cas et combinaisons...",
     "progress_check_results": "Vérification des résultats de calcul...",
     "progress_convert_geometry": "Conversion des géométries...",
+    "progress_read_punctual_loads": "Lecture des charges ponctuelles...",
     "progress_prepare_results": "Préparation des résultats...",
     "progress_close_project": "Fermeture du projet...",
 
@@ -469,6 +500,7 @@ MSG_UI = {
     "settings_label_support_linear": "Appui linéaire",
     "settings_label_support_planar": "Appui surfacique",
     "settings_label_mesh": "Maillage FEM",
+    "settings_label_punctual_load_arrows": "Charges ponctuelles",
     "settings_label_thickness": "Épaisseur",
     "settings_label_size": "Taille",
     "settings_linear": "Épaisseur filaires",
@@ -545,6 +577,9 @@ MSG_LOG = {
     "ids_planar": "Surfaciques trouvés : {count}",
     "ids_load_area": "Parois trouvées : {count}",
     "ids_support_punctual": "Appuis ponctuels trouvés : {count}",
+    "ids_punctual_loads": "Charges ponctuelles trouvées : {count}",
+    "show_punctual_loads_on": "Affichage charges ponctuelles : activé",
+    "show_punctual_loads_off": "Affichage charges ponctuelles : désactivé",
     "ids_support_linear": "Appuis filaires trouvés : {count}",
     "ids_support_planar": "Appuis surfaciques trouvés : {count}",
     "resolved_materials": "Matériaux résolus : {resolved}/{total}.",
