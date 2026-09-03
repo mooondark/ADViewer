@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.88
+
+### URL API déplacée
+URL Déplacée vers le menu Paramètres > Configuration
+
+### API URL moved
+URL moved to the Parameters > Configuration
+
 ## 1.87
 
 ### Mise à jour des icônes
