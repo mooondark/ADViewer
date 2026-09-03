@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.87"
+APP_VERSION = "1.88"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -559,6 +559,7 @@ MSG_UI = {
     "menu_styles": "Styles et épaisseurs...",
     "menu_configuration": "Configuration",
     "menu_api_server": "Exécutable serveur API...",
+    "menu_api_url": "URL API...",
     "menu_theme": "Thème",
     "api_server_exe": "Exécutable serveur API",
     "theme": "Thème",
@@ -566,6 +567,10 @@ MSG_UI = {
     "theme_light": "Clair",
     "browse_exe_title": "Choisir l'exécutable serveur API",
     "browse_exe_filter": "Exécutable (*.exe);;Tous les fichiers (*)",
+    "api_url_dialog_title": "URL API",
+    "api_url_dialog_label": "URL du serveur API",
+    "api_url_dialog_placeholder": "http://localhost:52000",
+    "api_url_saved": "URL API enregistrée : {url}",
 
     "browse_title": "Choisir un projet Advance Design",
     "browse_filter": "Advance Design (*.fto);;Tous les fichiers (*)",
@@ -589,6 +594,7 @@ MSG_LOG = {
     "ready": "Prêt. Sélectionnez un fichier .fto puis chargez le modèle.",
     "selected_file": "Fichier sélectionné : {path}",
     "api_connection": "Connexion API : {host}",
+    "api_url_loaded": "URL API chargée : {url}",
 
     "checking_api": "Vérification de l'API...",
     "api_ok": "API accessible.",

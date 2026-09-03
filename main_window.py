@@ -361,6 +361,32 @@ class ApiServerConfigDialog(QDialog):
         return normalize_windows_path(self.exe_edit.text().strip())
 
 
+class ApiUrlConfigDialog(QDialog):
+    def __init__(self, current_url: str, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(tr_ui("api_url_dialog_title"))
+        self.setModal(True)
+        self.resize(480, 110)
+
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+        form.setSpacing(4)
+        form.setHorizontalSpacing(12)
+        layout.addLayout(form)
+
+        self.url_edit = QLineEdit(current_url)
+        self.url_edit.setPlaceholderText(tr_ui("api_url_dialog_placeholder"))
+        form.addRow(tr_ui("api_url_dialog_label"), self.url_edit)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def get_value(self) -> str:
+        return self.url_edit.text().strip().rstrip("/")
+
+
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -755,6 +781,7 @@ class MainWindow(QMainWindow):
         self.theme_name = DEFAULT_THEME
         set_active_theme(self.theme_name)
         self.api_server_exe = DEFAULT_API_SERVER_EXE
+        self.api_host = DEFAULT_HOST
         self.start_api_btn = None
         self.api_server_process = None
         self.act_theme_dark = None
@@ -869,6 +896,7 @@ class MainWindow(QMainWindow):
         cfg["general"] = {
             "theme": self.theme_name,
             "api_server_exe": self.api_server_exe,
+            "api_url": self.api_host,
             "last_fto_path": normalize_windows_path(self.fto_edit.text().strip()) if getattr(self, "fto_edit", None) is not None else "",
             "view_projection": self.view_projection_mode,
         }
@@ -922,6 +950,10 @@ class MainWindow(QMainWindow):
             colors = cfg["colors"] if cfg.has_section("colors") else {}
 
             self.api_server_exe = general.get("api_server_exe", DEFAULT_API_SERVER_EXE)
+            loaded_url = general.get("api_url", DEFAULT_HOST).strip().rstrip("/") or DEFAULT_HOST
+            self.api_host = loaded_url
+            if getattr(self, "host_edit", None) is not None:
+                self.host_edit.setText(self.api_host)
             loaded_theme = general.get("theme", self.theme_name)
             if loaded_theme not in QT_MATERIAL_THEMES:
                 loaded_theme = DEFAULT_THEME
@@ -1435,6 +1467,10 @@ class MainWindow(QMainWindow):
         act_api_server.triggered.connect(self.open_configuration_dialog)
         configuration_menu.addAction(act_api_server)
 
+        act_api_url = QAction(tr_ui("menu_api_url"), self)
+        act_api_url.triggered.connect(self.open_api_url_dialog)
+        configuration_menu.addAction(act_api_url)
+
         self.apply_view_projection(self.view_projection_mode, save=False)
 
     def _create_main_layout(self):
@@ -1465,9 +1501,8 @@ class MainWindow(QMainWindow):
         file_card.layout.addWidget(QLabel(tr_ui("project_file")))
         file_card.layout.addLayout(hb1)
 
-        self.host_edit = QLineEdit(DEFAULT_HOST)
-        file_card.layout.addWidget(QLabel(tr_ui("api_url")))
-        file_card.layout.addWidget(self.host_edit)
+        self.host_edit = QLineEdit(self.api_host)
+        self.host_edit.setVisible(False)
 
         self.start_api_btn = QPushButton(tr_ui("start_api"))
         self.start_api_btn.clicked.connect(self.toggle_api_server)
@@ -3855,6 +3890,17 @@ class MainWindow(QMainWindow):
         if dlg.exec() == QDialog.Accepted:
             self.api_server_exe = dlg.get_value()
             self.save_config()
+
+    def open_api_url_dialog(self):
+        current = self.api_host or DEFAULT_HOST
+        dlg = ApiUrlConfigDialog(current, self)
+        if dlg.exec() == QDialog.Accepted:
+            new_url = dlg.get_value() or DEFAULT_HOST
+            self.api_host = new_url
+            if getattr(self, "host_edit", None) is not None:
+                self.host_edit.setText(new_url)
+            self.save_config()
+            self.log(tr_log("api_url_loaded", url=new_url))
 
     def open_about_dialog(self):
         dlg = AboutDialog(self)
