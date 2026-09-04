@@ -4380,7 +4380,7 @@ class VTKViewerWidget(QFrame):
         )
         self._replace_actor(
             "_support_linear_actor",
-            self._make_wire_actor(self._build_lines_polydata(linear_supports), self.support_linear_color, self.support_linear_line_width),
+            self._make_wire_actor(self._build_lines_polydata(linear_supports, include_section_colors=False), self.support_linear_color, self.support_linear_line_width),
             role="support_linear",
             pickable=True,
         )
