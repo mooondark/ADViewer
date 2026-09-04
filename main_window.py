@@ -413,7 +413,7 @@ class AboutDialog(QDialog):
         layout.setSpacing(5)
         layout.setAlignment(Qt.AlignCenter)
 
-        title = QLabel("Advance Design Model Viewer")
+        title = QLabel(tr_ui("app_title"))
         title.setAlignment(Qt.AlignCenter)
         title.setWordWrap(False)
         title.setStyleSheet(f"color:{ACCENT}; font-size:16px; font-weight:bold;")
@@ -723,7 +723,7 @@ class LoadAnalysisResultsWorker(QThread):
     def run(self):
         try:
             if not isinstance(self.session_manager, ProjectSessionManager) or not self.session_manager.can_read_results():
-                raise RuntimeError("Session projet invalide pour la lecture des résultats.")
+                raise RuntimeError(tr_err("error_session_invalid"))
             if self.support_role in ("lines", "line", "linear", "element_linear"):
                 payload = read_linear_element_diagram_results(
                     self.host,
@@ -856,7 +856,7 @@ class MainWindow(QMainWindow):
         self.app_icon = load_app_icon("cube.ico", "cube.png", "icon.ico", "icon.png")
         if not self.app_icon.isNull():
             self.setWindowIcon(self.app_icon)
-        self.setWindowTitle(f"Advance Design Model Viewer - v{APP_VERSION}")
+        self.setWindowTitle(f"{tr_ui('app_title')} - v{APP_VERSION}")
         self.resize(1550, 1020)
         self.worker = None
         self.viewer = None
@@ -3201,7 +3201,7 @@ class MainWindow(QMainWindow):
             self._finalize_properties_table(table)
             layout.addWidget(table)
         else:
-            message = QLabel(str(data.get("message", "Non pris en charge")))
+            message = QLabel(str(data.get("message") or tr_ui("prop_not_supported")))
             message.setWordWrap(True)
             message.setAlignment(Qt.AlignLeft | Qt.AlignTop)
             message.setStyleSheet(f"color:{FG_DIM};")
@@ -4309,40 +4309,32 @@ class MainWindow(QMainWindow):
             )
             self.save_config()
 
-    def on_toggle_lines(self, checked: bool):
+    def _toggle_visibility(self, viewer_method: str, log_on: str, log_off: str, checked: bool):
+        """Helper commun pour les toggles de visibilite : appelle viewer_method et logge."""
         if self.viewer:
-            self.viewer.set_show_lines(checked)
-        self.log(tr_log("show_lines_on" if checked else "show_lines_off"), "info")
+            getattr(self.viewer, viewer_method)(checked)
+        self.log(tr_log(log_on if checked else log_off), "info")
+
+    def on_toggle_lines(self, checked: bool):
+        self._toggle_visibility("set_show_lines", "show_lines_on", "show_lines_off", checked)
 
     def on_toggle_planars(self, checked: bool):
-        if self.viewer:
-            self.viewer.set_show_planars(checked)
-        self.log(tr_log("show_planars_on" if checked else "show_planars_off"), "info")
+        self._toggle_visibility("set_show_planars", "show_planars_on", "show_planars_off", checked)
 
     def on_toggle_load_areas(self, checked: bool):
-        if self.viewer:
-            self.viewer.set_show_load_areas(checked)
-        self.log(tr_log("show_load_areas_on" if checked else "show_load_areas_off"), "info")
+        self._toggle_visibility("set_show_load_areas", "show_load_areas_on", "show_load_areas_off", checked)
 
     def on_toggle_support_punctual(self, checked: bool):
-        if self.viewer:
-            self.viewer.set_show_support_punctual(checked)
-        self.log(tr_log("show_support_punctual_on" if checked else "show_support_punctual_off"), "info")
+        self._toggle_visibility("set_show_support_punctual", "show_support_punctual_on", "show_support_punctual_off", checked)
 
     def on_toggle_support_linear(self, checked: bool):
-        if self.viewer:
-            self.viewer.set_show_support_linear(checked)
-        self.log(tr_log("show_support_linear_on" if checked else "show_support_linear_off"), "info")
+        self._toggle_visibility("set_show_support_linear", "show_support_linear_on", "show_support_linear_off", checked)
 
     def on_toggle_support_planar(self, checked: bool):
-        if self.viewer:
-            self.viewer.set_show_support_planar(checked)
-        self.log(tr_log("show_support_planar_on" if checked else "show_support_planar_off"), "info")
+        self._toggle_visibility("set_show_support_planar", "show_support_planar_on", "show_support_planar_off", checked)
 
     def on_toggle_marker(self, checked: bool):
-        if self.viewer:
-            self.viewer.set_show_marker(checked)
-        self.log(tr_log("show_marker_on" if checked else "show_marker_off"), "info")
+        self._toggle_visibility("set_show_marker", "show_marker_on", "show_marker_off", checked)
 
     def on_toggle_mesh(self, checked: bool):
         if self.viewer:
@@ -4510,7 +4502,7 @@ class MainWindow(QMainWindow):
         if self.viewer:
             self.viewer.set_color_by_section(checked)
         self.log(
-            "Couleur par section activée" if checked else "Couleur par section désactivée",
+            tr_ui("color_by_section_on") if checked else tr_ui("color_by_section_off"),
             "info",
         )
 

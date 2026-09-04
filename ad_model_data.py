@@ -324,10 +324,10 @@ def _find_linear_beam_type_label(el: dict) -> str:
 
     if linear_element_type == "elinearelementfemtypecompositebeam":
         composite_map = {
-            "bar": "Poutre mixte",
-            "beamwstandardbending": "Poutre courte mixte",
-            "compositebeamsimplebeam": "Poutre mixte",
-            "compositebeamsbeam": "Poutre courte mixte",
+            "bar":                    LINEAR_BEAM_TYPE_LABELS["CompositeBeamSimpleBeam"],
+            "beamwstandardbending":   LINEAR_BEAM_TYPE_LABELS["CompositeBeamSbeam"],
+            "compositebeamsimplebeam": LINEAR_BEAM_TYPE_LABELS["CompositeBeamSimpleBeam"],
+            "compositebeamsbeam":     LINEAR_BEAM_TYPE_LABELS["CompositeBeamSbeam"],
         }
         if general_beam_type in composite_map:
             return composite_map[general_beam_type]
@@ -339,7 +339,7 @@ def _find_linear_beam_type_label(el: dict) -> str:
             token = _normalize_enum_token(raw)
             if token in composite_map:
                 return composite_map[token]
-        return "Élément filaire"
+        return tr_ui("label_element_linear")
 
     if linear_element_type == "elinearelementfemtypegeneral":
         if general_beam_type in token_map:
@@ -367,7 +367,7 @@ def _find_linear_beam_type_label(el: dict) -> str:
         for key, label in token_map.items():
             if token.endswith(key):
                 return label
-    return "Élément filaire"
+    return tr_ui("label_element_linear")
 
 
 def _radians_to_degrees(value):
@@ -400,7 +400,7 @@ def _extract_release_flags(connection) -> dict:
 def _format_release_connection(connection) -> str:
     flags = _extract_release_flags(connection)
     rows = [label for label, checked in flags.items() if checked]
-    return ", ".join(rows) if rows else "Aucune"
+    return ", ".join(rows) if rows else tr_ui("label_no_release")
 
 
 def _contains_true_value(obj) -> bool:
@@ -429,7 +429,7 @@ def _extract_user_id(el: dict):
 
 
 def _label_with_user_id(base_label: str, user_id) -> str:
-    label = str(base_label or "").strip() or "Élément"
+    label = str(base_label or "").strip() or tr_ui("label_element_generic")
     if user_id is None or str(user_id).strip() == "":
         return label
     return f"{label} n°{user_id}"
@@ -600,13 +600,6 @@ def _polygon_area_3d(points) -> float:
     return 0.5 * math.sqrt(area_x * area_x + area_y * area_y + area_z * area_z)
 
 
-def _format_length_m(value) -> str:
-    try:
-        return f"{float(value):.6g} m"
-    except Exception:
-        return "N/A"
-
-
 def _format_area_m2(value) -> str:
     try:
         return f"{float(value):.6g} m²"
@@ -647,52 +640,60 @@ def _extract_material_density(material: dict):
     return None
 
 
-def _build_linear_takeoff(linear_elements: list, section_by_eid: dict) -> list:
-    totals = {}
+def _build_linear_length_takeoff(linear_elements: list, key_fn) -> list:
+    """Metré de longueur des filaires, groupe selon key_fn(el) -> str."""
+    totals: dict = {}
     for el in linear_elements or []:
         p1 = _point3d_from_api(_dict_get_ci(el, "geomPtStart"))
         p2 = _point3d_from_api(_dict_get_ci(el, "geomPtEnd"))
         if p1 is None or p2 is None:
             continue
-        section_eid = _extract_ref_eid(el, "section")
-        section_name = section_by_eid.get(section_eid, "N/A") if section_eid is not None else "N/A"
-        totals[section_name] = totals.get(section_name, 0.0) + _distance_3d(p1, p2)
+        key = key_fn(el)
+        totals[key] = totals.get(key, 0.0) + _distance_3d(p1, p2)
     return [
         {"name": name, "value": value, "value_text": _format_fixed_unit(value, "m", 2)}
         for name, value in sorted(totals.items(), key=lambda item: str(item[0]).lower())
     ]
+
+
+def _build_linear_takeoff(linear_elements: list, section_by_eid: dict) -> list:
+    def key_fn(el):
+        eid = _extract_ref_eid(el, "section")
+        return section_by_eid.get(eid, "N/A") if eid is not None else "N/A"
+    return _build_linear_length_takeoff(linear_elements, key_fn)
 
 
 def _build_linear_material_takeoff(linear_elements: list, material_by_eid: dict) -> list:
-    totals = {}
-    for el in linear_elements or []:
-        p1 = _point3d_from_api(_dict_get_ci(el, "geomPtStart"))
-        p2 = _point3d_from_api(_dict_get_ci(el, "geomPtEnd"))
-        if p1 is None or p2 is None:
-            continue
-        material_eid = _extract_ref_eid(el, "material")
-        material_name = material_by_eid.get(material_eid, "N/A") if material_eid is not None else "N/A"
-        totals[material_name] = totals.get(material_name, 0.0) + _distance_3d(p1, p2)
-    return [
-        {"name": name, "value": value, "value_text": _format_fixed_unit(value, "m", 2)}
-        for name, value in sorted(totals.items(), key=lambda item: str(item[0]).lower())
-    ]
+    def key_fn(el):
+        eid = _extract_ref_eid(el, "material")
+        return material_by_eid.get(eid, "N/A") if eid is not None else "N/A"
+    return _build_linear_length_takeoff(linear_elements, key_fn)
+
+
+def _compute_planar_net_area(el: dict):
+    """Calcule l'aire nette d'un element surfacique (exterieur moins ouvertures).
+
+    Retourne None si l'element n'a pas assez de sommets, sinon un float >= 0.
+    """
+    outer = [_point3d_from_api(pt) for pt in (_dict_get_ci(el, "geomPtsList") or [])]
+    outer = [pt for pt in outer if pt is not None]
+    if len(outer) < 3:
+        return None
+    area = _polygon_area_3d(outer)
+    for opening in (_dict_get_ci(el, "openings") or []):
+        hole = [_point3d_from_api(pt) for pt in (opening or [])]
+        hole = [pt for pt in hole if pt is not None]
+        if len(hole) >= 3:
+            area -= _polygon_area_3d(hole)
+    return max(0.0, area)
 
 
 def _build_planar_takeoff(planar_elements: list) -> list:
-    totals = {}
+    totals: dict = {}
     for el in planar_elements or []:
-        outer = [_point3d_from_api(pt) for pt in (_dict_get_ci(el, "geomPtsList") or [])]
-        outer = [pt for pt in outer if pt is not None]
-        if len(outer) < 3:
+        area = _compute_planar_net_area(el)
+        if area is None:
             continue
-        area = _polygon_area_3d(outer)
-        for opening in (_dict_get_ci(el, "openings") or []):
-            hole = [_point3d_from_api(pt) for pt in (opening or [])]
-            hole = [pt for pt in hole if pt is not None]
-            if len(hole) >= 3:
-                area -= _polygon_area_3d(hole)
-        area = max(0.0, area)
         thickness_value = _dict_get_ci(el, "thicknessIn1stVertex", "thickness")
         sort_value = None
         try:
@@ -706,33 +707,25 @@ def _build_planar_takeoff(planar_elements: list) -> list:
         bucket["area"] += area
     ordered = sorted(
         totals.items(),
-        key=lambda item: (float('inf') if item[1].get("sort_value") is None else item[1].get("sort_value"), str(item[0]).lower())
+        key=lambda item: (float("inf") if item[1].get("sort_value") is None else item[1].get("sort_value"), str(item[0]).lower())
     )
     return [
-        {"name": name, "area": data["area"], "area_text": _format_fixed_unit(data["area"], "m²", 2)}
+        {"name": name, "area": data["area"], "area_text": _format_fixed_unit(data["area"], "m\u00b2", 2)}
         for name, data in ordered
     ]
 
 
 def _build_planar_material_takeoff(planar_elements: list, material_by_eid: dict) -> list:
-    totals = {}
+    totals: dict = {}
     for el in planar_elements or []:
-        outer = [_point3d_from_api(pt) for pt in (_dict_get_ci(el, "geomPtsList") or [])]
-        outer = [pt for pt in outer if pt is not None]
-        if len(outer) < 3:
+        area = _compute_planar_net_area(el)
+        if area is None:
             continue
-        area = _polygon_area_3d(outer)
-        for opening in (_dict_get_ci(el, "openings") or []):
-            hole = [_point3d_from_api(pt) for pt in (opening or [])]
-            hole = [pt for pt in hole if pt is not None]
-            if len(hole) >= 3:
-                area -= _polygon_area_3d(hole)
-        area = max(0.0, area)
         material_eid = _extract_ref_eid(el, "material")
         material_name = material_by_eid.get(material_eid, "N/A") if material_eid is not None else "N/A"
         totals[material_name] = totals.get(material_name, 0.0) + area
     return [
-        {"name": name, "area": area, "area_text": _format_fixed_unit(area, "m²", 2)}
+        {"name": name, "area": area, "area_text": _format_fixed_unit(area, "m\u00b2", 2)}
         for name, area in sorted(totals.items(), key=lambda item: str(item[0]).lower())
     ]
 
@@ -762,7 +755,7 @@ def _find_planar_type_label(el: dict) -> str:
         token = _normalize_enum_token(raw)
         if token in token_map:
             return token_map[token]
-    return "Élément surfacique"
+    return tr_ui("label_element_planar")
 
 
 def _format_length_cm(value) -> str:
@@ -1049,37 +1042,66 @@ def _to_float(value, default=0.0):
 def _format_tc_behavior(value):
     raw = str(value or "").strip().lower()
     if raw.startswith("tr"):
-        return "Traction"
+        return tr_ui("label_tc_traction")
     if raw.startswith("co"):
-        return "Compression"
+        return tr_ui("label_tc_compression")
     if raw:
         return str(value)
     return ""
 
 
-def extract_punctual_support_properties(el: dict):
+# Libellés i18n par famille d'appui (unsupported/advanced/rigid/elastic/stop)
+_PUNCTUAL_SUPPORT_LABELS = {
+    "unsupported": "prop_support_punctual_unsupported",
+    "advanced":    "prop_support_punctual_advanced",
+    "rigid":       "prop_support_punctual_rigid",
+    "elastic":     "prop_support_punctual_elastic",
+    "stop":        "prop_support_punctual_stop",
+}
+_LINEAR_SUPPORT_LABELS = {
+    "unsupported": "prop_support_linear_unsupported",
+    "advanced":    "prop_support_linear_advanced",
+    "rigid":       "prop_support_linear_rigid",
+    "elastic":     "prop_support_linear_elastic",
+    "stop":        "prop_support_linear_stop",
+}
+_PLANAR_SUPPORT_LABELS = {
+    "unsupported": "prop_support_planar_unsupported",
+    "advanced":    "prop_support_planar_advanced",
+    "rigid":       "prop_support_planar_rigid",
+    "elastic":     "prop_support_planar_elastic",
+    "stop":        "prop_support_planar_stop",
+}
+
+
+def _extract_support_properties(el: dict, lbl: dict) -> dict:
+    """Factory commune pour les trois familles d'appuis (ponctuel/lineaire/surfacique).
+
+    ``lbl`` est un dict de cles i18n avec les entrees :
+    unsupported, advanced, rigid, elastic, stop.
+    """
     if not isinstance(el, dict):
-        return {"kind": "unsupported", "type_label": tr_ui("prop_support_punctual_unsupported"), "message": tr_ui("prop_not_supported")}
+        return {"kind": "unsupported", "type_label": tr_ui(lbl["unsupported"]), "message": tr_ui("prop_not_supported")}
 
     raw_type = " ".join(
         str(_dict_get_ci(el, key, default="") or "")
         for key in ("elementType", "type", "typeName", "className", "$type")
     ).lower()
     restraints = _dict_get_ci(el, "restraints")
-    stiffness = _dict_get_ci(el, "stiffness")
+    stiffness  = _dict_get_ci(el, "stiffness")
     tc_behavior = _dict_get_ci(el, "tcBehavior")
 
     if "advanced" in raw_type:
-        return {"kind": "advanced", "type_label": tr_ui("prop_support_punctual_advanced"), "message": tr_ui("prop_not_supported")}
+        return {"kind": "advanced", "type_label": tr_ui(lbl["advanced"]), "message": tr_ui("prop_not_supported")}
 
     if isinstance(restraints, dict):
         user_id = _extract_user_id(el)
         return {
             "kind": "rigid",
-            "type_label": _label_with_user_id(tr_ui("prop_support_punctual_rigid"), user_id),
-            "base_type_label": tr_ui("prop_support_punctual_rigid"),
+            "type_label": _label_with_user_id(tr_ui(lbl["rigid"]), user_id),
+            "base_type_label": tr_ui(lbl["rigid"]),
             "user_id": user_id,
-            "section_title": tr_ui("prop_blocking"),
+            "section_title": tr_ui("label_section_blocking"),
             "restraints": {
                 "TX": _to_bool(_dict_get_ci(restraints, "tx", "TX")),
                 "TY": _to_bool(_dict_get_ci(restraints, "ty", "TY")),
@@ -1093,13 +1115,13 @@ def extract_punctual_support_properties(el: dict):
     if isinstance(stiffness, dict):
         is_tc = (tc_behavior is not None or "tcpunctualsupport" in raw_type)
         user_id = _extract_user_id(el)
-        base_type_label = tr_ui("prop_support_punctual_stop") if is_tc else tr_ui("prop_support_punctual_elastic")
+        base_type_label = tr_ui(lbl["stop"]) if is_tc else tr_ui(lbl["elastic"])
         return {
             "kind": "tc" if is_tc else "elastic",
             "type_label": _label_with_user_id(base_type_label, user_id),
             "base_type_label": base_type_label,
             "user_id": user_id,
-            "section_title": "Raideur",
+            "section_title": tr_ui("label_section_stiffness"),
             "tc_behavior": _format_tc_behavior(tc_behavior),
             "stiffness": {
                 "KTX": _to_float(_dict_get_ci(stiffness, "ktx", "KTX")),
@@ -1112,126 +1134,20 @@ def extract_punctual_support_properties(el: dict):
         }
 
     if "advanced" in raw_type:
-        return {"kind": "advanced", "type_label": tr_ui("prop_support_punctual_advanced"), "message": tr_ui("prop_not_supported")}
-    return {"kind": "unsupported", "type_label": tr_ui("prop_support_punctual_unsupported"), "message": tr_ui("prop_not_supported")}
+        return {"kind": "advanced", "type_label": tr_ui(lbl["advanced"]), "message": tr_ui("prop_not_supported")}
+    return {"kind": "unsupported", "type_label": tr_ui(lbl["unsupported"]), "message": tr_ui("prop_not_supported")}
 
 
-def extract_linear_support_properties(el: dict):
-    if not isinstance(el, dict):
-        return {"kind": "unsupported", "type_label": tr_ui("prop_support_linear_unsupported"), "message": tr_ui("prop_not_supported")}
-
-    raw_type = " ".join(
-        str(_dict_get_ci(el, key, default="") or "")
-        for key in ("elementType", "type", "typeName", "className", "$type")
-    ).lower()
-    restraints = _dict_get_ci(el, "restraints")
-    stiffness = _dict_get_ci(el, "stiffness")
-    tc_behavior = _dict_get_ci(el, "tcBehavior")
-
-    if "advanced" in raw_type:
-        return {"kind": "advanced", "type_label": tr_ui("prop_support_linear_advanced"), "message": tr_ui("prop_not_supported")}
-
-    if isinstance(restraints, dict):
-        user_id = _extract_user_id(el)
-        return {
-            "kind": "rigid",
-            "type_label": _label_with_user_id(tr_ui("prop_support_linear_rigid"), user_id),
-            "base_type_label": tr_ui("prop_support_linear_rigid"),
-            "user_id": user_id,
-            "section_title": "Blocage",
-            "restraints": {
-                "TX": _to_bool(_dict_get_ci(restraints, "tx", "TX")),
-                "TY": _to_bool(_dict_get_ci(restraints, "ty", "TY")),
-                "TZ": _to_bool(_dict_get_ci(restraints, "tz", "TZ")),
-                "RX": _to_bool(_dict_get_ci(restraints, "rx", "RX")),
-                "RY": _to_bool(_dict_get_ci(restraints, "ry", "RY")),
-                "RZ": _to_bool(_dict_get_ci(restraints, "rz", "RZ")),
-            },
-        }
-
-    if isinstance(stiffness, dict):
-        is_tc = (tc_behavior is not None or "tcpunctualsupport" in raw_type)
-        user_id = _extract_user_id(el)
-        base_type_label = tr_ui("prop_support_linear_stop") if is_tc else tr_ui("prop_support_linear_elastic")
-        return {
-            "kind": "tc" if is_tc else "elastic",
-            "type_label": _label_with_user_id(base_type_label, user_id),
-            "base_type_label": base_type_label,
-            "user_id": user_id,
-            "section_title": "Raideur",
-            "tc_behavior": _format_tc_behavior(tc_behavior),
-            "stiffness": {
-                "KTX": _to_float(_dict_get_ci(stiffness, "ktx", "KTX")),
-                "KTY": _to_float(_dict_get_ci(stiffness, "kty", "KTY")),
-                "KTZ": _to_float(_dict_get_ci(stiffness, "ktz", "KTZ")),
-                "KRX": _to_float(_dict_get_ci(stiffness, "krx", "KRX")),
-                "KRY": _to_float(_dict_get_ci(stiffness, "kry", "KRY")),
-                "KRZ": _to_float(_dict_get_ci(stiffness, "krz", "KRZ")),
-            },
-        }
-
-    if "advanced" in raw_type:
-        return {"kind": "advanced", "type_label": tr_ui("prop_support_linear_advanced"), "message": tr_ui("prop_not_supported")}
-    return {"kind": "unsupported", "type_label": tr_ui("prop_support_linear_unsupported"), "message": tr_ui("prop_not_supported")}
+def extract_punctual_support_properties(el: dict) -> dict:
+    return _extract_support_properties(el, _PUNCTUAL_SUPPORT_LABELS)
 
 
-def extract_planar_support_properties(el: dict):
-    if not isinstance(el, dict):
-        return {"kind": "unsupported", "type_label": tr_ui("prop_support_planar_unsupported"), "message": tr_ui("prop_not_supported")}
+def extract_linear_support_properties(el: dict) -> dict:
+    return _extract_support_properties(el, _LINEAR_SUPPORT_LABELS)
 
-    raw_type = " ".join(
-        str(_dict_get_ci(el, key, default="") or "")
-        for key in ("elementType", "type", "typeName", "className", "$type")
-    ).lower()
-    restraints = _dict_get_ci(el, "restraints")
-    stiffness = _dict_get_ci(el, "stiffness")
-    tc_behavior = _dict_get_ci(el, "tcBehavior")
 
-    if "advanced" in raw_type:
-        return {"kind": "advanced", "type_label": tr_ui("prop_support_planar_advanced"), "message": tr_ui("prop_not_supported")}
-
-    if isinstance(restraints, dict):
-        user_id = _extract_user_id(el)
-        return {
-            "kind": "rigid",
-            "type_label": _label_with_user_id(tr_ui("prop_support_planar_rigid"), user_id),
-            "base_type_label": tr_ui("prop_support_planar_rigid"),
-            "user_id": user_id,
-            "section_title": "Blocage",
-            "restraints": {
-                "TX": _to_bool(_dict_get_ci(restraints, "tx", "TX")),
-                "TY": _to_bool(_dict_get_ci(restraints, "ty", "TY")),
-                "TZ": _to_bool(_dict_get_ci(restraints, "tz", "TZ")),
-                "RX": _to_bool(_dict_get_ci(restraints, "rx", "RX")),
-                "RY": _to_bool(_dict_get_ci(restraints, "ry", "RY")),
-                "RZ": _to_bool(_dict_get_ci(restraints, "rz", "RZ")),
-            },
-        }
-
-    if isinstance(stiffness, dict):
-        is_tc = (tc_behavior is not None or "tcpunctualsupport" in raw_type)
-        user_id = _extract_user_id(el)
-        base_type_label = tr_ui("prop_support_planar_stop") if is_tc else tr_ui("prop_support_planar_elastic")
-        return {
-            "kind": "tc" if is_tc else "elastic",
-            "type_label": _label_with_user_id(base_type_label, user_id),
-            "base_type_label": base_type_label,
-            "user_id": user_id,
-            "section_title": "Raideur",
-            "tc_behavior": _format_tc_behavior(tc_behavior),
-            "stiffness": {
-                "KTX": _to_float(_dict_get_ci(stiffness, "ktx", "KTX")),
-                "KTY": _to_float(_dict_get_ci(stiffness, "kty", "KTY")),
-                "KTZ": _to_float(_dict_get_ci(stiffness, "ktz", "KTZ")),
-                "KRX": _to_float(_dict_get_ci(stiffness, "krx", "KRX")),
-                "KRY": _to_float(_dict_get_ci(stiffness, "kry", "KRY")),
-                "KRZ": _to_float(_dict_get_ci(stiffness, "krz", "KRZ")),
-            },
-        }
-
-    if "advanced" in raw_type:
-        return {"kind": "advanced", "type_label": tr_ui("prop_support_planar_advanced"), "message": tr_ui("prop_not_supported")}
-    return {"kind": "unsupported", "type_label": tr_ui("prop_support_planar_unsupported"), "message": tr_ui("prop_not_supported")}
+def extract_planar_support_properties(el: dict) -> dict:
+    return _extract_support_properties(el, _PLANAR_SUPPORT_LABELS)
 
 
 def get_results(host: str, result_type: str, analysis_case_id: int, element_ids: list) -> list:
@@ -1847,6 +1763,59 @@ def _read_results_cases_data(host: str) -> list:
     )
 
 
+def _resolve_load_case_labels(host: str, elements: list) -> dict:
+    """Resout les libelles des cas de charge references par une liste d'elements.
+
+    Retourne un dict {eid_int: label_str} pour tous les cas trouves.
+    Utilise GetInformationalElementsObject dans un ordre deterministe (insertion).
+    """
+    lc_eids_needed: set = set()
+    for el in elements:
+        if not isinstance(el, dict):
+            continue
+        lc_ref = el.get("loadCase") or {}
+        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
+        if lc_eid is not None:
+            try:
+                lc_eids_needed.add(int(lc_eid))
+            except (TypeError, ValueError):
+                pass
+
+    lc_by_eid: dict = {}
+    if lc_eids_needed:
+        try:
+            ordered_eids = list(lc_eids_needed)   # ordre d'insertion - stable Python 3.7+
+            lc_objects = get_informational_elements_objects(host, ordered_eids)
+            for lc_eid, lc_obj in zip(ordered_eids, lc_objects or []):
+                if not isinstance(lc_obj, dict):
+                    continue
+                user_id = lc_obj.get("userID")
+                name = _get_username(lc_obj) or str(lc_obj.get("name") or "").strip()
+                left = str(user_id).strip() if user_id not in (None, "") else str(lc_eid)
+                label = f"{left} : {name}" if name else left
+                lc_by_eid[int(lc_eid)] = label
+        except Exception:
+            pass
+    return lc_by_eid
+
+
+def _get_element_float(el: dict, key: str) -> float:
+    """Lit une composante numerique depuis un dict API en gerant la casse (fx/Fx, etc.)."""
+    key_cap = key[0].upper() + key[1:]
+    return float(el.get(key) or el.get(key_cap) or 0.0)
+
+
+def _get_moment_float(el: dict, moment_dict, key: str) -> float:
+    """Lit un moment depuis le sous-dict 'moment' ou directement depuis l'element."""
+    key_cap = key[0].upper() + key[1:]
+    if isinstance(moment_dict, dict):
+        return float(
+            moment_dict.get(key) or moment_dict.get(key_cap)
+            or el.get(key) or el.get(key_cap) or 0.0
+        )
+    return float(el.get(key) or el.get(key_cap) or 0.0)
+
+
 def _build_punctual_loads_payload(host: str, ids_data: dict, objects_data: dict) -> dict:
     """Construit la liste des charges ponctuelles avec résolution des cas de charge.
 
@@ -1866,40 +1835,11 @@ def _build_punctual_loads_payload(host: str, ids_data: dict, objects_data: dict)
             "punctual_load_count": 0,
         }
 
-    # Collecter les EIDs de cas de charge référencés
-    lc_eids_needed = set()
-    for el in punctual_load_elements:
-        if not isinstance(el, dict):
-            continue
-        lc_ref = el.get("loadCase") or {}
-        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
-        if lc_eid is not None:
-            try:
-                lc_eids_needed.add(int(lc_eid))
-            except (TypeError, ValueError):
-                pass
-
-    # Résolution des cas de charge (GetInformationalElementsObject)
-    # On passe les EIDs dans un ordre déterministe et on zippe dans le même ordre.
-    lc_by_eid = {}
-    if lc_eids_needed:
-        try:
-            ordered_eids = list(lc_eids_needed)   # ordre d'insertion — stable Python 3.7+
-            lc_objects = get_informational_elements_objects(host, ordered_eids)
-            for lc_eid, lc_obj in zip(ordered_eids, lc_objects or []):
-                if not isinstance(lc_obj, dict):
-                    continue
-                user_id = lc_obj.get("userID")
-                name = _get_username(lc_obj) or str(lc_obj.get("name") or "").strip()
-                left = str(user_id).strip() if user_id not in (None, "") else str(lc_eid)
-                label = f"{left} : {name}" if name else left
-                lc_by_eid[int(lc_eid)] = label
-        except Exception:
-            pass
+    lc_by_eid = _resolve_load_case_labels(host, punctual_load_elements)
 
     # Construire la liste des charges
     punctual_loads = []
-    seen_lc_eids = {}  # eid → label, pour ordre d'apparition
+    seen_lc_eids = {}  # eid -> label, pour ordre d'apparition
     for el in punctual_load_elements:
         if not isinstance(el, dict):
             continue
@@ -1913,21 +1853,16 @@ def _build_punctual_loads_payload(host: str, ids_data: dict, objects_data: dict)
         except (TypeError, ValueError):
             continue
 
-        fx = float(el.get("fx") or el.get("Fx") or 0.0) / 1000.0   # N -> kN
-        fy = float(el.get("fy") or el.get("Fy") or 0.0) / 1000.0
-        fz = float(el.get("fz") or el.get("Fz") or 0.0) / 1000.0
+        fx = _get_element_float(el, "fx") / 1000.0   # N -> kN
+        fy = _get_element_float(el, "fy") / 1000.0
+        fz = _get_element_float(el, "fz") / 1000.0
 
         # Moments — l'API retourne un sous-dict {"mx": ..., "my": ..., "mz": ...}
-        # sous la clé "moment", mais peut aussi les exposer à plat selon la version.
+        # sous la cle "moment", mais peut aussi les exposer a plat selon la version.
         moment_dict = el.get("moment") or {}
-        if isinstance(moment_dict, dict):
-            mx = float(moment_dict.get("mx") or moment_dict.get("Mx") or el.get("mx") or el.get("Mx") or 0.0) / 1000.0
-            my = float(moment_dict.get("my") or moment_dict.get("My") or el.get("my") or el.get("My") or 0.0) / 1000.0
-            mz = float(moment_dict.get("mz") or moment_dict.get("Mz") or el.get("mz") or el.get("Mz") or 0.0) / 1000.0
-        else:
-            mx = float(el.get("mx") or el.get("Mx") or 0.0) / 1000.0
-            my = float(el.get("my") or el.get("My") or 0.0) / 1000.0
-            mz = float(el.get("mz") or el.get("Mz") or 0.0) / 1000.0
+        mx = _get_moment_float(el, moment_dict, "mx") / 1000.0
+        my = _get_moment_float(el, moment_dict, "my") / 1000.0
+        mz = _get_moment_float(el, moment_dict, "mz") / 1000.0
 
         # Identifiant utilisateur
         user_id = el.get("userID") or el.get("userId") or el.get("userid")
@@ -1992,35 +1927,7 @@ def _build_linear_loads_payload(host: str, ids_data: dict, objects_data: dict) -
             "linear_load_count": 0,
         }
 
-    # Collecter les EIDs de cas de charge référencés
-    lc_eids_needed = set()
-    for el in linear_load_elements:
-        if not isinstance(el, dict):
-            continue
-        lc_ref = el.get("loadCase") or {}
-        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
-        if lc_eid is not None:
-            try:
-                lc_eids_needed.add(int(lc_eid))
-            except (TypeError, ValueError):
-                pass
-
-    # Résolution des cas de charge
-    lc_by_eid = {}
-    if lc_eids_needed:
-        try:
-            ordered_eids = list(lc_eids_needed)
-            lc_objects = get_informational_elements_objects(host, ordered_eids)
-            for lc_eid, lc_obj in zip(ordered_eids, lc_objects or []):
-                if not isinstance(lc_obj, dict):
-                    continue
-                user_id = lc_obj.get("userID")
-                name = _get_username(lc_obj) or str(lc_obj.get("name") or "").strip()
-                left = str(user_id).strip() if user_id not in (None, "") else str(lc_eid)
-                label = f"{left} : {name}" if name else left
-                lc_by_eid[int(lc_eid)] = label
-        except Exception:
-            pass
+    lc_by_eid = _resolve_load_case_labels(host, linear_load_elements)
 
     # Construire la liste des charges linéaires
     linear_loads = []
@@ -2043,20 +1950,15 @@ def _build_linear_loads_payload(host: str, ids_data: dict, objects_data: dict) -
             continue
 
         # Forces (N/m -> kN/m)
-        fx = float(el.get("fx") or el.get("Fx") or 0.0) / 1000.0
-        fy = float(el.get("fy") or el.get("Fy") or 0.0) / 1000.0
-        fz = float(el.get("fz") or el.get("Fz") or 0.0) / 1000.0
+        fx = _get_element_float(el, "fx") / 1000.0
+        fy = _get_element_float(el, "fy") / 1000.0
+        fz = _get_element_float(el, "fz") / 1000.0
 
         # Moments (N.m/m -> kN.m/m) — sous-dict "moment"
         moment_dict = el.get("moment") or {}
-        if isinstance(moment_dict, dict):
-            mx = float(moment_dict.get("mx") or moment_dict.get("Mx") or el.get("mx") or el.get("Mx") or 0.0) / 1000.0
-            my = float(moment_dict.get("my") or moment_dict.get("My") or el.get("my") or el.get("My") or 0.0) / 1000.0
-            mz = float(moment_dict.get("mz") or moment_dict.get("Mz") or el.get("mz") or el.get("Mz") or 0.0) / 1000.0
-        else:
-            mx = float(el.get("mx") or el.get("Mx") or 0.0) / 1000.0
-            my = float(el.get("my") or el.get("My") or 0.0) / 1000.0
-            mz = float(el.get("mz") or el.get("Mz") or 0.0) / 1000.0
+        mx = _get_moment_float(el, moment_dict, "mx") / 1000.0
+        my = _get_moment_float(el, moment_dict, "my") / 1000.0
+        mz = _get_moment_float(el, moment_dict, "mz") / 1000.0
 
         # Variation (coefficients de début et fin)
         variation = el.get("variation")
@@ -2132,35 +2034,7 @@ def _build_planar_loads_payload(host: str, ids_data: dict, objects_data: dict) -
             "planar_load_count": 0,
         }
 
-    # Collecter les EIDs de cas de charge references
-    lc_eids_needed = set()
-    for el in planar_load_elements:
-        if not isinstance(el, dict):
-            continue
-        lc_ref = el.get("loadCase") or {}
-        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
-        if lc_eid is not None:
-            try:
-                lc_eids_needed.add(int(lc_eid))
-            except (TypeError, ValueError):
-                pass
-
-    # Resolution des cas de charge
-    lc_by_eid = {}
-    if lc_eids_needed:
-        try:
-            ordered_eids = list(lc_eids_needed)
-            lc_objects = get_informational_elements_objects(host, ordered_eids)
-            for lc_eid, lc_obj in zip(ordered_eids, lc_objects or []):
-                if not isinstance(lc_obj, dict):
-                    continue
-                user_id = lc_obj.get("userID")
-                name = _get_username(lc_obj) or str(lc_obj.get("name") or "").strip()
-                left = str(user_id).strip() if user_id not in (None, "") else str(lc_eid)
-                label = f"{left} : {name}" if name else left
-                lc_by_eid[int(lc_eid)] = label
-        except Exception:
-            pass
+    lc_by_eid = _resolve_load_case_labels(host, planar_load_elements)
 
     # Construire la liste des charges surfaciques
     planar_loads = []
@@ -2187,9 +2061,9 @@ def _build_planar_loads_payload(host: str, ids_data: dict, objects_data: dict) -
             continue
 
         # Forces (N/m2 -> kN/m2)
-        fx = float(el.get("fx") or el.get("Fx") or 0.0) / 1000.0
-        fy = float(el.get("fy") or el.get("Fy") or 0.0) / 1000.0
-        fz = float(el.get("fz") or el.get("Fz") or 0.0) / 1000.0
+        fx = _get_element_float(el, "fx") / 1000.0
+        fy = _get_element_float(el, "fy") / 1000.0
+        fz = _get_element_float(el, "fz") / 1000.0
 
         # Variation (coefficients 1/2/3 pour les 3 premiers points)
         variation = el.get("variation")
@@ -2498,7 +2372,7 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         fem_nodes: list = []
         fem_by_eid: dict = {}
         if has_analysis_results:
-            progress(71, "Lecture du maillage FEM...")
+            progress(71, tr_ui("progress_read_fem_mesh"))
             linear_ids = [int(eid) for eid in (ids_data.get("linear_ids") or []) if eid is not None]
             planar_ids = [int(eid) for eid in (ids_data.get("planar_ids") or []) if eid is not None]
             all_element_eids = linear_ids + planar_ids
@@ -2560,10 +2434,10 @@ class LoadModelWorker(QThread):
 
     def run(self):
         try:
-            self._emit_progress(2, "Vérification de l'API...")
+            self._emit_progress(2, tr_log("checking_api"))
             self.log.emit(tr_log("checking_api"), "info")
             check_port(self.host)
-            self._emit_progress(6, "API accessible.")
+            self._emit_progress(6, tr_log("api_ok"))
             self.log.emit(tr_log("api_ok"), "ok")
             self.log.emit(tr_log("normalized_path", path=self.fto_path), "info")
             self.log.emit(tr_log("opening_project_reading"), "info")
@@ -2580,7 +2454,7 @@ class LoadModelWorker(QThread):
             elif model_data.get("project_closed", False):
                 self.log.emit(tr_log("project_closed_after_read"), "ok")
 
-            self._emit_progress(97, "Finalisation...")
+            self._emit_progress(97, tr_log("progress_finalizing"))
             self.log.emit(tr_log("ids_linear", count=model_data["linear_ids_count"]), "info")
             self.log.emit(tr_log("ids_planar", count=model_data["planar_ids_count"]), "info")
             self.log.emit(tr_log("ids_load_area", count=model_data["load_area_ids_count"]), "info")
@@ -2631,7 +2505,7 @@ class LoadModelWorker(QThread):
                 "ok" if model_data.get("has_analysis_results") else "error"
             )
 
-            self._emit_progress(100, "Chargement terminé.")
+            self._emit_progress(100, tr_log("progress_load_done"))
             self.success.emit(model_data)
 
         except ApiUnavailableError as e:

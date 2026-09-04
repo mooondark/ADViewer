@@ -2,6 +2,11 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.89.3
+
+- Correction de bugs & optimisation
+- Bug fixes and optimisation
+
 ## 1.89
 
 ### Affichage des charges surfaciques & divers

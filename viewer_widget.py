@@ -2052,29 +2052,28 @@ class VTKViewerWidget(QFrame):
         self._apply_face_opacity_state()
         self.render_window.Render()
 
-    def set_show_lines(self, visible: bool):
-        self._show_lines = visible
+    def _set_visible_flag(self, attr: str, visible: bool):
+        """Helper commun : met a jour un attribut de visibilite et applique l'etat."""
+        setattr(self, attr, visible)
         self._apply_visibility_state()
+
+    def set_show_lines(self, visible: bool):
+        self._set_visible_flag("_show_lines", visible)
 
     def set_show_planars(self, visible: bool):
-        self._show_planars = visible
-        self._apply_visibility_state()
+        self._set_visible_flag("_show_planars", visible)
 
     def set_show_load_areas(self, visible: bool):
-        self._show_load_areas = visible
-        self._apply_visibility_state()
+        self._set_visible_flag("_show_load_areas", visible)
 
     def set_show_support_punctual(self, visible: bool):
-        self._show_support_punctual = visible
-        self._apply_visibility_state()
+        self._set_visible_flag("_show_support_punctual", visible)
 
     def set_show_support_linear(self, visible: bool):
-        self._show_support_linear = visible
-        self._apply_visibility_state()
+        self._set_visible_flag("_show_support_linear", visible)
 
     def set_show_support_planar(self, visible: bool):
-        self._show_support_planar = visible
-        self._apply_visibility_state()
+        self._set_visible_flag("_show_support_planar", visible)
 
     def set_show_marker(self, visible: bool):
         self._show_marker = visible

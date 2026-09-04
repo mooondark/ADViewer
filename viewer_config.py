@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.89.2"
+APP_VERSION = "1.89.3"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -616,6 +616,19 @@ MSG_UI = {
         "clic droit = cycle de sélection, clic milieu = panoramique, "
         "F ou double-clic milieu = zoom étendu, Ctrl+I = vue isométrique."
     ),
+
+    # Libellés génériques d'éléments et de propriétés
+    "app_title": "Advance Design Model Viewer",
+    "label_element_linear": "Élément filaire",
+    "label_element_planar": "Élément surfacique",
+    "label_element_generic": "Élément",
+    "label_no_release": "Aucune",
+    "label_tc_traction": "Traction",
+    "label_tc_compression": "Compression",
+    "label_section_stiffness": "Raideur",
+    "label_section_blocking": "Blocage",
+    "color_by_section_on": "Couleur par section activée",
+    "color_by_section_off": "Couleur par section désactivée",
 }
 
 MSG_LOG = {
@@ -714,6 +727,9 @@ MSG_LOG = {
         "appuis ponctuels={support_punctual:.1f}, appuis linéaires={support_linear:.1f}, "
         "appuis surfaciques={support_planar:.1f}"
     ),
+    "progress_read_fem_mesh": "Lecture du maillage FEM...",
+    "progress_finalizing": "Finalisation...",
+    "progress_load_done": "Chargement terminé.",
 }
 
 MSG_ERR = {
@@ -741,6 +757,7 @@ MSG_ERR = {
     "api_server_exe_not_found": "Exécutable serveur API introuvable : {path}",
     "api_server_start_failed": "Impossible de démarrer l'API : {details}",
     "api_engine_not_initialized": "Erreur d'initialisation : Quittez le viewer et lancez Advance Design pour initialiser le moteur API.",
+    "error_session_invalid": "Session projet invalide pour la lecture des résultats.",
 }
 
 
