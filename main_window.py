@@ -892,7 +892,7 @@ class MainWindow(QMainWindow):
         self.load_progress_label = None
         self.load_progress_bar = None
         self.side_tabs = None
-        self.shared_progress_container = None
+
         self.help_label = None
         self.title_bar = None
         self._suspend_config_save = False
@@ -1321,6 +1321,41 @@ class MainWindow(QMainWindow):
             'WrhrFOadHwx39eAxkgNy/wXjcDY2VkmDXLT4YGJnICqYxmGXob6urkc+mjxV0DTN/mitZ3iGdPg/'
             'ull2qbmKz2YAAAAASUVORK5CYII='
         ),
+        "parcourir": (
+            'iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAB/klE'
+            'QVRoge3ZP2sUQRjH8c8l0WjegYhpxM5KCQjRTrGxMdFCJYW9ve2+B8E3oHYaEGyCghYqKmn804ha'
+            'ib2VIKixmN3c3OX27nbvz15gvjDw7Ozss/ObeZ7bmTkSiUSiSVpd14u4iqMV/ezgPbbG0amcFm7k'
+            '9oP8HX05hO28Yd3yEEtjErAR+d0oazQX2es4PeJL1/ECR0b0A8dL7A4WShq9wssKLzuG67m9gje4'
+            'hI8VfNQiFhDPxjNkFX09x10cwDJe4xqeDPl8EfNF/q1G91ZxO7d/KMmJTDvmsio9j7iAn5GfP7g1'
+            '5LNxzA8quzmxsMfNaDzFOWHUlzGPOziFz3mb0hGsw7gFEOL+DB4L+QA3u9q0cK+r7r4g6mR+fVY7'
+            'jOKc/CQMwB4yo4dQzJLws9o3BPowVH8mMQMFv3AFF4UZOZzXl45gHSYpoGBLvS/0txK7g2kIqEuR'
+            'E/SZsVkWsCOI6MvcoAazTtkMxF++WeI7HuF3r5ubRluJTqu8E5b92J8htIK14iIOoQ+4nNtVV6PT'
+            'IP4ynygqy3Kgzmp00mTaAnYjZz+GUAdJQNMkAU2TBDRNEtA0SUDTJAFNE69G45OyWdyRxWel/woj'
+            'FvA1ss/nZVb50qtyUdiuNb1lHFTe4mDR6V5/Ma0J55PzFUdl0vwVTvU2lWzqE4lEYvr8B/UkxBi0'
+            'wdHsAAAAAElFTkSuQmCC'
+        ),
+        "effacer": (
+            'iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAEEElE'
+            'QVRoge3Zy6tXVRTA8Y/XHmbX1ErD7JaPiNLQrKBBbxo2yAYFDQoUekIQBFGDyGGDoP4Bo0FEk2oU'
+            'FVGBFTWppFB7YNrDyJ/BtTSv1r3aYJ3T3ff3O4/f49z7m/iFA/v8fuustfbZa6+9zt6cZrjMa0DH'
+            'eViJ5ViR3Z+J0Ta5o/gXf+E3HMKB7L5veu3AxbgFN2I91uGiQRzA79iNXfgUH4sONsYqPIedODVH'
+            '1048i8vqnKsagcvxPO7GSIXccfyElnib4/gHf7fJnYuzcL4YteWZgwsqdE/hTTyDvRVyHTyOEzrf'
+            'zDF8gG24E6tVd66OEazJdG3Dh5gosHs886krrhE9zx+ewju4R+fEnA1GcW9mM/VjEhu7UfBA8tBu'
+            'bJoVN7vjWuxJ/Lm/XaBo+I8k7QtFuhsWf+CC5P5ImWDKRp3xtx23Y37DDhYxH3fgZZ3zcEO7cFEW'
+            'WqR8cRkXefoTfC1C7JcBnJ2HMbGebMBNuBlLSuQXt/tWlkZbWNalEydEJw6IIZ7AYTFyxzKZhSJd'
+            'Lsnao2L1HsPZXdpp6WHR/Nz0sD2ClzIn52oh+xkvZrbz3z4rcvSMkg7sxQ1Z+wSeyK4rxBBfL0qJ'
+            'q8REH4RDItPswhfYgR+y/7Ymcj8WPVzWgVR4ddL+Pru2J78tFCvqCpyT3S9O2kQoTeBPsUJPiFV7'
+            'f9YuI7VduBKXdWBf0l5bYSB3bk92Nc2apL2vSKCsDEhHYE2JzFyQvrzCECrjUtOT52CTHvVIK/Fj'
+            'rJcHR0QazB9e1Lhr9Ywm9o8riZayEDopSuSc1SVys0kaPvuFTx1UlcLDngepzdL4r+pAmraG3YHS'
+            'j5mqDqRpaxghlNosTKGUrwPMHLaqtWCeqNNXdOfX//yK18QkLaLvFJqTltXfVsht0X/Nc1+F3u8S'
+            'uY4yOqfbObCqRrZpRszckegrhI6KQmuZKHlXKq79XxHfrut6dPIbvF7y3yWmy+yWLr/EikjL6lv7'
+            'VdIHt6kpo3PqwmJYqbSrNYD6DpSV1bNNbRmdU9eBXsrqJqkto3N6GYG5DKGB14CcMdOTqTWIoh7p'
+            'u4xuZ0TsMOTKaneLG2BVYu+wmiipC6GTYh8o565BPOuSzUl7h5IyuhceMv1GDogTmNlisTjcyO09'
+            '2ITSs8QHRa70XdV7+v2yAO8ndvZlthths5lb3V/i6qaUZ7q+SvRPmYVwfdrMSnISr+q9BkpZn+mY'
+            'bNP91ECeVrBVbEylxqbwER4VRVgdY3gseyYd1VOigNzSi0P9HLNeiRfEsVARLXFId1DsZsNSsTG7'
+            'Sfmm8dt4UnwHzAnX4S2dw9/LNYk3xEnM0FgudpHfE2+8zulxkcke1v0WfilNnNS3s1bsWi/NLsLp'
+            'cXEgMlBtc5rTNMx/Bndl+IuhIgsAAAAASUVORK5CYII='
+        ),
     }
 
     def _make_view_icon(self, kind: str) -> QIcon:
@@ -1335,6 +1370,8 @@ class MainWindow(QMainWindow):
             "isometric":    "iso",
             "filter":       "filter",
             "filter_clear": "filter_clear",
+            "parcourir":    "parcourir",
+            "effacer":      "effacer",
         }
         key = key_map.get(kind)
         if key and key in self._SVG_ICON_DATA:
@@ -1364,6 +1401,8 @@ class MainWindow(QMainWindow):
             (self.view_iso_btn,    "iso"),
             (self.filter_btn,      "filter"),
             (self.clear_filter_btn,"filter_clear"),
+            (self.browse_fto_btn,  "parcourir"),
+            (self.clear_log_btn,   "effacer"),
         ]
         for btn, kind in btn_kinds:
             if btn is not None:
@@ -1601,12 +1640,14 @@ class MainWindow(QMainWindow):
         file_card = Card(tr_ui("project"))
         self.fto_edit = QLineEdit()
         self.fto_edit.setPlaceholderText(tr_ui("project_file"))
-        browse_btn = QPushButton(tr_ui("browse"))
-        browse_btn.clicked.connect(self.browse_fto)
+        self.browse_fto_btn = QPushButton()
+        self.browse_fto_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.browse_fto_btn, "parcourir", tr_ui("browse"))
+        self.browse_fto_btn.clicked.connect(self.browse_fto)
 
         hb1 = QHBoxLayout()
         hb1.addWidget(self.fto_edit, 1)
-        hb1.addWidget(browse_btn)
+        hb1.addWidget(self.browse_fto_btn)
 
         file_card.layout.addWidget(QLabel(tr_ui("project_file")))
         file_card.layout.addLayout(hb1)
@@ -1837,8 +1878,10 @@ class MainWindow(QMainWindow):
         log_title = QLabel(tr_ui("journal"))
         log_title.setObjectName("cardTitle")
 
-        self.clear_log_btn = QPushButton(tr_ui("clear"))
+        self.clear_log_btn = QPushButton()
         self.clear_log_btn.setObjectName("clearLogBtn")
+        self.clear_log_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.clear_log_btn, "effacer", tr_ui("tooltip_clear_log"))
         self.clear_log_btn.clicked.connect(self.clear_log)
 
         log_header.addWidget(log_title)
@@ -1867,15 +1910,8 @@ class MainWindow(QMainWindow):
         progress_layout.addWidget(self.load_progress_bar)
         self.load_progress_container.setVisible(False)
 
-        self.shared_progress_container = QWidget()
-        shared_progress_layout = QVBoxLayout(self.shared_progress_container)
-        shared_progress_layout.setContentsMargins(6, 4, 6, 4)
-        shared_progress_layout.setSpacing(2)
-        shared_progress_layout.addWidget(self.load_progress_container)
-        self.shared_progress_container.setVisible(False)
-
         log_tab_layout.addLayout(log_header)
-        log_tab_layout.addWidget(self.log_edit)
+        log_tab_layout.addWidget(self.log_edit, 1)
         return log_tab
 
     def _build_properties_tab(self):
@@ -1884,7 +1920,6 @@ class MainWindow(QMainWindow):
         properties_layout.setContentsMargins(6, 6, 6, 6)
         properties_layout.setSpacing(4)
         self.properties_layout = properties_layout
-        properties_layout.addWidget(self.shared_progress_container)
         self.properties_container = QWidget()
         self.properties_container.setStyleSheet("background: transparent;")
         properties_layout.addWidget(self.properties_container)
@@ -2100,8 +2135,15 @@ class MainWindow(QMainWindow):
         side_tabs.addTab(results_tab, tr_ui("takeoff"))
         side_tabs.addTab(analysis_results_tab, tr_ui("results"))
         side_tabs.addTab(loads_tab, tr_ui("loads_panel_title"))
-        side_tabs.currentChanged.connect(lambda _index: self._relocate_progress_container())
-        right_splitter.addWidget(side_tabs)
+
+        # Wrapper : onglets + barre de progression commune en bas (visible depuis tous les onglets)
+        side_panel = QWidget()
+        side_panel_layout = QVBoxLayout(side_panel)
+        side_panel_layout.setContentsMargins(0, 0, 0, 0)
+        side_panel_layout.setSpacing(0)
+        side_panel_layout.addWidget(side_tabs, 1)
+        side_panel_layout.addWidget(self.load_progress_container)
+        right_splitter.addWidget(side_panel)
         return side_tabs
 
     def _finalize_ui_state(self, main_splitter, right_splitter):
@@ -2117,7 +2159,6 @@ class MainWindow(QMainWindow):
         self.viewer.set_display_mode(self.cmb_display_mode.currentData())
         self._update_transparency_controls_state()
         self._update_api_button_state()
-        self._relocate_progress_container()
         self._set_properties_message(tr_ui("select_element"))
         self._set_results_message(tr_ui("takeoff_empty"))
         self._set_analysis_results_output_message(tr_ui("analysis_results_empty"))
@@ -2137,24 +2178,6 @@ class MainWindow(QMainWindow):
         main_splitter.addWidget(right_splitter)
 
         self._finalize_ui_state(main_splitter, right_splitter)
-    def _get_tab_layout_for_progress(self):
-        if self.side_tabs is None:
-            return None
-        current_widget = self.side_tabs.currentWidget()
-        return current_widget.layout() if current_widget is not None else None
-
-    def _relocate_progress_container(self):
-        if self.shared_progress_container is None or self.load_progress_container is None:
-            return
-        target_layout = self._get_tab_layout_for_progress()
-        if target_layout is None:
-            return
-        current_parent = self.shared_progress_container.parentWidget()
-        if current_parent is not None and current_parent.layout() is not None:
-            current_parent.layout().removeWidget(self.shared_progress_container)
-        target_layout.insertWidget(0, self.shared_progress_container)
-        self.shared_progress_container.setVisible(self.load_progress_container.isVisible())
-
     def _clear_layout_widgets(self, layout):
         while layout.count():
             item = layout.takeAt(0)
@@ -4003,11 +4026,8 @@ class MainWindow(QMainWindow):
             self.load_progress_label.setText(message or tr_ui("loading"))
 
     def on_load_progress(self, value: int, message: str):
-        self._relocate_progress_container()
         if self.load_progress_container is not None:
             self.load_progress_container.setVisible(True)
-        if self.shared_progress_container is not None:
-            self.shared_progress_container.setVisible(True)
         self._set_load_progress(value, message)
 
     def _update_transparency_controls_state(self):
@@ -4387,11 +4407,8 @@ class MainWindow(QMainWindow):
             })
             return
 
-        self._relocate_progress_container()
         if self.load_progress_container is not None:
             self.load_progress_container.setVisible(True)
-        if self.shared_progress_container is not None:
-            self.shared_progress_container.setVisible(True)
         self._set_load_progress(0, tr_ui("progress_build_punctual_loads"))
 
         self._loads_worker = BuildLoadsWorker(self.viewer, p_vis, l_vis, s_vis)
@@ -4408,8 +4425,6 @@ class MainWindow(QMainWindow):
             self.viewer.apply_loads_polydata_batch(batch)
         if self.load_progress_container is not None:
             self.load_progress_container.setVisible(False)
-        if self.shared_progress_container is not None:
-            self.shared_progress_container.setVisible(False)
         self._set_load_progress(0, "")
         self._loads_worker = None
 
@@ -4417,8 +4432,6 @@ class MainWindow(QMainWindow):
         self.log("Erreur construction charges : " + error_text.splitlines()[0], "error")
         if self.load_progress_container is not None:
             self.load_progress_container.setVisible(False)
-        if self.shared_progress_container is not None:
-            self.shared_progress_container.setVisible(False)
         self._loads_worker = None
 
     def on_toggle_punctual_loads(self, checked: bool):
@@ -4627,8 +4640,6 @@ class MainWindow(QMainWindow):
             self.load_btn.setText(tr_ui("load_model"))
             if self.load_progress_container is not None:
                 self.load_progress_container.setVisible(False)
-            if self.shared_progress_container is not None:
-                self.shared_progress_container.setVisible(False)
             self._set_load_progress(0, "Chargement en attente")
             self._update_transparency_controls_state()
 

@@ -4,15 +4,19 @@
 
 ## 1.89
 
-### Affichage des charges surfaciques
+### Affichage des charges surfaciques & divers
 - Choix des cas de charges et de l'échelle,
 - Affichage graphique des efforts,
 - Affichage des valeurs des charges dans l'onglet propriétés
+- Ajouts d'icônes pour les fonctions `Parcourir` et `Effacer`
+- Déplacement des barres de pourcentage en bas de la fenêtre
 
-### Display of Planar Loads
+### Display of Planar Loads & misc.
 - Select load cases and scale,
 - Graphical display of forces,
 - Display of load values in the properties tab
+- Added icons for the `Browse` and `Delete` functions
+- Moved the percentage bars to the bottom of the window
 
 ## 1.88
 

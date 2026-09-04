@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.89"
+APP_VERSION = "1.89.2"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -316,6 +316,7 @@ MSG_UI = {
     "takeoff": "Métré",
     "results": "Résultats",
     "clear": "Effacer",
+    "tooltip_clear_log": "Effacer le journal",
     "takeoff_empty": "Chargez un modèle pour afficher le métré.",
     "analysis_results_empty": "Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.",
     "analysis_results_help": "Choisissez un type de résultat, une valeur, puis cliquez sur Appliquer pour afficher le diagramme dans la vue 3D.",
