@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QFrame, QVBoxLayout
 
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_ARROW_WIDTH,
+    PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_ARROW_WIDTH,
     BG, PANEL, BORDER, ACCENT, ACCENT2, WARN, ERROR_COL,
     FG, FG_DIM, VTK_BG,
     LINEAR_LINE_WIDTH, PLANAR_LINE_WIDTH, OPENING_LINE_WIDTH, LOAD_AREA_LINE_WIDTH,
@@ -343,6 +344,15 @@ class VTKViewerWidget(QFrame):
         self.linear_load_arrow_width = float(LINEAR_LOAD_ARROW_WIDTH)
         self.linear_load_count = 0
 
+        self._planar_load_actors: list = []
+        self._planar_load_data: list = []
+        self._planar_load_case_filter: int | None = None
+        self._show_planar_loads = False
+        self.planar_load_scale = float(PLANAR_LOAD_SCALE)
+        self.planar_load_color = tuple(PLANAR_LOAD_COLOR)
+        self.planar_load_arrow_width = float(PLANAR_LOAD_ARROW_WIDTH)
+        self.planar_load_count = 0
+
         self._show_lines = True
         self._show_planars = True
         self._show_load_areas = True
@@ -353,6 +363,7 @@ class VTKViewerWidget(QFrame):
         self._show_mesh = False
         self._show_punctual_loads = False
         self._show_linear_loads = False
+        self._show_planar_loads = False
         self._color_by_section = False
         self._section_color_map = {}
         self._display_mode = "wire_hidden"
@@ -459,6 +470,7 @@ class VTKViewerWidget(QFrame):
             "support_planar": (self.support_planar_color, self.support_planar_line_width),
             "punctual_load": (self.punctual_load_color, 1.0),
             "linear_load": (self.linear_load_color, 1.0),
+            "planar_load": (self.planar_load_color, 1.0),
         }
         return mapping.get(role, ((1.0, 1.0, 1.0), 1.0))
 
@@ -1104,6 +1116,8 @@ class VTKViewerWidget(QFrame):
             return self._show_punctual_loads
         if role == "linear_load":
             return self._show_linear_loads
+        if role == "planar_load":
+            return self._show_planar_loads
         return True
 
     def _make_selection_overlay_actors(self, role: str, index: int):
@@ -1244,6 +1258,21 @@ class VTKViewerWidget(QFrame):
                     case_filter=None,
                     arrow_width=self.linear_load_arrow_width * 1.3,
                     global_data=self._linear_load_data,
+                )
+                for a, _ in actor_pairs:
+                    overlays.append(a)
+
+        elif role == "planar_load":
+            loads = self._planar_load_data
+            if 0 <= index < len(loads):
+                ld = loads[index]
+                actor_pairs = self._build_planar_load_actors(
+                    [ld],
+                    self.planar_load_scale,
+                    self.selection_color,
+                    case_filter=None,
+                    arrow_width=self.planar_load_arrow_width * 1.3,
+                    global_data=self._planar_load_data,
                 )
                 for a, _ in actor_pairs:
                     overlays.append(a)
@@ -1693,6 +1722,7 @@ class VTKViewerWidget(QFrame):
             "support_planar": self.support_planar_count,
             "punctual_loads": self.punctual_load_count,
             "linear_loads": self.linear_load_count,
+            "planar_loads": self.planar_load_count,
         }
 
     def _build_scene_base(self):
@@ -1767,6 +1797,9 @@ class VTKViewerWidget(QFrame):
         self._linear_load_actors = []
         self._linear_load_data = []
         self.linear_load_count = 0
+        self._planar_load_actors = []
+        self._planar_load_data = []
+        self.planar_load_count = 0
         self._model_data = {
             "lines": [],
             "line_properties": [],
@@ -2441,6 +2474,191 @@ class VTKViewerWidget(QFrame):
         actor.GetProperty().SetDiffuse(0.7)
         return actor
 
+    def _build_punctual_load_polydata_batch(self, loads: list, scale: float,
+                                             case_filter=None, arrow_width: float = 0.04):
+        """Construit les polydata batchés pour les charges ponctuelles (thread-safe).
+
+        Retourne un dict:
+          'arrows' : vtkPolyData fusionné (fleches + arcs), ou None
+        """
+        import math
+
+        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") == case_filter]
+        if not active:
+            return {"arrows": None}
+
+        resultants = []
+        for ld in active:
+            fx = float(ld.get("fx") or 0.0)
+            fy = float(ld.get("fy") or 0.0)
+            fz = float(ld.get("fz") or 0.0)
+            resultants.append((fx, fy, fz, math.sqrt(fx*fx + fy*fy + fz*fz)))
+
+        f_max = max((r[3] for r in resultants), default=0.0)
+        m_max = 0.0
+        for ld in active:
+            for comp in ("mx", "my", "mz"):
+                v = abs(float(ld.get(comp) or 0.0))
+                if v > m_max:
+                    m_max = v
+
+        shaft_r = max(0.005, float(arrow_width))
+        tip_r   = shaft_r * 2.5
+        tip_l   = shaft_r * 5.0
+        tube_r  = shaft_r * 0.5
+
+        ARROW_SHAFT_RES = 8
+        ARROW_TIP_RES   = 8
+        TUBE_SIDES      = 8
+        ARC_SEGS        = 24
+
+        append_all = vtk.vtkAppendPolyData()
+        has_any = False
+
+        def _arrow_pd(origin, direction, length, element_index):
+            dx, dy, dz = direction
+            n = math.sqrt(dx*dx + dy*dy + dz*dz)
+            if n < 1e-9:
+                return None
+            dx, dy, dz = dx/n, dy/n, dz/n
+            eff_length = max(length, tip_l * 1.05)
+            tip_frac = max(0.05, min(0.95, tip_l / eff_length))
+            src = vtk.vtkArrowSource()
+            src.SetShaftRadius(shaft_r / eff_length)
+            src.SetTipRadius(tip_r / eff_length)
+            src.SetTipLength(tip_frac)
+            src.SetShaftResolution(ARROW_SHAFT_RES)
+            src.SetTipResolution(ARROW_TIP_RES)
+            src.Update()
+            dot = max(-1.0, min(1.0, dx))
+            ax, ay, az = 0.0, -dz, dy
+            ax_norm = math.sqrt(ax*ax + ay*ay + az*az)
+            t = vtk.vtkTransform()
+            t.Translate(*origin)
+            t.Scale(eff_length, eff_length, eff_length)
+            if ax_norm > 1e-9:
+                t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
+            elif dot < 0:
+                t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
+            tf = vtk.vtkTransformPolyDataFilter()
+            tf.SetInputConnection(src.GetOutputPort())
+            tf.SetTransform(t)
+            tf.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tf.GetOutput())
+            if element_index >= 0:
+                ids = self._make_int_array()
+                for _ in range(pd.GetNumberOfCells()):
+                    ids.InsertNextValue(element_index)
+                pd.GetCellData().AddArray(ids)
+            return pd
+
+        def _arc_pd(center, axis, radius, sign, element_index):
+            cx, cy, cz = center
+            if axis == 0:
+                u, v_vec = (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)
+                norm_ax = (1.0, 0.0, 0.0)
+            elif axis == 1:
+                u, v_vec = (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)
+                norm_ax = (0.0, 1.0, 0.0)
+            else:
+                u, v_vec = (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)
+                norm_ax = (0.0, 0.0, 1.0)
+            if sign < 0:
+                v_vec = (-v_vec[0], -v_vec[1], -v_vec[2])
+            start_a = 45.0
+            arc_deg = 270.0
+            arc_rad = math.radians(arc_deg)
+            pts_list = []
+            points_vtk = vtk.vtkPoints()
+            lines_vtk = vtk.vtkCellArray()
+            ids_arr = self._make_int_array()
+            for i in range(ARC_SEGS + 1):
+                t = start_a + math.degrees(arc_rad * i / ARC_SEGS)
+                tr = math.radians(t)
+                c, s = math.cos(tr), math.sin(tr)
+                pid = points_vtk.InsertNextPoint(
+                    cx + radius * (u[0]*c + v_vec[0]*s),
+                    cy + radius * (u[1]*c + v_vec[1]*s),
+                    cz + radius * (u[2]*c + v_vec[2]*s),
+                )
+                pts_list.append(pid)
+            for i in range(len(pts_list) - 1):
+                seg = vtk.vtkLine()
+                seg.GetPointIds().SetId(0, pts_list[i])
+                seg.GetPointIds().SetId(1, pts_list[i+1])
+                lines_vtk.InsertNextCell(seg)
+                ids_arr.InsertNextValue(element_index)
+            t_end = math.radians(start_a + arc_deg)
+            t_pen = math.radians(start_a + arc_deg - 5.0)
+            tip_len = radius * 0.18
+            ex = cx + radius * (u[0]*math.cos(t_end) + v_vec[0]*math.sin(t_end))
+            ey = cy + radius * (u[1]*math.cos(t_end) + v_vec[1]*math.sin(t_end))
+            ez = cz + radius * (u[2]*math.cos(t_end) + v_vec[2]*math.sin(t_end))
+            px = cx + radius * (u[0]*math.cos(t_pen) + v_vec[0]*math.sin(t_pen))
+            py = cy + radius * (u[1]*math.cos(t_pen) + v_vec[1]*math.sin(t_pen))
+            pz = cz + radius * (u[2]*math.cos(t_pen) + v_vec[2]*math.sin(t_pen))
+            tang = (ex-px, ey-py, ez-pz)
+            tn = math.sqrt(tang[0]**2+tang[1]**2+tang[2]**2)
+            if tn > 1e-9:
+                tang = (tang[0]/tn, tang[1]/tn, tang[2]/tn)
+            b1 = (tang[1]*norm_ax[2]-tang[2]*norm_ax[1], tang[2]*norm_ax[0]-tang[0]*norm_ax[2], tang[0]*norm_ax[1]-tang[1]*norm_ax[0])
+            b1n = math.sqrt(b1[0]**2+b1[1]**2+b1[2]**2)
+            if b1n > 1e-9:
+                b1 = (b1[0]/b1n*tip_len, b1[1]/b1n*tip_len, b1[2]/b1n*tip_len)
+                for barb in (b1, (-b1[0], -b1[1], -b1[2])):
+                    pb = (ex-tang[0]*tip_len+barb[0], ey-tang[1]*tip_len+barb[1], ez-tang[2]*tip_len+barb[2])
+                    pe = points_vtk.InsertNextPoint(ex, ey, ez)
+                    pb_ = points_vtk.InsertNextPoint(*pb)
+                    seg = vtk.vtkLine()
+                    seg.GetPointIds().SetId(0, pe)
+                    seg.GetPointIds().SetId(1, pb_)
+                    lines_vtk.InsertNextCell(seg)
+                    ids_arr.InsertNextValue(element_index)
+            poly = vtk.vtkPolyData()
+            poly.SetPoints(points_vtk)
+            poly.SetLines(lines_vtk)
+            poly.GetCellData().AddArray(ids_arr)
+            tube = vtk.vtkTubeFilter()
+            tube.SetInputData(poly)
+            tube.SetRadius(max(0.003, tube_r))
+            tube.SetNumberOfSides(TUBE_SIDES)
+            tube.CappingOn()
+            tube.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tube.GetOutput())
+            return pd
+
+        for ld, (fx, fy, fz, f_res) in zip(active, resultants):
+            global_idx = self._punctual_load_data.index(ld) if ld in self._punctual_load_data else 0
+            ox, oy, oz = ld["pos"]
+            if f_max > 1e-9 and f_res > 1e-9:
+                direction = (fx/f_res, fy/f_res, fz/f_res)
+                length = f_res / f_max * scale
+                start = (ox - direction[0]*length, oy - direction[1]*length, oz - direction[2]*length)
+                pd = _arrow_pd(start, direction, length, global_idx)
+                if pd is not None:
+                    append_all.AddInputData(pd)
+                    has_any = True
+            if m_max > 1e-9:
+                for axis_idx, comp in enumerate(("mx", "my", "mz")):
+                    m_val = float(ld.get(comp) or 0.0)
+                    if abs(m_val) < 1e-9:
+                        continue
+                    radius = abs(m_val) / m_max * scale
+                    sign   = 1 if m_val > 0 else -1
+                    pd = _arc_pd((ox, oy, oz), axis_idx, radius, sign, global_idx)
+                    if pd is not None:
+                        append_all.AddInputData(pd)
+                        has_any = True
+
+        if not has_any:
+            return {"arrows": None}
+        append_all.Update()
+        result_pd = vtk.vtkPolyData()
+        result_pd.DeepCopy(append_all.GetOutput())
+        return {"arrows": result_pd}
+
     def _build_punctual_load_actors(self, loads: list, scale: float, color: tuple, case_filter=None, arrow_width: float = 0.04) -> list:
         """Construit les acteurs pour les charges ponctuelles (forces + moments).
 
@@ -2880,6 +3098,277 @@ class VTKViewerWidget(QFrame):
 
         return actors
 
+    def _build_linear_load_polydata_batch(self, loads: list, scale: float,
+                                           case_filter=None, arrow_width: float = 0.02,
+                                           global_data: list = None) -> dict:
+        """Construit les polydata batchés pour les charges linéaires (thread-safe).
+
+        Retourne un dict:
+          'arrows' : vtkPolyData (fleches), ou None
+          'tubes'  : vtkPolyData (tubes de contour + arcs), ou None
+        """
+        import math
+        ref_data = global_data if global_data is not None else self._linear_load_data
+        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") == case_filter]
+        if not active:
+            return {"arrows": None, "tubes": None}
+
+        NB_SEGMENTS = 8
+        ARROW_SHAFT_RES = 6
+        ARROW_TIP_RES   = 6
+        TUBE_SIDES      = 6
+        ARC_SEGS        = 20
+
+        f_max = 0.0
+        m_max = 0.0
+        for ld in active:
+            fx = float(ld.get("fx") or 0.0)
+            fy = float(ld.get("fy") or 0.0)
+            fz = float(ld.get("fz") or 0.0)
+            mx = float(ld.get("mx") or 0.0)
+            my = float(ld.get("my") or 0.0)
+            mz = float(ld.get("mz") or 0.0)
+            c1 = float(ld.get("coeff1") or 1.0)
+            c2 = float(ld.get("coeff2") or 1.0)
+            f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
+            m_res = math.sqrt(mx*mx + my*my + mz*mz)
+            f_max = max(f_max, f_res * abs(c1), f_res * abs(c2))
+            m_max = max(m_max, m_res * abs(c1), m_res * abs(c2))
+
+        shaft_r = max(0.005, float(arrow_width))
+        tip_r   = shaft_r * 2.5
+        tip_l   = shaft_r * 5.0
+        tube_r  = shaft_r * 0.5
+
+        append_arrows = vtk.vtkAppendPolyData()
+        append_tubes  = vtk.vtkAppendPolyData()
+        has_arrows = False
+        has_tubes  = False
+
+        def _arrow_pd(origin, direction, length, element_index):
+            dx, dy, dz = direction
+            n = math.sqrt(dx*dx + dy*dy + dz*dz)
+            if n < 1e-9:
+                return None
+            dx, dy, dz = dx/n, dy/n, dz/n
+            eff_length = max(length, tip_l * 1.05)
+            tip_frac   = max(0.05, min(0.95, tip_l / eff_length))
+            src = vtk.vtkArrowSource()
+            src.SetShaftRadius(shaft_r / eff_length)
+            src.SetTipRadius(tip_r / eff_length)
+            src.SetTipLength(tip_frac)
+            src.SetShaftResolution(ARROW_SHAFT_RES)
+            src.SetTipResolution(ARROW_TIP_RES)
+            src.Update()
+            dot = max(-1.0, min(1.0, dx))
+            ax, ay, az = 0.0, -dz, dy
+            ax_norm = math.sqrt(ax*ax + ay*ay + az*az)
+            t = vtk.vtkTransform()
+            t.Translate(*origin)
+            t.Scale(eff_length, eff_length, eff_length)
+            if ax_norm > 1e-9:
+                t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
+            elif dot < 0:
+                t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
+            tf = vtk.vtkTransformPolyDataFilter()
+            tf.SetInputConnection(src.GetOutputPort())
+            tf.SetTransform(t)
+            tf.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tf.GetOutput())
+            if element_index >= 0:
+                ids = self._make_int_array()
+                for _ in range(pd.GetNumberOfCells()):
+                    ids.InsertNextValue(element_index)
+                pd.GetCellData().AddArray(ids)
+            return pd
+
+        def _tube_pd(points_list, element_index, radius):
+            if len(points_list) < 2:
+                return None
+            pts = vtk.vtkPoints()
+            lines = vtk.vtkCellArray()
+            ids_arr = self._make_int_array()
+            for p in points_list:
+                pts.InsertNextPoint(*p)
+            for j in range(len(points_list) - 1):
+                seg = vtk.vtkLine()
+                seg.GetPointIds().SetId(0, j)
+                seg.GetPointIds().SetId(1, j + 1)
+                lines.InsertNextCell(seg)
+                ids_arr.InsertNextValue(element_index)
+            raw = vtk.vtkPolyData()
+            raw.SetPoints(pts)
+            raw.SetLines(lines)
+            raw.GetCellData().AddArray(ids_arr)
+            tube = vtk.vtkTubeFilter()
+            tube.SetInputData(raw)
+            tube.SetRadius(radius)
+            tube.SetNumberOfSides(TUBE_SIDES)
+            tube.CappingOn()
+            tube.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tube.GetOutput())
+            return pd
+
+        def _arc_pd(center, axis, radius, sign, element_index):
+            cx, cy, cz = center
+            if axis == 0:
+                u, v_vec = (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)
+                norm_ax = (1.0, 0.0, 0.0)
+            elif axis == 1:
+                u, v_vec = (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)
+                norm_ax = (0.0, 1.0, 0.0)
+            else:
+                u, v_vec = (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)
+                norm_ax = (0.0, 0.0, 1.0)
+            if sign < 0:
+                v_vec = (-v_vec[0], -v_vec[1], -v_vec[2])
+            start_angle = 45.0
+            arc_deg = 270.0
+            arc_rad = math.radians(arc_deg)
+            pts_list = []
+            for i in range(ARC_SEGS + 1):
+                t = start_angle + math.degrees(arc_rad * i / ARC_SEGS)
+                tr = math.radians(t)
+                c, s = math.cos(tr), math.sin(tr)
+                pts_list.append((
+                    cx + radius * (u[0]*c + v_vec[0]*s),
+                    cy + radius * (u[1]*c + v_vec[1]*s),
+                    cz + radius * (u[2]*c + v_vec[2]*s),
+                ))
+            t_end = math.radians(start_angle + arc_deg)
+            t_pen = math.radians(start_angle + arc_deg - 5.0)
+            tip_len = radius * 0.18
+            ex = cx + radius * (u[0]*math.cos(t_end) + v_vec[0]*math.sin(t_end))
+            ey = cy + radius * (u[1]*math.cos(t_end) + v_vec[1]*math.sin(t_end))
+            ez = cz + radius * (u[2]*math.cos(t_end) + v_vec[2]*math.sin(t_end))
+            px = cx + radius * (u[0]*math.cos(t_pen) + v_vec[0]*math.sin(t_pen))
+            py = cy + radius * (u[1]*math.cos(t_pen) + v_vec[1]*math.sin(t_pen))
+            pz = cz + radius * (u[2]*math.cos(t_pen) + v_vec[2]*math.sin(t_pen))
+            tang = (ex-px, ey-py, ez-pz)
+            tn = math.sqrt(tang[0]**2+tang[1]**2+tang[2]**2)
+            if tn > 1e-9:
+                tang = (tang[0]/tn, tang[1]/tn, tang[2]/tn)
+            b1 = (tang[1]*norm_ax[2]-tang[2]*norm_ax[1], tang[2]*norm_ax[0]-tang[0]*norm_ax[2], tang[0]*norm_ax[1]-tang[1]*norm_ax[0])
+            b1n = math.sqrt(b1[0]**2+b1[1]**2+b1[2]**2)
+            barb_lines = []
+            if b1n > 1e-9:
+                b1 = (b1[0]/b1n*tip_len, b1[1]/b1n*tip_len, b1[2]/b1n*tip_len)
+                for barb in (b1, (-b1[0], -b1[1], -b1[2])):
+                    pb = (ex-tang[0]*tip_len+barb[0], ey-tang[1]*tip_len+barb[1], ez-tang[2]*tip_len+barb[2])
+                    barb_lines.append([(ex, ey, ez), pb])
+            all_pts = vtk.vtkPoints()
+            all_lines = vtk.vtkCellArray()
+            ids_arr = self._make_int_array()
+            for p in pts_list:
+                all_pts.InsertNextPoint(*p)
+            for j in range(len(pts_list)-1):
+                seg = vtk.vtkLine()
+                seg.GetPointIds().SetId(0, j)
+                seg.GetPointIds().SetId(1, j+1)
+                all_lines.InsertNextCell(seg)
+                ids_arr.InsertNextValue(element_index)
+            base_off = len(pts_list)
+            for bl in barb_lines:
+                for pp in bl:
+                    all_pts.InsertNextPoint(*pp)
+            for k, bl in enumerate(barb_lines):
+                seg = vtk.vtkLine()
+                seg.GetPointIds().SetId(0, base_off + k*2)
+                seg.GetPointIds().SetId(1, base_off + k*2 + 1)
+                all_lines.InsertNextCell(seg)
+                ids_arr.InsertNextValue(element_index)
+            raw = vtk.vtkPolyData()
+            raw.SetPoints(all_pts)
+            raw.SetLines(all_lines)
+            raw.GetCellData().AddArray(ids_arr)
+            tube = vtk.vtkTubeFilter()
+            tube.SetInputData(raw)
+            tube.SetRadius(max(0.003, tube_r))
+            tube.SetNumberOfSides(TUBE_SIDES)
+            tube.CappingOn()
+            tube.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tube.GetOutput())
+            return pd
+
+        for ld in active:
+            try:
+                global_idx = ref_data.index(ld)
+            except ValueError:
+                global_idx = 0
+
+            pt_start = ld["pt_start"]
+            pt_end   = ld["pt_end"]
+            fx = float(ld.get("fx") or 0.0)
+            fy = float(ld.get("fy") or 0.0)
+            fz = float(ld.get("fz") or 0.0)
+            mx = float(ld.get("mx") or 0.0)
+            my = float(ld.get("my") or 0.0)
+            mz = float(ld.get("mz") or 0.0)
+            c1 = float(ld.get("coeff1") or 1.0)
+            c2 = float(ld.get("coeff2") or 1.0)
+
+            f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
+            m_res = math.sqrt(mx*mx + my*my + mz*mz)
+            has_force  = f_max > 1e-9 and f_res > 1e-9
+            has_moment = m_max > 1e-9 and m_res > 1e-9
+
+            if has_force:
+                f_dir = (fx/f_res, fy/f_res, fz/f_res)
+            if has_moment:
+                moment_axes = [(ax_idx, mval) for ax_idx, mval in enumerate([mx, my, mz]) if abs(mval) > 1e-9]
+
+            arrow_origins = []
+            for i in range(NB_SEGMENTS + 1):
+                t = i / NB_SEGMENTS
+                ox = pt_start[0] + t * (pt_end[0] - pt_start[0])
+                oy = pt_start[1] + t * (pt_end[1] - pt_start[1])
+                oz = pt_start[2] + t * (pt_end[2] - pt_start[2])
+                coeff_local = c1 + t * (c2 - c1)
+                if has_force:
+                    f_local = f_res * abs(coeff_local)
+                    length = f_local / f_max * scale if f_local > 1e-9 else 0.0
+                    origin = (ox - f_dir[0]*length, oy - f_dir[1]*length, oz - f_dir[2]*length)
+                    arrow_origins.append(origin)
+                    if f_local > 1e-9:
+                        direction = f_dir if coeff_local >= 0 else (-f_dir[0], -f_dir[1], -f_dir[2])
+                        pd = _arrow_pd(origin, direction, length, global_idx)
+                        if pd is not None:
+                            append_arrows.AddInputData(pd)
+                            has_arrows = True
+                elif has_moment:
+                    arrow_origins.append((ox, oy, oz))
+                if has_moment:
+                    m_local = m_res * abs(coeff_local)
+                    if m_local > 1e-9:
+                        radius = m_local / m_max * scale
+                        for ax_idx, mval in moment_axes:
+                            sign = 1 if mval * coeff_local >= 0 else -1
+                            pd = _arc_pd((ox, oy, oz), ax_idx, radius, sign, global_idx)
+                            if pd is not None:
+                                append_tubes.AddInputData(pd)
+                                has_tubes = True
+
+            if len(arrow_origins) >= 2:
+                pd = _tube_pd(arrow_origins, global_idx, shaft_r)
+                if pd is not None:
+                    append_tubes.AddInputData(pd)
+                    has_tubes = True
+
+        arrows_pd = None
+        tubes_pd  = None
+        if has_arrows:
+            append_arrows.Update()
+            arrows_pd = vtk.vtkPolyData()
+            arrows_pd.DeepCopy(append_arrows.GetOutput())
+        if has_tubes:
+            append_tubes.Update()
+            tubes_pd = vtk.vtkPolyData()
+            tubes_pd.DeepCopy(append_tubes.GetOutput())
+        return {"arrows": arrows_pd, "tubes": tubes_pd}
+
     def load_linear_loads(self, loads: list):
         """Stocke les données de charges linéaires et reconstruit le rendu si visible."""
         self._linear_load_data = list(loads or [])
@@ -2929,6 +3418,641 @@ class VTKViewerWidget(QFrame):
         self.linear_load_arrow_width = max(0.005, float(arrow_width))
         if self._show_linear_loads and self._linear_load_data:
             self._rebuild_linear_load_actors()
+
+    def _build_planar_load_actors(self, loads: list, scale: float, color: tuple,
+                                   case_filter=None, arrow_width: float = 0.02,
+                                   global_data: list = None) -> list:
+        """Construit les acteurs VTK pour les charges surfaciques.
+
+        Rendu : fleches perpendiculaires a la surface (selon la resultante des forces),
+        tube de contour en partie superieure (pointe des fleches), zone remplie
+        semi-transparente. La variation est interpolee par le plan defini par les
+        3 premiers coefficients.
+
+        global_data : liste de reference pour le calcul des index globaux.
+        """
+        import math
+
+        ref_data = global_data if global_data is not None else self._planar_load_data
+        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") == case_filter]
+        if not active:
+            return []
+
+        ARROW_SHAFT_RES = 6
+        ARROW_TIP_RES   = 6
+        TUBE_SIDES      = 6
+
+        # Calcul du max global pour normalisation
+        f_max = 0.0
+        for ld in active:
+            fx = float(ld.get("fx") or 0.0)
+            fy = float(ld.get("fy") or 0.0)
+            fz = float(ld.get("fz") or 0.0)
+            f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
+            c1 = float(ld.get("coeff1") or 1.0)
+            c2 = float(ld.get("coeff2") or 1.0)
+            c3 = float(ld.get("coeff3") or 1.0)
+            # Max sur tous les sommets via le plan de variation
+            pts = ld.get("pts") or []
+            if len(pts) >= 3:
+                for i, pt in enumerate(pts):
+                    coeff = self._interpolate_planar_coeff(pt, pts, c1, c2, c3)
+                    f_max = max(f_max, f_res * abs(coeff))
+            else:
+                f_max = max(f_max, f_res * max(abs(c1), abs(c2), abs(c3)))
+
+        shaft_r = max(0.005, float(arrow_width))
+        tip_r   = shaft_r * 2.5
+        tip_l   = shaft_r * 5.0
+        tube_r  = shaft_r * 0.5
+
+        append_arrows  = vtk.vtkAppendPolyData()
+        append_tubes   = vtk.vtkAppendPolyData()
+        append_fill    = vtk.vtkAppendPolyData()
+        has_arrows = False
+        has_tubes  = False
+        has_fill   = False
+
+        def _arrow_polydata(origin, direction, length, element_index):
+            dx, dy, dz = direction
+            n = math.sqrt(dx*dx + dy*dy + dz*dz)
+            if n < 1e-9:
+                return None
+            dx, dy, dz = dx/n, dy/n, dz/n
+            eff_length = max(length, tip_l * 1.05)
+            tip_frac   = max(0.05, min(0.95, tip_l / eff_length))
+            src = vtk.vtkArrowSource()
+            src.SetShaftRadius(shaft_r / eff_length)
+            src.SetTipRadius(tip_r / eff_length)
+            src.SetTipLength(tip_frac)
+            src.SetShaftResolution(ARROW_SHAFT_RES)
+            src.SetTipResolution(ARROW_TIP_RES)
+            src.Update()
+            dot = max(-1.0, min(1.0, dx))
+            ax, ay, az = 0.0, -dz, dy
+            ax_norm = math.sqrt(ax*ax + ay*ay + az*az)
+            t = vtk.vtkTransform()
+            t.Translate(*origin)
+            t.Scale(eff_length, eff_length, eff_length)
+            if ax_norm > 1e-9:
+                t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
+            elif dot < 0:
+                t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
+            tf = vtk.vtkTransformPolyDataFilter()
+            tf.SetInputConnection(src.GetOutputPort())
+            tf.SetTransform(t)
+            tf.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tf.GetOutput())
+            if element_index >= 0:
+                ids = self._make_int_array()
+                for _ in range(pd.GetNumberOfCells()):
+                    ids.InsertNextValue(element_index)
+                pd.GetCellData().AddArray(ids)
+            return pd
+
+        def _tube_polydata_pts(points_list, element_index, radius):
+            if len(points_list) < 2:
+                return None
+            pts_vtk = vtk.vtkPoints()
+            lines_vtk = vtk.vtkCellArray()
+            ids_arr = self._make_int_array()
+            for p in points_list:
+                pts_vtk.InsertNextPoint(*p)
+            for j in range(len(points_list) - 1):
+                seg = vtk.vtkLine()
+                seg.GetPointIds().SetId(0, j)
+                seg.GetPointIds().SetId(1, j + 1)
+                lines_vtk.InsertNextCell(seg)
+                ids_arr.InsertNextValue(element_index)
+            raw = vtk.vtkPolyData()
+            raw.SetPoints(pts_vtk)
+            raw.SetLines(lines_vtk)
+            raw.GetCellData().AddArray(ids_arr)
+            tube = vtk.vtkTubeFilter()
+            tube.SetInputData(raw)
+            tube.SetRadius(radius)
+            tube.SetNumberOfSides(TUBE_SIDES)
+            tube.CappingOn()
+            tube.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tube.GetOutput())
+            return pd
+
+        def _quad_fill_polydata(base_i, base_j, tip_i, tip_j, element_index):
+            """Retourne un quad (2 triangles) entre 2 sommets de base et leurs
+            origines de fleches respectives. Represente un troncon de la 'jupe'
+            de la charge surfacique.
+            base_i, base_j : sommets du polygone (pointe de la fleche = sommet)
+            tip_i,  tip_j  : origines des fleches (pied de la fleche)
+            """
+            vtk_pts = vtk.vtkPoints()
+            vtk_cells = vtk.vtkCellArray()
+            ids_arr = self._make_int_array()
+            vtk_pts.InsertNextPoint(*base_i)   # 0
+            vtk_pts.InsertNextPoint(*base_j)   # 1
+            vtk_pts.InsertNextPoint(*tip_j)    # 2
+            vtk_pts.InsertNextPoint(*tip_i)    # 3
+            # Triangle 0-1-2
+            tri1 = vtk.vtkTriangle()
+            tri1.GetPointIds().SetId(0, 0)
+            tri1.GetPointIds().SetId(1, 1)
+            tri1.GetPointIds().SetId(2, 2)
+            vtk_cells.InsertNextCell(tri1)
+            ids_arr.InsertNextValue(element_index)
+            # Triangle 0-2-3
+            tri2 = vtk.vtkTriangle()
+            tri2.GetPointIds().SetId(0, 0)
+            tri2.GetPointIds().SetId(1, 2)
+            tri2.GetPointIds().SetId(2, 3)
+            vtk_cells.InsertNextCell(tri2)
+            ids_arr.InsertNextValue(element_index)
+            pd = vtk.vtkPolyData()
+            pd.SetPoints(vtk_pts)
+            pd.SetPolys(vtk_cells)
+            pd.GetCellData().AddArray(ids_arr)
+            return pd
+
+        for ld in active:
+            try:
+                global_idx = ref_data.index(ld)
+            except ValueError:
+                global_idx = 0
+
+            pts = ld.get("pts") or []
+            if len(pts) < 3:
+                continue
+
+            fx = float(ld.get("fx") or 0.0)
+            fy = float(ld.get("fy") or 0.0)
+            fz = float(ld.get("fz") or 0.0)
+            c1 = float(ld.get("coeff1") or 1.0)
+            c2 = float(ld.get("coeff2") or 1.0)
+            c3 = float(ld.get("coeff3") or 1.0)
+
+            f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
+            has_force = f_max > 1e-9 and f_res > 1e-9
+
+            if not has_force:
+                continue
+
+            f_dir = (fx / f_res, fy / f_res, fz / f_res)
+
+            # Pour chaque sommet : calculer l'origine de la fleche (pied)
+            # tip = sommet du polygone (pointe de la fleche)
+            # origin = pied de la fleche (depart)
+            tip_points    = []   # pointes = sommets originaux du polygone
+            origin_points = []   # pieds des fleches
+
+            for pt in pts:
+                coeff = self._interpolate_planar_coeff(pt, pts, c1, c2, c3)
+                f_local = f_res * abs(coeff)
+                length = f_local / f_max * scale if f_local > 1e-9 else 0.0
+                direction = f_dir if coeff >= 0 else (-f_dir[0], -f_dir[1], -f_dir[2])
+                origin = (
+                    pt[0] - direction[0] * length,
+                    pt[1] - direction[1] * length,
+                    pt[2] - direction[2] * length,
+                )
+                tip_points.append(pt)
+                origin_points.append(origin)
+
+                if length > 1e-9:
+                    pd = _arrow_polydata(origin, direction, length, global_idx)
+                    if pd is not None:
+                        append_arrows.AddInputData(pd)
+                        has_arrows = True
+
+            # Tube de contour superieur reliant les PIEDS des fleches
+            # (c'est la ligne basse visible entre les fleches, style Advance Design)
+            contour_base = list(origin_points) + [origin_points[0]]
+            pd = _tube_polydata_pts(contour_base, global_idx, tube_r)
+            if pd is not None:
+                append_tubes.AddInputData(pd)
+                has_tubes = True
+
+            # Remplissage : un quad par arete du polygone
+            # entre (tip_i, tip_{i+1}) et (origin_i, origin_{i+1})
+            n_pts = len(pts)
+            for i in range(n_pts):
+                j = (i + 1) % n_pts
+                pd = _quad_fill_polydata(
+                    tip_points[i], tip_points[j],
+                    origin_points[i], origin_points[j],
+                    global_idx,
+                )
+                if pd is not None:
+                    append_fill.AddInputData(pd)
+                    has_fill = True
+
+        actors = []
+        if has_arrows:
+            append_arrows.Update()
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(append_arrows.GetOutputPort())
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetColor(*color)
+            actor.GetProperty().SetAmbient(0.3)
+            actor.GetProperty().SetDiffuse(0.7)
+            actors.append((actor, 0))
+
+        if has_tubes:
+            append_tubes.Update()
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(append_tubes.GetOutputPort())
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetColor(*color)
+            actor.GetProperty().SetAmbient(0.3)
+            actor.GetProperty().SetDiffuse(0.7)
+            actors.append((actor, 0))
+
+        if has_fill:
+            append_fill.Update()
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(append_fill.GetOutputPort())
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetColor(*color)
+            actor.GetProperty().SetOpacity(0.18)
+            actor.GetProperty().SetAmbient(0.5)
+            actor.GetProperty().SetDiffuse(0.5)
+            actor.GetProperty().BackfaceCullingOff()
+            actors.append((actor, 0))
+
+        return actors
+
+    @staticmethod
+    def _interpolate_planar_coeff(pt, pts, c1, c2, c3) -> float:
+        """Interpole le coefficient de variation au point pt par le plan defini
+        par les 3 premiers points du polygone avec les coefficients c1/c2/c3.
+
+        Si le plan est degenere (points colineaires), retourne la moyenne des 3
+        coefficients.
+        """
+        import math
+        if len(pts) < 3:
+            return (c1 + c2 + c3) / 3.0
+
+        p0 = pts[0]
+        p1 = pts[1]
+        p2 = pts[2]
+
+        # Vecteurs du plan
+        v1 = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])
+        v2 = (p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2])
+
+        # Norme de chaque vecteur
+        n1 = math.sqrt(v1[0]**2 + v1[1]**2 + v1[2]**2)
+        n2 = math.sqrt(v2[0]**2 + v2[1]**2 + v2[2]**2)
+
+        if n1 < 1e-12 or n2 < 1e-12:
+            return (c1 + c2 + c3) / 3.0
+
+        # Chercher les coordonnees barycentriques du point dans le triangle p0/p1/p2
+        # par projection dans le plan
+        # Systeme : pt = p0 + alpha*v1 + beta*v2
+        # Resoudre par moindres carres (dot product)
+        d = pt[0] - p0[0], pt[1] - p0[1], pt[2] - p0[2]
+
+        # Matrice 2x2 : [[v1.v1, v1.v2],[v1.v2, v2.v2]]
+        a11 = v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]
+        a12 = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2]
+        a22 = v2[0]*v2[0] + v2[1]*v2[1] + v2[2]*v2[2]
+        b1  = d[0]*v1[0]  + d[1]*v1[1]  + d[2]*v1[2]
+        b2  = d[0]*v2[0]  + d[1]*v2[1]  + d[2]*v2[2]
+
+        det = a11*a22 - a12*a12
+        if abs(det) < 1e-18:
+            return (c1 + c2 + c3) / 3.0
+
+        alpha = (b1*a22 - b2*a12) / det
+        beta  = (b2*a11 - b1*a12) / det
+
+        # Le coefficient au point = interpolation lineaire :
+        # coeff(p0) = c1, coeff(p1) = c2, coeff(p2) = c3
+        return c1 + alpha * (c2 - c1) + beta * (c3 - c1)
+
+    def _build_planar_load_polydata_batch(self, loads: list, scale: float,
+                                           case_filter=None, arrow_width: float = 0.02,
+                                           global_data: list = None) -> dict:
+        """Construit les polydata batchés pour les charges surfaciques (thread-safe).
+
+        Retourne un dict:
+          'arrows' : vtkPolyData (fleches), ou None
+          'tubes'  : vtkPolyData (tubes de contour), ou None
+          'fill'   : vtkPolyData (remplissage semi-transparent), ou None
+        """
+        import math
+        ref_data = global_data if global_data is not None else self._planar_load_data
+        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") == case_filter]
+        if not active:
+            return {"arrows": None, "tubes": None, "fill": None}
+
+        ARROW_SHAFT_RES = 6
+        ARROW_TIP_RES   = 6
+        TUBE_SIDES      = 6
+
+        f_max = 0.0
+        for ld in active:
+            fx = float(ld.get("fx") or 0.0)
+            fy = float(ld.get("fy") or 0.0)
+            fz = float(ld.get("fz") or 0.0)
+            f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
+            c1 = float(ld.get("coeff1") or 1.0)
+            c2 = float(ld.get("coeff2") or 1.0)
+            c3 = float(ld.get("coeff3") or 1.0)
+            pts = ld.get("pts") or []
+            if len(pts) >= 3:
+                for pt in pts:
+                    coeff = self._interpolate_planar_coeff(pt, pts, c1, c2, c3)
+                    f_max = max(f_max, f_res * abs(coeff))
+            else:
+                f_max = max(f_max, f_res * max(abs(c1), abs(c2), abs(c3)))
+
+        shaft_r = max(0.005, float(arrow_width))
+        tip_r   = shaft_r * 2.5
+        tip_l   = shaft_r * 5.0
+        tube_r  = shaft_r * 0.5
+
+        append_arrows = vtk.vtkAppendPolyData()
+        append_tubes  = vtk.vtkAppendPolyData()
+        append_fill   = vtk.vtkAppendPolyData()
+        has_arrows = has_tubes = has_fill = False
+
+        def _arrow_pd(origin, direction, length, element_index):
+            dx, dy, dz = direction
+            n = math.sqrt(dx*dx + dy*dy + dz*dz)
+            if n < 1e-9:
+                return None
+            dx, dy, dz = dx/n, dy/n, dz/n
+            eff_length = max(length, tip_l * 1.05)
+            tip_frac   = max(0.05, min(0.95, tip_l / eff_length))
+            src = vtk.vtkArrowSource()
+            src.SetShaftRadius(shaft_r / eff_length)
+            src.SetTipRadius(tip_r / eff_length)
+            src.SetTipLength(tip_frac)
+            src.SetShaftResolution(ARROW_SHAFT_RES)
+            src.SetTipResolution(ARROW_TIP_RES)
+            src.Update()
+            dot = max(-1.0, min(1.0, dx))
+            ax, ay, az = 0.0, -dz, dy
+            ax_norm = math.sqrt(ax*ax + ay*ay + az*az)
+            t = vtk.vtkTransform()
+            t.Translate(*origin)
+            t.Scale(eff_length, eff_length, eff_length)
+            if ax_norm > 1e-9:
+                t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
+            elif dot < 0:
+                t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
+            tf = vtk.vtkTransformPolyDataFilter()
+            tf.SetInputConnection(src.GetOutputPort())
+            tf.SetTransform(t)
+            tf.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tf.GetOutput())
+            if element_index >= 0:
+                ids = self._make_int_array()
+                for _ in range(pd.GetNumberOfCells()):
+                    ids.InsertNextValue(element_index)
+                pd.GetCellData().AddArray(ids)
+            return pd
+
+        def _tube_pd(points_list, element_index, radius):
+            if len(points_list) < 2:
+                return None
+            pts_vtk = vtk.vtkPoints()
+            lines_vtk = vtk.vtkCellArray()
+            ids_arr = self._make_int_array()
+            for p in points_list:
+                pts_vtk.InsertNextPoint(*p)
+            for j in range(len(points_list) - 1):
+                seg = vtk.vtkLine()
+                seg.GetPointIds().SetId(0, j)
+                seg.GetPointIds().SetId(1, j + 1)
+                lines_vtk.InsertNextCell(seg)
+                ids_arr.InsertNextValue(element_index)
+            raw = vtk.vtkPolyData()
+            raw.SetPoints(pts_vtk)
+            raw.SetLines(lines_vtk)
+            raw.GetCellData().AddArray(ids_arr)
+            tube = vtk.vtkTubeFilter()
+            tube.SetInputData(raw)
+            tube.SetRadius(radius)
+            tube.SetNumberOfSides(TUBE_SIDES)
+            tube.CappingOn()
+            tube.Update()
+            pd = vtk.vtkPolyData()
+            pd.DeepCopy(tube.GetOutput())
+            return pd
+
+        def _quad_pd(base_i, base_j, tip_i, tip_j, element_index):
+            vtk_pts = vtk.vtkPoints()
+            vtk_cells = vtk.vtkCellArray()
+            ids_arr = self._make_int_array()
+            vtk_pts.InsertNextPoint(*base_i)
+            vtk_pts.InsertNextPoint(*base_j)
+            vtk_pts.InsertNextPoint(*tip_j)
+            vtk_pts.InsertNextPoint(*tip_i)
+            tri1 = vtk.vtkTriangle()
+            tri1.GetPointIds().SetId(0, 0)
+            tri1.GetPointIds().SetId(1, 1)
+            tri1.GetPointIds().SetId(2, 2)
+            vtk_cells.InsertNextCell(tri1)
+            ids_arr.InsertNextValue(element_index)
+            tri2 = vtk.vtkTriangle()
+            tri2.GetPointIds().SetId(0, 0)
+            tri2.GetPointIds().SetId(1, 2)
+            tri2.GetPointIds().SetId(2, 3)
+            vtk_cells.InsertNextCell(tri2)
+            ids_arr.InsertNextValue(element_index)
+            pd = vtk.vtkPolyData()
+            pd.SetPoints(vtk_pts)
+            pd.SetPolys(vtk_cells)
+            pd.GetCellData().AddArray(ids_arr)
+            return pd
+
+        for ld in active:
+            try:
+                global_idx = ref_data.index(ld)
+            except ValueError:
+                global_idx = 0
+            pts = ld.get("pts") or []
+            if len(pts) < 3:
+                continue
+            fx = float(ld.get("fx") or 0.0)
+            fy = float(ld.get("fy") or 0.0)
+            fz = float(ld.get("fz") or 0.0)
+            c1 = float(ld.get("coeff1") or 1.0)
+            c2 = float(ld.get("coeff2") or 1.0)
+            c3 = float(ld.get("coeff3") or 1.0)
+            f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
+            if f_max < 1e-9 or f_res < 1e-9:
+                continue
+            f_dir = (fx / f_res, fy / f_res, fz / f_res)
+            tip_points    = []
+            origin_points = []
+            for pt in pts:
+                coeff = self._interpolate_planar_coeff(pt, pts, c1, c2, c3)
+                f_local = f_res * abs(coeff)
+                length = f_local / f_max * scale if f_local > 1e-9 else 0.0
+                direction = f_dir if coeff >= 0 else (-f_dir[0], -f_dir[1], -f_dir[2])
+                origin = (pt[0] - direction[0]*length, pt[1] - direction[1]*length, pt[2] - direction[2]*length)
+                tip_points.append(pt)
+                origin_points.append(origin)
+                if length > 1e-9:
+                    pd = _arrow_pd(origin, direction, length, global_idx)
+                    if pd is not None:
+                        append_arrows.AddInputData(pd)
+                        has_arrows = True
+            contour_base = list(origin_points) + [origin_points[0]]
+            pd = _tube_pd(contour_base, global_idx, tube_r)
+            if pd is not None:
+                append_tubes.AddInputData(pd)
+                has_tubes = True
+            n_pts = len(pts)
+            for i in range(n_pts):
+                j = (i + 1) % n_pts
+                pd = _quad_pd(tip_points[i], tip_points[j], origin_points[i], origin_points[j], global_idx)
+                if pd is not None:
+                    append_fill.AddInputData(pd)
+                    has_fill = True
+
+        arrows_pd = tubes_pd = fill_pd = None
+        if has_arrows:
+            append_arrows.Update()
+            arrows_pd = vtk.vtkPolyData()
+            arrows_pd.DeepCopy(append_arrows.GetOutput())
+        if has_tubes:
+            append_tubes.Update()
+            tubes_pd = vtk.vtkPolyData()
+            tubes_pd.DeepCopy(append_tubes.GetOutput())
+        if has_fill:
+            append_fill.Update()
+            fill_pd = vtk.vtkPolyData()
+            fill_pd.DeepCopy(append_fill.GetOutput())
+        return {"arrows": arrows_pd, "tubes": tubes_pd, "fill": fill_pd}
+
+    def apply_loads_polydata_batch(self, batch: dict):
+        """Applique les polydata pre-construits (depuis un worker) au renderer.
+
+        Doit etre appele depuis le thread principal.
+        batch = {
+          'punctual': {'arrows': vtkPolyData|None},
+          'linear':   {'arrows': vtkPolyData|None, 'tubes': vtkPolyData|None},
+          'planar':   {'arrows': vtkPolyData|None, 'tubes': vtkPolyData|None, 'fill': vtkPolyData|None},
+          'punctual_color': tuple, 'linear_color': tuple, 'planar_color': tuple,
+        }
+        """
+        def _make_solid_actor(pd, color, ambient=0.3, diffuse=0.7, opacity=1.0):
+            if pd is None or pd.GetNumberOfCells() == 0:
+                return None
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(pd)
+            mapper.ScalarVisibilityOff()
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetColor(*color)
+            actor.GetProperty().SetAmbient(ambient)
+            actor.GetProperty().SetDiffuse(diffuse)
+            actor.GetProperty().SetOpacity(opacity)
+            return actor
+
+        # --- Ponctuelles ---
+        for actor in self._punctual_load_actors:
+            self._remove_actor(actor)
+        self._punctual_load_actors = []
+        if self._show_punctual_loads:
+            p_color = batch.get("punctual_color", self.punctual_load_color)
+            p_data  = batch.get("punctual", {})
+            actor = _make_solid_actor(p_data.get("arrows"), p_color)
+            if actor:
+                self._add_actor(actor, role="punctual_load", pickable=True)
+                self._punctual_load_actors.append(actor)
+
+        # --- Linéaires ---
+        for actor in self._linear_load_actors:
+            self._remove_actor(actor)
+        self._linear_load_actors = []
+        if self._show_linear_loads:
+            l_color = batch.get("linear_color", self.linear_load_color)
+            l_data  = batch.get("linear", {})
+            for key in ("arrows", "tubes"):
+                actor = _make_solid_actor(l_data.get(key), l_color)
+                if actor:
+                    self._add_actor(actor, role="linear_load", pickable=True)
+                    self._linear_load_actors.append(actor)
+
+        # --- Surfaciques ---
+        for actor in self._planar_load_actors:
+            self._remove_actor(actor)
+        self._planar_load_actors = []
+        if self._show_planar_loads:
+            s_color = batch.get("planar_color", self.planar_load_color)
+            s_data  = batch.get("planar", {})
+            for key in ("arrows", "tubes"):
+                actor = _make_solid_actor(s_data.get(key), s_color)
+                if actor:
+                    self._add_actor(actor, role="planar_load", pickable=True)
+                    self._planar_load_actors.append(actor)
+            fill_actor = _make_solid_actor(s_data.get("fill"), s_color, ambient=0.5, diffuse=0.5, opacity=0.18)
+            if fill_actor:
+                fill_actor.GetProperty().BackfaceCullingOff()
+                self._add_actor(fill_actor, role="planar_load", pickable=True)
+                self._planar_load_actors.append(fill_actor)
+
+        self.render_window.Render()
+
+    def load_planar_loads(self, loads: list):
+        """Stocke les donnees de charges surfaciques et reconstruit le rendu si visible."""
+        self._planar_load_data = list(loads or [])
+        self.planar_load_count = len(self._planar_load_data)
+        self._rebuild_planar_load_actors()
+
+    def _rebuild_planar_load_actors(self):
+        """Efface et reconstruit tous les acteurs de charges surfaciques."""
+        for actor in self._planar_load_actors:
+            self._remove_actor(actor)
+        self._planar_load_actors = []
+
+        if not self._show_planar_loads or not self._planar_load_data:
+            self.render_window.Render()
+            return
+
+        actor_index_pairs = self._build_planar_load_actors(
+            self._planar_load_data,
+            self.planar_load_scale,
+            self.planar_load_color,
+            case_filter=self._planar_load_case_filter,
+            arrow_width=self.planar_load_arrow_width,
+            global_data=self._planar_load_data,
+        )
+        for actor, idx in actor_index_pairs:
+            self._add_actor(actor, role="planar_load", pickable=True)
+            self._planar_load_actors.append(actor)
+
+        self.render_window.Render()
+
+    def set_show_planar_loads(self, visible: bool):
+        self._show_planar_loads = visible
+        self._rebuild_planar_load_actors()
+
+    def set_planar_load_case_filter(self, case_eid):
+        self._planar_load_case_filter = int(case_eid) if case_eid is not None else None
+        self._rebuild_planar_load_actors()
+
+    def set_planar_load_scale(self, scale: float):
+        self.planar_load_scale = max(0.1, float(scale))
+        if self._show_planar_loads and self._planar_load_data:
+            self._rebuild_planar_load_actors()
+
+    def set_planar_load_style(self, color: tuple, arrow_width: float):
+        """Applique couleur et epaisseur aux charges surfaciques."""
+        self.planar_load_color = tuple(float(v) for v in color)
+        self.planar_load_arrow_width = max(0.005, float(arrow_width))
+        if self._show_planar_loads and self._planar_load_data:
+            self._rebuild_planar_load_actors()
 
     def load_model(self, model_data: dict):
         self.clear_scene()
@@ -3085,6 +4209,7 @@ class VTKViewerWidget(QFrame):
             planar_sup_idxs = []
             punctual_load_idxs = []
             linear_load_idxs = []
+            planar_load_idxs = []
             for entry in isolated:
                 role = str(entry.get("role") or "").strip()
                 idx = int(entry.get("index", -1))
@@ -3100,6 +4225,8 @@ class VTKViewerWidget(QFrame):
                     punctual_load_idxs.append(idx)
                 elif role == "linear_load" and idx >= 0:
                     linear_load_idxs.append(idx)
+                elif role == "planar_load" and idx >= 0:
+                    planar_load_idxs.append(idx)
             load_areas = self._select_items_by_indexes(load_areas, load_area_idxs)
             punctual_supports = self._select_items_by_indexes(punctual_supports, punctual_idxs)
             linear_supports = self._select_items_by_indexes(linear_supports, linear_sup_idxs)
@@ -3165,6 +4292,36 @@ class VTKViewerWidget(QFrame):
                 self._linear_load_actors = []
         else:
             self._rebuild_linear_load_actors()
+
+        # Isolation des charges surfaciques
+        if is_isolated:
+            if planar_load_idxs:
+                isolated_planar_loads = [
+                    self._planar_load_data[i]
+                    for i in planar_load_idxs
+                    if 0 <= i < len(self._planar_load_data)
+                ]
+                for actor in self._planar_load_actors:
+                    self._remove_actor(actor)
+                self._planar_load_actors = []
+                if self._show_planar_loads and isolated_planar_loads:
+                    actor_index_pairs = self._build_planar_load_actors(
+                        isolated_planar_loads,
+                        self.planar_load_scale,
+                        self.planar_load_color,
+                        case_filter=None,
+                        arrow_width=self.planar_load_arrow_width,
+                        global_data=self._planar_load_data,
+                    )
+                    for actor, _idx in actor_index_pairs:
+                        self._add_actor(actor, role="planar_load", pickable=True)
+                        self._planar_load_actors.append(actor)
+            else:
+                for actor in self._planar_load_actors:
+                    self._remove_actor(actor)
+                self._planar_load_actors = []
+        else:
+            self._rebuild_planar_load_actors()
 
         # Déterminer si des appuis surfaciques sont isolés (pour le centroïde)
         isolated_has_planar_support = any(

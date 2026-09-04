@@ -128,12 +128,14 @@ class SettingsDialog(QDialog):
         punctual_load_color,
         linear_load_arrow_width: float,
         linear_load_color,
+        planar_load_arrow_width: float,
+        planar_load_color,
         parent=None
     ):
         super().__init__(parent)
         self.setWindowTitle(tr_ui("settings_title"))
         self.setModal(True)
-        self.resize(540, 420)
+        self.resize(540, 460)
 
         self.linear_color = linear_color
         self.planar_color = planar_color
@@ -146,6 +148,7 @@ class SettingsDialog(QDialog):
         self.mesh_color = mesh_color
         self.punctual_load_color = punctual_load_color
         self.linear_load_color = linear_load_color
+        self.planar_load_color = planar_load_color
 
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -191,6 +194,14 @@ class SettingsDialog(QDialog):
         self.spin_linear_load_arrow_width.setValue(linear_load_arrow_width)
         self.spin_linear_load_arrow_width.setFixedWidth(110)
 
+        # Charge surfacique — épaisseur en mètres (rayon tige)
+        self.spin_planar_load_arrow_width = QDoubleSpinBox()
+        self.spin_planar_load_arrow_width.setRange(0.005, 2.0)
+        self.spin_planar_load_arrow_width.setDecimals(3)
+        self.spin_planar_load_arrow_width.setSingleStep(0.005)
+        self.spin_planar_load_arrow_width.setValue(planar_load_arrow_width)
+        self.spin_planar_load_arrow_width.setFixedWidth(110)
+
         self._add_row(grid,  0, tr_ui("settings_label_linear"),                tr_ui("settings_label_thickness"), self.spin_linear,                      "linear_color",            self.linear_color)
         self._add_row(grid,  1, tr_ui("settings_label_planar"),                tr_ui("settings_label_thickness"), self.spin_planar,                      "planar_color",            self.planar_color)
         self._add_row(grid,  2, tr_ui("settings_label_opening"),               tr_ui("settings_label_thickness"), self.spin_opening,                     "opening_color",           self.opening_color)
@@ -203,6 +214,7 @@ class SettingsDialog(QDialog):
         self._add_row(grid,  9, tr_ui("settings_label_mesh"),                  tr_ui("settings_label_thickness"), self.spin_mesh,                        "mesh_color",              self.mesh_color)
         self._add_row(grid, 10, tr_ui("settings_label_punctual_load_arrows"),  tr_ui("settings_label_thickness"), self.spin_punctual_load_arrow_width,   "punctual_load_color",     self.punctual_load_color)
         self._add_row(grid, 11, tr_ui("settings_label_linear_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_linear_load_arrow_width,     "linear_load_color",       self.linear_load_color)
+        self._add_row(grid, 12, tr_ui("settings_label_planar_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_planar_load_arrow_width,     "planar_load_color",       self.planar_load_color)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
@@ -301,6 +313,7 @@ class SettingsDialog(QDialog):
             "mesh_width": self.spin_mesh.value(),
             "punctual_load_arrow_width": self.spin_punctual_load_arrow_width.value(),
             "linear_load_arrow_width": self.spin_linear_load_arrow_width.value(),
+            "planar_load_arrow_width": self.spin_planar_load_arrow_width.value(),
             "linear_color": self.linear_color,
             "planar_color": self.planar_color,
             "opening_color": self.opening_color,
@@ -312,6 +325,7 @@ class SettingsDialog(QDialog):
             "mesh_color": self.mesh_color,
             "punctual_load_color": self.punctual_load_color,
             "linear_load_color": self.linear_load_color,
+            "planar_load_color": self.planar_load_color,
         }
 
 
@@ -751,6 +765,90 @@ class LoadAnalysisResultsWorker(QThread):
             self.error.emit(traceback.format_exc())
 
 
+class BuildLoadsWorker(QThread):
+    """Worker QThread pour la construction des polydata de charges (thread-safe VTK).
+
+    Construit en arriere-plan les geometries des 3 types de charges actives
+    et emet un signal avec les polydata prets. Le thread principal cree ensuite
+    les acteurs et les ajoute au renderer (non thread-safe).
+    """
+    progress = Signal(int, str)
+    finished_batch = Signal(dict)
+    error = Signal(str)
+
+    def __init__(self, viewer_widget, punctual_visible: bool, linear_visible: bool, planar_visible: bool):
+        super().__init__()
+        self._viewer = viewer_widget
+        self._punctual_visible = punctual_visible
+        self._linear_visible   = linear_visible
+        self._planar_visible   = planar_visible
+        self._cancelled        = False
+
+    def cancel(self):
+        """Demande l'annulation - le worker se terminera apres l'etape courante."""
+        self._cancelled = True
+
+    def run(self):
+        try:
+            batch = {}
+
+            # --- Charges ponctuelles ---
+            self.progress.emit(5, tr_ui("progress_build_punctual_loads"))
+            if self._punctual_visible and self._viewer._punctual_load_data:
+                batch["punctual"] = self._viewer._build_punctual_load_polydata_batch(
+                    self._viewer._punctual_load_data,
+                    self._viewer.punctual_load_scale,
+                    case_filter=self._viewer._punctual_load_case_filter,
+                    arrow_width=self._viewer.punctual_load_arrow_width,
+                )
+            else:
+                batch["punctual"] = {"arrows": None}
+            batch["punctual_color"] = self._viewer.punctual_load_color
+
+            if self._cancelled:
+                return
+
+            # --- Charges linéaires ---
+            self.progress.emit(40, tr_ui("progress_build_linear_loads"))
+            if self._linear_visible and self._viewer._linear_load_data:
+                batch["linear"] = self._viewer._build_linear_load_polydata_batch(
+                    self._viewer._linear_load_data,
+                    self._viewer.linear_load_scale,
+                    case_filter=self._viewer._linear_load_case_filter,
+                    arrow_width=self._viewer.linear_load_arrow_width,
+                    global_data=self._viewer._linear_load_data,
+                )
+            else:
+                batch["linear"] = {"arrows": None, "tubes": None}
+            batch["linear_color"] = self._viewer.linear_load_color
+
+            if self._cancelled:
+                return
+
+            # --- Charges surfaciques ---
+            self.progress.emit(70, tr_ui("progress_build_planar_loads"))
+            if self._planar_visible and self._viewer._planar_load_data:
+                batch["planar"] = self._viewer._build_planar_load_polydata_batch(
+                    self._viewer._planar_load_data,
+                    self._viewer.planar_load_scale,
+                    case_filter=self._viewer._planar_load_case_filter,
+                    arrow_width=self._viewer.planar_load_arrow_width,
+                    global_data=self._viewer._planar_load_data,
+                )
+            else:
+                batch["planar"] = {"arrows": None, "tubes": None, "fill": None}
+            batch["planar_color"] = self._viewer.planar_load_color
+
+            if self._cancelled:
+                return
+
+            self.progress.emit(95, tr_ui("progress_apply_loads"))
+            self.finished_batch.emit(batch)
+        except Exception:
+            import traceback
+            self.error.emit(traceback.format_exc())
+
+
 class MainWindow(QMainWindow):
     def __init__(self, app=None):
         super().__init__()
@@ -846,6 +944,12 @@ class MainWindow(QMainWindow):
         self.chk_linear_loads = None
         self.cmb_linear_load_case = None
         self.spin_linear_load_scale = None
+
+        self._planar_load_cases: list = []
+        self.chk_planar_loads = None
+        self.spin_planar_load_scale = None
+        self._loads_worker = None   # BuildLoadsWorker en cours
+        self._loads_debounce_timer = None   # QTimer pour debounce des changements rapides
         self.results_sections_state = {
             "linear_section": True,
             "linear_material": True,
@@ -913,6 +1017,7 @@ class MainWindow(QMainWindow):
             "mesh_width": str(self.viewer.mesh_line_width),
             "punctual_load_arrow_width": str(self.viewer.punctual_load_arrow_width),
             "linear_load_arrow_width": str(self.viewer.linear_load_arrow_width),
+            "planar_load_arrow_width": str(self.viewer.planar_load_arrow_width),
         }
         cfg["colors"] = {
             "linear_color": self._format_color(self.viewer.linear_color),
@@ -926,6 +1031,7 @@ class MainWindow(QMainWindow):
             "mesh_color": self._format_color(self.viewer.mesh_color),
             "punctual_load_color": self._format_color(self.viewer.punctual_load_color),
             "linear_load_color": self._format_color(self.viewer.linear_load_color),
+            "planar_load_color": self._format_color(self.viewer.planar_load_color),
         }
 
         with open(self._config_path(), "w", encoding="utf-8") as f:
@@ -1007,6 +1113,10 @@ class MainWindow(QMainWindow):
             self.viewer.set_linear_load_style(
                 self._parse_color(colors.get("linear_load_color", self._format_color(self.viewer.linear_load_color)), self.viewer.linear_load_color),
                 float(styles.get("linear_load_arrow_width", self.viewer.linear_load_arrow_width)),
+            )
+            self.viewer.set_planar_load_style(
+                self._parse_color(colors.get("planar_load_color", self._format_color(self.viewer.planar_load_color)), self.viewer.planar_load_color),
+                float(styles.get("planar_load_arrow_width", self.viewer.planar_load_arrow_width)),
             )
             self.apply_view_projection(self.view_projection_mode, save=False)
             self.apply_theme(loaded_theme)
@@ -1676,6 +1786,12 @@ class MainWindow(QMainWindow):
         self.chk_linear_loads.toggled.connect(self.on_toggle_linear_loads)
         action_card.layout.addWidget(self.chk_linear_loads)
 
+        self.chk_planar_loads = QCheckBox(tr_ui("show_planar_loads"))
+        self.chk_planar_loads.setChecked(False)
+        self.chk_planar_loads.setEnabled(False)
+        self.chk_planar_loads.toggled.connect(self.on_toggle_planar_loads)
+        action_card.layout.addWidget(self.chk_planar_loads)
+
         self.chk_color_by_section = QCheckBox(tr_ui("color_by_section"))
         self.chk_color_by_section.setChecked(True)
         self.chk_color_by_section.toggled.connect(self.on_toggle_color_by_section)
@@ -1930,6 +2046,34 @@ class MainWindow(QMainWindow):
         self._loads_linear_status_label.setWordWrap(True)
         self._loads_linear_status_label.setStyleSheet(f"color:{FG_DIM};")
         layout.addWidget(self._loads_linear_status_label)
+
+        # --- Titre charges surfaciques ---
+        title_planar = QLabel(tr_ui("loads_planar_title"))
+        title_planar.setObjectName("cardTitle")
+        layout.addWidget(title_planar)
+
+        # --- Echelle surfaciques ---
+        scale_row3 = QHBoxLayout()
+        scale_row3.setContentsMargins(0, 0, 0, 0)
+        scale_row3.setSpacing(6)
+        scale_label3 = QLabel(tr_ui("loads_planar_scale"))
+        scale_row3.addWidget(scale_label3)
+        self.spin_planar_load_scale = QDoubleSpinBox()
+        self.spin_planar_load_scale.setRange(0.1, 100.0)
+        self.spin_planar_load_scale.setDecimals(2)
+        self.spin_planar_load_scale.setSingleStep(0.1)
+        self.spin_planar_load_scale.setValue(1.0)
+        self.spin_planar_load_scale.setEnabled(False)
+        self.spin_planar_load_scale.valueChanged.connect(self._on_planar_load_scale_changed)
+        scale_row3.addWidget(self.spin_planar_load_scale)
+        scale_row3.addStretch(1)
+        layout.addLayout(scale_row3)
+
+        # --- Message d'état charges surfaciques ---
+        self._loads_planar_status_label = QLabel(tr_ui("loads_planar_empty"))
+        self._loads_planar_status_label.setWordWrap(True)
+        self._loads_planar_status_label.setStyleSheet(f"color:{FG_DIM};")
+        layout.addWidget(self._loads_planar_status_label)
 
         layout.addStretch(1)
         return loads_tab
@@ -2937,6 +3081,56 @@ class MainWindow(QMainWindow):
         layout.addWidget(table)
         layout.addStretch(1)
 
+    def _render_planar_load_properties(self, load: dict):
+        """Affiche les propriétés d'une charge surfacique sélectionnée."""
+        import math
+        if self.properties_container is None:
+            return
+        layout = self.properties_container.layout()
+        if layout is None:
+            layout = QVBoxLayout(self.properties_container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(8)
+        self._clear_layout_widgets(layout)
+
+        # Titre : "Charge surfacique n°ID - Cas de charge"
+        user_id  = load.get("user_id")
+        lc_label = str(load.get("load_case_label") or "")
+        base = tr_ui("prop_planar_load")
+        id_part  = f" n\u00b0{user_id}" if user_id not in (None, "") else ""
+        lc_part  = f" - {lc_label}" if lc_label else ""
+        title = f"{base}{id_part}{lc_part}"
+        self._add_properties_type_label(layout, title)
+        self._add_properties_spacer(layout, 8)
+
+        fx   = float(load.get("fx") or 0.0)
+        fy   = float(load.get("fy") or 0.0)
+        fz   = float(load.get("fz") or 0.0)
+        c1   = float(load.get("coeff1") or 1.0)
+        c2   = float(load.get("coeff2") or 1.0)
+        c3   = float(load.get("coeff3") or 1.0)
+
+        def _fmt(v): return f"{v:.4g}"
+
+        unit_f = tr_ui("prop_planar_load_unit_knm2")
+
+        rows = [
+            (tr_ui("prop_planar_load_fx"), f"{_fmt(fx)} {unit_f}"),
+            (tr_ui("prop_planar_load_fy"), f"{_fmt(fy)} {unit_f}"),
+            (tr_ui("prop_planar_load_fz"), f"{_fmt(fz)} {unit_f}"),
+            (tr_ui("prop_planar_load_coeff1"), f"{c1:.2f}"),
+            (tr_ui("prop_planar_load_coeff2"), f"{c2:.2f}"),
+            (tr_ui("prop_planar_load_coeff3"), f"{c3:.2f}"),
+        ]
+
+        table = self._create_properties_table(len(rows))
+        for row, (name, value) in enumerate(rows):
+            self._set_table_name_item(table, row, name)
+            self._set_table_value_item(table, row, value)
+        self._finalize_properties_table(table)
+        layout.addWidget(table)
+        layout.addStretch(1)
+
     def _render_punctual_support_properties(self, data: dict):
         if self.properties_container is None:
             return
@@ -3480,6 +3674,15 @@ class MainWindow(QMainWindow):
                     self._set_properties_message(tr_ui("prop_no_linear_load"))
                 return
 
+            if role == "planar_load":
+                loads = list((self.current_model_data or {}).get("planar_loads", []) or [])
+                index = int(selection.get("index", -1))
+                if 0 <= index < len(loads):
+                    self._render_planar_load_properties(loads[index])
+                else:
+                    self._set_properties_message(tr_ui("prop_no_planar_load"))
+                return
+
             self._set_properties_message("Propriétés disponibles pour les éléments filaires, surfaciques et les appuis.")
             return
 
@@ -3766,6 +3969,9 @@ class MainWindow(QMainWindow):
         if self.chk_linear_loads is not None:
             n = counts.get("linear_loads", 0)
             self.chk_linear_loads.setText(self._format_display_checkbox_text("show_linear_loads", n))
+        if self.chk_planar_loads is not None:
+            n = counts.get("planar_loads", 0)
+            self.chk_planar_loads.setText(self._format_display_checkbox_text("show_planar_loads", n))
         # Le maillage n'est disponible que si le fichier chargé possède des résultats.
         has_results = bool(self.current_model_has_analysis_results)
         if self.chk_mesh is not None:
@@ -4017,6 +4223,8 @@ class MainWindow(QMainWindow):
             self.viewer.punctual_load_color,
             self.viewer.linear_load_arrow_width,
             self.viewer.linear_load_color,
+            self.viewer.planar_load_arrow_width,
+            self.viewer.planar_load_color,
             self
         )
         if dlg.exec() == QDialog.Accepted:
@@ -4059,6 +4267,11 @@ class MainWindow(QMainWindow):
                 values["linear_load_color"],
                 values["linear_load_arrow_width"],
             )
+            self.viewer.set_planar_load_style(
+                values["planar_load_color"],
+                values["planar_load_arrow_width"],
+            )
+            self._trigger_loads_rebuild()
 
             self.log(
                 tr_log(
@@ -4119,27 +4332,128 @@ class MainWindow(QMainWindow):
                 self.viewer.set_show_mesh(False)
         self.log(tr_log("show_mesh_on" if checked else "show_mesh_off"), "info")
 
+    def _trigger_loads_rebuild(self):
+        """Planifie la reconstruction des charges avec debounce (150 ms).
+
+        Les appels rapides successifs (molette spinbox) sont fusionnes :
+        seul le dernier declenchement effectif lance le worker.
+        """
+        if self.viewer is None:
+            return
+        # Initialiser le timer au premier appel
+        if self._loads_debounce_timer is None:
+            self._loads_debounce_timer = QTimer(self)
+            self._loads_debounce_timer.setSingleShot(True)
+            self._loads_debounce_timer.timeout.connect(self._start_loads_worker)
+        # Relancer le compte a rebours a chaque appel
+        self._loads_debounce_timer.start(150)
+
+    def _cancel_loads_worker(self):
+        """Annule le worker en cours et attend sa fin complete."""
+        if self._loads_worker is None:
+            return
+        w = self._loads_worker
+        self._loads_worker = None
+        # Deconnecter tous les signaux pour eviter les callbacks fantomes
+        try:
+            w.progress.disconnect()
+            w.finished_batch.disconnect()
+            w.error.disconnect()
+        except Exception:
+            pass
+        w.cancel()
+        w.wait()   # Attente bloquante mais courte : le worker verifie _cancelled
+
+    def _start_loads_worker(self):
+        """Effectivement lance le BuildLoadsWorker (appele par le debounce timer)."""
+        if self.viewer is None:
+            return
+        # Annuler proprement tout worker precedent
+        self._cancel_loads_worker()
+
+        p_vis = self.viewer._show_punctual_loads
+        l_vis = self.viewer._show_linear_loads
+        s_vis = self.viewer._show_planar_loads
+
+        # Aucune charge visible : vider les acteurs existants immediatement
+        if not p_vis and not l_vis and not s_vis:
+            self.viewer.apply_loads_polydata_batch({
+                "punctual": {"arrows": None},
+                "linear":   {"arrows": None, "tubes": None},
+                "planar":   {"arrows": None, "tubes": None, "fill": None},
+                "punctual_color": self.viewer.punctual_load_color,
+                "linear_color":   self.viewer.linear_load_color,
+                "planar_color":   self.viewer.planar_load_color,
+            })
+            return
+
+        self._relocate_progress_container()
+        if self.load_progress_container is not None:
+            self.load_progress_container.setVisible(True)
+        if self.shared_progress_container is not None:
+            self.shared_progress_container.setVisible(True)
+        self._set_load_progress(0, tr_ui("progress_build_punctual_loads"))
+
+        self._loads_worker = BuildLoadsWorker(self.viewer, p_vis, l_vis, s_vis)
+        self._loads_worker.progress.connect(self._on_loads_progress)
+        self._loads_worker.finished_batch.connect(self._on_loads_batch_ready)
+        self._loads_worker.error.connect(self._on_loads_error)
+        self._loads_worker.start()
+
+    def _on_loads_progress(self, value: int, message: str):
+        self._set_load_progress(value, message)
+
+    def _on_loads_batch_ready(self, batch: dict):
+        if self.viewer is not None:
+            self.viewer.apply_loads_polydata_batch(batch)
+        if self.load_progress_container is not None:
+            self.load_progress_container.setVisible(False)
+        if self.shared_progress_container is not None:
+            self.shared_progress_container.setVisible(False)
+        self._set_load_progress(0, "")
+        self._loads_worker = None
+
+    def _on_loads_error(self, error_text: str):
+        self.log("Erreur construction charges : " + error_text.splitlines()[0], "error")
+        if self.load_progress_container is not None:
+            self.load_progress_container.setVisible(False)
+        if self.shared_progress_container is not None:
+            self.shared_progress_container.setVisible(False)
+        self._loads_worker = None
+
     def on_toggle_punctual_loads(self, checked: bool):
         if self.viewer:
-            self.viewer.set_show_punctual_loads(checked)
+            self.viewer._show_punctual_loads = checked
         self.log(tr_log("show_punctual_loads_on" if checked else "show_punctual_loads_off"), "info")
+        self._trigger_loads_rebuild()
 
     def on_toggle_linear_loads(self, checked: bool):
         if self.viewer:
-            self.viewer.set_show_linear_loads(checked)
+            self.viewer._show_linear_loads = checked
         self.log(tr_log("show_linear_loads_on" if checked else "show_linear_loads_off"), "info")
+        self._trigger_loads_rebuild()
+
+    def on_toggle_planar_loads(self, checked: bool):
+        if self.viewer:
+            self.viewer._show_planar_loads = checked
+        self.log(tr_log("show_planar_loads_on" if checked else "show_planar_loads_off"), "info")
+        self._trigger_loads_rebuild()
 
     def _populate_punctual_load_case_combo(self, load_cases: list):
-        """Peuple le combo de filtre par cas de charge (union charges ponctuelles + linéaires)."""
+        """Peuple le combo de filtre par cas de charge (union charges ponctuelles + linéaires + surfaciques)."""
         if self.cmb_punctual_load_case is None:
             return
-        # Fusionner les cas des deux types (dédoublonnage par EID)
+        # Fusionner les cas des trois types (dédoublonnage par EID)
         all_cases_by_eid = {}
         for lc in (load_cases or []):
             eid = lc.get("eid")
             if eid not in all_cases_by_eid:
                 all_cases_by_eid[eid] = str(lc.get("label") or str(eid))
         for lc in (self._linear_load_cases or []):
+            eid = lc.get("eid")
+            if eid not in all_cases_by_eid:
+                all_cases_by_eid[eid] = str(lc.get("label") or str(eid))
+        for lc in (self._planar_load_cases or []):
             eid = lc.get("eid")
             if eid not in all_cases_by_eid:
                 all_cases_by_eid[eid] = str(lc.get("label") or str(eid))
@@ -4156,19 +4470,28 @@ class MainWindow(QMainWindow):
         if self.viewer is None or self.cmb_punctual_load_case is None:
             return
         case_eid = self.cmb_punctual_load_case.currentData()
-        self.viewer.set_punctual_load_case_filter(case_eid)
-        # Appliquer aussi aux charges linéaires (filtre commun)
-        self.viewer.set_linear_load_case_filter(case_eid)
+        self.viewer._punctual_load_case_filter = int(case_eid) if case_eid is not None else None
+        self.viewer._linear_load_case_filter   = int(case_eid) if case_eid is not None else None
+        self.viewer._planar_load_case_filter   = int(case_eid) if case_eid is not None else None
+        self._trigger_loads_rebuild()
 
     def _on_punctual_load_scale_changed(self, value: float):
         if self.viewer is None:
             return
-        self.viewer.set_punctual_load_scale(value)
+        self.viewer.punctual_load_scale = max(0.1, float(value))
+        self._trigger_loads_rebuild()
 
     def _on_linear_load_scale_changed(self, value: float):
         if self.viewer is None:
             return
-        self.viewer.set_linear_load_scale(value)
+        self.viewer.linear_load_scale = max(0.1, float(value))
+        self._trigger_loads_rebuild()
+
+    def _on_planar_load_scale_changed(self, value: float):
+        if self.viewer is None:
+            return
+        self.viewer.planar_load_scale = max(0.1, float(value))
+        self._trigger_loads_rebuild()
 
     def on_toggle_color_by_section(self, checked: bool):
         if self.viewer:
@@ -4388,18 +4711,18 @@ class MainWindow(QMainWindow):
         self._update_analysis_results_value_combo(None)
         self._set_analysis_results_output_message("Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.")
 
-        # Charges ponctuelles
+        # Charges ponctuelles - stocker les données, le worker fera le rendu
         self._punctual_load_cases = list((model_data or {}).get("punctual_load_cases", []) or [])
         punctual_loads = list((model_data or {}).get("punctual_loads", []) or [])
-        self.viewer.load_punctual_loads(punctual_loads)
+        self.viewer._punctual_load_data = list(punctual_loads)
+        self.viewer.punctual_load_count = len(punctual_loads)
         self._populate_punctual_load_case_combo(self._punctual_load_cases)
         has_punctual = bool(punctual_loads)
         if self.chk_punctual_loads is not None:
             self.chk_punctual_loads.setEnabled(has_punctual)
-            if not has_punctual:
-                self.chk_punctual_loads.blockSignals(True)
-                self.chk_punctual_loads.setChecked(False)
-                self.chk_punctual_loads.blockSignals(False)
+            self.chk_punctual_loads.blockSignals(True)
+            self.chk_punctual_loads.setChecked(False)
+            self.chk_punctual_loads.blockSignals(False)
         if self.spin_punctual_load_scale is not None:
             self.spin_punctual_load_scale.setEnabled(has_punctual)
         if hasattr(self, "_loads_punctual_status_label") and self._loads_punctual_status_label is not None:
@@ -4413,14 +4736,14 @@ class MainWindow(QMainWindow):
         # Charges linéaires
         self._linear_load_cases = list((model_data or {}).get("linear_load_cases", []) or [])
         linear_loads = list((model_data or {}).get("linear_loads", []) or [])
-        self.viewer.load_linear_loads(linear_loads)
+        self.viewer._linear_load_data = list(linear_loads)
+        self.viewer.linear_load_count = len(linear_loads)
         has_linear = bool(linear_loads)
         if self.chk_linear_loads is not None:
             self.chk_linear_loads.setEnabled(has_linear)
-            if not has_linear:
-                self.chk_linear_loads.blockSignals(True)
-                self.chk_linear_loads.setChecked(False)
-                self.chk_linear_loads.blockSignals(False)
+            self.chk_linear_loads.blockSignals(True)
+            self.chk_linear_loads.setChecked(False)
+            self.chk_linear_loads.blockSignals(False)
         if self.spin_linear_load_scale is not None:
             self.spin_linear_load_scale.setEnabled(has_linear)
         if hasattr(self, "_loads_linear_status_label") and self._loads_linear_status_label is not None:
@@ -4431,7 +4754,28 @@ class MainWindow(QMainWindow):
             else:
                 self._loads_linear_status_label.setText(tr_ui("loads_linear_empty"))
 
-        # Re-peupler la combo maintenant que les deux listes de cas sont connues
+        # Charges surfaciques
+        self._planar_load_cases = list((model_data or {}).get("planar_load_cases", []) or [])
+        planar_loads = list((model_data or {}).get("planar_loads", []) or [])
+        self.viewer._planar_load_data = list(planar_loads)
+        self.viewer.planar_load_count = len(planar_loads)
+        has_planar = bool(planar_loads)
+        if self.chk_planar_loads is not None:
+            self.chk_planar_loads.setEnabled(has_planar)
+            self.chk_planar_loads.blockSignals(True)
+            self.chk_planar_loads.setChecked(False)
+            self.chk_planar_loads.blockSignals(False)
+        if self.spin_planar_load_scale is not None:
+            self.spin_planar_load_scale.setEnabled(has_planar)
+        if hasattr(self, "_loads_planar_status_label") and self._loads_planar_status_label is not None:
+            if has_planar:
+                self._loads_planar_status_label.setText(
+                    tr_ui("loads_planar_count", count=len(planar_loads))
+                )
+            else:
+                self._loads_planar_status_label.setText(tr_ui("loads_planar_empty"))
+
+        # Re-peupler la combo maintenant que les trois listes de cas sont connues
         self._populate_punctual_load_case_combo(self._punctual_load_cases)
 
         self._update_display_checkboxes()
@@ -4521,6 +4865,17 @@ class MainWindow(QMainWindow):
             self.log(line, "error")
 
     def closeEvent(self, event):
+        try:
+            if self._loads_debounce_timer is not None:
+                self._loads_debounce_timer.stop()
+        except RuntimeError:
+            pass
+
+        try:
+            self._cancel_loads_worker()
+        except RuntimeError:
+            pass
+
         try:
             if self.worker and self.worker.isRunning():
                 self.worker.quit()

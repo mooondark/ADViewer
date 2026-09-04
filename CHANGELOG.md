@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.89
+
+### Affichage des charges surfaciques
+- Choix des cas de charges et de l'échelle,
+- Affichage graphique des efforts,
+- Affichage des valeurs des charges dans l'onglet propriétés
+
+### Display of Planar Loads
+- Select load cases and scale,
+- Graphical display of forces,
+- Display of load values in the properties tab
+
 ## 1.88
 
 ### URL API déplacée

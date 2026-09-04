@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.88"
+APP_VERSION = "1.89"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -206,6 +206,11 @@ PUNCTUAL_LOAD_SCALE = 1.0                 # facteur d'échelle par défaut (m pa
 LINEAR_LOAD_COLOR = (1.0, 0.765, 0.059)  # #ffc30f
 LINEAR_LOAD_SCALE = 1.0                  # facteur d'échelle par défaut (m par kN_max)
 LINEAR_LOAD_ARROW_WIDTH = 0.02           # rayon de tige en mètres (défaut)
+
+# Charges surfaciques
+PLANAR_LOAD_COLOR = (1.0, 0.561, 0.059)  # #ff8f0f
+PLANAR_LOAD_SCALE = 1.0                  # facteur d'échelle par défaut (m par kN_max)
+PLANAR_LOAD_ARROW_WIDTH = 0.02           # rayon de tige en mètres (défaut)
 
 
 # ======================================================================
@@ -460,6 +465,11 @@ MSG_UI = {
     "loads_linear_count": "{count} charge(s) linéaire(s)",
     "loads_linear_empty": "Aucune charge linéaire dans le modèle.",
 
+    "loads_planar_title": "Charges surfaciques",
+    "loads_planar_scale": "Echelle (m/kN_max)",
+    "loads_planar_count": "{count} charge(s) surfacique(s)",
+    "loads_planar_empty": "Aucune charge surfacique dans le modèle.",
+
     "prop_punctual_load": "Charge ponctuelle",
     "prop_punctual_load_fx": "Fx",
     "prop_punctual_load_fy": "Fy",
@@ -486,7 +496,18 @@ MSG_UI = {
     "prop_linear_load_unit_knm": "kN/m",
     "prop_linear_load_unit_knm2": "kN.m/m",
     "prop_no_linear_load": "Aucune propriété disponible pour cette charge linéaire.",
+
+    "prop_planar_load": "Charge surfacique",
+    "prop_planar_load_fx": "Fx",
+    "prop_planar_load_fy": "Fy",
+    "prop_planar_load_fz": "Fz",
+    "prop_planar_load_coeff1": "Coefficient 1",
+    "prop_planar_load_coeff2": "Coefficient 2",
+    "prop_planar_load_coeff3": "Coefficient 3",
+    "prop_planar_load_unit_knm2": "kN/m2",
+    "prop_no_planar_load": "Aucune propriété disponible pour cette charge surfacique.",
     "show_linear_loads": "Afficher charges linéaires",
+    "show_planar_loads": "Afficher charges surfaciques",
 
     "filter_select_all": "Sélectionner tout",
     "filter_select_none": "Désélectionner tout",
@@ -510,6 +531,11 @@ MSG_UI = {
     "progress_convert_geometry": "Conversion des géométries...",
     "progress_read_punctual_loads": "Lecture des charges ponctuelles...",
     "progress_read_linear_loads": "Lecture des charges linéaires...",
+    "progress_read_planar_loads": "Lecture des charges surfaciques...",
+    "progress_build_punctual_loads": "Construction charges ponctuelles...",
+    "progress_build_linear_loads": "Construction charges linéaires...",
+    "progress_build_planar_loads": "Construction charges surfaciques...",
+    "progress_apply_loads": "Application des charges...",
     "progress_prepare_results": "Préparation des résultats...",
     "progress_close_project": "Fermeture du projet...",
 
@@ -528,6 +554,7 @@ MSG_UI = {
     "settings_label_mesh": "Maillage FEM",
     "settings_label_punctual_load_arrows": "Charges ponctuelles",
     "settings_label_linear_load_arrows": "Charges linéaires",
+    "settings_label_planar_load_arrows": "Charges surfaciques",
     "settings_label_thickness": "Épaisseur",
     "settings_label_size": "Taille",
     "settings_linear": "Épaisseur filaires",
@@ -612,10 +639,13 @@ MSG_LOG = {
     "ids_support_punctual": "Appuis ponctuels trouvés : {count}",
     "ids_punctual_loads": "Charges ponctuelles trouvées : {count}",
     "ids_linear_loads": "Charges linéaires trouvées : {count}",
+    "ids_planar_loads": "Charges surfaciques trouvées : {count}",
     "show_punctual_loads_on": "Affichage charges ponctuelles : activé",
     "show_punctual_loads_off": "Affichage charges ponctuelles : désactivé",
     "show_linear_loads_on": "Affichage charges linéaires : activé",
     "show_linear_loads_off": "Affichage charges linéaires : désactivé",
+    "show_planar_loads_on": "Affichage charges surfaciques : activé",
+    "show_planar_loads_off": "Affichage charges surfaciques : désactivé",
     "ids_support_linear": "Appuis filaires trouvés : {count}",
     "ids_support_planar": "Appuis surfaciques trouvés : {count}",
     "resolved_materials": "Matériaux résolus : {resolved}/{total}.",

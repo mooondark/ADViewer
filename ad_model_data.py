@@ -22,6 +22,7 @@ from viewer_config import (
     PUNCTUAL_SUPPORT_TYPES, LINEAR_SUPPORT_TYPES, PLANAR_SUPPORT_TYPES,
     PLANAR_ELEMENT_TYPE_LABELS, LINEAR_BEAM_TYPE_LABELS,
     LINEAR_LOAD_COLOR,
+    PLANAR_LOAD_COLOR,
 )
 from ad_api_client import *
 
@@ -88,6 +89,8 @@ class ModelDataDict(TypedDict, total=False):
     punctual_load_cases: list  # liste de dicts {eid, label} — cas de charge uniques
     linear_loads: list   # liste de dicts {pt_start, pt_end, fx, fy, fz, mx, my, mz, coeff1, coeff2, user_id, load_case_eid, load_case_label}
     linear_load_cases: list  # liste de dicts {eid, label} — cas de charge uniques
+    planar_loads: list   # liste de dicts {pts, fx, fy, fz, coeff1, coeff2, coeff3, user_id, load_case_eid, load_case_label}
+    planar_load_cases: list  # liste de dicts {eid, label} — cas de charge uniques
 
 
 def normalize_results_case_entry(kind: str, eid, label: str) -> ResultsCaseEntry:
@@ -114,6 +117,8 @@ def build_model_data(payload: dict) -> ModelDataDict:
         "punctual_load_cases",
         "linear_loads",
         "linear_load_cases",
+        "planar_loads",
+        "planar_load_cases",
     ]
     for key in list_keys:
         value = data.get(key)
@@ -133,6 +138,7 @@ def build_model_data(payload: dict) -> ModelDataDict:
         "linear_sections_resolved_count", "linear_section_eids_count",
         "punctual_load_ids_count", "punctual_load_count",
         "linear_load_ids_count", "linear_load_count",
+        "planar_load_ids_count", "planar_load_count",
     ]
     for key in int_keys:
         try:
@@ -1758,6 +1764,7 @@ def _read_model_identifiers(host: str) -> dict:
     planar_support_ids = get_element_ids_for_types(host, PLANAR_SUPPORT_TYPES)
     punctual_load_ids = get_element_ids(host, "ElementLoadPunctual")
     linear_load_ids = get_element_ids(host, "ElementLoadLinear")
+    planar_load_ids = get_element_ids(host, "ElementLoadPlanar")
     return {
         "linear_ids": linear_ids,
         "planar_ids": planar_ids,
@@ -1767,6 +1774,7 @@ def _read_model_identifiers(host: str) -> dict:
         "planar_support_ids": planar_support_ids,
         "punctual_load_ids": punctual_load_ids,
         "linear_load_ids": linear_load_ids,
+        "planar_load_ids": planar_load_ids,
     }
 
 
@@ -1779,6 +1787,7 @@ def _read_model_objects(host: str, ids_data: dict) -> dict:
     planar_support_elements = get_elements_objects(host, ids_data.get("planar_support_ids", []))
     punctual_load_elements = get_elements_objects(host, ids_data.get("punctual_load_ids", []))
     linear_load_elements = get_elements_objects(host, ids_data.get("linear_load_ids", []))
+    planar_load_elements = get_elements_objects(host, ids_data.get("planar_load_ids", []))
     return {
         "linear_elements": linear_elements,
         "planar_elements": planar_elements,
@@ -1788,6 +1797,7 @@ def _read_model_objects(host: str, ids_data: dict) -> dict:
         "planar_support_elements": planar_support_elements,
         "punctual_load_elements": punctual_load_elements,
         "linear_load_elements": linear_load_elements,
+        "planar_load_elements": planar_load_elements,
     }
 
 
@@ -2103,6 +2113,138 @@ def _build_linear_loads_payload(host: str, ids_data: dict, objects_data: dict) -
     }
 
 
+def _build_planar_loads_payload(host: str, ids_data: dict, objects_data: dict) -> dict:
+    """Construit la liste des charges surfaciques avec resolution des cas de charge.
+
+    Retourne un dict avec :
+    - ``planar_loads``      : liste de dicts par charge (points, forces, variation, cas)
+    - ``planar_load_cases`` : liste de dicts {eid, label} - cas uniques
+    - ``planar_load_ids_count`` / ``planar_load_count`` : compteurs
+    """
+    planar_load_ids = list(ids_data.get("planar_load_ids", []) or [])
+    planar_load_elements = list(objects_data.get("planar_load_elements", []) or [])
+
+    if not planar_load_ids or not planar_load_elements:
+        return {
+            "planar_loads": [],
+            "planar_load_cases": [],
+            "planar_load_ids_count": len(planar_load_ids),
+            "planar_load_count": 0,
+        }
+
+    # Collecter les EIDs de cas de charge references
+    lc_eids_needed = set()
+    for el in planar_load_elements:
+        if not isinstance(el, dict):
+            continue
+        lc_ref = el.get("loadCase") or {}
+        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
+        if lc_eid is not None:
+            try:
+                lc_eids_needed.add(int(lc_eid))
+            except (TypeError, ValueError):
+                pass
+
+    # Resolution des cas de charge
+    lc_by_eid = {}
+    if lc_eids_needed:
+        try:
+            ordered_eids = list(lc_eids_needed)
+            lc_objects = get_informational_elements_objects(host, ordered_eids)
+            for lc_eid, lc_obj in zip(ordered_eids, lc_objects or []):
+                if not isinstance(lc_obj, dict):
+                    continue
+                user_id = lc_obj.get("userID")
+                name = _get_username(lc_obj) or str(lc_obj.get("name") or "").strip()
+                left = str(user_id).strip() if user_id not in (None, "") else str(lc_eid)
+                label = f"{left} : {name}" if name else left
+                lc_by_eid[int(lc_eid)] = label
+        except Exception:
+            pass
+
+    # Construire la liste des charges surfaciques
+    planar_loads = []
+    seen_lc_eids = {}
+    for el in planar_load_elements:
+        if not isinstance(el, dict):
+            continue
+
+        # Points geometriques (polygone de la charge)
+        geom_pts_raw = el.get("geomPtsList") or []
+        pts = []
+        for pt in geom_pts_raw:
+            if not isinstance(pt, dict):
+                continue
+            try:
+                x = float(pt.get("x", 0.0))
+                y = float(pt.get("y", 0.0))
+                z = float(pt.get("z", 0.0))
+                pts.append((x, y, z))
+            except (TypeError, ValueError):
+                continue
+
+        if len(pts) < 3:
+            continue
+
+        # Forces (N/m2 -> kN/m2)
+        fx = float(el.get("fx") or el.get("Fx") or 0.0) / 1000.0
+        fy = float(el.get("fy") or el.get("Fy") or 0.0) / 1000.0
+        fz = float(el.get("fz") or el.get("Fz") or 0.0) / 1000.0
+
+        # Variation (coefficients 1/2/3 pour les 3 premiers points)
+        variation = el.get("variation")
+        if isinstance(variation, dict):
+            coeff1 = float(variation.get("coefficient1") if variation.get("coefficient1") is not None else 1.0)
+            coeff2 = float(variation.get("coefficient2") if variation.get("coefficient2") is not None else 1.0)
+            coeff3 = float(variation.get("coefficient3") if variation.get("coefficient3") is not None else 1.0)
+        else:
+            coeff1 = 1.0
+            coeff2 = 1.0
+            coeff3 = 1.0
+
+        # Identifiant utilisateur
+        user_id = el.get("userID") or el.get("userId") or el.get("userid")
+
+        # Cas de charge
+        lc_ref = el.get("loadCase") or {}
+        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
+        lc_eid_int = None
+        lc_label = ""
+        if lc_eid is not None:
+            try:
+                lc_eid_int = int(lc_eid)
+                lc_label = lc_by_eid.get(lc_eid_int, str(lc_eid_int))
+                if lc_eid_int not in seen_lc_eids:
+                    seen_lc_eids[lc_eid_int] = lc_label
+            except (TypeError, ValueError):
+                pass
+
+        planar_loads.append({
+            "pts": pts,
+            "fx": fx,
+            "fy": fy,
+            "fz": fz,
+            "coeff1": coeff1,
+            "coeff2": coeff2,
+            "coeff3": coeff3,
+            "user_id": user_id,
+            "load_case_eid": lc_eid_int,
+            "load_case_label": lc_label,
+        })
+
+    planar_load_cases = [
+        {"eid": eid, "label": label}
+        for eid, label in seen_lc_eids.items()
+    ]
+
+    return {
+        "planar_loads": planar_loads,
+        "planar_load_cases": planar_load_cases,
+        "planar_load_ids_count": len(planar_load_ids),
+        "planar_load_count": len(planar_loads),
+    }
+
+
 def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict) -> dict:
     linear_elements = list(objects_data.get("linear_elements", []) or [])
     planar_elements = list(objects_data.get("planar_elements", []) or [])
@@ -2374,11 +2516,15 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         progress(84, tr_ui("progress_read_linear_loads"))
         linear_loads_payload = _build_linear_loads_payload(host, ids_data, objects_data)
 
+        progress(86, tr_ui("progress_read_planar_loads"))
+        planar_loads_payload = _build_planar_loads_payload(host, ids_data, objects_data)
+
         progress(88, tr_ui("progress_prepare_results"))
         result = build_model_data({
             **geometry_payload,
             **punctual_loads_payload,
             **linear_loads_payload,
+            **planar_loads_payload,
             "normalized_path": session.fto_path,
             "results_cases_combinations": results_cases_combinations,
             "fem_nodes": fem_nodes,
@@ -2441,6 +2587,7 @@ class LoadModelWorker(QThread):
             self.log.emit(tr_log("ids_support_punctual", count=model_data["punctual_support_ids_count"]), "info")
             self.log.emit(tr_log("ids_punctual_loads", count=model_data["punctual_load_ids_count"]), "info")
             self.log.emit(tr_log("ids_linear_loads", count=model_data["linear_load_ids_count"]), "info")
+            self.log.emit(tr_log("ids_planar_loads", count=model_data["planar_load_ids_count"]), "info")
             self.log.emit(tr_log("ids_support_linear", count=model_data["linear_support_ids_count"]), "info")
             self.log.emit(tr_log("ids_support_planar", count=model_data["planar_support_ids_count"]), "info")
             self.log.emit(
