@@ -2,6 +2,11 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.90
+
+Nouveaux icônes dans l'onglet résultats
+New icons in the result tab
+
 ## 1.89.3
 
 - Correction de bugs & optimisation
