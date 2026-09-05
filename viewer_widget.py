@@ -18,6 +18,7 @@ from vtkmodules.vtkRenderingCore import vtkBillboardTextActor3D
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtWidgets import QFrame, QVBoxLayout
 
+import viewer_config as _cfg
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_ARROW_WIDTH,
     PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_ARROW_WIDTH,
@@ -281,7 +282,7 @@ class VTKViewerWidget(QFrame):
         layout.addWidget(self.vtk_widget)
 
         self.renderer = vtk.vtkRenderer()
-        self.renderer.SetBackground(*VTK_BG)
+        self.renderer.SetBackground(*_cfg.VTK_BG)
 
         self.render_window = self.vtk_widget.GetRenderWindow()
         self.render_window.AddRenderer(self.renderer)
@@ -432,9 +433,9 @@ class VTKViewerWidget(QFrame):
         self.vtk_widget.Start()
 
     def apply_theme(self):
-        self.setStyleSheet(f"border:1px solid {BORDER};")
+        self.setStyleSheet(f"border:1px solid {_cfg.BORDER};")
         if hasattr(self, "_diagram_label_actors"):
-            is_dark_theme = tuple(VTK_BG) == tuple(_DARK_VTK_BG)
+            is_dark_theme = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
             label_color = (1.0, 1.0, 1.0) if is_dark_theme else None
             for actor in self._diagram_label_actors:
                 if actor is None:
@@ -453,7 +454,7 @@ class VTKViewerWidget(QFrame):
                 else:
                     text_prop.SetColor(*label_color)
         if hasattr(self, "renderer") and self.renderer is not None:
-            self.renderer.SetBackground(*VTK_BG)
+            self.renderer.SetBackground(*_cfg.VTK_BG)
             if hasattr(self, "render_window") and self.render_window is not None:
                 self.render_window.Render()
 
@@ -1542,7 +1543,7 @@ class VTKViewerWidget(QFrame):
             text_prop = actor.GetTextProperty()
             text_prop.SetFontSize(16)
             text_prop.BoldOn()
-            is_dark_theme = tuple(VTK_BG) == tuple(_DARK_VTK_BG)
+            is_dark_theme = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
             applied_color = (1.0, 1.0, 1.0) if is_dark_theme else color
             text_prop.SetColor(*applied_color)
             actor._diagram_original_color = tuple(color)
