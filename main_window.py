@@ -39,7 +39,7 @@ try:
         QSplitter, QCheckBox, QComboBox, QMenu, QDialog, QFormLayout,
         QDialogButtonBox, QDoubleSpinBox, QSlider, QColorDialog, QProgressBar, QMessageBox,
         QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QGraphicsDropShadowEffect,
-        QScrollArea, QToolButton, QGridLayout, QListView
+        QScrollArea, QToolButton, QGridLayout, QListView, QInputDialog
     )
 except ImportError as e:
     raise RuntimeError("Le module 'PySide6' est requis. Installez les dépendances de l'application avant l'exécution.") from e
@@ -866,6 +866,7 @@ class MainWindow(QMainWindow):
         self.view_iso_btn = None
         self.filter_btn = None
         self.clear_filter_btn = None
+        self.camera_btn = None
         self.shortcut_view_front_back = None
         self.shortcut_view_left_right = None
         self.shortcut_view_top_bottom = None
@@ -887,6 +888,7 @@ class MainWindow(QMainWindow):
         self.act_view_projection_perspective = None
         self.act_view_projection_orthogonal = None
         self.view_projection_mode = DEFAULT_VIEW_PROJECTION
+        self.png_export_scale = DEFAULT_PNG_EXPORT_SCALE
         self.api_server_started_by_viewer = False
         self.load_progress_container = None
         self.load_progress_label = None
@@ -1003,6 +1005,7 @@ class MainWindow(QMainWindow):
             "api_url": self.api_host,
             "last_fto_path": normalize_windows_path(self.fto_edit.text().strip()) if getattr(self, "fto_edit", None) is not None else "",
             "view_projection": self.view_projection_mode,
+            "png_export_scale": str(self.png_export_scale),
         }
         cfg["styles"] = {
             "linear_width": str(self.viewer.linear_line_width),
@@ -1070,6 +1073,12 @@ class MainWindow(QMainWindow):
             if not (cfg.has_section("general") and "view_projection" in cfg["general"]):
                 config_updated = True
             self.view_projection_mode = loaded_projection
+
+            try:
+                loaded_png_scale = int(str(general.get("png_export_scale", DEFAULT_PNG_EXPORT_SCALE)).strip())
+            except (TypeError, ValueError):
+                loaded_png_scale = DEFAULT_PNG_EXPORT_SCALE
+            self.png_export_scale = max(PNG_EXPORT_SCALE_MIN, min(PNG_EXPORT_SCALE_MAX, loaded_png_scale))
 
             last_fto_path = normalize_windows_path(general.get("last_fto_path", "").strip())
             if last_fto_path and os.path.isfile(last_fto_path):
@@ -1393,6 +1402,24 @@ class MainWindow(QMainWindow):
             'b2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwv'
             'c3ZnPg=='
         ),
+        "camera": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHdpZHRo'
+            'PSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxs'
+            'PSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRo'
+            'IGQ9Ik0yIDE5VjlDMiA3Ljg5NTQzIDIuODk1NDMgNyA0IDdINC41QzUuMTI5NTEg'
+            'NyA1LjcyMjI5IDYuNzAzNjEgNi4xIDYuMkw4LjMyIDMuMjRDOC40MzMzMSAzLjA4'
+            'ODkyIDguNjExMTUgMyA4LjggM0gxNS4yQzE1LjM4ODkgMyAxNS41NjY3IDMuMDg4'
+            'OTIgMTUuNjggMy4yNEwxNy45IDYuMkMxOC4yNzc3IDYuNzAzNjEgMTguODcwNSA3'
+            'IDE5LjUgN0gyMEMyMS4xMDQ2IDcgMjIgNy44OTU0MyAyMiA5VjE5QzIyIDIwLjEw'
+            'NDYgMjEuMTA0NiAyMSAyMCAyMUg0QzIuODk1NDMgMjEgMiAyMC4xMDQ2IDIgMTla'
+            'IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGlu'
+            'ZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJN'
+            'MTIgMTdDMTQuMjA5MSAxNyAxNiAxNS4yMDkxIDE2IDEzQzE2IDEwLjc5MDkgMTQu'
+            'MjA5MSA5IDEyIDlDOS43OTA4NiA5IDggMTAuNzkwOSA4IDEzQzggMTUuMjA5MSA5'
+            'Ljc5MDg2IDE3IDEyIDE3WiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9'
+            'IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJv'
+            'dW5kIi8+PC9zdmc+'
+        ),
     }
 
     def _make_view_icon(self, kind: str) -> QIcon:
@@ -1450,6 +1477,7 @@ class MainWindow(QMainWindow):
             (self.view_iso_btn,    "iso"),
             (self.filter_btn,      "filter"),
             (self.clear_filter_btn,"filter_clear"),
+            (self.camera_btn,      "camera"),
             (self.browse_fto_btn,  "parcourir"),
             (self.clear_log_btn,   "effacer"),
         ]
@@ -1628,6 +1656,10 @@ class MainWindow(QMainWindow):
         act_line_widths.triggered.connect(self.open_settings_dialog)
         settings_menu.addAction(act_line_widths)
 
+        act_png_export = QAction(tr_ui("menu_png_export"), self)
+        act_png_export.triggered.connect(self.open_png_export_dialog)
+        settings_menu.addAction(act_png_export)
+
         # Sous-menu Thème
         theme_menu = QMenu(tr_ui("menu_theme"), self)
         settings_menu.addMenu(theme_menu)
@@ -1730,6 +1762,7 @@ class MainWindow(QMainWindow):
         views_row = QHBoxLayout()
         views_row.setContentsMargins(0, 0, 0, 0)
         views_row.setSpacing(3)
+        views_row.addStretch(1)
 
         self.view_front_btn = QPushButton()
         self.view_front_btn.setProperty("iconOnly", True)
@@ -1755,6 +1788,7 @@ class MainWindow(QMainWindow):
 
         for btn in (self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn):
             views_row.addWidget(btn)
+        views_row.addStretch(1)
 
         self.filter_btn = QPushButton()
         self.filter_btn.setProperty("iconOnly", True)
@@ -1776,6 +1810,11 @@ class MainWindow(QMainWindow):
         self.isolate_btn.clicked.connect(self.toggle_isolation)
         self._apply_isolate_button_icon(False)
 
+        self.camera_btn = QPushButton()
+        self.camera_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.camera_btn, "camera", tr_ui("tooltip_screenshot"))
+        self.camera_btn.clicked.connect(self.save_vtk_screenshot)
+
         filter_row = QHBoxLayout()
         filter_row.setContentsMargins(0, 0, 0, 0)
         filter_row.setSpacing(3)
@@ -1783,6 +1822,7 @@ class MainWindow(QMainWindow):
         filter_row.addWidget(self.filter_btn)
         filter_row.addWidget(self.clear_filter_btn)
         filter_row.addWidget(self.isolate_btn)
+        filter_row.addWidget(self.camera_btn)
         filter_row.addStretch(1)
 
         action_card.layout.addWidget(self.fit_btn)
@@ -3986,6 +4026,36 @@ class MainWindow(QMainWindow):
         self.isolate_btn.setChecked(bool(active))
         self.isolate_btn.setToolTip(tr_ui("tooltip_isolation_active") if active else tr_ui("tooltip_isolate"))
 
+    def save_vtk_screenshot(self):
+        """Enregistre la vue graphique VTK en PNG a cote du fichier .fto ouvert.
+
+        Le nom est celui du fichier ouvert, indice _1, _2, ... sans jamais
+        ecraser une image deja presente.
+        """
+        if self.viewer is None:
+            return
+        fto_path = normalize_windows_path(self.fto_edit.text().strip()) if self.fto_edit is not None else ""
+        if fto_path:
+            out_dir = os.path.dirname(fto_path) or os.getcwd()
+            base = os.path.splitext(os.path.basename(fto_path))[0]
+        else:
+            out_dir = os.getcwd()
+            base = "capture"
+
+        index = 1
+        while True:
+            candidate = os.path.join(out_dir, f"{base}_{index}.png")
+            if not os.path.exists(candidate):
+                break
+            index += 1
+
+        try:
+            self.viewer.save_screenshot(candidate, scale=self.png_export_scale)
+        except Exception as exc:
+            self.log(tr_log("screenshot_failed", details=str(exc)))
+            return
+        self.log(tr_log("screenshot_saved", path=candidate))
+
     def toggle_isolation(self):
         if self.current_model_data is None or self.viewer is None:
             self._apply_isolate_button_icon(False)
@@ -4197,6 +4267,28 @@ class MainWindow(QMainWindow):
                 self.host_edit.setText(new_url)
             self.save_config()
             self.log(tr_log("api_url_loaded", url=new_url))
+
+    def open_png_export_dialog(self):
+        try:
+            current = int(self.png_export_scale)
+        except (TypeError, ValueError):
+            current = DEFAULT_PNG_EXPORT_SCALE
+        current = max(PNG_EXPORT_SCALE_MIN, min(PNG_EXPORT_SCALE_MAX, current))
+        # QInputDialog.getInt : spinbox borne a [1, 3], pas de saisie non entiere possible.
+        value, ok = QInputDialog.getInt(
+            self,
+            tr_ui("png_export_dialog_title"),
+            tr_ui("png_export_dialog_label"),
+            current,
+            PNG_EXPORT_SCALE_MIN,
+            PNG_EXPORT_SCALE_MAX,
+            1,
+        )
+        if not ok:
+            return
+        self.png_export_scale = int(value)
+        self.save_config()
+        self.log(tr_log("png_export_scale_set", scale=self.png_export_scale))
 
     def open_about_dialog(self):
         dlg = AboutDialog(self)

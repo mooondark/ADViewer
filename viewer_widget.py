@@ -458,6 +458,53 @@ class VTKViewerWidget(QFrame):
             if hasattr(self, "render_window") and self.render_window is not None:
                 self.render_window.Render()
 
+    def save_screenshot(self, path: str, scale: int = 1):
+        """Enregistre le rendu VTK courant dans un fichier PNG."""
+        if self.render_window is None:
+            raise RuntimeError("Fenetre de rendu VTK indisponible.")
+
+        try:
+            scale = int(scale)
+        except (TypeError, ValueError):
+            scale = 1
+        scale = max(1, scale)
+
+        # Sauvegarde de l'etat camera : le rendu en mosaique (SetScale > 1)
+        # modifie la camera et les parametres de tuile de la fenetre, et VTK
+        # ne les restaure pas toujours -> vue "zoomee" tant qu'aucun rendu
+        # complet n'a eu lieu.
+        camera = self.renderer.GetActiveCamera() if self.renderer is not None else None
+        cam_backup = None
+        if camera is not None:
+            cam_backup = vtk.vtkCamera()
+            cam_backup.DeepCopy(camera)
+
+        self.render_window.Render()
+        w2i = vtk.vtkWindowToImageFilter()
+        w2i.SetInput(self.render_window)
+        if scale > 1:
+            w2i.SetScale(scale)
+        # RGB (sans canal alpha) : sinon le fond est capture en transparent et
+        # l'image apparait sombre/noire dans la plupart des visionneuses.
+        w2i.SetInputBufferTypeToRGB()
+        w2i.ReadFrontBufferOff()
+        w2i.Update()
+
+        writer = vtk.vtkPNGWriter()
+        writer.SetFileName(path)
+        writer.SetInputConnection(w2i.GetOutputPort())
+        try:
+            writer.Write()
+        finally:
+            # Restauration explicite de la fenetre et de la camera.
+            self.render_window.SetTileScale(1)
+            self.render_window.SetTileViewport(0.0, 0.0, 1.0, 1.0)
+            if camera is not None and cam_backup is not None:
+                camera.DeepCopy(cam_backup)
+                if self.renderer is not None:
+                    self.renderer.ResetCameraClippingRange()
+            self.render_window.Render()
+
     def _actor_key(self, actor):
         return actor.GetAddressAsString("") if actor is not None else ""
 

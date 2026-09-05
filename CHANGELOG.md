@@ -2,6 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.91
+
+- Bouton appareil photo : enregistre la vue graphique VTK en PNG (nommé d'après le fichier ouvert, indicé `_1`, `_2`, ... sans écrasement)
+- Paramètres > Export PNG : échelle du rendu réglable (entier de 1 à 3, défaut 1)
+- Correction : la vue graphique VTK suit désormais le thème sombre
+
+- Camera button: saves the VTK graphic view as PNG (named after the opened file, suffixed `_1`, `_2`, ... without overwriting)
+- Settings > PNG Export: adjustable render scale (integer from 1 to 3, default 1)
+- Fix: the VTK graphic view now follows the dark theme
+
 ## 1.90
 
 - Nouveaux icônes dans l'onglet résultats

@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.90"
+APP_VERSION = "1.91"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -39,6 +39,11 @@ QT_MATERIAL_THEMES = {
 
 DEFAULT_THEME = "light"
 DEFAULT_VIEW_PROJECTION = "perspective"
+
+# Échelle du rendu pour l'export PNG de la vue graphique (entier 1..3).
+DEFAULT_PNG_EXPORT_SCALE = 1
+PNG_EXPORT_SCALE_MIN = 1
+PNG_EXPORT_SCALE_MAX = 3
 
 
 # ======================================================================
@@ -525,6 +530,7 @@ MSG_UI = {
     "tooltip_clear_filter": "Annuler le filtre",
     "tooltip_isolate": "Isoler la sélection",
     "tooltip_isolation_active": "Isolation active",
+    "tooltip_screenshot": "Enregistrer la vue en PNG",
     "progress_open_project": "Ouverture du projet...",
     "progress_read_ids": "Lecture des identifiants...",
     "progress_read_objects": "Lecture des objets filaires et surfaciques...",
@@ -588,6 +594,9 @@ MSG_UI = {
     "menu_settings": "Paramètres",
     "menu_styles": "Styles et épaisseurs...",
     "menu_configuration": "Configuration",
+    "menu_png_export": "Export PNG",
+    "png_export_dialog_title": "Export PNG",
+    "png_export_dialog_label": "Échelle du rendu (entier de 1 à 3) :",
     "menu_api_server": "Exécutable serveur API...",
     "menu_api_url": "URL API...",
     "menu_theme": "Thème",
@@ -636,6 +645,9 @@ MSG_UI = {
 MSG_LOG = {
     "ready": "Prêt. Sélectionnez un fichier .fto puis chargez le modèle.",
     "selected_file": "Fichier sélectionné : {path}",
+    "screenshot_saved": "Vue enregistrée : {path}",
+    "screenshot_failed": "Échec de l'enregistrement de la vue : {details}",
+    "png_export_scale_set": "Échelle d'export PNG : {scale}",
     "api_connection": "Connexion API : {host}",
     "api_url_loaded": "URL API chargée : {url}",
 
