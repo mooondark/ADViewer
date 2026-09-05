@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.91"
+APP_VERSION = "1.92"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -531,6 +531,14 @@ MSG_UI = {
     "tooltip_isolate": "Isoler la sélection",
     "tooltip_isolation_active": "Isolation active",
     "tooltip_screenshot": "Enregistrer la vue en PNG",
+    "view_label_front": "Vue de face",
+    "view_label_back": "Vue de derrière",
+    "view_label_left": "Vue de gauche",
+    "view_label_right": "Vue de droite",
+    "view_label_top": "Vue de dessus",
+    "view_label_bottom": "Vue de dessous",
+    "view_label_iso": "Vue isométrique",
+    "view_label_user": "Vue utilisateur",
     "progress_open_project": "Ouverture du projet...",
     "progress_read_ids": "Lecture des identifiants...",
     "progress_read_objects": "Lecture des objets filaires et surfaciques...",

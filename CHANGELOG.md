@@ -2,12 +2,30 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.92
+
+### FR
+- Vue graphique : affichage dans le coin haut-gauche de la vue courante (Vue de face, de derrière, de gauche, de droite, de dessus, de dessous, isométrique, ou « Vue utilisateur ») et, en dessous, des coordonnées X, Y, Z de la position de la souris (deux décimales). Rien n'est affiché si aucun modèle n'est chargé.
+- Boutons de vue : le premier clic affiche désormais la vue « de départ » (Vue de face, Vue de gauche, Vue de dessus) avant de basculer sur l'opposée.
+- Nouvelle icône pour le bouton « Isoler ».
+- Isolation : reclic sur « Isoler » avec une sélection différente → isole la nouvelle sélection ; avec une sélection identique ou vide → annule l'isolation.
+- Correction : après isolation, les parois et les appuis redeviennent sélectionnables (mauvais index de picking sur les sous-ensembles isolés).
+
+### EN
+- Graphic view: top-left overlay showing the current view (Front, Back, Left, Right, Top, Bottom, Isometric, or "User view") and, below it, the X, Y, Z coordinates of the mouse position (two decimals). Nothing is shown when no model is loaded.
+- View buttons: the first click now shows the "start" view (Front, Left, Top) before toggling to the opposite one.
+- New icon for the "Isolate" button.
+- Isolation: clicking "Isolate" again with a different selection now isolates the new selection; with an identical or empty selection it cancels isolation.
+- Fix: after isolation, load areas and supports are selectable again (wrong picking index on isolated subsets).
+
 ## 1.91
 
+### FR
 - Bouton appareil photo : enregistre la vue graphique VTK en PNG (nommé d'après le fichier ouvert, indicé `_1`, `_2`, ... sans écrasement)
 - Paramètres > Export PNG : échelle du rendu réglable (entier de 1 à 3, défaut 1)
 - Correction : la vue graphique VTK suit désormais le thème sombre
 
+### EN
 - Camera button: saves the VTK graphic view as PNG (named after the opened file, suffixed `_1`, `_2`, ... without overwriting)
 - Settings > PNG Export: adjustable render scale (integer from 1 to 3, default 1)
 - Fix: the VTK graphic view now follows the dark theme

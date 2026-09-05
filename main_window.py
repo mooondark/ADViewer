@@ -871,9 +871,10 @@ class MainWindow(QMainWindow):
         self.shortcut_view_left_right = None
         self.shortcut_view_top_bottom = None
         self.shortcut_view_iso = None
-        self._front_is_back = False
-        self._left_is_right = False
-        self._top_is_bottom = False
+        # True => le prochain clic affiche la vue "de depart" (face / gauche / dessus)
+        self._front_is_back = True
+        self._left_is_right = True
+        self._top_is_bottom = True
         self.cmb_display_mode = None
         self.transparency_slider = None
         self.transparency_value_label = None
@@ -1419,6 +1420,29 @@ class MainWindow(QMainWindow):
             'Ljc5MDg2IDE3IDEyIDE3WiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9'
             'IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJv'
             'dW5kIi8+PC9zdmc+'
+        ),
+        "isoler": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHdpZHRo'
+            'PSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxs'
+            'PSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRo'
+            'IGQ9Ik02IDNIM1Y2IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41'
+            'IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQi'
+            'Lz48cGF0aCBkPSJNMTIgMTRDMTMuMTA0NiAxNCAxNCAxMy4xMDQ2IDE0IDEyQzE0'
+            'IDEwLjg5NTQgMTMuMTA0NiAxMCAxMiAxMEMxMC44OTU0IDEwIDEwIDEwLjg5NTQg'
+            'MTAgMTJDMTAgMTMuMTA0NiAxMC44OTU0IDE0IDEyIDE0WiIgc3Ryb2tlPSIjMDAw'
+            'MDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBz'
+            'dHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTIxIDEyQzE5LjExMTQg'
+            'MTQuOTkxIDE1LjcxODMgMTggMTIgMThDOC4yODE3IDE4IDQuODg4NTYgMTQuOTkx'
+            'IDMgMTJDNS4yOTg1NSA5LjE1ODI1IDcuOTkxNjMgNiAxMiA2QzE2LjAwODQgNiAx'
+            'OC43MDE1IDkuMTU4MiAyMSAxMloiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdp'
+            'ZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2lu'
+            'PSJyb3VuZCIvPjxwYXRoIGQ9Ik0xOCAzSDIxVjYiIHN0cm9rZT0iIzAwMDAwMCIg'
+            'c3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tl'
+            'LWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik02IDIxSDNWMTgiIHN0cm9rZT0i'
+            'IzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3Vu'
+            'ZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0xOCAyMUgyMVYx'
+            'OCIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxp'
+            'bmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+'
         ),
     }
 
@@ -3967,56 +3991,20 @@ class MainWindow(QMainWindow):
         self._refresh_mesh_display()
 
     def _make_isolate_icon(self, active: bool):
-        """Icone isoler : element central mis en avant, voisins estompes."""
-        size = 28
-        pix = QPixmap(size, size)
-        pix.fill(Qt.transparent)
-        painter = QPainter(pix)
-        painter.setRenderHint(QPainter.Antialiasing, True)
-
-        is_dark = getattr(self, 'theme_name', DEFAULT_THEME) == 'dark'
-        if is_dark:
-            stroke_dim = QColor(140, 150, 165)
-        else:
-            stroke_dim = QColor(150, 155, 170)
-
-        accent_color = QColor(ACCENT) if active else QColor(30, 100, 200)
-        cx, cy = size / 2.0, size / 2.0
-
-        # Elements secondaires estompes
-        pen_dim = QPen(stroke_dim, 1.0)
-        pen_dim.setJoinStyle(Qt.RoundJoin)
-        painter.setPen(pen_dim)
-        painter.setBrush(Qt.NoBrush)
-        small_w, small_h = 5.0, 4.0
-        for bx, by in [(cx - 10, cy - 8), (cx + 5, cy - 8),
-                       (cx - 10, cy + 4), (cx + 5, cy + 4)]:
-            painter.drawRoundedRect(QRectF(bx, by, small_w, small_h), 1, 1)
-
-        # Element central isole
-        pen_acc = QPen(accent_color, 2.0)
-        pen_acc.setJoinStyle(Qt.RoundJoin)
-        painter.setPen(pen_acc)
-        fill_color = QColor(accent_color)
-        fill_color.setAlpha(40)
-        painter.setBrush(QBrush(fill_color))
-        center_w, center_h = 10.0, 8.0
-        painter.drawRoundedRect(QRectF(cx - center_w / 2, cy - center_h / 2, center_w, center_h), 2, 2)
-        painter.setBrush(Qt.NoBrush)
-
-        # Petits traits rayonnants
-        pen_ray = QPen(accent_color, 1.2)
-        pen_ray.setCapStyle(Qt.RoundCap)
-        painter.setPen(pen_ray)
-        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-            x0 = cx + dx * (center_w / 2 + 1.5)
-            y0 = cy + dy * (center_h / 2 + 1.5)
-            x1 = cx + dx * (center_w / 2 + 4.0)
-            y1 = cy + dy * (center_h / 2 + 4.0)
-            painter.drawLine(int(x0), int(y0), int(x1), int(y1))
-
-        painter.end()
-        return QIcon(pix)
+        """Icone isoler (SVG). Couleur : accent si actif, sinon adaptee au theme."""
+        import base64
+        raw_svg = base64.b64decode(''.join(self._SVG_VECTOR_DATA["isoler"]))
+        if active:
+            accent = ACCENT if isinstance(ACCENT, str) and ACCENT.startswith("#") else "#2F6FDB"
+            raw_svg = raw_svg.replace(b'stroke="#000000"', f'stroke="{accent}"'.encode())
+        elif getattr(self, 'theme_name', DEFAULT_THEME) == 'dark':
+            raw_svg = raw_svg.replace(b'stroke="#000000"', b'stroke="#ffffff"')
+        pm = QPixmap()
+        pm.loadFromData(raw_svg)
+        if pm.isNull():
+            pm = QPixmap(32, 32)
+            pm.fill(Qt.transparent)
+        return QIcon(pm)
 
     def _apply_isolate_button_icon(self, active: bool):
         if self.isolate_btn is None:
@@ -4056,16 +4044,27 @@ class MainWindow(QMainWindow):
             return
         self.log(tr_log("screenshot_saved", path=candidate))
 
+    @staticmethod
+    def _normalize_selection_items(items):
+        """Ensemble (role, index) normalisé pour comparer deux sélections."""
+        result = set()
+        for it in (items or []):
+            if not isinstance(it, dict):
+                continue
+            role = str(it.get("role") or "").strip()
+            try:
+                index = int(it.get("index", -1))
+            except (TypeError, ValueError):
+                index = -1
+            if role and index >= 0:
+                result.add((role, index))
+        return result
+
     def toggle_isolation(self):
         if self.current_model_data is None or self.viewer is None:
             self._apply_isolate_button_icon(False)
             return
-        if self.viewer.has_isolated_selection():
-            self.viewer.set_isolated_selection(None)
-            self._apply_isolate_button_icon(False)
-            self._update_display_checkboxes()
-            self._refresh_mesh_display()
-            return
+
         # Récupérer tous les items sélectionnés
         selected_items = self.viewer.get_selected_items() if self.viewer is not None else []
         if not selected_items:
@@ -4075,6 +4074,23 @@ class MainWindow(QMainWindow):
             index = int(selection.get("index", -1))
             if role and index >= 0:
                 selected_items = [{"role": role, "index": index}]
+
+        if self.viewer.has_isolated_selection():
+            current = self._normalize_selection_items(selected_items)
+            isolated = self._normalize_selection_items(self.viewer.get_isolated_selection())
+            if not current or current == isolated:
+                # Sélection inchangée ou vide → annuler l'isolation
+                self.viewer.set_isolated_selection(None)
+                self._apply_isolate_button_icon(False)
+            else:
+                # Sélection différente → isoler les éléments actuellement sélectionnés
+                self.viewer.set_isolated_selection(selected_items)
+                self._apply_isolate_button_icon(True)
+            self._update_display_checkboxes()
+            self._refresh_mesh_display()
+            return
+
+        # Pas d'isolation active → isoler la sélection courante
         if not selected_items:
             self._set_analysis_results_output_message("Sélectionnez un élément avant d'activer l'isolation.")
             self._apply_isolate_button_icon(False)

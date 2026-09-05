@@ -377,6 +377,7 @@ class VTKViewerWidget(QFrame):
         self.support_planar_count = 0
 
         self._support_punctual_points = []
+        self._support_punctual_indexes = None  # indexes modèle si isolation active, sinon None
 
         self.linear_line_width = LINEAR_LINE_WIDTH
         self.planar_line_width = PLANAR_LINE_WIDTH
@@ -413,6 +414,11 @@ class VTKViewerWidget(QFrame):
 
         self.orientation_widget = None
 
+        # Overlay coin haut-gauche : vue courante + position 3D de la souris.
+        self._has_model = False
+        self._view_overlay_actor = None
+        self._overlay_mouse_world_txt = "X : --   Y : --   Z : --"
+
         self.setFocusPolicy(Qt.StrongFocus)
         self.vtk_widget.setFocusPolicy(Qt.StrongFocus)
 
@@ -424,6 +430,7 @@ class VTKViewerWidget(QFrame):
         self.interactor.AddObserver("LeftButtonPressEvent", self._on_left_button_press, 1.0)
         self.interactor.AddObserver("LeftButtonReleaseEvent", self._on_left_button_release, 1.0)
         self.interactor.AddObserver("KeyPressEvent", self._on_key_press, 1.0)
+        self.interactor.AddObserver("MouseMoveEvent", self._on_overlay_mouse_move, 0.0)
 
         # Position du dernier press gauche — pour distinguer clic de glisser
         self._left_press_pos = None
@@ -453,6 +460,7 @@ class VTKViewerWidget(QFrame):
                     text_prop.SetColor(*base_color)
                 else:
                     text_prop.SetColor(*label_color)
+        self._apply_view_overlay_theme()
         if hasattr(self, "renderer") and self.renderer is not None:
             self.renderer.SetBackground(*_cfg.VTK_BG)
             if hasattr(self, "render_window") and self.render_window is not None:
@@ -1021,16 +1029,18 @@ class VTKViewerWidget(QFrame):
         out.ShallowCopy(normals.GetOutput())
         return out
 
-    def _build_punctual_supports_polydata(self, support_points):
+    def _build_punctual_supports_polydata(self, support_points, element_indexes=None):
         points = vtk.vtkPoints()
         cells = vtk.vtkCellArray()
         elem_ids = self._make_int_array()
         pid = 0
         size = self.support_punctual_size
+        mapped_indexes = list(element_indexes or [])
 
         for idx, point in enumerate(support_points or []):
             if not point or len(point) != 3:
                 continue
+            source_idx = mapped_indexes[idx] if idx < len(mapped_indexes) else idx
             cx, cy, cz = point
             half = size * 0.5
             base_z = cz - size
@@ -1055,7 +1065,7 @@ class VTKViewerWidget(QFrame):
                 line.GetPointIds().SetId(0, ids[a])
                 line.GetPointIds().SetId(1, ids[b])
                 cells.InsertNextCell(line)
-                elem_ids.InsertNextValue(int(idx))
+                elem_ids.InsertNextValue(int(source_idx))
 
         poly = vtk.vtkPolyData()
         poly.SetPoints(points)
@@ -1781,6 +1791,89 @@ class VTKViewerWidget(QFrame):
         light.SetIntensity(0.9)
         self.renderer.AddLight(light)
         self._setup_corner_axes()
+        self._setup_view_overlay()
+
+    def _setup_view_overlay(self):
+        actor = vtk.vtkTextActor()
+        actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
+        actor.GetPositionCoordinate().SetValue(0.012, 0.985)
+        actor.SetTextScaleModeToNone()
+        actor.SetPickable(False)
+        actor.SetVisibility(False)
+        tp = actor.GetTextProperty()
+        tp.SetFontFamilyToArial()
+        tp.SetFontSize(12)
+        tp.SetJustificationToLeft()
+        tp.SetVerticalJustificationToTop()
+        tp.SetLineSpacing(1.2)
+        tp.ShadowOff()
+        self._view_overlay_actor = actor
+        self.renderer.AddActor2D(actor)
+        self._apply_view_overlay_theme()
+
+    def _apply_view_overlay_theme(self):
+        actor = getattr(self, "_view_overlay_actor", None)
+        if actor is None:
+            return
+        is_dark = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
+        color = (0.92, 0.94, 0.98) if is_dark else (0.12, 0.16, 0.22)
+        actor.GetTextProperty().SetColor(*color)
+
+    def _current_view_label(self) -> str:
+        cam = self.renderer.GetActiveCamera() if self.renderer is not None else None
+        if cam is None:
+            return _cfg.tr_ui("view_label_user")
+        dop = cam.GetDirectionOfProjection()
+        norm = math.sqrt(dop[0] * dop[0] + dop[1] * dop[1] + dop[2] * dop[2])
+        if norm < 1e-9:
+            return _cfg.tr_ui("view_label_user")
+        d = (dop[0] / norm, dop[1] / norm, dop[2] / norm)
+        tol = 1.0e-3
+        named = (
+            ((0.0, 1.0, 0.0), "view_label_front"),
+            ((0.0, -1.0, 0.0), "view_label_back"),
+            ((1.0, 0.0, 0.0), "view_label_left"),
+            ((-1.0, 0.0, 0.0), "view_label_right"),
+            ((0.0, 0.0, -1.0), "view_label_top"),
+            ((0.0, 0.0, 1.0), "view_label_bottom"),
+        )
+        for axis, key in named:
+            if d[0] * axis[0] + d[1] * axis[1] + d[2] * axis[2] >= 1.0 - tol:
+                return _cfg.tr_ui(key)
+        iso = 1.0 / math.sqrt(3.0)
+        if d[0] * (-iso) + d[1] * iso + d[2] * (-iso) >= 1.0 - tol:
+            return _cfg.tr_ui("view_label_iso")
+        return _cfg.tr_ui("view_label_user")
+
+    def _update_view_overlay(self, display_x=None, display_y=None, render: bool = True):
+        actor = getattr(self, "_view_overlay_actor", None)
+        if actor is None:
+            return
+
+        if not self._has_model:
+            if actor.GetVisibility():
+                actor.SetVisibility(False)
+                if render and self.render_window is not None:
+                    self.render_window.Render()
+            return
+
+        if display_x is not None and display_y is not None and self.renderer is not None:
+            picker = vtk.vtkWorldPointPicker()
+            picker.Pick(float(display_x), float(display_y), 0.0, self.renderer)
+            wx, wy, wz = picker.GetPickPosition()
+            self._overlay_mouse_world_txt = f"X : {wx:.2f}   Y : {wy:.2f}   Z : {wz:.2f}"
+
+        actor.SetInput(f"{self._current_view_label()}\n{self._overlay_mouse_world_txt}")
+        if not actor.GetVisibility():
+            actor.SetVisibility(True)
+        if render and self.render_window is not None:
+            self.render_window.Render()
+
+    def _on_overlay_mouse_move(self, obj, event):
+        if not self._has_model or self.interactor is None:
+            return
+        x, y = self.interactor.GetEventPosition()
+        self._update_view_overlay(x, y)
 
     def _setup_corner_axes(self):
         axes = vtk.vtkAxesActor()
@@ -1808,6 +1901,8 @@ class VTKViewerWidget(QFrame):
         self.orientation_widget = widget
 
     def clear_scene(self):
+        self._has_model = False
+        self._update_view_overlay(render=False)
         self.lines_count = 0
         self.planars_count = 0
         self.load_areas_count = 0
@@ -1839,6 +1934,7 @@ class VTKViewerWidget(QFrame):
         self._support_planar_faces_actor = None
         self._support_planar_centroid_actor = None
         self._support_punctual_points = []
+        self._support_punctual_indexes = None
         self._punctual_load_actors = []
         self._punctual_load_data = []
         self.punctual_load_count = 0
@@ -1886,6 +1982,7 @@ class VTKViewerWidget(QFrame):
         self.renderer.ResetCamera()
         self.renderer.ResetCameraClippingRange()
         self.render_window.Render()
+        self._update_view_overlay()
 
     def _get_visible_bounds(self):
         bounds = [0.0] * 6
@@ -1935,6 +2032,7 @@ class VTKViewerWidget(QFrame):
         self.renderer.ResetCamera()
         self.renderer.ResetCameraClippingRange()
         self.render_window.Render()
+        self._update_view_overlay()
 
     def _set_axis_view(self, direction, up=(0.0, 0.0, 1.0)):
         bounds = self._get_visible_bounds()
@@ -1964,6 +2062,7 @@ class VTKViewerWidget(QFrame):
         self.renderer.ResetCamera()
         self.renderer.ResetCameraClippingRange()
         self.render_window.Render()
+        self._update_view_overlay()
 
     def set_front_view(self):
         self._set_axis_view((0.0, -1.0, 0.0), up=(0.0, 0.0, 1.0))
@@ -2319,7 +2418,10 @@ class VTKViewerWidget(QFrame):
 
         if self._support_punctual_points:
             actor = self._make_wire_actor(
-                self._build_punctual_supports_polydata(self._support_punctual_points),
+                self._build_punctual_supports_polydata(
+                    self._support_punctual_points,
+                    element_indexes=getattr(self, "_support_punctual_indexes", None),
+                ),
                 self.support_punctual_color,
                 self.support_punctual_line_width,
             )
@@ -4103,6 +4205,7 @@ class VTKViewerWidget(QFrame):
 
     def load_model(self, model_data: dict):
         self.clear_scene()
+        self._has_model = True
         self._section_color_map = {}
 
         self._model_data = {
@@ -4121,6 +4224,7 @@ class VTKViewerWidget(QFrame):
             "planar_support_eids": list(model_data.get("planar_support_eids", [])),
         }
         self._support_punctual_points = list(self._model_data["punctual_supports"])
+        self._support_punctual_indexes = None
 
         # Charges ponctuelles — désactivé à chaque nouveau chargement
         self._show_punctual_loads = False
@@ -4248,6 +4352,13 @@ class VTKViewerWidget(QFrame):
         linear_supports = list(self._model_data.get("linear_supports", []) or [])
         planar_supports = list(self._model_data.get("planar_supports", []) or [])
 
+        # Indexes d'origine (modèle) des éléments affichés, pour que le picking
+        # renvoie le bon index après isolation. None = pas d'isolation (enum == index modèle).
+        load_area_indexes = None
+        punctual_support_indexes = None
+        linear_support_indexes = None
+        planar_support_indexes = None
+
         if is_isolated:
             # Collecter les indexes par type à partir de la liste d'isolation
             load_area_idxs = []
@@ -4278,6 +4389,10 @@ class VTKViewerWidget(QFrame):
             punctual_supports = self._select_items_by_indexes(punctual_supports, punctual_idxs)
             linear_supports = self._select_items_by_indexes(linear_supports, linear_sup_idxs)
             planar_supports = self._select_items_by_indexes(planar_supports, planar_sup_idxs)
+            load_area_indexes = list(load_area_idxs)
+            punctual_support_indexes = list(punctual_idxs)
+            linear_support_indexes = list(linear_sup_idxs)
+            planar_support_indexes = list(planar_sup_idxs)
 
             # Filtrer les charges ponctuelles selon l'isolation
             if punctual_load_idxs:
@@ -4382,6 +4497,7 @@ class VTKViewerWidget(QFrame):
         self.support_linear_count = len(linear_supports)
         self.support_planar_count = len(planar_supports)
         self._support_punctual_points = list(punctual_supports)
+        self._support_punctual_indexes = punctual_support_indexes
 
         self._replace_actor(
             "_lines_actor",
@@ -4409,37 +4525,37 @@ class VTKViewerWidget(QFrame):
         )
         self._replace_actor(
             "_load_areas_actor",
-            self._make_wire_actor(self._build_loops_wire_polydata(load_areas), self.load_area_color, self.load_area_line_width),
+            self._make_wire_actor(self._build_loops_wire_polydata(load_areas, element_indexes=load_area_indexes), self.load_area_color, self.load_area_line_width),
             role="load_areas",
             pickable=True,
         )
         self._replace_actor(
             "_load_areas_faces_actor",
-            self._make_surface_actor(self._build_faces_polydata(load_areas), self.load_area_color, self.load_areas_faces_base_opacity),
+            self._make_surface_actor(self._build_faces_polydata(load_areas, element_indexes=load_area_indexes), self.load_area_color, self.load_areas_faces_base_opacity),
             role="load_areas",
             pickable=True,
         )
         self._replace_actor(
             "_support_punctual_actor",
-            self._make_wire_actor(self._build_punctual_supports_polydata(punctual_supports), self.support_punctual_color, self.support_punctual_line_width),
+            self._make_wire_actor(self._build_punctual_supports_polydata(punctual_supports, element_indexes=punctual_support_indexes), self.support_punctual_color, self.support_punctual_line_width),
             role="support_punctual",
             pickable=True,
         )
         self._replace_actor(
             "_support_linear_actor",
-            self._make_wire_actor(self._build_lines_polydata(linear_supports, include_section_colors=False), self.support_linear_color, self.support_linear_line_width),
+            self._make_wire_actor(self._build_lines_polydata(linear_supports, element_indexes=linear_support_indexes, include_section_colors=False), self.support_linear_color, self.support_linear_line_width),
             role="support_linear",
             pickable=True,
         )
         self._replace_actor(
             "_support_planar_actor",
-            self._make_wire_actor(self._build_loops_wire_polydata(planar_supports), self.support_planar_color, self.support_planar_line_width),
+            self._make_wire_actor(self._build_loops_wire_polydata(planar_supports, element_indexes=planar_support_indexes), self.support_planar_color, self.support_planar_line_width),
             role="support_planar",
             pickable=True,
         )
         self._replace_actor(
             "_support_planar_faces_actor",
-            self._make_surface_actor(self._build_faces_polydata(planar_supports), self.support_planar_color, self.support_planar_faces_base_opacity),
+            self._make_surface_actor(self._build_faces_polydata(planar_supports, element_indexes=planar_support_indexes), self.support_planar_color, self.support_planar_faces_base_opacity),
             role="support_planar",
             pickable=True,
         )
@@ -4484,6 +4600,10 @@ class VTKViewerWidget(QFrame):
 
     def has_isolated_selection(self) -> bool:
         return bool(self._isolated_selection)
+
+    def get_isolated_selection(self) -> list:
+        """Retourne une copie de la liste des éléments actuellement isolés."""
+        return [dict(item) for item in (self._isolated_selection or [])]
 
     def get_visible_planar_eids(self) -> list:
         """Retourne les EIDs des éléments surfaciques actuellement visibles (filtres + isolation)."""
