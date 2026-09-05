@@ -4,8 +4,8 @@
 
 ## 1.90
 
-Nouveaux icônes dans l'onglet résultats
-New icons in the result tab
+- Nouveaux icônes dans l'onglet résultats
+- New icons in the result tab
 
 ## 1.89.3
 
