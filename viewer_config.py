@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.89.3"
+APP_VERSION = "1.90"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -321,6 +321,7 @@ MSG_UI = {
     "analysis_results_empty": "Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.",
     "analysis_results_help": "Choisissez un type de résultat, une valeur, puis cliquez sur Appliquer pour afficher le diagramme dans la vue 3D.",
     "analysis_results_apply": "Appliquer",
+    "analysis_results_apply_tooltip": "Afficher les résultats",
     "analysis_results_scale": "Échelle du diagramme",
     "analysis_results_status_available": "Résultats disponibles",
     "analysis_results_status_unavailable": "Aucun résultat disponible",
@@ -440,6 +441,7 @@ MSG_UI = {
     "analysis_results_loading": "Chargement des résultats en cours...",
     "analysis_results_select_element": "Sélectionnez un élément filaire, un appui ou un élément surfacique pour afficher ses résultats.",
     "analysis_results_export": "Exporter",
+    "analysis_results_export_tooltip": "Exporter les résultats au format .xlsx",
     "analysis_results_export_confirm_title": "Confirmation d'écrasement",
     "analysis_results_export_confirm_overwrite": "Le fichier Excel pour cet élément existe déjà, voulez-vous l'écraser ?",
     "analysis_results_export_success": "Résultats exportés : {path}",

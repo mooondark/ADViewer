@@ -1358,6 +1358,43 @@ class MainWindow(QMainWindow):
         ),
     }
 
+    # Donnees SVG vectorielles (base64 du fichier SVG) pour les icones de l'onglet Resultats.
+    # Le rendu est effectue a la volee par QPixmap.loadFromData() avec adaptation de couleur
+    # selon le theme actif (noir en theme clair, blanc en theme sombre).
+    _SVG_VECTOR_DATA = {
+        "appliquer": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNyAxMi41TDEw'
+            'IDE1LjVMMTcgOC41IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41'
+            'IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQi'
+            'Lz4KPHBhdGggZD0iTTEyIDIyQzE3LjUyMjggMjIgMjIgMTcuNTIyOCAyMiAxMkMy'
+            'MiA2LjQ3NzE1IDE3LjUyMjggMiAxMiAyQzYuNDc3MTUgMiAyIDYuNDc3MTUgMiAx'
+            'MkMyIDE3LjUyMjggNi40NzcxNSAyMiAxMiAyMloiIHN0cm9rZT0iIzAwMDAwMCIg'
+            'c3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tl'
+            'LWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
+        ),
+        "exporter": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNOSAxN0wxNSAx'
+            'NyIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxp'
+            'bmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9'
+            'Ik0xMiA2VjEzTTEyIDEzTDE1LjUgOS41TTEyIDEzTDguNSA5LjUiIHN0cm9rZT0i'
+            'IzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3Vu'
+            'ZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTIgMjJDMTcu'
+            'NTIyOCAyMiAyMiAxNy41MjI4IDIyIDEyQzIyIDYuNDc3MTUgMTcuNTIyOCAyIDEy'
+            'IDJDNi40NzcxNSAyIDIgNi40NzcxNSAyIDEyQzIgMTcuNTIyOCA2LjQ3NzE1IDIy'
+            'IDEyIDIyWiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ry'
+            'b2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwv'
+            'c3ZnPg=='
+        ),
+    }
+
     def _make_view_icon(self, kind: str) -> QIcon:
         """Cree une icone a partir des donnees PNG embarquees (converties depuis SVG)."""
         import base64
@@ -1386,6 +1423,18 @@ class MainWindow(QMainWindow):
                 img.invertPixels(QImage.InvertRgb)
                 pm = QPixmap.fromImage(img)
             return QIcon(pm)
+        # Icones SVG vectorielles (onglet Resultats) : rendu direct via loadFromData
+        if kind in self._SVG_VECTOR_DATA:
+            raw_svg = base64.b64decode(''.join(self._SVG_VECTOR_DATA[kind]))
+            is_dark = getattr(self, 'theme_name', DEFAULT_THEME) == 'dark'
+            if is_dark:
+                raw_svg = raw_svg.replace(b'stroke="#000000"', b'stroke="#ffffff"')
+            pm = QPixmap()
+            pm.loadFromData(raw_svg)
+            if pm.isNull():
+                pm = QPixmap(32, 32)
+                pm.fill(Qt.transparent)
+            return QIcon(pm)
         # Fallback : icone vide
         pm = QPixmap(28, 28)
         pm.fill(Qt.transparent)
@@ -1407,6 +1456,11 @@ class MainWindow(QMainWindow):
         for btn, kind in btn_kinds:
             if btn is not None:
                 btn.setIcon(self._make_view_icon(kind))
+        # Rafraichir aussi les icones SVG de l'onglet Resultats
+        if self.analysis_results_apply_btn is not None:
+            self.analysis_results_apply_btn.setIcon(self._make_view_icon("appliquer"))
+        if self.analysis_results_export_btn is not None:
+            self.analysis_results_export_btn.setIcon(self._make_view_icon("exporter"))
         # Rafraichir aussi l'icone isoler
         if self.isolate_btn is not None:
             active = self.isolate_btn.isChecked()
@@ -1984,14 +2038,30 @@ class MainWindow(QMainWindow):
         scale_row.addWidget(self.analysis_results_scale_spin)
         scale_row.addStretch(1)
         analysis_results_layout.addLayout(scale_row)
-        self.analysis_results_apply_btn = QPushButton(tr_ui("analysis_results_apply"))
+        results_btn_row = QHBoxLayout()
+        results_btn_row.setContentsMargins(0, 0, 0, 0)
+        results_btn_row.setSpacing(6)
+        self.analysis_results_apply_btn = QPushButton()
         self.analysis_results_apply_btn.setEnabled(False)
+        self.analysis_results_apply_btn.setToolTip(tr_ui("analysis_results_apply_tooltip"))
+        self.analysis_results_apply_btn.setIcon(self._make_view_icon("appliquer"))
+        self.analysis_results_apply_btn.setIconSize(QSize(28, 28))
+        self.analysis_results_apply_btn.setFixedSize(QSize(36, 36))
+        self.analysis_results_apply_btn.setProperty("iconOnly", True)
         self.analysis_results_apply_btn.clicked.connect(self.apply_analysis_results)
-        analysis_results_layout.addWidget(self.analysis_results_apply_btn)
-        self.analysis_results_export_btn = QPushButton(tr_ui("analysis_results_export"))
+        results_btn_row.addStretch(1)
+        results_btn_row.addWidget(self.analysis_results_apply_btn)
+        self.analysis_results_export_btn = QPushButton()
         self.analysis_results_export_btn.setEnabled(False)
+        self.analysis_results_export_btn.setToolTip(tr_ui("analysis_results_export_tooltip"))
+        self.analysis_results_export_btn.setIcon(self._make_view_icon("exporter"))
+        self.analysis_results_export_btn.setIconSize(QSize(28, 28))
+        self.analysis_results_export_btn.setFixedSize(QSize(36, 36))
+        self.analysis_results_export_btn.setProperty("iconOnly", True)
         self.analysis_results_export_btn.clicked.connect(self.export_analysis_results_csv)
-        analysis_results_layout.addWidget(self.analysis_results_export_btn)
+        results_btn_row.addWidget(self.analysis_results_export_btn)
+        results_btn_row.addStretch(1)
+        analysis_results_layout.addLayout(results_btn_row)
         self.analysis_results_scroll = QScrollArea()
         self.analysis_results_scroll.setWidgetResizable(True)
         self.analysis_results_scroll.setFrameShape(QFrame.NoFrame)
