@@ -1,0 +1,13 @@
+# Claude
+CLAUDE.md
+
+# Python
+__pycache__/
+*.pyc
+
+#Viewer
+*.ini
+
+# Exception : ignorer tous les fichiers cachés sauf .gitignore
+.*
+!.gitignore
