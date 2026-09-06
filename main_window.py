@@ -3367,6 +3367,62 @@ class MainWindow(QMainWindow):
         user_id = str(props.get("user_id") or eid).strip()
         return {"eid": eid, "index": index, "name": name, "user_id": user_id, "props": props}
 
+    def _linear_export_info_for_index(self, index: int):
+        eids = list((self.current_model_data or {}).get("line_eids", []) or [])
+        if index < 0 or index >= len(eids) or eids[index] is None:
+            return None
+        eid = int(eids[index])
+        props_list = list((self.current_model_data or {}).get("line_properties", []) or [])
+        props = props_list[index] if 0 <= index < len(props_list) and isinstance(props_list[index], dict) else {}
+        name = str(props.get("base_type_label") or props.get("type_label") or tr_ui("prop_linear_element")).strip()
+        user_id = str(props.get("user_id") or eid).strip()
+        return {"eid": eid, "index": index, "name": name, "user_id": user_id}
+
+    @staticmethod
+    def _unique_sheet_name(base: str, used: set) -> str:
+        text = str(base or "").strip() or "element"
+        for char in '[]:*?/\\':
+            text = text.replace(char, "_")
+        text = text[:31] or "element"
+        candidate = text
+        counter = 2
+        while candidate.lower() in used:
+            suffix = f"_{counter}"
+            candidate = text[:31 - len(suffix)] + suffix
+            counter += 1
+        used.add(candidate.lower())
+        return candidate
+
+    @staticmethod
+    def _write_case_header(ws, case_entry, analysis_case_id):
+        label = str((case_entry or {}).get("label") or "").strip()
+        number, sep, name = label.partition(" : ")
+        if not sep:
+            number = str(analysis_case_id)
+            name = label
+        ws.append([tr_ui("analysis_results_export_case_header")])
+        ws.append([tr_ui("analysis_results_export_case_number"), number.strip()])
+        ws.append([tr_ui("analysis_results_export_case_name"), name.strip()])
+        ws.append([])
+
+    @staticmethod
+    def _write_linear_families_to_sheet(ws, payloads, sheet_titles) -> int:
+        written = 0
+        for family_key in ("deplacements", "efforts", "contraintes"):
+            payload = payloads.get(family_key) if isinstance(payloads, dict) else {}
+            rows = list((payload or {}).get("rows", []) or [])
+            components = list((payload or {}).get("components", []) or [])
+            if not rows or not components:
+                continue
+            if written:
+                ws.append([])
+            ws.append([sheet_titles.get(family_key, family_key)])
+            ws.append(["abscissa", *components])
+            for row in rows:
+                ws.append([row.get("abscissa", ""), *[row.get(key, "") for key in components]])
+            written += 1
+        return written
+
     def export_analysis_results_csv(self):
         info = self._get_selected_linear_element_export_info()
         case_entry = self._get_selected_analysis_case_entry()
@@ -3378,7 +3434,21 @@ class MainWindow(QMainWindow):
         if not base_dir:
             self._set_analysis_results_output_message(tr_ui("analysis_results_export_not_available"))
             return
-        file_name = f"{self._sanitize_export_stem(info.get('name'))}_{self._sanitize_export_stem(info.get('user_id'))}.xlsx"
+
+        LINEAR_ROLES = {"lines", "line", "linear", "element_linear"}
+        multi = list(self._current_multi_selection or [])
+        multi_infos = []
+        if len(multi) > 1 and all(str(it.get("role") or "") in LINEAR_ROLES for it in multi):
+            for it in multi:
+                einfo = self._linear_export_info_for_index(int(it.get("index", -1)))
+                if einfo:
+                    multi_infos.append(einfo)
+
+        if len(multi_infos) > 1:
+            stem = self._sanitize_export_stem(os.path.splitext(os.path.basename(fto_path))[0]) or "resultats"
+            file_name = f"{stem}_resultats.xlsx"
+        else:
+            file_name = f"{self._sanitize_export_stem(info.get('name'))}_{self._sanitize_export_stem(info.get('user_id'))}.xlsx"
         xlsx_path = os.path.join(base_dir, file_name)
         if os.path.exists(xlsx_path):
             answer = QMessageBox.question(
@@ -3390,18 +3460,39 @@ class MainWindow(QMainWindow):
             )
             if answer != QMessageBox.Yes:
                 return
+        sheet_titles = {
+            "deplacements": tr_ui("analysis_results_export_sheet_displacements"),
+            "efforts": tr_ui("analysis_results_export_sheet_forces"),
+            "contraintes": tr_ui("analysis_results_export_sheet_stresses"),
+        }
+        host = self.project_session.host.rstrip("/")
         try:
             analysis_case_id = int((case_entry or {}).get("eid", (case_entry or {}).get("id", 0)) or 0)
-            payloads = read_linear_element_all_families_export(
-                self.project_session.host.rstrip("/"),
-                int(info.get("eid")),
-                analysis_case_id,
-            )
-            sheet_titles = {
-                "deplacements": tr_ui("analysis_results_export_sheet_displacements"),
-                "efforts": tr_ui("analysis_results_export_sheet_forces"),
-                "contraintes": tr_ui("analysis_results_export_sheet_stresses"),
-            }
+
+            if len(multi_infos) > 1:
+                workbook = Workbook()
+                workbook.remove(workbook.active)
+                used = set()
+                total_written = 0
+                for einfo in multi_infos:
+                    payloads = read_linear_element_all_families_export(host, int(einfo["eid"]), analysis_case_id)
+                    ws = workbook.create_sheet(
+                        title=self._unique_sheet_name(f"{einfo['name']}_{einfo['user_id']}", used)
+                    )
+                    self._write_case_header(ws, case_entry, analysis_case_id)
+                    if self._write_linear_families_to_sheet(ws, payloads, sheet_titles) == 0:
+                        ws.append([tr_ui("analysis_results_export_no_data")])
+                    else:
+                        total_written += 1
+                if total_written == 0:
+                    self._set_analysis_results_output_message(tr_ui("analysis_results_export_no_data"))
+                    self.log(tr_log("results_export_no_data", eid=multi_infos[0]["eid"]), "warn")
+                    return
+                workbook.save(xlsx_path)
+                self.log(tr_ui("analysis_results_export_workbook_success", path=xlsx_path), "ok")
+                return
+
+            payloads = read_linear_element_all_families_export(host, int(info.get("eid")), analysis_case_id)
             workbook = Workbook()
             first_sheet = True
             written = 0
@@ -3417,6 +3508,7 @@ class MainWindow(QMainWindow):
                     first_sheet = False
                 else:
                     ws = workbook.create_sheet(title=sheet_titles.get(family_key, family_key))
+                self._write_case_header(ws, case_entry, analysis_case_id)
                 ws.append(["abscissa", *components])
                 for row in rows:
                     ws.append([row.get("abscissa", ""), *[row.get(key, "") for key in components]])
@@ -3439,6 +3531,34 @@ class MainWindow(QMainWindow):
             self.log(str(message), level)
         except Exception:
             pass
+
+    def _viewer_selection_export_eids(self):
+        if self.viewer is None:
+            return []
+        items = self.viewer.get_selected_items() or []
+        if not items:
+            return []
+        md = self.current_model_data or {}
+        role_key = {
+            "lines": "line_eids", "line": "line_eids", "linear": "line_eids", "element_linear": "line_eids",
+            "planars": "planar_eids", "planar": "planar_eids", "element_planar": "planar_eids",
+            "support_punctual": "punctual_support_eids",
+            "support_linear": "linear_support_eids",
+            "support_planar": "planar_support_eids",
+        }
+        eids = []
+        for it in items:
+            key = role_key.get(str(it.get("role") or "").strip())
+            if not key:
+                continue
+            arr = list(md.get(key, []) or [])
+            idx = int(it.get("index", -1))
+            if 0 <= idx < len(arr) and arr[idx] is not None:
+                try:
+                    eids.append(int(arr[idx]))
+                except (TypeError, ValueError):
+                    pass
+        return eids
 
     def export_ifc_from_viewer(self):
         if ad_ifc_exporter is None:
@@ -3479,6 +3599,12 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, tr_ui("export_ifc_title"), msg)
             return
 
+        selection_eids = self._viewer_selection_export_eids()
+        if selection_eids:
+            self.log(tr_ui("export_ifc_scope_selection", count=len(selection_eids)), "info")
+        else:
+            self.log(tr_ui("export_ifc_scope_full"), "info")
+
         self.log(tr_log("ifc_export_module_version", version=getattr(ad_ifc_exporter, "VERSION", "?")), "info")
         self.log(tr_log("ifc_export_started", path=out_path), "info")
         self._set_analysis_results_output_message(tr_ui("export_ifc_running"))
@@ -3492,6 +3618,7 @@ class MainWindow(QMainWindow):
                     project_name=os.path.basename(fto_path) if fto_path else "ViewerProject",
                     logger=self._ifc_export_logger,
                     check_api_first=True,
+                    element_ids=selection_eids or None,
                 )
             else:
                 ad_ifc_exporter.export_ifc_from_fto(
@@ -3502,6 +3629,7 @@ class MainWindow(QMainWindow):
                     logger=self._ifc_export_logger,
                     check_api_first=True,
                     close_project_on_exit=True,
+                    element_ids=selection_eids or None,
                 )
             success_path = normalize_windows_path(out_path)
             success_message = tr_ui("export_ifc_success", path=success_path)

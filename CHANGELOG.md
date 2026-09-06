@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.93
+
+### FR
+- Export résultats .xlsx : en sélection multiple de filaires, le classeur contient désormais un onglet par élément (auparavant seul le dernier élément était exporté).
+- Export résultats .xlsx : ajout en tête de chaque onglet du numéro et du nom du cas de charge actif lors de l'export.
+- Export IFC : sans sélection, le modèle complet est exporté ; avec une sélection d'éléments, seuls les éléments sélectionnés sont exportés.
+
+### EN
+- Results .xlsx export: with a multi-selection of linear elements, the workbook now contains one sheet per element (previously only the last element was exported).
+- Results .xlsx export: each sheet now starts with the number and name of the load case active at export time.
+- IFC export: with no selection the full model is exported; with an element selection only the selected elements are exported.
+
 ## 1.92
 
 ### FR

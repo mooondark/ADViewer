@@ -17,7 +17,7 @@ import requests
 
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_OUT = "export_advance_design_ifc_v3.ifc"
-VERSION = "4.6.17"
+VERSION = "2026_09_06.01"
 
 LINEAR_TYPES = [
     "ElementLinear",
@@ -2295,10 +2295,28 @@ def add_explicit_load_proxy(w: IfcWriter, el):
     })
 
 
-def collect_all(host: str, include_loads: bool):
+def collect_all(host: str, include_loads: bool, element_ids=None):
+    allowed = None
+    if element_ids is not None:
+        allowed = set()
+        for e in element_ids:
+            try:
+                allowed.add(int(e))
+            except (TypeError, ValueError):
+                pass
     results = defaultdict(list)
     for t in LINEAR_TYPES + PLANAR_TYPES + SUPPORT_TYPES + (LOAD_TYPES if include_loads else []):
         ids = get_ids_for_type(host, t)
+        if allowed is not None:
+            filtered = []
+            for i in ids:
+                try:
+                    val = int(eid_value(i))
+                except (TypeError, ValueError):
+                    continue
+                if val in allowed:
+                    filtered.append(i)
+            ids = filtered
         results[t] = get_elements(host, ids)
     return results
 
@@ -2349,12 +2367,15 @@ def emit_log(logger, message: str, level: str = "info") -> None:
             return
 
 
-def export_ifc_core(host: str, out_path: str, include_loads: bool = False, project_name: str | None = None, logger=None) -> dict:
+def export_ifc_core(host: str, out_path: str, include_loads: bool = False, project_name: str | None = None, logger=None, element_ids=None) -> dict:
     emit_log(logger, f"Export IFC v{VERSION} : lecture des matériaux et sections...", "info")
     materials = get_materials(host)
     sections = get_sections(host)
-    emit_log(logger, "Lecture des éléments du modèle...", "info")
-    elems = collect_all(host, include_loads)
+    if element_ids is not None:
+        emit_log(logger, f"Lecture des éléments du modèle (sélection : {len(element_ids)} élément(s))...", "info")
+    else:
+        emit_log(logger, "Lecture des éléments du modèle...", "info")
+    elems = collect_all(host, include_loads, element_ids=element_ids)
     emit_log(logger, "Génération du contenu IFC...", "info")
     w = IfcWriter()
     w.setup(project_name=project_name or os.path.basename(out_path))
@@ -2389,7 +2410,7 @@ def export_ifc_core(host: str, out_path: str, include_loads: bool = False, proje
     }
 
 
-def export_ifc_from_fto(host: str, fto_path: str, out_path: str, include_loads: bool = False, logger=None, check_api_first: bool = True, close_project_on_exit: bool = True) -> dict:
+def export_ifc_from_fto(host: str, fto_path: str, out_path: str, include_loads: bool = False, logger=None, check_api_first: bool = True, close_project_on_exit: bool = True, element_ids=None) -> dict:
     host = str(host or DEFAULT_HOST).rstrip("/")
     fto_path = check_fto_path(fto_path)
     if check_api_first:
@@ -2399,19 +2420,19 @@ def export_ifc_from_fto(host: str, fto_path: str, out_path: str, include_loads: 
     emit_log(logger, f"Ouverture du projet : {fto_path}", "info")
     open_project(host, fto_path)
     try:
-        return export_ifc_core(host, out_path, include_loads=include_loads, project_name=os.path.basename(fto_path), logger=logger)
+        return export_ifc_core(host, out_path, include_loads=include_loads, project_name=os.path.basename(fto_path), logger=logger, element_ids=element_ids)
     finally:
         if close_project_on_exit:
             close_project(host)
 
 
-def export_ifc_from_open_project(host: str, out_path: str, include_loads: bool = False, project_name: str = "ViewerProject", logger=None, check_api_first: bool = True) -> dict:
+def export_ifc_from_open_project(host: str, out_path: str, include_loads: bool = False, project_name: str = "ViewerProject", logger=None, check_api_first: bool = True, element_ids=None) -> dict:
     host = str(host or DEFAULT_HOST).rstrip("/")
     if check_api_first:
         emit_log(logger, f"Vérification de l'accessibilité de l'API ({host})...", "info")
         check_port(host)
         emit_log(logger, "API accessible.", "ok")
-    return export_ifc_core(host, out_path, include_loads=include_loads, project_name=project_name, logger=logger)
+    return export_ifc_core(host, out_path, include_loads=include_loads, project_name=project_name, logger=logger, element_ids=element_ids)
 
 
 def get_version() -> str:

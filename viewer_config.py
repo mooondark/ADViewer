@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.92"
+APP_VERSION = "1.93"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -454,6 +454,9 @@ MSG_UI = {
     "analysis_results_export_sheet_displacements": "Déplacements",
     "analysis_results_export_sheet_forces": "Efforts",
     "analysis_results_export_sheet_stresses": "Contraintes",
+    "analysis_results_export_case_header": "Cas de charge",
+    "analysis_results_export_case_number": "Numéro",
+    "analysis_results_export_case_name": "Nom",
     "analysis_results_export_not_available": "Export impossible pour la sélection courante.",
     "analysis_results_export_no_data": "Aucune donnée de résultat à exporter pour cet élément.",
     "loads_panel_title": "Charges",
@@ -627,6 +630,8 @@ MSG_UI = {
     "export_ifc_module_missing": "Le module externe ad_ifc_exporter.py est introuvable.",
     "export_ifc_success": "Export IFC terminé : {path}",
     "export_ifc_running": "Export IFC en cours...",
+    "export_ifc_scope_selection": "Export IFC limité à la sélection ({count} élément(s)).",
+    "export_ifc_scope_full": "Export IFC du modèle complet.",
     "export_ifc_failed": "Échec de l'export IFC : {details}",
 
     "help_controls": "Contrôles 🛈",
