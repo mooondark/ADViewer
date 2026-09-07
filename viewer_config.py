@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.93"
+APP_VERSION = "1.94"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -44,6 +44,10 @@ DEFAULT_VIEW_PROJECTION = "perspective"
 DEFAULT_PNG_EXPORT_SCALE = 1
 PNG_EXPORT_SCALE_MIN = 1
 PNG_EXPORT_SCALE_MAX = 3
+
+# Calcul éléments finis : délai maximum en secondes avant abandon (0 = illimité).
+DEFAULT_CALC_EF_TIMEOUT = 7200
+CALC_EF_TIMEOUT_MAX = 86400
 
 
 # ======================================================================
@@ -606,8 +610,14 @@ MSG_UI = {
     "menu_styles": "Styles et épaisseurs...",
     "menu_configuration": "Configuration",
     "menu_png_export": "Export PNG",
+    "menu_calc_ef": "Calcul EF",
     "png_export_dialog_title": "Export PNG",
     "png_export_dialog_label": "Échelle du rendu (entier de 1 à 3) :",
+    "calc_ef_dialog_title": "Calcul éléments finis",
+    "calc_ef_dialog_label": "Délai maximum en secondes (0 = illimité) :",
+    "calc_ef_button": "Lancer le calcul (EF)",
+    "calc_ef_no_project": "Aucun projet disponible pour le calcul éléments finis.",
+    "calc_ef_timer": "⏳ Calcul en cours... {elapsed}",
     "menu_api_server": "Exécutable serveur API...",
     "menu_api_url": "URL API...",
     "menu_theme": "Thème",
@@ -714,6 +724,13 @@ MSG_LOG = {
     "ifc_export_success": "Export IFC terminé : {path}",
     "ifc_export_failed": "Échec de l'export IFC : {details}",
     "ifc_export_module_version": "Module export IFC : {version}",
+    "calc_ef_started": "Calcul élément fini en cours. Cette étape peut durer plusieurs minutes.",
+    "calc_ef_timeout_set": "Délai maximum du calcul EF : {value}",
+    "calc_ef_success": "Calcul éléments finis terminé avec succès en {elapsed}.",
+    "calc_ef_failed_data": "Calcul terminé en {elapsed} mais l'API signale un échec (modèle non maillable, licence, etc.). Vérifiez les messages dans Advance Design.",
+    "calc_ef_timeout_exceeded": "Délai dépassé ({elapsed}) : le calcul n'a pas répondu dans les {timeout} s impartis. Augmentez le délai dans Paramètres > Calcul EF ou vérifiez la taille du modèle.",
+    "calc_ef_connection_lost": "Connexion perdue pendant le calcul : {details}",
+    "calc_ef_error": "Échec du calcul éléments finis : {details}",
     "results_export_write_error": "Impossible d'écrire le fichier Excel : {path}",
     "results_export_no_data": "Aucune donnée de résultat à exporter pour l'élément {eid}.",
     "api_server_stopped_on_exit": "Serveur API arrêté à la fermeture du viewer.",

@@ -102,6 +102,12 @@ from ad_model_data import (
 # ===== Imports depuis viewer_widget (étape 4 de la modularisation) =====
 from viewer_widget import *
 
+
+def _fmt_hms(seconds: float) -> str:
+    s = int(seconds)
+    return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
+
+
 class SettingsDialog(QDialog):
     def __init__(
         self,
@@ -765,6 +771,58 @@ class LoadAnalysisResultsWorker(QThread):
             self.error.emit(traceback.format_exc())
 
 
+class LaunchAnalysisWorker(QThread):
+    """Lance le calcul éléments finis via l'API (appel HTTP bloquant).
+
+    L'API ne fournit aucune progression : la réponse n'arrive qu'à la fin du
+    calcul. Le thread principal affiche un compteur de temps écoulé pendant
+    l'attente.
+    """
+    log = Signal(str, str)
+    success = Signal(bool, float)   # (flag data API, secondes écoulées)
+    error = Signal(str)
+
+    def __init__(self, host: str, fto_path: str, timeout_s: int, reuse_open_project: bool):
+        super().__init__()
+        self.host = host.rstrip("/")
+        self.fto_path = normalize_windows_path(fto_path) if fto_path else ""
+        self.timeout_s = max(0, int(timeout_s))
+        self.reuse_open_project = bool(reuse_open_project)
+
+    def run(self):
+        opened_here = False
+        try:
+            check_port(self.host)
+            if not self.reuse_open_project:
+                self.log.emit(tr_log("opening_project_reading"), "info")
+                open_project(self.host, self.fto_path)
+                opened_here = True
+
+            self.log.emit(tr_log("calc_ef_started"), "info")
+            start = time.monotonic()
+            try:
+                data = launch_analysis(self.host, timeout=self.timeout_s or None)
+            except requests.Timeout:
+                elapsed = time.monotonic() - start
+                raise RuntimeError(tr_log(
+                    "calc_ef_timeout_exceeded",
+                    elapsed=_fmt_hms(elapsed),
+                    timeout=self.timeout_s,
+                ))
+            except requests.ConnectionError as e:
+                raise RuntimeError(tr_log("calc_ef_connection_lost", details=str(e)))
+
+            self.success.emit(bool(data), time.monotonic() - start)
+        except Exception as e:
+            self.error.emit(str(e))
+        finally:
+            if opened_here:
+                try:
+                    close_project(self.host)
+                except Exception:
+                    pass
+
+
 class BuildLoadsWorker(QThread):
     """Worker QThread pour la construction des polydata de charges (thread-safe VTK).
 
@@ -890,6 +948,11 @@ class MainWindow(QMainWindow):
         self.act_view_projection_orthogonal = None
         self.view_projection_mode = DEFAULT_VIEW_PROJECTION
         self.png_export_scale = DEFAULT_PNG_EXPORT_SCALE
+        self.calc_ef_timeout = DEFAULT_CALC_EF_TIMEOUT
+        self.calc_btn = None
+        self.calc_worker = None
+        self._calc_elapsed_timer = None
+        self._calc_start_ts = 0.0
         self.api_server_started_by_viewer = False
         self.load_progress_container = None
         self.load_progress_label = None
@@ -1007,6 +1070,7 @@ class MainWindow(QMainWindow):
             "last_fto_path": normalize_windows_path(self.fto_edit.text().strip()) if getattr(self, "fto_edit", None) is not None else "",
             "view_projection": self.view_projection_mode,
             "png_export_scale": str(self.png_export_scale),
+            "calc_ef_timeout": str(self.calc_ef_timeout),
         }
         cfg["styles"] = {
             "linear_width": str(self.viewer.linear_line_width),
@@ -1080,6 +1144,12 @@ class MainWindow(QMainWindow):
             except (TypeError, ValueError):
                 loaded_png_scale = DEFAULT_PNG_EXPORT_SCALE
             self.png_export_scale = max(PNG_EXPORT_SCALE_MIN, min(PNG_EXPORT_SCALE_MAX, loaded_png_scale))
+
+            try:
+                loaded_calc_timeout = int(str(general.get("calc_ef_timeout", DEFAULT_CALC_EF_TIMEOUT)).strip())
+            except (TypeError, ValueError):
+                loaded_calc_timeout = DEFAULT_CALC_EF_TIMEOUT
+            self.calc_ef_timeout = max(0, min(CALC_EF_TIMEOUT_MAX, loaded_calc_timeout))
 
             last_fto_path = normalize_windows_path(general.get("last_fto_path", "").strip())
             if last_fto_path and os.path.isfile(last_fto_path):
@@ -1403,6 +1473,30 @@ class MainWindow(QMainWindow):
             'b2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwv'
             'c3ZnPg=='
         ),
+        "calculer": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMSAyMVYzQzEg'
+            'MS44OTU0MyAxLjg5NTQzIDEgMyAxSDIxQzIyLjEwNDYgMSAyMyAxLjg5NTQzIDIz'
+            'IDNWMjFDMjMgMjIuMTA0NiAyMi4xMDQ2IDIzIDIxIDIzSDNDMS44OTU0MyAyMyAx'
+            'IDIyLjEwNDYgMSAyMVoiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIx'
+            'LjUiLz4KPHBhdGggZD0iTTE1IDdMMTcgN0gxOSIgc3Ryb2tlPSIjMDAwMDAwIiBz'
+            'dHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2Ut'
+            'bGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0xNSAxNS41SDE3TDE5IDE1LjUi'
+            'IHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5l'
+            'Y2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJN'
+            'MTUgMTguNUgxN0gxOSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEu'
+            'NSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5k'
+            'Ii8+CjxwYXRoIGQ9Ik01IDdIN005IDdIN003IDdWNU03IDdWOSIgc3Ryb2tlPSIj'
+            'MDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5k'
+            'IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik01LjU4NjA5IDE4'
+            'LjQxNDJMNy4wMDAzIDE3TTguNDE0NTIgMTUuNTg1OEw3LjAwMDMgMTdNNy4wMDAz'
+            'IDE3TDUuNTg2MDkgMTUuNTg1OE03LjAwMDMgMTdMOC40MTQ1MiAxOC40MTQyIiBz'
+            'dHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNh'
+            'cD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+        ),
         "camera": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHdpZHRo'
             'PSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxs'
@@ -1513,6 +1607,8 @@ class MainWindow(QMainWindow):
             self.analysis_results_apply_btn.setIcon(self._make_view_icon("appliquer"))
         if self.analysis_results_export_btn is not None:
             self.analysis_results_export_btn.setIcon(self._make_view_icon("exporter"))
+        if self.calc_btn is not None:
+            self.calc_btn.setIcon(self._make_view_icon("calculer"))
         # Rafraichir aussi l'icone isoler
         if self.isolate_btn is not None:
             active = self.isolate_btn.isChecked()
@@ -1683,6 +1779,10 @@ class MainWindow(QMainWindow):
         act_png_export = QAction(tr_ui("menu_png_export"), self)
         act_png_export.triggered.connect(self.open_png_export_dialog)
         settings_menu.addAction(act_png_export)
+
+        act_calc_ef = QAction(tr_ui("menu_calc_ef"), self)
+        act_calc_ef.triggered.connect(self.open_calc_ef_dialog)
+        settings_menu.addAction(act_calc_ef)
 
         # Sous-menu Thème
         theme_menu = QMenu(tr_ui("menu_theme"), self)
@@ -2124,6 +2224,14 @@ class MainWindow(QMainWindow):
         self.analysis_results_export_btn.setProperty("iconOnly", True)
         self.analysis_results_export_btn.clicked.connect(self.export_analysis_results_csv)
         results_btn_row.addWidget(self.analysis_results_export_btn)
+        self.calc_btn = QPushButton()
+        self.calc_btn.setToolTip(tr_ui("calc_ef_button"))
+        self.calc_btn.setIcon(self._make_view_icon("calculer"))
+        self.calc_btn.setIconSize(QSize(28, 28))
+        self.calc_btn.setFixedSize(QSize(36, 36))
+        self.calc_btn.setProperty("iconOnly", True)
+        self.calc_btn.clicked.connect(self.launch_analysis_from_viewer)
+        results_btn_row.addWidget(self.calc_btn)
         results_btn_row.addStretch(1)
         analysis_results_layout.addLayout(results_btn_row)
         self.analysis_results_scroll = QScrollArea()
@@ -4434,6 +4542,107 @@ class MainWindow(QMainWindow):
         self.save_config()
         self.log(tr_log("png_export_scale_set", scale=self.png_export_scale))
 
+    def open_calc_ef_dialog(self):
+        try:
+            current = int(self.calc_ef_timeout)
+        except (TypeError, ValueError):
+            current = DEFAULT_CALC_EF_TIMEOUT
+        current = max(0, min(CALC_EF_TIMEOUT_MAX, current))
+        value, ok = QInputDialog.getInt(
+            self,
+            tr_ui("calc_ef_dialog_title"),
+            tr_ui("calc_ef_dialog_label"),
+            current,
+            0,
+            CALC_EF_TIMEOUT_MAX,
+            60,
+        )
+        if not ok:
+            return
+        self.calc_ef_timeout = int(value)
+        self.save_config()
+        label = f"{value} s" if value > 0 else "illimité"
+        self.log(tr_log("calc_ef_timeout_set", value=label), "info")
+
+    def launch_analysis_from_viewer(self):
+        if self.calc_worker is not None and self.calc_worker.isRunning():
+            return
+
+        fto_path = normalize_windows_path(self.fto_edit.text().strip()) if self.fto_edit is not None else ""
+        host = self.host_edit.text().strip().rstrip("/") if self.host_edit is not None else ""
+        host = (host or DEFAULT_HOST).rstrip("/")
+
+        session = self.project_session if isinstance(self.project_session, ProjectSessionManager) else None
+        reuse = False
+        if session is not None and getattr(session, "is_open", False):
+            session_fto = normalize_windows_path(getattr(session, "fto_path", "") or "")
+            reuse = bool(session_fto) and (not fto_path or session_fto == fto_path)
+
+        if not reuse:
+            if not fto_path:
+                msg = tr_ui("calc_ef_no_project")
+                self.log(msg, "warn")
+                QMessageBox.warning(self, tr_ui("calc_ef_dialog_title"), msg)
+                return
+            if not os.path.isfile(fto_path):
+                self.log(tr_err("file_not_found", path=fto_path), "error")
+                return
+
+        self.calc_btn.setEnabled(False)
+        self.load_btn.setEnabled(False)
+        self._start_calc_timer()
+
+        self.calc_worker = LaunchAnalysisWorker(host, fto_path, self.calc_ef_timeout, reuse)
+        self.calc_worker.log.connect(self.log)
+        self.calc_worker.success.connect(self._on_calc_success)
+        self.calc_worker.error.connect(self._on_calc_error)
+        self.calc_worker.finished.connect(self._on_calc_finished)
+        self.calc_worker.start()
+
+    def _start_calc_timer(self):
+        self._calc_start_ts = time.monotonic()
+        if self.load_progress_container is not None:
+            self.load_progress_container.setVisible(True)
+        if self.load_progress_bar is not None:
+            self.load_progress_bar.setRange(0, 0)
+            self.load_progress_bar.setFormat("")
+        self._update_calc_timer_label()
+        if self._calc_elapsed_timer is None:
+            self._calc_elapsed_timer = QTimer(self)
+            self._calc_elapsed_timer.setInterval(1000)
+            self._calc_elapsed_timer.timeout.connect(self._update_calc_timer_label)
+        self._calc_elapsed_timer.start()
+
+    def _update_calc_timer_label(self):
+        if self.load_progress_label is not None:
+            elapsed = time.monotonic() - self._calc_start_ts
+            self.load_progress_label.setText(tr_ui("calc_ef_timer", elapsed=_fmt_hms(elapsed)))
+
+    def _stop_calc_timer(self):
+        if self._calc_elapsed_timer is not None:
+            self._calc_elapsed_timer.stop()
+        if self.load_progress_bar is not None:
+            self.load_progress_bar.setRange(0, 100)
+            self.load_progress_bar.setValue(0)
+            self.load_progress_bar.setFormat("0 %")
+        if self.load_progress_container is not None:
+            self.load_progress_container.setVisible(False)
+
+    def _on_calc_success(self, ok: bool, elapsed: float):
+        if ok:
+            self.log(tr_log("calc_ef_success", elapsed=_fmt_hms(elapsed)), "ok")
+        else:
+            self.log(tr_log("calc_ef_failed_data", elapsed=_fmt_hms(elapsed)), "error")
+
+    def _on_calc_error(self, details: str):
+        self.log(tr_log("calc_ef_error", details=details), "error")
+
+    def _on_calc_finished(self):
+        self._stop_calc_timer()
+        self.calc_btn.setEnabled(True)
+        self.load_btn.setEnabled(True)
+        self.calc_worker = None
+
     def open_about_dialog(self):
         dlg = AboutDialog(self)
         dlg.exec()
@@ -4884,7 +5093,7 @@ class MainWindow(QMainWindow):
 
     def set_loading(self, loading: bool):
         widgets = [
-            self.load_btn, self.fit_btn,
+            self.load_btn, self.calc_btn, self.fit_btn,
             self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn,
             self.transparency_slider,
             self.start_api_btn,
@@ -5196,6 +5405,15 @@ class MainWindow(QMainWindow):
             if self.analysis_results_worker and self.analysis_results_worker.isRunning():
                 self.analysis_results_worker.quit()
                 self.analysis_results_worker.wait(1000)
+        except RuntimeError:
+            pass
+
+        try:
+            if self._calc_elapsed_timer is not None:
+                self._calc_elapsed_timer.stop()
+            if self.calc_worker and self.calc_worker.isRunning():
+                self.calc_worker.quit()
+                self.calc_worker.wait(1000)
         except RuntimeError:
             pass
 

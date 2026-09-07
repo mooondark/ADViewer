@@ -176,6 +176,22 @@ class AdvanceDesignApiClient:
         except (ApiUnavailableError, RuntimeError, requests.exceptions.RequestException):
             return False
 
+    def launch_analysis(self, timeout=None) -> bool:
+        """Lance le calcul éléments finis et bloque jusqu'à sa fin.
+
+        L'API n'expose aucun flux de progression : la réponse HTTP n'arrive
+        qu'une fois le calcul terminé. ``timeout`` en secondes (None = illimité).
+        Les exceptions requests.Timeout / requests.ConnectionError sont laissées
+        remonter pour que l'appelant les distingue.
+        Retourne le flag ``data`` : False => échec côté Advance Design malgré HTTP 200.
+        """
+        resp = requests.post(
+            f"{self.host}/api/Model/analysis/LaunchAnalysis",
+            json={},
+            timeout=timeout,
+        )
+        return _check(resp, "LaunchAnalysis").get("data", False)
+
     def get_element_ids(self, element_type: str) -> list:
         payload = [{
             "$type": "QueryElementsModel",
@@ -330,6 +346,10 @@ def close_project(host: str) -> bool:
 
 def close_session(host: str) -> bool:
     return get_api_client(host).close_session()
+
+
+def launch_analysis(host: str, timeout=None) -> bool:
+    return get_api_client(host).launch_analysis(timeout)
 
 
 def get_element_ids(host: str, element_type: str) -> list:

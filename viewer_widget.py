@@ -1808,7 +1808,7 @@ class VTKViewerWidget(QFrame):
         tp.SetLineSpacing(1.2)
         tp.ShadowOff()
         self._view_overlay_actor = actor
-        self.renderer.AddActor2D(actor)
+        self.renderer.AddViewProp(actor)
         self._apply_view_overlay_theme()
 
     def _apply_view_overlay_theme(self):
