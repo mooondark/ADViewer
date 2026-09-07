@@ -7,6 +7,8 @@
 ### FR
 - Calcul éléments finis : nouvelle icône dans l'onglet Résultats qui lance le calcul via l'API (POST LaunchAnalysis). L'appel est bloquant ; un compteur de temps écoulé s'affiche dans la zone des barres de progression pendant l'attente.
 - Le projet est ouvert automatiquement si nécessaire, ou la session déjà ouverte est réutilisée.
+- Après un calcul réussi, le modèle est rechargé automatiquement : les résultats deviennent consultables (onglet Résultats actif, cas de charge peuplés) et le projet reste ouvert.
+- Rechargement post-calcul : la détection des résultats est retentée pendant quelques secondes (le magasin de résultats d'Advance Design pouvant n'être interrogeable qu'avec un léger différé après LaunchAnalysis), ce qui évitait parfois un "Aucun résultat disponible" erroné.
 - Paramètres > Calcul EF : délai maximum configurable (défaut 2 h, 0 = illimité). En cas de dépassement, le message indique d'augmenter le délai.
 - Journal : message "Calcul élément fini en cours. Cette étape peut durer plusieurs minutes." au démarrage ; le cas où l'API répond HTTP 200 mais signale un échec (modèle non maillable, licence, etc.) est distingué du succès.
 - Correction : la vue graphique ne démarrait plus avec certaines versions de VTK (AddActor2D absent du binding Python) ; remplacé par AddViewProp.
@@ -14,6 +16,8 @@
 ### EN
 - Finite element analysis: new icon in the Results tab that launches the analysis through the API (POST LaunchAnalysis). The call is blocking; an elapsed-time counter is shown in the progress bar area while waiting.
 - The project is opened automatically when needed, or the already-open session is reused.
+- After a successful analysis the model is reloaded automatically: results become available (Results tab enabled, load cases populated) and the project stays open.
+- Post-analysis reload: results detection is retried for a few seconds (Advance Design's result store may only become queryable with a slight delay after LaunchAnalysis), which sometimes caused a wrong "No results available".
 - Settings > Calcul EF: configurable maximum timeout (default 2 h, 0 = unlimited). On timeout the message advises to raise the limit.
 - Journal: "Finite element analysis running. This step may take several minutes." message at start; the case where the API returns HTTP 200 but reports a failure (non-meshable model, license, etc.) is distinguished from success.
 - Fix: the graphic view failed to start with some VTK versions (AddActor2D missing from the Python binding); replaced with AddViewProp.

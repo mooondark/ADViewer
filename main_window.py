@@ -953,6 +953,9 @@ class MainWindow(QMainWindow):
         self.calc_worker = None
         self._calc_elapsed_timer = None
         self._calc_start_ts = 0.0
+        self._calc_launch_fto = ""
+        self._calc_reload_fto = ""
+        self._pending_expect_results = False
         self.api_server_started_by_viewer = False
         self.load_progress_container = None
         self.load_progress_label = None
@@ -4568,6 +4571,16 @@ class MainWindow(QMainWindow):
         if self.calc_worker is not None and self.calc_worker.isRunning():
             return
 
+        answer = QMessageBox.question(
+            self,
+            tr_ui("calc_ef_confirm_title"),
+            tr_ui("calc_ef_confirm_text"),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if answer != QMessageBox.Yes:
+            return
+
         fto_path = normalize_windows_path(self.fto_edit.text().strip()) if self.fto_edit is not None else ""
         host = self.host_edit.text().strip().rstrip("/") if self.host_edit is not None else ""
         host = (host or DEFAULT_HOST).rstrip("/")
@@ -4587,6 +4600,15 @@ class MainWindow(QMainWindow):
             if not os.path.isfile(fto_path):
                 self.log(tr_err("file_not_found", path=fto_path), "error")
                 return
+
+        effective_fto = fto_path
+        if not effective_fto and session is not None:
+            effective_fto = normalize_windows_path(getattr(session, "fto_path", "") or "")
+        self._calc_launch_fto = effective_fto
+        self._calc_reload_fto = ""
+
+        if self.side_tabs is not None:
+            self.side_tabs.setCurrentIndex(0)
 
         self.calc_btn.setEnabled(False)
         self.load_btn.setEnabled(False)
@@ -4631,6 +4653,7 @@ class MainWindow(QMainWindow):
     def _on_calc_success(self, ok: bool, elapsed: float):
         if ok:
             self.log(tr_log("calc_ef_success", elapsed=_fmt_hms(elapsed)), "ok")
+            self._calc_reload_fto = self._calc_launch_fto
         else:
             self.log(tr_log("calc_ef_failed_data", elapsed=_fmt_hms(elapsed)), "error")
 
@@ -4642,6 +4665,15 @@ class MainWindow(QMainWindow):
         self.calc_btn.setEnabled(True)
         self.load_btn.setEnabled(True)
         self.calc_worker = None
+
+        reload_fto = self._calc_reload_fto
+        self._calc_reload_fto = ""
+        if reload_fto and os.path.isfile(reload_fto):
+            self.log(tr_log("calc_ef_reload"), "info")
+            if self.fto_edit is not None:
+                self.fto_edit.setText(reload_fto)
+            self._pending_expect_results = True
+            self.load_model()
 
     def open_about_dialog(self):
         dlg = AboutDialog(self)
@@ -5151,6 +5183,9 @@ class MainWindow(QMainWindow):
             self._update_transparency_controls_state()
 
     def load_model(self):
+        expect_results = self._pending_expect_results
+        self._pending_expect_results = False
+
         raw_path = self.fto_edit.text().strip()
         host = self.host_edit.text().strip().rstrip("/")
 
@@ -5178,7 +5213,7 @@ class MainWindow(QMainWindow):
         self._close_project_session(tr_log("project_closed_before_new_load"))
 
         self.set_loading(True)
-        self.worker = LoadModelWorker(host, fto_path)
+        self.worker = LoadModelWorker(host, fto_path, expect_results=expect_results)
         self.worker.log.connect(self.log)
         self.worker.progress.connect(self.on_load_progress)
         self.worker.success.connect(self.on_model_loaded)

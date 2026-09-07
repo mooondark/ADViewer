@@ -10,6 +10,7 @@ Dépend de :
 """
 
 import math
+import time
 import requests
 import traceback
 from typing import Any, Optional, TypedDict
@@ -228,7 +229,7 @@ def probe_results_for_element(host: str, element_eid: int, case_eid: int) -> boo
     return _has_non_empty_results_data(payload.get("data"))
 
 
-def diagnose_results_availability(host: str) -> bool:
+def _probe_results_once(host: str) -> bool:
     case_eid = get_first_load_case_eid(host)
     if case_eid is None:
         return False
@@ -246,6 +247,22 @@ def diagnose_results_availability(host: str) -> bool:
                 return True
         except Exception:
             pass
+    return False
+
+
+def diagnose_results_availability(host: str, retries: int = 0, delay: float = 1.0) -> bool:
+    """Sonde la disponibilité des résultats de calcul.
+
+    Juste après un calcul, le magasin de résultats d'Advance Design peut n'être
+    interrogeable qu'avec un léger différé : ``retries`` tentatives
+    supplémentaires espacées de ``delay`` secondes évitent un faux négatif.
+    """
+    attempts = max(1, retries + 1)
+    for i in range(attempts):
+        if _probe_results_once(host):
+            return True
+        if i < attempts - 1:
+            time.sleep(delay)
     return False
 
 
@@ -2335,7 +2352,7 @@ def read_fem_mesh(host: str, element_eids: list = None) -> tuple:
     return nodes, mesh_by_eid
 
 
-def extract_model_geometry(host: str, fto_path: str, progress_callback=None, session_manager=None) -> ModelDataDict:
+def extract_model_geometry(host: str, fto_path: str, progress_callback=None, session_manager=None, expect_results: bool = False) -> ModelDataDict:
     def progress(value: int, message: str = ""):
         if callable(progress_callback):
             progress_callback(value, message)
@@ -2364,8 +2381,12 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         progress(66, tr_ui("progress_read_cases"))
         results_cases_combinations = _read_results_cases_data(host)
 
-        progress(70, tr_ui("progress_check_results"))
-        has_analysis_results = diagnose_results_availability(host)
+        if expect_results:
+            progress(70, tr_ui("progress_wait_results"))
+            has_analysis_results = diagnose_results_availability(host, retries=15, delay=1.0)
+        else:
+            progress(70, tr_ui("progress_check_results"))
+            has_analysis_results = diagnose_results_availability(host)
         session.mark_results_state(has_analysis_results)
 
         # Lecture du maillage FEM si des résultats sont disponibles
@@ -2423,10 +2444,11 @@ class LoadModelWorker(QThread):
     success = Signal(dict)
     error = Signal(str)
 
-    def __init__(self, host: str, fto_path: str):
+    def __init__(self, host: str, fto_path: str, expect_results: bool = False):
         super().__init__()
         self.host = host.rstrip("/")
         self.fto_path = normalize_windows_path(fto_path)
+        self.expect_results = bool(expect_results)
         self.session_manager = create_project_session(self.host, self.fto_path)
 
     def _emit_progress(self, value: int, message: str = ""):
@@ -2447,6 +2469,7 @@ class LoadModelWorker(QThread):
                 self.fto_path,
                 progress_callback=self._emit_progress,
                 session_manager=self.session_manager,
+                expect_results=self.expect_results,
             )
 
             if model_data.get("project_kept_open"):
