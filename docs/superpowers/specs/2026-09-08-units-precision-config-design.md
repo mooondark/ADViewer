@@ -100,17 +100,19 @@ aux défauts du registre à l'import.
 ### Formatage / conversion
 
 - `scale(kind) -> float` — facteur de l'unité courante.
-- `unit(kind) -> str` — libellé de l'unité courante (ex. `"kN"`, `"m²"` : `cm2`
-  et `m2` sont rendus `"cm²"` / `"m²"` par une petite table d'affichage).
+- `unit(kind) -> str` — libellé d'affichage de l'unité courante. Table de rendu :
+  `cm2` → `"cm²"`, `m2` → `"m²"`, `deg` → `"°"` ; toutes les autres unités
+  s'affichent telles quelles (`"kN"`, `"kN.m"`, `"MPa"`, `"m"`, `"rad"`…).
 - `decimals(kind) -> int`.
 - `conv(value_api, kind) -> float | None` — `value_api * scale`, `None` si
   `value_api` non convertible.
 - `fmt(value_api, kind) -> str` — `"<nombre> <unité>"`. Règles préservées depuis
   le code actuel :
   - entrée `None` / non numérique → `"N/A"` ;
-  - valeur convertie non nulle et `abs < 10**(-decimals)` → notation
-    scientifique `"{:.2e}"` (reprend le garde-fou de `_fmt_result_value`, qui
-    utilisait `< 0.01`, généralisé au nombre de décimales choisi) ;
+  - `decimals >= 1`, valeur convertie non nulle et `abs < 10**(-decimals)` →
+    notation scientifique `"{:.2e}"` (reprend le garde-fou de `_fmt_result_value`,
+    qui utilisait `< 0.01`, généralisé aux décimales choisies) ; à `decimals = 0`
+    la règle ne s'applique pas (arrondi entier normal) ;
   - sinon `f"{v:.{decimals}f}"`.
 
 Les labels de diagramme n'appellent pas `fmt` (leur série est déjà convertie via
@@ -200,25 +202,35 @@ Import : `import display_units as du` dans `ad_model_data.py`,
 
 ### `ad_model_data.py` — helpers réécrits (signatures inchangées)
 
-| helper | nouveau corps |
-|---|---|
-| `_format_force_kn(v)` | `return du.fmt(v, "force")` |
-| `_format_moment_knm(v)` | `return du.fmt(v, "moment")` |
-| `_format_length_m(v)` | `return du.fmt(v, "length")` |
-| `_format_length_cm(v)` | `return du.fmt(v, "section_length")` |
-| `_format_length_cm_fixed(v, decimals=2)` | `return du.fmt(v, "section_length")` (param `decimals` ignoré, conservé pour compat) |
-| `_format_thickness_smart(v)` | `return du.fmt(v, "section_length")` |
-| `_format_eccentricity_cm(v)` | `return du.fmt(v, "section_length")` |
-| `_format_angle_degrees(v)` | `return du.fmt(v, "angle")` (entrée rad) |
-| `_format_area_m2(v)` | `return du.fmt(v, "area")` |
+Helpers **avec site d'appel vivant** — réécrits, signature inchangée :
 
-`_format_numeric` et `_format_release_connection` : inchangés.
+| helper | nouveau corps | grandeur |
+|---|---|---|
+| `_format_force_kn(v)` | `return du.fmt(v, "force")` | force |
+| `_format_moment_knm(v)` | `return du.fmt(v, "moment")` | moment |
+| `_format_length_m(v)` | `return du.fmt(v, "length")` | length |
+| `_format_length_cm_fixed(v, decimals=2)` | `return du.fmt(v, "section_length")` (param `decimals` ignoré, gardé pour compat de signature) | section_length |
+| `_format_thickness_smart(v)` | `return du.fmt(v, "section_length")` | section_length |
+| `_format_eccentricity_cm(v)` | `return du.fmt(v, "section_length")` | section_length |
+| `_format_angle_degrees(v)` | `return du.fmt(v, "angle")` (entrée rad) | angle |
 
-Sites `_format_fixed_unit(...)` (3 occurrences, lignes ~671, ~730, ~745) :
-remplacés par `du.fmt(value, "length")` (métré longueur) ou `du.fmt(value,
-"area")` (métré aire / `area_text`) selon le site. `_format_fixed_unit` lui-même
-peut rester en place (encore utilisé nulle part ailleurs après remplacement — à
-supprimer si plus référencé).
+`_format_numeric`, `_format_release_connection` : inchangés.
+
+Helpers **morts** (aucun site d'appel dans le dépôt) : `_format_length_cm`
+(ligne 778), `_format_area_m2` (ligne 620), `_format_fixed_unit` (ligne 634,
+après remplacement de ses 3 appels ci-dessous). Les **supprimer** dans la même
+tâche (nettoyage adjacent au périmètre).
+
+Sites `_format_fixed_unit(...)` (3 occurrences) :
+
+- ligne ~671 `_build_linear_length_takeoff` : `_format_fixed_unit(value, "m", 2)`
+  → `du.fmt(value, "length")` ;
+- lignes ~730 et ~745 (métré aire, `area_text`) :
+  `_format_fixed_unit(area, "m²", 2)` → `du.fmt(area, "area")`.
+
+Ligne ~720 `_build_planar_takeoff` : `_format_length_cm_fixed(thickness_value, 2)`
+reste tel quel (le helper est réécrit). `sort_value` (tri) reste calculé en cm en
+dur — c'est une clé de tri interne, pas de l'affichage, on n'y touche pas.
 
 ### `ad_model_data.py` — tableau de résultats d'appui (`_fmt_result_value`, lignes 1206-1232)
 
@@ -293,18 +305,32 @@ Déjà couverts : passent par `_format_force_kn` / `_format_moment_knm` /
 
 ### Rafraîchissement — `_refresh_after_units_change()`
 
-Nouvelle méthode `MainWindow` appelée après OK :
+Constat de câblage : l'onglet **Propriétés** et l'onglet **Métré** sont formatés
+**au chargement du modèle** (les `_format_*` tournent dans
+`extract_model_geometry`, le résultat est mis en cache dans
+`current_model_data["line_properties"]`, `["…_support_properties"]`,
+`["takeoff_*"]`). Re-déclencher `on_viewer_selection_changed` ré-afficherait les
+mêmes chaînes déjà formatées avec les anciennes unités. En revanche l'onglet
+**Résultats** (tableau de réactions), les **diagrammes** et l'**overlay** sont
+calculés à la volée (fetch API par sélection / par mouvement souris) et suivent
+donc automatiquement le nouvel état de `display_units`.
 
-1. Si `self.viewer` a une sélection (`get_selected_items()`), ré-appeler le
-   gestionnaire `on_viewer_selection_changed(items)` avec la sélection courante
-   → repeuple Propriétés + Résultats (re-fetch API via le chemin existant).
-2. Si `self.current_linear_diagram_payload` est présent → reconstruire le
-   diagramme via le même chemin que sa création initiale.
-3. Sinon : rien ; les réglages s'appliquent au prochain affichage.
-4. Overlay : aucun appel, effet au prochain mouvement souris.
+Comportement retenu (minimal et correct) : après OK, si un modèle est chargé,
+**recharger le modèle** via le chemin existant `self.load_model()` — il ré-ouvre
+le projet et ré-exécute toute l'extraction avec les nouvelles unités, ce qui
+rafraîchit Propriétés + Métré. Diagramme et sélection courants sont perdus
+(l'utilisateur re-sélectionne), ce qui est acceptable pour un réglage rare.
 
-Le détail exact des appels (noms des handlers de re-render) sera figé au moment
-du plan, en lisant `on_viewer_selection_changed` et le chemin du diagramme.
+```
+def _refresh_after_units_change(self):
+    if self.current_model_data is not None and self.fto_edit is not None \
+            and self.fto_edit.text().strip():
+        self.load_model()
+```
+
+Si aucun modèle n'est chargé : rien, les réglages s'appliquent au prochain
+chargement / affichage. Overlay : effet au prochain mouvement souris (aucun appel
+requis).
 
 ## Gestion d'erreurs
 
