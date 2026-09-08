@@ -26,6 +26,7 @@ from viewer_config import (
     PLANAR_LOAD_COLOR,
 )
 from ad_api_client import *
+import display_units as du
 
 def _get_username(obj: dict) -> str:
     if not isinstance(obj, dict):
@@ -395,10 +396,7 @@ def _radians_to_degrees(value):
 
 
 def _format_angle_degrees(value) -> str:
-    angle_deg = _radians_to_degrees(value)
-    if angle_deg is None:
-        return "N/A"
-    return f"{angle_deg:.6g} °"
+    return du.fmt(value, "angle")
 
 
 def _extract_release_flags(connection) -> dict:
@@ -617,13 +615,6 @@ def _polygon_area_3d(points) -> float:
     return 0.5 * math.sqrt(area_x * area_x + area_y * area_y + area_z * area_z)
 
 
-def _format_area_m2(value) -> str:
-    try:
-        return f"{float(value):.6g} m²"
-    except Exception:
-        return "N/A"
-
-
 def _format_numeric(value) -> str:
     try:
         return f"{float(value):.6g}"
@@ -631,18 +622,8 @@ def _format_numeric(value) -> str:
         return "N/A"
 
 
-def _format_fixed_unit(value, unit: str, decimals: int = 2) -> str:
-    try:
-        return f"{float(value):.{decimals}f} {unit}"
-    except Exception:
-        return "N/A"
-
-
 def _format_length_cm_fixed(value, decimals: int = 2) -> str:
-    try:
-        return f"{float(value) * 100.0:.{decimals}f} cm"
-    except Exception:
-        return "N/A"
+    return du.fmt(value, "section_length")
 
 
 def _extract_material_density(material: dict):
@@ -668,7 +649,7 @@ def _build_linear_length_takeoff(linear_elements: list, key_fn) -> list:
         key = key_fn(el)
         totals[key] = totals.get(key, 0.0) + _distance_3d(p1, p2)
     return [
-        {"name": name, "value": value, "value_text": _format_fixed_unit(value, "m", 2)}
+        {"name": name, "value": value, "value_text": du.fmt(value, "length")}
         for name, value in sorted(totals.items(), key=lambda item: str(item[0]).lower())
     ]
 
@@ -727,7 +708,7 @@ def _build_planar_takeoff(planar_elements: list) -> list:
         key=lambda item: (float("inf") if item[1].get("sort_value") is None else item[1].get("sort_value"), str(item[0]).lower())
     )
     return [
-        {"name": name, "area": data["area"], "area_text": _format_fixed_unit(data["area"], "m\u00b2", 2)}
+        {"name": name, "area": data["area"], "area_text": du.fmt(data["area"], "area")}
         for name, data in ordered
     ]
 
@@ -742,7 +723,7 @@ def _build_planar_material_takeoff(planar_elements: list, material_by_eid: dict)
         material_name = material_by_eid.get(material_eid, "N/A") if material_eid is not None else "N/A"
         totals[material_name] = totals.get(material_name, 0.0) + area
     return [
-        {"name": name, "area": area, "area_text": _format_fixed_unit(area, "m\u00b2", 2)}
+        {"name": name, "area": area, "area_text": du.fmt(area, "area")}
         for name, area in sorted(totals.items(), key=lambda item: str(item[0]).lower())
     ]
 
@@ -775,30 +756,12 @@ def _find_planar_type_label(el: dict) -> str:
     return tr_ui("label_element_planar")
 
 
-def _format_length_cm(value) -> str:
-    try:
-        return f"{float(value) * 100.0:.6g} cm"
-    except Exception:
-        return "N/A"
-
-
 def _format_thickness_smart(value) -> str:
-    """Affiche en cm (1 décimale) si >= 1 cm, sinon en mm (1 décimale)."""
-    try:
-        m = float(value)
-        cm = m * 100.0
-        if cm >= 1.0:
-            return f"{cm:.1f} cm"
-        return f"{m * 1000.0:.1f} mm"
-    except Exception:
-        return "N/A"
+    return du.fmt(value, "section_length")
 
 
 def _format_eccentricity_cm(value) -> str:
-    try:
-        return f"{float(value) * 100.0:.2f} cm"
-    except Exception:
-        return "N/A"
+    return du.fmt(value, "section_length")
 
 
 def _mesh_type_label(raw) -> str:
@@ -1190,46 +1153,36 @@ def _find_first_dict_path(obj, preferred_keys=None):
     return None
 
 
-def _fmt_result_value(value, factor=1.0):
-    try:
-        numeric = float(value) * float(factor)
-    except Exception:
-        return "N/A"
-    if abs(numeric) < 0.01 and numeric != 0.0:
-        return f"{numeric:.2e}"
-    return f"{numeric:.2f}"
-
-
 def _build_analysis_rows(result_family: str, result_payload: dict) -> list:
     rows = []
     family = str(result_family or "").strip().lower()
     payload = result_payload or {}
     if family == "déplacements":
         rows = [
-            ("dx", f"{_fmt_result_value(_dict_get_ci(payload, 'dx'), 100.0)} cm"),
-            ("dy", f"{_fmt_result_value(_dict_get_ci(payload, 'dy'), 100.0)} cm"),
-            ("dz", f"{_fmt_result_value(_dict_get_ci(payload, 'dz'), 100.0)} cm"),
-            ("d", f"{_fmt_result_value(_dict_get_ci(payload, 'd'), 100.0)} cm"),
-            ("rx", f"{_fmt_result_value(_radians_to_degrees(_dict_get_ci(payload, 'rx')), 1.0)} °"),
-            ("ry", f"{_fmt_result_value(_radians_to_degrees(_dict_get_ci(payload, 'ry')), 1.0)} °"),
-            ("rz", f"{_fmt_result_value(_radians_to_degrees(_dict_get_ci(payload, 'rz')), 1.0)} °"),
-            ("r", f"{_fmt_result_value(_radians_to_degrees(_dict_get_ci(payload, 'r')), 1.0)} °"),
+            ("dx", du.fmt(_dict_get_ci(payload, "dx"), "section_length")),
+            ("dy", du.fmt(_dict_get_ci(payload, "dy"), "section_length")),
+            ("dz", du.fmt(_dict_get_ci(payload, "dz"), "section_length")),
+            ("d",  du.fmt(_dict_get_ci(payload, "d"),  "section_length")),
+            ("rx", du.fmt(_dict_get_ci(payload, "rx"), "angle")),
+            ("ry", du.fmt(_dict_get_ci(payload, "ry"), "angle")),
+            ("rz", du.fmt(_dict_get_ci(payload, "rz"), "angle")),
+            ("r",  du.fmt(_dict_get_ci(payload, "r"),  "angle")),
         ]
     elif family == "efforts":
         rows = [
-            ("fx", f"{_fmt_result_value(_dict_get_ci(payload, 'fx'), 1.0e-3)} kN"),
-            ("fy", f"{_fmt_result_value(_dict_get_ci(payload, 'fy'), 1.0e-3)} kN"),
-            ("fz", f"{_fmt_result_value(_dict_get_ci(payload, 'fz'), 1.0e-3)} kN"),
-            ("mx", f"{_fmt_result_value(_dict_get_ci(payload, 'mx'), 1.0e-3)} kN.m"),
-            ("my", f"{_fmt_result_value(_dict_get_ci(payload, 'my'), 1.0e-3)} kN.m"),
-            ("mz", f"{_fmt_result_value(_dict_get_ci(payload, 'mz'), 1.0e-3)} kN.m"),
+            ("fx", du.fmt(_dict_get_ci(payload, "fx"), "force")),
+            ("fy", du.fmt(_dict_get_ci(payload, "fy"), "force")),
+            ("fz", du.fmt(_dict_get_ci(payload, "fz"), "force")),
+            ("mx", du.fmt(_dict_get_ci(payload, "mx"), "moment")),
+            ("my", du.fmt(_dict_get_ci(payload, "my"), "moment")),
+            ("mz", du.fmt(_dict_get_ci(payload, "mz"), "moment")),
         ]
     elif family == "contraintes":
         rows = [
-            ("sx", f"{_fmt_result_value(_dict_get_ci(payload, 'sx'), 1.0e-6)} MPa"),
-            ("sy", f"{_fmt_result_value(_dict_get_ci(payload, 'sy'), 1.0e-6)} MPa"),
-            ("sz", f"{_fmt_result_value(_dict_get_ci(payload, 'sz'), 1.0e-6)} MPa"),
-            ("s", f"{_fmt_result_value(_dict_get_ci(payload, 's'), 1.0e-6)} MPa"),
+            ("sx", du.fmt(_dict_get_ci(payload, "sx"), "stress")),
+            ("sy", du.fmt(_dict_get_ci(payload, "sy"), "stress")),
+            ("sz", du.fmt(_dict_get_ci(payload, "sz"), "stress")),
+            ("s",  du.fmt(_dict_get_ci(payload, "s"),  "stress")),
         ]
     return [{"name": name, "value": value} for name, value in rows]
 
@@ -1298,24 +1251,15 @@ def _to_float_or_none(value):
 
 
 def _format_force_kn(value) -> str:
-    numeric = _to_float_or_none(value)
-    if numeric is None:
-        return "N/A"
-    return f"{numeric / 1000.0:.2f} kN"
+    return du.fmt(value, "force")
 
 
 def _format_moment_knm(value) -> str:
-    numeric = _to_float_or_none(value)
-    if numeric is None:
-        return "N/A"
-    return f"{numeric / 1000.0:.2f} kN.m"
+    return du.fmt(value, "moment")
 
 
 def _format_length_m(value) -> str:
-    numeric = _to_float_or_none(value)
-    if numeric is None:
-        return "N/A"
-    return f"{numeric:.2f} m"
+    return du.fmt(value, "length")
 
 
 def _extract_result_item_by_id(payloads, support_eid: int) -> dict:
@@ -1473,16 +1417,23 @@ def _analysis_result_display_label(value: str) -> str:
     return str(value or "").strip()
 
 
+def _result_kind(family_key: str, value_key: str) -> str:
+    family = _normalize_result_family_key(family_key)
+    value_key = str(value_key or "").strip().lower()
+    if family == "deplacements":
+        return "section_length"
+    if family == "efforts":
+        return "moment" if value_key in ("mx", "my", "mz") else "force"
+    if family == "contraintes":
+        return "stress"
+    return ""
+
+
 def _linear_result_scale_and_unit(family_key: str, value_key: str):
-    normalized_family = _normalize_result_family_key(family_key)
-    value_key = str(value_key or "").strip()
-    if normalized_family == "deplacements":
-        return 100.0, "cm"
-    if normalized_family == "efforts":
-        return (0.001, "kN.m") if value_key in ("mx", "my", "mz") else (0.001, "kN")
-    if normalized_family == "contraintes":
-        return 1e-6, "MPa"
-    return 1.0, ""
+    kind = _result_kind(family_key, value_key)
+    if not kind:
+        return 1.0, ""
+    return du.scale(kind), du.unit(kind)
 
 
 def _coerce_abscissa_value_series(raw_values, family_key: str = "", value_key: str = "") -> list:
@@ -1572,6 +1523,7 @@ def read_linear_element_diagram_results(host: str, element_eid: int, analysis_ca
         "family_label": _analysis_result_display_label(family_label),
         "value_label": str(value_label or "").strip(),
         "unit": _linear_result_unit(family_label, value_label),
+        "decimals": (lambda k: du.decimals(k) if k else 3)(_result_kind(family_label, value_label)),
         "series": series,
         "title": f"{str(family_label or '').strip()} - {str(value_label or '').strip()}",
         "source_found": bool(selected_item),
