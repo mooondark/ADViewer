@@ -38,6 +38,22 @@ from viewer_config import (
 )
 
 from ad_model_data import _build_ad_local_axes, _cross_vector3, _normalize_vector3, _rotate_vector_around_axis
+from section_geometry import profile_polygon, rotate_poly2, translate_polygon2
+
+_PROFILE_MODES = ("profiles_hidden", "profiles_full")
+_ALL_DISPLAY_MODES = ("wireframe", "hidden_faces", "wire_hidden", "full") + _PROFILE_MODES
+
+
+def _poly2_area(loop):
+    """Aire (valeur absolue) d'un polygone 2D ferme implicitement."""
+    a = 0.0
+    n = len(loop)
+    for i in range(n):
+        x1, y1 = loop[i]
+        x2, y2 = loop[(i + 1) % n]
+        a += x1 * y2 - x2 * y1
+    return abs(a) * 0.5
+
 
 class ConstrainedOrbitStyle(vtk.vtkInteractorStyleUser):
     def __init__(self, parent=None):
@@ -313,6 +329,9 @@ class VTKViewerWidget(QFrame):
         }
 
         self._lines_actor = None
+        self._profiles_actor = None
+        self._profiles_base_pd = None
+        self._profiles_base_colors = None
         self._planar_actor = None
         self._planar_faces_actor = None
         self._openings_actor = None
@@ -1030,6 +1049,190 @@ class VTKViewerWidget(QFrame):
         out.ShallowCopy(normals.GetOutput())
         return out
 
+    def _tag_cells(self, polydata, source_idx: int):
+        elem_ids = self._make_int_array()
+        for _ in range(polydata.GetNumberOfCells()):
+            elem_ids.InsertNextValue(int(source_idx))
+        polydata.GetCellData().AddArray(elem_ids)
+        return polydata
+
+    def _profile_walls_polydata(self, loops0, loops1, to3d_start, to3d_end, source_idx: int):
+        points = vtk.vtkPoints()
+        polys = vtk.vtkCellArray()
+        elem_ids = self._make_int_array()
+        pid = 0
+        for k in range(min(len(loops0), len(loops1))):
+            ring0 = [to3d_start(p) for p in loops0[k]]
+            ring1 = [to3d_end(p) for p in loops1[k]]
+            n = min(len(ring0), len(ring1))
+            if n < 3:
+                continue
+            for i in range(n):
+                j = (i + 1) % n
+                for v in (ring0[i], ring0[j], ring1[j], ring1[i]):
+                    points.InsertNextPoint(*v)
+                quad = vtk.vtkQuad()
+                for m in range(4):
+                    quad.GetPointIds().SetId(m, pid + m)
+                polys.InsertNextCell(quad)
+                elem_ids.InsertNextValue(int(source_idx))
+                pid += 4
+        if polys.GetNumberOfCells() == 0:
+            return None
+        pd = vtk.vtkPolyData()
+        pd.SetPoints(points)
+        pd.SetPolys(polys)
+        pd.GetCellData().AddArray(elem_ids)
+        return pd
+
+    @staticmethod
+    def _section_frame(start, end):
+        """Repere de section (u = largeur / axe local y, v = hauteur / axe local
+        z) identique a celui de l'export IFC afin de ne pas inverser les profils
+        non bi-symetriques : u = normalize(up_ref x beam_dir), v = beam_dir x u.
+        """
+        beam = _normalize_vector3((end[0] - start[0], end[1] - start[1], end[2] - start[2])) or (1.0, 0.0, 0.0)
+        up = (0.0, 0.0, 1.0)
+        if abs(beam[0] * up[0] + beam[1] * up[1] + beam[2] * up[2]) > 0.999:
+            up = (1.0, 0.0, 0.0)
+        u = _normalize_vector3(_cross_vector3(up, beam)) or (1.0, 0.0, 0.0)
+        v = _normalize_vector3(_cross_vector3(beam, u)) or (0.0, 0.0, 1.0)
+        return u, v
+
+    def _loft_solid_polydata(self, loops_a, to3d_a, loops_b, to3d_b, source_idx: int):
+        """Solide ferme entre deux jeux de boucles (loops_a a une station,
+        loops_b a une autre) : 2 capuchons + parois. loops[0] = contour,
+        loops[1:] = trous. Un capuchon degenere (points colineaires) est ignore
+        (cas du coin de jarret cote contact, ecrase a plat)."""
+        append = vtk.vtkAppendPolyData()
+        added = False
+        for to3d, loops in ((to3d_a, loops_a), (to3d_b, loops_b)):
+            if _poly2_area(loops[0]) < 1e-9:
+                continue  # contour ecrase (cote contact d'un jarret) : pas de capuchon
+            outer3d = [to3d(p) for p in loops[0]]
+            holes3d = [[to3d(p) for p in loops[k]] for k in range(1, len(loops))]
+            cap = self._build_surface_polydata_with_openings(outer3d, holes3d)
+            if cap is not None and cap.GetNumberOfCells() > 0:
+                append.AddInputData(self._tag_cells(cap, source_idx))
+                added = True
+        walls = self._profile_walls_polydata(loops_a, loops_b, to3d_a, to3d_b, source_idx)
+        if walls is not None:
+            append.AddInputData(walls)
+            added = True
+        if not added:
+            return None
+        append.Update()
+        out = vtk.vtkPolyData()
+        out.ShallowCopy(append.GetOutput())
+        return out if out.GetNumberOfCells() > 0 else None
+
+    def _build_one_profile_polydata(self, start, end, section, source_idx: int):
+        """Solide filaire : profil de base (ou 2 elements d'un profil compose)
+        extrude de start a end, plus les coins de jarret (section['haunches'])."""
+        ang = float(section.get("angle_rad") or 0.0)  # deja en radians (API AD)
+        off = section.get("offset") or [0.0, 0.0]
+        ox, oy = float(off[0]), float(off[1])
+        u_axis, v_axis = self._section_frame(start, end)
+
+        def _xform(loop):
+            return translate_polygon2(rotate_poly2(loop, ang), dx=ox, dy=oy)
+
+        def _loops(contour):
+            return [_xform(loop) for loop in [contour["outer"]] + list(contour.get("holes") or [])]
+
+        # x -> u (largeur / axe local y), y -> v (hauteur / axe local z)
+        def _mk_to3d(base):
+            def to3d(p2):
+                w, d = float(p2[0]), float(p2[1])
+                return (base[0] + w * u_axis[0] + d * v_axis[0],
+                        base[1] + w * u_axis[1] + d * v_axis[1],
+                        base[2] + w * u_axis[2] + d * v_axis[2])
+            return to3d
+
+        def _at(t):
+            return _mk_to3d((start[0] + (end[0] - start[0]) * t,
+                             start[1] + (end[1] - start[1]) * t,
+                             start[2] + (end[2] - start[2]) * t))
+
+        # pieces : (loops_a, to3d_a, loops_b, to3d_b) — un solide loft par piece
+        pieces = []
+        combined = section.get("combined")
+        if combined:
+            combined_end = section.get("combined_end") or combined
+            if len(combined_end) != len(combined):
+                combined_end = combined
+            for pa, pb in zip(combined, combined_end):
+                pieces.append(([_xform(pa)], _at(0.0), [_xform(pb)], _at(1.0)))
+        else:
+            contour0 = profile_polygon(section.get("dims"))
+            if not contour0 or len(contour0.get("outer") or []) < 3:
+                return None
+            dims_end = section.get("dims_end")
+            contour1 = profile_polygon(dims_end) if dims_end else contour0
+            if (not contour1
+                    or len(contour1.get("outer") or []) != len(contour0["outer"])
+                    or len(contour1.get("holes") or []) != len(contour0.get("holes") or [])):
+                contour1 = contour0
+            pieces.append((_loops(contour0), _at(0.0), _loops(contour1), _at(1.0)))
+            for h in section.get("haunches") or []:
+                pieces.append(([_xform(h["poly_start"])], _at(float(h["t_start"])),
+                               [_xform(h["poly_end"])], _at(float(h["t_end"]))))
+
+        append = vtk.vtkAppendPolyData()
+        added = False
+        for loops_a, to3d_a, loops_b, to3d_b in pieces:
+            pd = self._loft_solid_polydata(loops_a, to3d_a, loops_b, to3d_b, source_idx)
+            if pd is not None:
+                append.AddInputData(pd)
+                added = True
+        if not added:
+            return None
+        append.Update()
+        out = vtk.vtkPolyData()
+        out.ShallowCopy(append.GetOutput())
+        return out if out.GetNumberOfCells() > 0 else None
+
+    def _build_profiles_polydata(self, lines, line_sections, element_indexes=None):
+        append = vtk.vtkAppendPolyData()
+        appended = False
+        mapped_indexes = list(element_indexes or [])
+        sections = list(line_sections or [])
+        for idx, seg in enumerate(lines or []):
+            if not seg or len(seg) != 2:
+                continue
+            section = sections[idx] if idx < len(sections) else None
+            if not isinstance(section, dict):
+                continue
+            source_idx = mapped_indexes[idx] if idx < len(mapped_indexes) else idx
+            pd = self._build_one_profile_polydata(seg[0], seg[1], section, int(source_idx))
+            if pd is not None and pd.GetNumberOfCells() > 0:
+                if self._color_by_section:
+                    rgb = self._get_section_color(self._line_section_name(int(source_idx)))
+                    colors = vtk.vtkUnsignedCharArray()
+                    colors.SetName("section_colors")
+                    colors.SetNumberOfComponents(3)
+                    for _ in range(pd.GetNumberOfCells()):
+                        colors.InsertNextTuple3(*rgb)
+                    pd.GetCellData().SetScalars(colors)
+                append.AddInputData(pd)
+                appended = True
+        if not appended:
+            return None
+        append.Update()
+
+        normals = vtk.vtkPolyDataNormals()
+        normals.SetInputConnection(append.GetOutputPort())
+        normals.ComputePointNormalsOff()
+        normals.ComputeCellNormalsOn()
+        normals.ConsistencyOn()
+        normals.AutoOrientNormalsOn()
+        normals.SplittingOff()
+        normals.Update()
+
+        out = vtk.vtkPolyData()
+        out.ShallowCopy(normals.GetOutput())
+        return out
+
     def _build_punctual_supports_polydata(self, support_points, element_indexes=None):
         points = vtk.vtkPoints()
         cells = vtk.vtkCellArray()
@@ -1157,7 +1360,7 @@ class VTKViewerWidget(QFrame):
             (6, 0), (-6, 0), (0, 6), (0, -6),
             (8, 0), (-8, 0), (0, 8), (0, -8),
         ]
-        peel = self._display_mode in ("hidden_faces", "wire_hidden")
+        peel = self._display_mode in ("hidden_faces", "wire_hidden", "profiles_hidden")
         found = {}
         for dx, dy in offsets:
             if peel and dx == 0 and dy == 0:
@@ -1188,7 +1391,7 @@ class VTKViewerWidget(QFrame):
 
     def _selected_role_visible(self, role: str, face: bool = False):
         mode = self._display_mode
-        show_faces = mode in ("hidden_faces", "wire_hidden", "full")
+        show_faces = mode in ("hidden_faces", "wire_hidden", "full") or mode in _PROFILE_MODES
         show_planar_wire = mode in ("wireframe", "wire_hidden")
         if role == "lines":
             return self._show_lines
@@ -1215,6 +1418,10 @@ class VTKViewerWidget(QFrame):
         line_width = max(self.selection_line_width, self._style_for_role(role)[1] + 1.0)
 
         if role == "lines":
+            # En mode profils la selection est rendue en recolorant les cellules
+            # de _profiles_actor (cf. _rebuild_profiles_actor), pas par un overlay.
+            if self._display_mode in _PROFILE_MODES:
+                return overlays
             lines = self._model_data.get("lines", [])
             if 0 <= index < len(lines):
                 poly = self._build_lines_polydata([lines[index]], include_section_colors=False)
@@ -1371,15 +1578,15 @@ class VTKViewerWidget(QFrame):
 
     def _refresh_selection_overlay(self):
         self._clear_selection_overlay()
-        if not self._selected_items:
-            self.render_window.Render()
-            return
         for item in self._selected_items:
             overlays = self._make_selection_overlay_actors(item["role"], item["index"])
             for actor in overlays:
                 self.renderer.AddActor(actor)
                 self._actors.append(actor)
                 self._selection_overlay_actors.append(actor)
+        # En mode profils : recolorer (echange de scalaires, sans reconstruction).
+        if self._display_mode in _PROFILE_MODES:
+            self._apply_profiles_selection_colors()
         self._apply_visibility_state()
 
     def clear_result_diagram(self):
@@ -1962,6 +2169,9 @@ class VTKViewerWidget(QFrame):
         self._selection_cycle_index = -1
 
         self._lines_actor = None
+        self._profiles_actor = None
+        self._profiles_base_pd = None
+        self._profiles_base_colors = None
         self._planar_actor = None
         self._planar_faces_actor = None
         self._openings_actor = None
@@ -2131,7 +2341,7 @@ class VTKViewerWidget(QFrame):
         self.render_window.Render()
 
     def _apply_face_opacity_state(self):
-        if self._display_mode == "full":
+        if self._display_mode in ("full", "profiles_full"):
             planar_opacity = 1.0
             load_area_opacity = 1.0
             support_planar_opacity = 1.0
@@ -2198,13 +2408,19 @@ class VTKViewerWidget(QFrame):
 
     def _apply_visibility_state(self):
         mode = self._display_mode
-        show_faces = mode in ("hidden_faces", "wire_hidden", "full")
+        profile_mode = mode in _PROFILE_MODES
+        # profiles_hidden se comporte comme hidden_faces, profiles_full comme full
+        show_faces = mode in ("hidden_faces", "wire_hidden", "full") or profile_mode
         show_planar_wire = mode in ("wireframe", "wire_hidden")
         show_openings = mode in ("wireframe", "hidden_faces", "wire_hidden")
-        self.renderer.SetUseHiddenLineRemoval(1 if show_faces else 0)
+        self.renderer.SetUseHiddenLineRemoval(0 if mode == "profiles_full" else (1 if show_faces else 0))
 
         if self._lines_actor:
-            self._lines_actor.SetVisibility(1 if self._show_lines else 0)
+            self._lines_actor.SetVisibility(1 if (self._show_lines and not profile_mode) else 0)
+        if self._profiles_actor:
+            self._profiles_actor.SetVisibility(1 if (self._show_lines and profile_mode) else 0)
+            # arretes visibles en rendu plein, pas en faces cachees
+            self._profiles_actor.GetProperty().SetEdgeVisibility(1 if mode == "profiles_full" else 0)
         if self._planar_actor:
             self._planar_actor.SetVisibility(1 if (self._show_planars and show_planar_wire) else 0)
         if self._planar_faces_actor:
@@ -2363,10 +2579,16 @@ class VTKViewerWidget(QFrame):
         self.render_window.Render()
 
     def set_display_mode(self, mode: str):
-        if mode not in ("wireframe", "hidden_faces", "wire_hidden", "full"):
+        if mode not in _ALL_DISPLAY_MODES:
             mode = "wireframe"
+        # (Re)construire ou retirer _profiles_actor uniquement si on franchit la
+        # frontiere des modes profils ; sinon un simple refresh de visibilite.
+        crossed = (self._display_mode in _PROFILE_MODES) != (mode in _PROFILE_MODES)
         self._display_mode = mode
-        self._apply_visibility_state()
+        if crossed:
+            self._rebuild_filtered_structural_actors()
+        else:
+            self._apply_visibility_state()
 
     def apply_display_state(
         self,
@@ -2393,8 +2615,9 @@ class VTKViewerWidget(QFrame):
         restent inchangées pour les interactions utilisateur en temps réel.
         """
         # Normaliser le display_mode avant toute affectation
-        if display_mode not in ("wireframe", "hidden_faces", "wire_hidden", "full"):
+        if display_mode not in _ALL_DISPLAY_MODES:
             display_mode = "wireframe"
+        _old_mode = self._display_mode
 
         # Affecter tous les attributs de visibilité sans déclencher de rendu
         self._show_lines             = show_lines
@@ -2416,8 +2639,12 @@ class VTKViewerWidget(QFrame):
             else:
                 self.orientation_widget.SetEnabled(0)
 
-        # Un seul appel — il enchaîne _apply_face_opacity_state() + Render()
-        self._apply_visibility_state()
+        # Un seul appel — il enchaîne _apply_face_opacity_state() + Render().
+        # Entrer/sortir d'un mode profils exige de (re)construire _profiles_actor.
+        if (_old_mode in _PROFILE_MODES) != (self._display_mode in _PROFILE_MODES):
+            self._rebuild_filtered_structural_actors()
+        else:
+            self._apply_visibility_state()
 
     def set_line_widths(self, linear_width: float, planar_width: float, opening_width: float, load_area_width: float):
         self.linear_line_width = max(0.1, float(linear_width))
@@ -4251,6 +4478,7 @@ class VTKViewerWidget(QFrame):
             "lines": list(model_data.get("lines", [])),
             "line_eids": list(model_data.get("line_eids", [])),
             "line_properties": list(model_data.get("line_properties", [])),
+            "line_sections": list(model_data.get("line_sections", []) or []),
             "planars": list(model_data.get("planars", [])),
             "planar_eids": list(model_data.get("planar_eids", [])),
             "planar_properties": list(model_data.get("planar_properties", [])),
@@ -4378,10 +4606,91 @@ class VTKViewerWidget(QFrame):
         source = list(items or [])
         return [source[int(idx)] for idx in indexes if 0 <= int(idx) < len(source)]
 
+    def _rebuild_profiles_actor(self, line_indexes=None, filtered_lines=None, filtered_line_sections=None):
+        """Reconstruit le solide des profils (couteux : tous les elements). La
+        selection ne passe PAS par ici : elle ne fait qu'echanger le tableau de
+        couleurs par cellule via _apply_profiles_selection_colors()."""
+        self._profiles_base_pd = None
+        self._profiles_base_colors = None
+        if self._display_mode not in _PROFILE_MODES:
+            self._replace_actor("_profiles_actor", None, role="lines", pickable=True)
+            return
+        if line_indexes is None:
+            line_indexes = self._filtered_line_indexes()
+        if filtered_lines is None:
+            filtered_lines = self._select_items_by_indexes(self._model_data.get("lines", []), line_indexes)
+        if filtered_line_sections is None:
+            filtered_line_sections = self._select_items_by_indexes(
+                self._model_data.get("line_sections", []) or [], line_indexes
+            )
+        base_pd = self._build_profiles_polydata(filtered_lines, filtered_line_sections, element_indexes=line_indexes)
+        self._profiles_base_pd = base_pd
+        if base_pd is not None:
+            sc = base_pd.GetCellData().GetArray("section_colors")   # present si color_by_section
+            if sc is not None:
+                self._profiles_base_colors = vtk.vtkUnsignedCharArray()
+                self._profiles_base_colors.DeepCopy(sc)
+        self._replace_actor(
+            "_profiles_actor",
+            self._make_surface_actor(base_pd, self.linear_color, 1.0),
+            role="lines",
+            pickable=True,
+        )
+        self._apply_profiles_selection_colors()
+
+    def _apply_profiles_selection_colors(self):
+        """Applique la couleur de selection aux cellules des elements filaires
+        selectionnes, en mutant le tableau de scalaires du polydata cache (pas de
+        reconstruction geometrique). Restaure les couleurs de base sinon. Ne
+        declenche pas de rendu : l'appelant s'en charge."""
+        actor = self._profiles_actor
+        pd = self._profiles_base_pd
+        if actor is None or pd is None or actor.GetMapper() is None:
+            return
+        idx_arr = pd.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
+        n = pd.GetNumberOfCells()
+        if idx_arr is None or n == 0:
+            return
+        mapper = actor.GetMapper()
+        selected = {int(it["index"]) for it in self._selected_items if it.get("role") == "lines"}
+        base = self._profiles_base_colors  # couleurs de section, ou None
+
+        if not selected:
+            if base is not None:
+                pd.GetCellData().SetScalars(base)
+                mapper.SetScalarModeToUseCellData()
+                mapper.SetColorModeToDirectScalars()
+                mapper.ScalarVisibilityOn()
+            else:
+                pd.GetCellData().SetScalars(None)
+                mapper.ScalarVisibilityOff()
+            pd.Modified()
+            return
+
+        sel_rgb = tuple(float(round(c * 255.0)) for c in self.selection_color)
+        lin_rgb = tuple(float(round(c * 255.0)) for c in self.linear_color)
+        colors = vtk.vtkUnsignedCharArray()
+        colors.SetName("section_colors")
+        colors.SetNumberOfComponents(3)
+        colors.SetNumberOfTuples(n)
+        for i in range(n):
+            if int(idx_arr.GetTuple1(i)) in selected:
+                colors.SetTuple3(i, *sel_rgb)
+            elif base is not None:
+                colors.SetTuple3(i, base.GetComponent(i, 0), base.GetComponent(i, 1), base.GetComponent(i, 2))
+            else:
+                colors.SetTuple3(i, *lin_rgb)
+        pd.GetCellData().SetScalars(colors)
+        mapper.SetScalarModeToUseCellData()
+        mapper.SetColorModeToDirectScalars()
+        mapper.ScalarVisibilityOn()
+        pd.Modified()
+
     def _rebuild_filtered_structural_actors(self):
         line_indexes = self._filtered_line_indexes()
         planar_indexes = self._filtered_planar_indexes()
         filtered_lines = self._select_items_by_indexes(self._model_data.get("lines", []), line_indexes)
+        filtered_line_sections = self._select_items_by_indexes(self._model_data.get("line_sections", []) or [], line_indexes)
         filtered_planars = self._select_items_by_indexes(self._model_data.get("planars", []), planar_indexes)
         isolated = list(self._isolated_selection or [])
         is_isolated = bool(isolated)
@@ -4544,6 +4853,7 @@ class VTKViewerWidget(QFrame):
             role="lines",
             pickable=True,
         )
+        self._rebuild_profiles_actor(line_indexes, filtered_lines, filtered_line_sections)
         self._replace_actor(
             "_planar_actor",
             self._make_wire_actor(self._build_loops_wire_polydata(filtered_planars, element_indexes=planar_indexes), self.planar_color, self.planar_line_width),

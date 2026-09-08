@@ -2066,6 +2066,8 @@ class MainWindow(QMainWindow):
         self.cmb_display_mode.addItem(tr_ui("display_hidden_faces"), "hidden_faces")
         self.cmb_display_mode.addItem(tr_ui("display_wire_hidden"), "wire_hidden")
         self.cmb_display_mode.addItem(tr_ui("display_full"), "full")
+        self.cmb_display_mode.addItem(tr_ui("display_profiles_hidden"), "profiles_hidden")
+        self.cmb_display_mode.addItem(tr_ui("display_profiles_full"), "profiles_full")
         self.cmb_display_mode.setCurrentIndex(self.cmb_display_mode.findData("wire_hidden"))
         self.cmb_display_mode.currentIndexChanged.connect(self.on_display_mode_changed)
         action_card.layout.addWidget(self.cmb_display_mode)
@@ -4513,7 +4515,7 @@ class MainWindow(QMainWindow):
 
     def _update_transparency_controls_state(self):
         mode = self.cmb_display_mode.currentData() if self.cmb_display_mode else None
-        enabled = (mode != "full")
+        enabled = mode not in ("full", "profiles_full")
         if self.transparency_slider is not None:
             self.transparency_slider.setEnabled(enabled)
         if self.transparency_value_label is not None:
@@ -5181,6 +5183,8 @@ class MainWindow(QMainWindow):
             "hidden_faces": "mode_hidden_faces",
             "wire_hidden": "mode_wire_hidden",
             "full": "mode_full",
+            "profiles_hidden": "mode_profiles_hidden",
+            "profiles_full": "mode_profiles_full",
         }
         self.log(tr_log(mode_map.get(mode, "mode_wireframe")), "info")
 
@@ -5350,6 +5354,12 @@ class MainWindow(QMainWindow):
             self.chk_color_by_section.blockSignals(True)
             self.chk_color_by_section.setChecked(True)
             self.chk_color_by_section.blockSignals(False)
+        # Chaque chargement revient au mode d'affichage par defaut
+        if self.cmb_display_mode is not None:
+            self.cmb_display_mode.blockSignals(True)
+            self.cmb_display_mode.setCurrentIndex(self.cmb_display_mode.findData("wire_hidden"))
+            self.cmb_display_mode.blockSignals(False)
+            self._update_transparency_controls_state()
         self._set_load_progress(100, "Rendu terminé.")
         self.viewer.load_model(model_data)
         self.viewer.set_color_by_section(True)

@@ -2,6 +2,26 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.00
+
+### FR
+- Vue graphique : deux nouveaux modes de visualisation, « Profilés + Faces cachées » et « Profilés + Rendu plein ». Les éléments filaires y sont dessinés avec leur section 3D réelle (solide extrudé) au lieu d'un simple trait.
+- Sections gérées : I/H, U, L/cornière, T, T dissymétrique, rectangulaire et circulaire (pleines et tubes creux), Z, Oméga, Sigma ; profilés composés CS1 à CS7 ; poutres à section variable (interpolation section début → section fin) ; jarrets (goussets) début et/ou fin, en haut, en bas ou haut et bas.
+- L'angle d'orientation de la section et l'excentrement sont pris en compte ; la géométrie affichée est identique à celle de l'export IFC.
+- « Profilés + Rendu plein » : solide ombré avec arêtes visibles. « Profilés + Faces cachées » : solide lissé.
+- La sélection colore directement le(s) solide(s) de l'élément sélectionné dans la couleur de sélection (échange de scalaires, sans reconstruction).
+- Au chargement d'un modèle, le mode de visualisation revient au défaut « Filaire + Faces cachées ».
+- Interne : toute la géométrie de section pure est extraite du module d'export IFC vers un module partagé (`section_geometry.py`), sans changement de comportement de l'export IFC.
+
+### EN
+- Graphic view: two new render modes, "Profiles + Hidden faces" and "Profiles + Full render". Linear elements are drawn with their real 3D cross-section (extruded solid) instead of a plain line.
+- Supported sections: I/H, U, L/angle, T, unequal T, rectangular and circular (solid and hollow tubes), Z, Omega, Sigma; combined sections CS1 to CS7; variable-section beams (loft from start to end section); haunches at start and/or end, top, bottom or top-and-bottom.
+- Section orientation angle and eccentricity are honoured; the displayed geometry matches the IFC export.
+- "Profiles + Full render": shaded solid with visible edges. "Profiles + Hidden faces": smooth solid.
+- Selection recolors the selected element's solid(s) directly in the selection color (scalar swap, no rebuild).
+- On model load the render mode returns to the default "Wireframe + Hidden faces".
+- Internal: all pure section geometry is moved from the IFC export module into a shared module (`section_geometry.py`), with no change to the IFC export behavior.
+
 ## 1.96
 
 ### FR

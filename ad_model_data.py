@@ -26,6 +26,23 @@ from viewer_config import (
     PLANAR_LOAD_COLOR,
 )
 from ad_api_client import *
+from section_geometry import (
+    default_linear_dims,
+    section_excentration_translation_local,
+    section_excentration_translation_from_bounds,
+    polygon_set_bounds,
+    rotate_local_yz,
+    is_i_or_h_catalog_section,
+    haunch_length_along_axis,
+    apply_haunch_height,
+    resolve_haunch_section_dims,
+    clamp_contact_polygon,
+    haunch_profile_offsets,
+    i_section_polygon,
+    offset_polygon2,
+    parse_combined_section,
+    combined_member_polygons,
+)
 import display_units as du
 
 def _get_username(obj: dict) -> str:
@@ -43,6 +60,7 @@ class ResultsCaseEntry(TypedDict, total=False):
 class ModelDataDict(TypedDict, total=False):
     lines: list
     line_properties: list
+    line_sections: list
     line_eids: list
     planars: list
     planar_eids: list
@@ -108,7 +126,7 @@ def normalize_results_case_entry(kind: str, eid, label: str) -> ResultsCaseEntry
 def build_model_data(payload: dict) -> ModelDataDict:
     data = dict(payload or {})
     list_keys = [
-        "lines", "line_properties", "line_eids", "planars", "planar_eids", "planar_properties", "load_areas",
+        "lines", "line_properties", "line_sections", "line_eids", "planars", "planar_eids", "planar_properties", "load_areas",
         "linear_takeoff", "linear_material_takeoff", "planar_takeoff", "planar_material_takeoff",
         "punctual_supports", "punctual_support_eids", "punctual_support_properties",
         "linear_supports", "linear_support_eids", "linear_support_properties",
@@ -1689,11 +1707,21 @@ def _resolve_model_references(host: str, linear_elements: list, planar_elements:
     linear_section_eids = set()
     for el in linear_elements:
         mat_eid = _extract_ref_eid(el, "material")
-        sec_eid = _extract_ref_eid(el, "section")
         if mat_eid is not None:
             linear_material_eids.add(mat_eid)
-        if sec_eid is not None:
-            linear_section_eids.add(sec_eid)
+        # section ET sectionEnd : les poutres variables referencent la 2e pour
+        # le rendu du profil (loft). Sans ca dims_end est toujours None.
+        for key in ("section", "sectionEnd"):
+            sec_eid = _extract_ref_eid(el, key)
+            if sec_eid is not None:
+                linear_section_eids.add(sec_eid)
+        # sections imposees des jarrets (haunchSectionType == 'imposee')
+        for hk in ("haunchStart", "haunchEnd"):
+            haunch = _dict_get_ci(el, hk)
+            if isinstance(haunch, dict):
+                h_eid = _extract_ref_eid(haunch, "haunchSection")
+                if h_eid is not None:
+                    linear_section_eids.add(h_eid)
 
     planar_material_eids = set()
     for el in planar_elements:
@@ -1702,7 +1730,12 @@ def _resolve_model_references(host: str, linear_elements: list, planar_elements:
             planar_material_eids.add(mat_eid)
 
     linear_material_by_eid = _resolve_name_map_by_eids(host, linear_material_eids, get_materials)
-    linear_section_by_eid = _resolve_name_map_by_eids(host, linear_section_eids, get_sections)
+    linear_section_obj_by_eid = _resolve_object_map_by_eids(host, linear_section_eids, get_sections)
+    linear_section_by_eid = {
+        eid: str(obj.get("name", "") or "").strip()
+        for eid, obj in linear_section_obj_by_eid.items()
+        if str(obj.get("name", "") or "").strip()
+    }
     planar_material_by_eid = _resolve_name_map_by_eids(host, planar_material_eids, get_materials)
     all_material_by_eid = _resolve_object_map_by_eids(host, linear_material_eids | planar_material_eids, get_materials)
 
@@ -1712,6 +1745,7 @@ def _resolve_model_references(host: str, linear_elements: list, planar_elements:
         "planar_material_eids": planar_material_eids,
         "linear_material_by_eid": linear_material_by_eid,
         "linear_section_by_eid": linear_section_by_eid,
+        "linear_section_obj_by_eid": linear_section_obj_by_eid,
         "planar_material_by_eid": planar_material_by_eid,
         "all_material_by_eid": all_material_by_eid,
     }
@@ -2166,6 +2200,129 @@ def rebuild_properties_and_takeoff(model_data: dict) -> bool:
     return True
 
 
+def _build_line_section_render(el: dict, p1: dict, p2: dict, section_obj_by_eid: dict) -> dict:
+    """Donnees geometriques par filaire pour le rendu des profils 3D.
+
+    Aligne sur ``lines`` (meme filtre p1 & p2).
+
+    ``sectionOrientationAngle`` de l'API est en RADIANS (cf. display_units
+    "angle" : unite de base = rad ; l'export IFC le traite aussi en rad). Le
+    repere de section est reconstruit cote viewer (VTKViewerWidget._section_frame,
+    identique a l'export IFC) ; l'angle y est applique en tournant le polygone.
+
+    ``offset`` est la translation d'excentrement dans le plan de section, deja
+    tournee de l'angle (le polygone l'est aussi cote consommateur).
+
+    ``haunches`` : liste de coins (jarrets), chacun un loft entre ``poly_start``
+    (a la fraction ``t_start`` du filaire) et ``poly_end`` (a ``t_end``). Les
+    polygones sont bruts (offset de profondeur inclus) ; le consommateur leur
+    applique la meme rotation + translation d'excentrement qu'au profil de base.
+
+    ``combined`` : profil compose CS1..CS7 -> 2 polygones bruts a lofter (au lieu
+    de ``dims``). ``combined_end`` : idem a l'extremite pour poutre variable.
+    L'excentrement est calcule sur la bbox de l'ensemble des 2 polygones (comme
+    l'export IFC), pas sur ``dims``.
+    """
+    beam_type = str(_dict_get_ci(el, "generalBeamType") or "")
+    is_variable = _normalize_enum_token(beam_type).endswith("variablebeam")
+    sec_obj = section_obj_by_eid.get(_extract_ref_eid(el, "section")) or {}
+    dims = default_linear_dims(sec_obj, beam_type)
+    sec_end_obj = (section_obj_by_eid.get(_extract_ref_eid(el, "sectionEnd")) or {}) if is_variable else {}
+
+    combined = None
+    combined_end = None
+    combo_defn = parse_combined_section(sec_obj)
+    if combo_defn:
+        combo = combined_member_polygons(combo_defn)
+        if combo and len(combo.get("polygons") or []) == 2:
+            combined = [[[float(x), float(y)] for x, y in poly] for poly in combo["polygons"]]
+            if is_variable and sec_end_obj:
+                defn1 = parse_combined_section(sec_end_obj)
+                combo1 = combined_member_polygons(defn1) if defn1 else None
+                if combo1 and combo1.get("code") == combo.get("code") and len(combo1.get("polygons") or []) == 2:
+                    combined_end = [[[float(x), float(y)] for x, y in poly] for poly in combo1["polygons"]]
+
+    dims_end = None
+    if is_variable and sec_end_obj and not combined:
+        dims_end = default_linear_dims(sec_end_obj, beam_type)
+
+    angle_rad = float(_dict_get_ci(el, "sectionOrientationAngle") or 0.0)
+    if combined:
+        dy, dz = section_excentration_translation_from_bounds(el, polygon_set_bounds(combined))
+    else:
+        dy, dz = section_excentration_translation_local(el, dims)
+    offset = rotate_local_yz(dy, dz, angle_rad) if abs(angle_rad) > 1e-12 else (dy, dz)
+
+    return {
+        "dims": dims,
+        "dims_end": dims_end,
+        "combined": combined,
+        "combined_end": combined_end,
+        "angle_rad": angle_rad,
+        "offset": [float(offset[0]), float(offset[1])],
+        "haunches": _build_haunch_pieces(el, dims, sec_obj, beam_type, section_obj_by_eid, p1, p2),
+    }
+
+
+def _build_haunch_pieces(el: dict, base_dims: dict, base_sec_obj: dict, beam_type: str,
+                         section_obj_by_eid: dict, p1: dict, p2: dict) -> list:
+    """Coins de jarret pour le rendu : mime linear_haunch_body_shape de l'export
+    IFC mais produit des lofts {poly_start, poly_end, t_start, t_end} au lieu
+    d'entites IFC. Jarrets uniquement sur profiles I/H de catalogue, hors poutre
+    variable."""
+    if not is_i_or_h_catalog_section(base_sec_obj):
+        return []
+    if _normalize_enum_token(beam_type).endswith("variablebeam"):
+        return []
+
+    def _active(h):
+        return isinstance(h, dict) and str(h.get("haunchPosition") or "").lower() != "no_haunch"
+
+    hs = _dict_get_ci(el, "haunchStart") or {}
+    he = _dict_get_ci(el, "haunchEnd") or {}
+    if not _active(hs) and not _active(he):
+        return []
+
+    ax = (float(p2["x"]) - float(p1["x"]), float(p2["y"]) - float(p1["y"]), float(p2["z"]) - float(p1["z"]))
+    length = math.sqrt(ax[0] ** 2 + ax[1] ** 2 + ax[2] ** 2)
+    if length < 1e-9:
+        return []
+    beam_dir = (ax[0] / length, ax[1] / length, ax[2] / length)
+
+    hs_len = min(length, haunch_length_along_axis(hs, length, beam_dir)) if _active(hs) else 0.0
+    he_len = min(length, haunch_length_along_axis(he, length, beam_dir)) if _active(he) else 0.0
+    if hs_len + he_len > length and (hs_len + he_len) > 1e-9:
+        scale = length / (hs_len + he_len)
+        hs_len *= scale
+        he_len *= scale
+
+    base_depth = float(base_dims.get("depth", 0.30))
+    pieces = []
+
+    def _emit(haunch, seg_len, at_start):
+        if seg_len <= 1e-6:
+            return
+        pos = haunch.get("haunchPosition")
+        ref = resolve_haunch_section_dims(base_sec_obj, haunch, section_obj_by_eid, beam_type)
+        hdims = apply_haunch_height(base_dims, ref, haunch)
+        hpoly = i_section_polygon(hdims)
+        for dy in haunch_profile_offsets(base_depth, hdims.get("depth", base_depth), pos):
+            outer = offset_polygon2(hpoly, dy)
+            inner = clamp_contact_polygon(offset_polygon2(hpoly, dy), base_depth, pos, dy)
+            if at_start:
+                pieces.append({"poly_start": outer, "poly_end": inner,
+                               "t_start": 0.0, "t_end": seg_len / length})
+            else:
+                pieces.append({"poly_start": inner, "poly_end": outer,
+                               "t_start": 1.0 - seg_len / length, "t_end": 1.0})
+
+    if _active(hs):
+        _emit(hs, hs_len, True)
+    if _active(he):
+        _emit(he, he_len, False)
+    return pieces
+
+
 def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict) -> dict:
     linear_elements = list(objects_data.get("linear_elements", []) or [])
     planar_elements = list(objects_data.get("planar_elements", []) or [])
@@ -2183,6 +2340,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
 
     linear_material_by_eid = dict(refs_data.get("linear_material_by_eid", {}) or {})
     linear_section_by_eid = dict(refs_data.get("linear_section_by_eid", {}) or {})
+    linear_section_obj_by_eid = dict(refs_data.get("linear_section_obj_by_eid", {}) or {})
     planar_material_by_eid = dict(refs_data.get("planar_material_by_eid", {}) or {})
     all_material_by_eid = dict(refs_data.get("all_material_by_eid", {}) or {})
     linear_material_eids = set(refs_data.get("linear_material_eids", set()) or set())
@@ -2191,6 +2349,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
 
     lines = []
     line_properties = []
+    line_sections = []
     planars = []
     planar_eids = []
     planar_properties = []
@@ -2221,6 +2380,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
                 (float(p2["x"]), float(p2["y"]), float(p2["z"]))
             ])
             line_properties.append(extract_linear_element_properties(el, linear_material_by_eid, linear_section_by_eid))
+            line_sections.append(_build_line_section_render(el, p1, p2, linear_section_obj_by_eid))
 
     for planar_eid, el in zip(planar_ids, planar_elements):
         geom = extract_planar_geometry(el)
@@ -2270,6 +2430,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
     return {
         "lines": lines,
         "line_properties": line_properties,
+        "line_sections": line_sections,
         "line_eids": [int(eid) if eid is not None else None for eid in linear_ids],
         "planars": planars,
         "planar_eids": planar_eids,

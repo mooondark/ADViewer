@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "1.96"
+APP_VERSION = "2.00"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -301,6 +301,8 @@ MSG_UI = {
     "display_hidden_faces": "Faces cachées",
     "display_wire_hidden": "Filaire + Faces cachées",
     "display_full": "Rendu plein",
+    "display_profiles_hidden": "Profilés + Faces cachées",
+    "display_profiles_full": "Profilés + Rendu plein",
 
     "show_lines": "Afficher filaires",
     "show_planars": "Afficher surfaciques",
@@ -777,6 +779,8 @@ MSG_LOG = {
     "mode_hidden_faces": "Mode de visualisation : faces cachées",
     "mode_wire_hidden": "Mode de visualisation : filaire + faces cachées",
     "mode_full": "Mode de visualisation : rendu plein",
+    "mode_profiles_hidden": "Mode de visualisation : profilés + faces cachées",
+    "mode_profiles_full": "Mode de visualisation : profilés + rendu plein",
 
     "settings_applied": (
         "Paramètres appliqués : "
