@@ -19,6 +19,7 @@ from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtWidgets import QFrame, QVBoxLayout
 
 import viewer_config as _cfg
+import display_units as du
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_ARROW_WIDTH,
     PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_ARROW_WIDTH,
@@ -1426,7 +1427,7 @@ class VTKViewerWidget(QFrame):
                 )
         return stops[-1][1]
 
-    def _build_linear_diagram_actors(self, line_points, series, title: str = "", line_property: dict = None, unit: str = ""):
+    def _build_linear_diagram_actors(self, line_points, series, title: str = "", line_property: dict = None, unit: str = "", decimals=None):
         """Construit et ajoute au renderer les acteurs VTK d'un diagramme filaire.
 
         Retourne la liste des acteurs créés (overlay + labels), sans toucher aux
@@ -1601,10 +1602,11 @@ class VTKViewerWidget(QFrame):
                 value = float(text_value)
             except Exception:
                 return str(text_value)
-            if abs(value) < 0.001:
+            dec = 3 if decimals is None else int(decimals)
+            if dec >= 1 and abs(value) < 10.0 ** (-dec):
                 formatted = "+0" if value >= 0.0 else "-0"
             else:
-                formatted = f"{value:.3f}"
+                formatted = f"{value:.{dec}f}"
             return f"{formatted} {unit_str}" if unit_str else formatted
 
         new_label_actors = []
@@ -1688,14 +1690,14 @@ class VTKViewerWidget(QFrame):
 
         return [a for a in new_actors if a is not None]
 
-    def set_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = ""):
+    def set_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = "", decimals=None):
         """Remplace le diagramme courant (clear + reconstruction d'un seul élément)."""
         self.clear_result_diagram()
-        actors = self._build_linear_diagram_actors(line_points, series, title, line_property, unit=unit)
+        actors = self._build_linear_diagram_actors(line_points, series, title, line_property, unit=unit, decimals=decimals)
         self._diagram_overlay_actors = actors
         self.render_window.Render()
 
-    def add_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = ""):
+    def add_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = "", decimals=None):
         """Ajoute un diagramme filaire SANS effacer les diagrammes existants.
 
         Utilisé pour la sélection multiple de filaires : chaque filaire est
@@ -1703,7 +1705,7 @@ class VTKViewerWidget(QFrame):
         Les acteurs sont ajoutés directement au renderer, puis enregistrés
         dans _diagram_overlay_actors pour que clear_result_diagram() les retire.
         """
-        actors = self._build_linear_diagram_actors(line_points, series, title, line_property, unit=unit)
+        actors = self._build_linear_diagram_actors(line_points, series, title, line_property, unit=unit, decimals=decimals)
         self._diagram_overlay_actors.extend(actors)
         self.render_window.Render()
 
@@ -1892,7 +1894,13 @@ class VTKViewerWidget(QFrame):
             picker = vtk.vtkWorldPointPicker()
             picker.Pick(float(display_x), float(display_y), 0.0, self.renderer)
             wx, wy, wz = picker.GetPickPosition()
-            self._overlay_mouse_world_txt = f"X : {wx:.2f}   Y : {wy:.2f}   Z : {wz:.2f}"
+            _n = du.decimals("length")
+            _u = du.unit("length")
+            self._overlay_mouse_world_txt = (
+                f"X : {du.conv(wx, 'length'):.{_n}f}   "
+                f"Y : {du.conv(wy, 'length'):.{_n}f}   "
+                f"Z : {du.conv(wz, 'length'):.{_n}f} {_u}"
+            )
 
         actor.SetInput(f"{self._current_view_label()}\n{self._overlay_mouse_world_txt}")
         if not actor.GetVisibility():

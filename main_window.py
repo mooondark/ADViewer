@@ -908,6 +908,15 @@ class BuildLoadsWorker(QThread):
             self.error.emit(traceback.format_exc())
 
 
+_EXPORT_COMP_KIND = {
+    "dx": "section_length", "dy": "section_length", "dz": "section_length", "d": "section_length",
+    "fx": "force", "fy": "force", "fz": "force",
+    "mx": "moment", "my": "moment", "mz": "moment",
+    "sxxMin": "stress", "sxxMax": "stress", "sxyMin": "stress", "sxyMax": "stress",
+    "sxzMin": "stress", "sxzMax": "stress", "sv": "stress",
+}
+
+
 class MainWindow(QMainWindow):
     def __init__(self, app=None):
         super().__init__()
@@ -3534,9 +3543,13 @@ class MainWindow(QMainWindow):
             if written:
                 ws.append([])
             ws.append([sheet_titles.get(family_key, family_key)])
-            ws.append(["abscissa", *components])
+            ws.append([
+                f"abscissa ({display_units.unit('length')})",
+                *[f"{c} ({display_units.unit(_EXPORT_COMP_KIND[c])})" if c in _EXPORT_COMP_KIND else c for c in components],
+            ])
             for row in rows:
-                ws.append([row.get("abscissa", ""), *[row.get(key, "") for key in components]])
+                absc = display_units.conv(row.get("abscissa"), "length")
+                ws.append([absc if absc is not None else "", *[row.get(key, "") for key in components]])
             written += 1
         return written
 
@@ -3626,9 +3639,13 @@ class MainWindow(QMainWindow):
                 else:
                     ws = workbook.create_sheet(title=sheet_titles.get(family_key, family_key))
                 self._write_case_header(ws, case_entry, analysis_case_id)
-                ws.append(["abscissa", *components])
+                ws.append([
+                    f"abscissa ({display_units.unit('length')})",
+                    *[f"{c} ({display_units.unit(_EXPORT_COMP_KIND[c])})" if c in _EXPORT_COMP_KIND else c for c in components],
+                ])
                 for row in rows:
-                    ws.append([row.get("abscissa", ""), *[row.get(key, "") for key in components]])
+                    absc = display_units.conv(row.get("abscissa"), "length")
+                    ws.append([absc if absc is not None else "", *[row.get(key, "") for key in components]])
                 written += 1
             if written == 0:
                 self._set_analysis_results_output_message(tr_ui("analysis_results_export_no_data"))
@@ -3902,8 +3919,9 @@ class MainWindow(QMainWindow):
             return
         line_property = all_props[idx] if 0 <= idx < len(all_props) else {}
         unit = str(payload.get("unit") or "").strip()
+        diagram_decimals = payload.get("decimals", 3)
         # Ajouter le diagramme sans effacer les précédents (add_linear_result_diagram)
-        self.viewer.add_linear_result_diagram(all_lines[idx], series, str(payload.get("title") or ""), line_property, unit=unit)
+        self.viewer.add_linear_result_diagram(all_lines[idx], series, str(payload.get("title") or ""), line_property, unit=unit, decimals=diagram_decimals)
 
     def _on_multi_linear_result_error(self, error_text: str):
         params = getattr(self, "_multi_linear_params", {})
@@ -3931,7 +3949,8 @@ class MainWindow(QMainWindow):
             payload["selection"] = dict(self.current_analysis_selection or {})
             self.current_linear_diagram_payload = payload
             unit = str(payload.get("unit") or "").strip()
-            self.viewer.set_linear_result_diagram(lines[line_index], series, str(payload.get("title") or ""), line_property, unit=unit)
+            diagram_decimals = payload.get("decimals", 3)
+            self.viewer.set_linear_result_diagram(lines[line_index], series, str(payload.get("title") or ""), line_property, unit=unit, decimals=diagram_decimals)
             max_abs = max(abs(float((entry or {}).get("value", 0.0))) for entry in series)
             suffix = f" {unit}" if unit else ""
             display_family = self.analysis_results_value_combo.currentText().strip() if self.analysis_results_value_combo is not None else _analysis_result_display_label(str(payload.get("family_label") or ""))
@@ -3954,9 +3973,9 @@ class MainWindow(QMainWindow):
                 try:
                     rows.extend([
                         {"kind": "section_title", "name": tr_ui("prop_cg_coordinates")},
-                        {"name": "X", "value": f"{float(centroid_info.get('x')):.3f} m"},
-                        {"name": "Y", "value": f"{float(centroid_info.get('y')):.3f} m"},
-                        {"name": "Z", "value": f"{float(centroid_info.get('z')):.3f} m"},
+                        {"name": "X", "value": display_units.fmt(centroid_info.get("x"), "length")},
+                        {"name": "Y", "value": display_units.fmt(centroid_info.get("y"), "length")},
+                        {"name": "Z", "value": display_units.fmt(centroid_info.get("z"), "length")},
                     ])
                 except Exception:
                     pass
@@ -4369,7 +4388,8 @@ class MainWindow(QMainWindow):
             self.viewer.clear_result_diagram()
             return
         unit = str(payload.get("unit") or "").strip()
-        self.viewer.set_linear_result_diagram(lines[line_index], series, str(payload.get("title") or ""), line_property, unit=unit)
+        diagram_decimals = payload.get("decimals", 3)
+        self.viewer.set_linear_result_diagram(lines[line_index], series, str(payload.get("title") or ""), line_property, unit=unit, decimals=diagram_decimals)
 
     def _format_display_checkbox_text(self, key, count=None):
         label = tr_ui(key)
