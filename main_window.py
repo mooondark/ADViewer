@@ -37,7 +37,7 @@ try:
         QApplication, QMainWindow, QWidget, QFileDialog, QFrame, QLabel,
         QPushButton, QLineEdit, QTextEdit, QVBoxLayout, QHBoxLayout,
         QSplitter, QCheckBox, QComboBox, QMenu, QDialog, QFormLayout,
-        QDialogButtonBox, QDoubleSpinBox, QSlider, QColorDialog, QProgressBar, QMessageBox,
+        QDialogButtonBox, QDoubleSpinBox, QSpinBox, QSlider, QColorDialog, QProgressBar, QMessageBox,
         QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QGraphicsDropShadowEffect,
         QScrollArea, QToolButton, QGridLayout, QListView, QInputDialog
     )
@@ -334,6 +334,60 @@ class SettingsDialog(QDialog):
             "linear_load_color": self.linear_load_color,
             "planar_load_color": self.planar_load_color,
         }
+
+
+class UnitsDialog(QDialog):
+    KINDS = [
+        ("length", "units_label_length"),
+        ("section_length", "units_label_section_length"),
+        ("force", "units_label_force"),
+        ("moment", "units_label_moment"),
+        ("stress", "units_label_stress"),
+        ("angle", "units_label_angle"),
+        ("area", "units_label_area"),
+    ]
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(tr_ui("units_dialog_title"))
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(4)
+        layout.addLayout(grid)
+
+        self._rows = {}
+        for row, (kind, label_key) in enumerate(self.KINDS):
+            cur_unit, cur_dec = display_units.state_for(kind)
+            combo = QComboBox()
+            combo.setView(QListView())
+            for u in display_units.units_for(kind):
+                combo.addItem(u, u)
+            idx = combo.findData(cur_unit)
+            combo.setCurrentIndex(idx if idx >= 0 else 0)
+
+            spin = QSpinBox()
+            spin.setRange(0, 6)
+            spin.setValue(int(cur_dec))
+
+            grid.addWidget(QLabel(tr_ui(label_key)), row, 0, Qt.AlignVCenter)
+            grid.addWidget(combo, row, 1)
+            grid.addWidget(QLabel(tr_ui("units_label_decimals")), row, 2, Qt.AlignVCenter)
+            grid.addWidget(spin, row, 3)
+            self._rows[kind] = (combo, spin)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def get_values(self):
+        out = {}
+        for kind, (combo, spin) in self._rows.items():
+            out[kind] = (combo.currentData(), int(spin.value()))
+        return out
 
 
 class ApiServerConfigDialog(QDialog):
@@ -1797,6 +1851,10 @@ class MainWindow(QMainWindow):
         act_png_export = QAction(tr_ui("menu_png_export"), self)
         act_png_export.triggered.connect(self.open_png_export_dialog)
         settings_menu.addAction(act_png_export)
+
+        act_units = QAction(tr_ui("menu_units"), self)
+        act_units.triggered.connect(self.open_units_dialog)
+        settings_menu.addAction(act_units)
 
         act_calc_ef = QAction(tr_ui("menu_calc_ef"), self)
         act_calc_ef.triggered.connect(self.open_calc_ef_dialog)
@@ -4570,6 +4628,22 @@ class MainWindow(QMainWindow):
         self.png_export_scale = int(value)
         self.save_config()
         self.log(tr_log("png_export_scale_set", scale=self.png_export_scale))
+
+    def open_units_dialog(self):
+        dlg = UnitsDialog(self)
+        if dlg.exec() != QDialog.Accepted:
+            return
+        for kind, (unit_label, dec) in dlg.get_values().items():
+            display_units.set_unit(kind, unit_label)
+            display_units.set_decimals(kind, dec)
+        self.save_config()
+        self._refresh_after_units_change()
+
+    def _refresh_after_units_change(self):
+        if (self.current_model_data is not None
+                and self.fto_edit is not None
+                and self.fto_edit.text().strip()):
+            self.load_model()
 
     def open_calc_ef_dialog(self):
         try:
