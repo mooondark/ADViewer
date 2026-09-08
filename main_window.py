@@ -4642,10 +4642,29 @@ class MainWindow(QMainWindow):
         self._refresh_after_units_change()
 
     def _refresh_after_units_change(self):
-        if (self.current_model_data is not None
-                and self.fto_edit is not None
-                and self.fto_edit.text().strip()):
-            self.load_model()
+        md = self.current_model_data
+        if not isinstance(md, dict):
+            return
+        if not rebuild_properties_and_takeoff(md):
+            # Cache d'objets bruts absent (modele charge par une version anterieure) :
+            # repli sur le rechargement complet.
+            if self.fto_edit is not None and self.fto_edit.text().strip():
+                self.load_model()
+            return
+        (self.current_sections, self.current_thicknesses, self.current_materials,
+         self.current_section_counts, self.current_thickness_counts,
+         self.current_material_counts) = self._extract_filter_choices(md)
+        self.selected_sections = set(self.current_sections)
+        self.selected_thicknesses = set(self.current_thicknesses)
+        self.selected_materials = set(self.current_materials)
+        self._render_results(md)
+        if self.viewer is not None:
+            self.viewer.set_structural_filters(
+                self.selected_sections, self.selected_thicknesses, self.selected_materials
+            )
+            selection = self.viewer.get_selected_items()
+            if selection:
+                self.on_viewer_selection_changed(selection)
 
     def open_calc_ef_dialog(self):
         try:

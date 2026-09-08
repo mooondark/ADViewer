@@ -2086,6 +2086,86 @@ def _build_planar_loads_payload(host: str, ids_data: dict, objects_data: dict) -
     }
 
 
+def recompute_unit_dependent_fields(cache: dict) -> dict:
+    """Recalcule les listes Proprietes + Metre qui dependent des unites
+    d'affichage, a partir des objets bruts mis en cache par
+    _build_geometry_payload. Aucun appel API. Les filtres d'acceptation et les
+    zip(ids, elements) reproduisent exactement ceux de _build_geometry_payload
+    pour que les listes restent alignees avec lines / planars / *_eids.
+    """
+    cache = cache or {}
+    linear_elements = list(cache.get("linear_elements") or [])
+    planar_elements = list(cache.get("planar_elements") or [])
+    load_area_elements = list(cache.get("load_area_elements") or [])
+    punctual_support_elements = list(cache.get("punctual_support_elements") or [])
+    linear_support_elements = list(cache.get("linear_support_elements") or [])
+    planar_support_elements = list(cache.get("planar_support_elements") or [])
+    planar_ids = list(cache.get("planar_ids") or [])
+    punctual_support_ids = list(cache.get("punctual_support_ids") or [])
+    linear_support_ids = list(cache.get("linear_support_ids") or [])
+    planar_support_ids = list(cache.get("planar_support_ids") or [])
+    lm = dict(cache.get("linear_material_by_eid") or {})
+    ls = dict(cache.get("linear_section_by_eid") or {})
+    pm = dict(cache.get("planar_material_by_eid") or {})
+
+    line_properties = []
+    for el in linear_elements:
+        if el.get("geomPtStart") and el.get("geomPtEnd"):
+            line_properties.append(extract_linear_element_properties(el, lm, ls))
+
+    planar_properties = []
+    for _eid, el in zip(planar_ids, planar_elements):
+        if extract_planar_geometry(el):
+            planar_properties.append(extract_planar_element_properties(el, pm))
+
+    load_area_properties = []
+    for el in load_area_elements:
+        if extract_load_area_geometry(el):
+            load_area_properties.append(extract_load_area_properties(el))
+
+    punctual_support_properties = []
+    for _eid, el in zip(punctual_support_ids, punctual_support_elements):
+        if el.get("geomPt"):
+            punctual_support_properties.append(extract_punctual_support_properties(el))
+
+    linear_support_properties = []
+    for _eid, el in zip(linear_support_ids, linear_support_elements):
+        if el.get("geomPtStart") and el.get("geomPtEnd"):
+            linear_support_properties.append(extract_linear_support_properties(el))
+
+    planar_support_properties = []
+    for _eid, el in zip(planar_support_ids, planar_support_elements):
+        if len(el.get("geomPtsList") or []) >= 3:
+            planar_support_properties.append(extract_planar_support_properties(el))
+
+    return {
+        "line_properties": line_properties,
+        "planar_properties": planar_properties,
+        "load_area_properties": load_area_properties,
+        "punctual_support_properties": punctual_support_properties,
+        "linear_support_properties": linear_support_properties,
+        "planar_support_properties": planar_support_properties,
+        "linear_takeoff": _build_linear_takeoff(linear_elements, ls),
+        "linear_material_takeoff": _build_linear_material_takeoff(linear_elements, lm),
+        "planar_takeoff": _build_planar_takeoff(planar_elements),
+        "planar_material_takeoff": _build_planar_material_takeoff(planar_elements, pm),
+        "load_area_takeoff": _build_load_area_takeoff(load_area_elements),
+    }
+
+
+def rebuild_properties_and_takeoff(model_data: dict) -> bool:
+    """Applique recompute_unit_dependent_fields en place sur model_data.
+    Retourne False si le cache d'objets bruts est absent (modele charge avant
+    l'ajout de cette fonctionnalite) -> l'appelant doit alors recharger."""
+    if not isinstance(model_data, dict):
+        return False
+    cache = model_data.get("_unit_refresh_cache")
+    if not isinstance(cache, dict) or not cache:
+        return False
+    model_data.update(recompute_unit_dependent_fields(cache))
+    return True
+
+
 def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict) -> dict:
     linear_elements = list(objects_data.get("linear_elements", []) or [])
     planar_elements = list(objects_data.get("planar_elements", []) or [])
@@ -2228,6 +2308,23 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
         "materials_eids_count": len(linear_material_eids | planar_material_eids),
         "linear_sections_resolved_count": len(linear_section_by_eid),
         "linear_section_eids_count": len(linear_section_eids),
+        # Objets bruts conserves pour rebuild_properties_and_takeoff (changement
+        # d'unites sans rechargement). Cout : maintien en RAM des dicts elements.
+        "_unit_refresh_cache": {
+            "linear_elements": linear_elements,
+            "planar_elements": planar_elements,
+            "load_area_elements": load_area_elements,
+            "punctual_support_elements": punctual_support_elements,
+            "linear_support_elements": linear_support_elements,
+            "planar_support_elements": planar_support_elements,
+            "planar_ids": planar_ids,
+            "punctual_support_ids": punctual_support_ids,
+            "linear_support_ids": linear_support_ids,
+            "planar_support_ids": planar_support_ids,
+            "linear_material_by_eid": linear_material_by_eid,
+            "linear_section_by_eid": linear_section_by_eid,
+            "planar_material_by_eid": planar_material_by_eid,
+        },
     }
 
 

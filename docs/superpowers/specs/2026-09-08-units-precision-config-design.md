@@ -315,22 +315,51 @@ mêmes chaînes déjà formatées avec les anciennes unités. En revanche l'ongl
 calculés à la volée (fetch API par sélection / par mouvement souris) et suivent
 donc automatiquement le nouvel état de `display_units`.
 
-Comportement retenu (minimal et correct) : après OK, si un modèle est chargé,
-**recharger le modèle** via le chemin existant `self.load_model()` — il ré-ouvre
-le projet et ré-exécute toute l'extraction avec les nouvelles unités, ce qui
-rafraîchit Propriétés + Métré. Diagramme et sélection courants sont perdus
-(l'utilisateur re-sélectionne), ce qui est acceptable pour un réglage rare.
+Comportement v1 (livré en 1.96 initial) : `self.load_model()` — rechargement
+complet. Correct mais lent sur les gros modèles.
+
+**Révision (1.96) : rafraîchissement en mémoire, sans API ni VTK.** Les
+extracteurs de propriétés et les `_build_*_takeoff` sont des fonctions pures de
+`(objet_élément, maps par eid)`. `_build_geometry_payload` conserve désormais les
+objets bruts nécessaires dans `current_model_data["_unit_refresh_cache"]` (6
+listes d'éléments + 4 listes d'ids + 3 maps ; coût : maintien en RAM des dicts
+éléments pour la session). `recompute_unit_dependent_fields(cache)` rejoue les 6
+boucles de propriétés (mêmes filtres / `zip(ids, elements)` que
+`_build_geometry_payload`, pour garder l'alignement d'index avec
+`lines` / `planars` / `*_eids` non reconstruits) et les 5 métrés, avec l'état
+`display_units` courant. `rebuild_properties_and_takeoff(model_data)` applique ça
+en place et renvoie `False` si le cache est absent (modèle chargé par une version
+antérieure).
 
 ```
 def _refresh_after_units_change(self):
-    if self.current_model_data is not None and self.fto_edit is not None \
-            and self.fto_edit.text().strip():
-        self.load_model()
+    md = self.current_model_data
+    if not isinstance(md, dict):
+        return
+    if not rebuild_properties_and_takeoff(md):
+        if self.fto_edit is not None and self.fto_edit.text().strip():
+            self.load_model()          # repli
+        return
+    (self.current_sections, self.current_thicknesses, self.current_materials,
+     self.current_section_counts, self.current_thickness_counts,
+     self.current_material_counts) = self._extract_filter_choices(md)
+    self.selected_sections = set(self.current_sections)
+    self.selected_thicknesses = set(self.current_thicknesses)
+    self.selected_materials = set(self.current_materials)
+    self._render_results(md)                       # onglet Métré
+    if self.viewer is not None:
+        self.viewer.set_structural_filters(self.selected_sections,
+                                           self.selected_thicknesses,
+                                           self.selected_materials)
+        sel = self.viewer.get_selected_items()
+        if sel:
+            self.on_viewer_selection_changed(sel)  # onglet Propriétés
 ```
 
-Si aucun modèle n'est chargé : rien, les réglages s'appliquent au prochain
-chargement / affichage. Overlay : effet au prochain mouvement souris (aucun appel
-requis).
+Les choix de filtres (section / épaisseur / matériau) sont ré-extraits et la
+sélection remise à « tout » — comme le faisait `on_model_loaded` — car les
+libellés d'épaisseur changent avec l'unité. Si aucun modèle n'est chargé : rien.
+Overlay : effet au prochain mouvement souris.
 
 ## Gestion d'erreurs
 
