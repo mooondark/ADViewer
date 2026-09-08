@@ -2,6 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.96
+
+### FR
+- Nouveau menu Parametres > Unites et precision : choix de l'unite et du nombre de decimales par grandeur (longueurs elements, longueurs sections, efforts, moments, contraintes, angles, aires). Reglages sauves dans config.ini et appliques aux onglets Proprietes et Resultats, aux diagrammes 3D, a l'overlay de coordonnees et a l'export .xlsx. Le modele est recharge apres validation.
+- L'affichage automatique cm/mm des epaisseurs est remplace par l'unite fixe choisie (defaut cm). Angles et aires passent d'un affichage a 6 chiffres significatifs a un nombre de decimales fixe (defaut 2).
+
+### EN
+- New Settings > Units and precision menu: pick the unit and the number of decimals per quantity (element lengths, section lengths, forces, moments, stresses, angles, areas). Saved to config.ini and applied to the Properties and Results tabs, 3D diagrams, the coordinate overlay and the .xlsx export. The model reloads after confirmation.
+- The automatic cm/mm display of thicknesses is replaced by the fixed chosen unit (default cm). Angles and areas move from 6 significant figures to a fixed number of decimals (default 2).
+
 ## 1.95
 
 ### FR
