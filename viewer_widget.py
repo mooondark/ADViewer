@@ -1080,14 +1080,16 @@ class VTKViewerWidget(QFrame):
         mapper.Update()
         return mapper.GetInput()
 
-    def _get_pick_hit(self, x: int, y: int):
+    def _get_pick_hit(self, x: int, y: int, exclude_keys=None):
         picker = vtk.vtkCellPicker()
         picker.SetTolerance(0.0035)
         picker.PickFromListOn()
         picker.InitializePickList()
 
         visible = False
-        for info in self._pickable_actors.values():
+        for key, info in self._pickable_actors.items():
+            if exclude_keys and key in exclude_keys:
+                continue
             actor = info["actor"]
             if actor is not None and actor.GetVisibility():
                 picker.AddPickList(actor)
@@ -1103,7 +1105,8 @@ class VTKViewerWidget(QFrame):
         if actor is None or cell_id < 0:
             return None
 
-        info = self._pickable_actors.get(self._actor_key(actor))
+        actor_key = self._actor_key(actor)
+        info = self._pickable_actors.get(actor_key)
         if not info:
             return None
 
@@ -1116,12 +1119,32 @@ class VTKViewerWidget(QFrame):
             return None
 
         element_index = int(arr.GetTuple1(cell_id))
+        pos = picker.GetPickPosition()
+        cam = self.renderer.GetActiveCamera().GetPosition() if self.renderer.GetActiveCamera() else (0.0, 0.0, 0.0)
+        depth = (pos[0] - cam[0]) ** 2 + (pos[1] - cam[1]) ** 2 + (pos[2] - cam[2]) ** 2
         return {
             "role": info["role"],
             "index": element_index,
             "actor": actor,
             "cell_id": cell_id,
+            "key": actor_key,
+            "depth": depth,
         }
+
+    def _get_pick_hit_stack(self, x: int, y: int, max_layers: int = 12):
+        """Pick avant-vers-arrière : renvoie tous les éléments sous le pixel,
+        du plus proche au plus lointain, en retirant l'acteur touché entre
+        chaque passe. Permet d'atteindre un élément masqué par une face
+        surfacique."""
+        hits = []
+        exclude = set()
+        for _ in range(max_layers):
+            hit = self._get_pick_hit(x, y, exclude_keys=exclude)
+            if hit is None:
+                break
+            hits.append(hit)
+            exclude.add(hit["key"])
+        return hits
 
     def _pick_selection_candidates(self, x: int, y: int):
         offsets = [
@@ -1133,20 +1156,28 @@ class VTKViewerWidget(QFrame):
             (6, 0), (-6, 0), (0, 6), (0, -6),
             (8, 0), (-8, 0), (0, 8), (0, -8),
         ]
+        peel = self._display_mode in ("hidden_faces", "wire_hidden")
         found = {}
         for dx, dy in offsets:
-            hit = self._get_pick_hit(x + dx, y + dy)
-            if hit is None:
-                continue
-            key = (hit["role"], int(hit["index"]))
-            dist2 = dx * dx + dy * dy
-            current = found.get(key)
-            if current is None or dist2 < current["distance2"]:
-                hit["distance2"] = dist2
-                found[key] = hit
+            if peel and dx == 0 and dy == 0:
+                hits = self._get_pick_hit_stack(x, y)
+            else:
+                hits = [self._get_pick_hit(x + dx, y + dy)]
+            for hit in hits:
+                if hit is None:
+                    continue
+                key = (hit["role"], int(hit["index"]))
+                dist2 = dx * dx + dy * dy
+                current = found.get(key)
+                if current is None or (dist2, hit["depth"]) < (current["distance2"], current["depth"]):
+                    hit["distance2"] = dist2
+                    found[key] = hit
 
         results = list(found.values())
-        results.sort(key=lambda item: (item["distance2"], item["role"], item["index"]))
+        if peel:
+            results.sort(key=lambda item: (item["distance2"], item["depth"], item["role"], item["index"]))
+        else:
+            results.sort(key=lambda item: (item["distance2"], item["role"], item["index"]))
         return results
 
     def _clear_selection_overlay(self):

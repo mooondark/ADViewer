@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 1.95
+
+### FR
+- Sélection : en modes Faces cachées et Filaire + faces cachées, le cycle de sélection (clic droit répété) atteint désormais les éléments situés derrière une face surfacique (ex. poteau derrière un voile). Modes Filaire et Rendu plein inchangés.
+
+### EN
+- Selection: in Hidden faces and Wireframe + hidden faces modes, the selection cycle (repeated right-click) now reaches elements located behind a surface face (e.g. a column behind a wall). Wireframe and Full render modes unchanged.
+
 ## 1.94
 
 ### FR
