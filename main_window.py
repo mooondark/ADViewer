@@ -4651,17 +4651,13 @@ class MainWindow(QMainWindow):
             if self.fto_edit is not None and self.fto_edit.text().strip():
                 self.load_model()
             return
-        (self.current_sections, self.current_thicknesses, self.current_materials,
-         self.current_section_counts, self.current_thickness_counts,
-         self.current_material_counts) = self._extract_filter_choices(md)
-        self.selected_sections = set(self.current_sections)
-        self.selected_thicknesses = set(self.current_thicknesses)
-        self.selected_materials = set(self.current_materials)
+        # Ne pas toucher aux filtres structurels ni a la visibilite ici : le
+        # viewer garde en interne les proprietes formatees avec l'ancienne unite,
+        # donc re-deriver l'ensemble des epaisseurs selectionnees masquerait tous
+        # les surfaciques (aucune correspondance ancien/nouveau libelle) sans
+        # possibilite de les reactiver.
         self._render_results(md)
         if self.viewer is not None:
-            self.viewer.set_structural_filters(
-                self.selected_sections, self.selected_thicknesses, self.selected_materials
-            )
             selection = self.viewer.get_selected_items()
             if selection:
                 self.on_viewer_selection_changed(selection)
