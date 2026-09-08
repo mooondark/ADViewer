@@ -102,6 +102,7 @@ from ad_model_data import (
 # ===== Imports depuis viewer_widget (étape 4 de la modularisation) =====
 from viewer_widget import *
 
+import display_units
 
 def _fmt_hms(seconds: float) -> str:
     s = int(seconds)
@@ -1104,6 +1105,7 @@ class MainWindow(QMainWindow):
             "linear_load_color": self._format_color(self.viewer.linear_load_color),
             "planar_load_color": self._format_color(self.viewer.planar_load_color),
         }
+        cfg["units"] = display_units.get_state_ini()
 
         with open(self._config_path(), "w", encoding="utf-8") as f:
             cfg.write(f)
@@ -1153,6 +1155,10 @@ class MainWindow(QMainWindow):
             except (TypeError, ValueError):
                 loaded_calc_timeout = DEFAULT_CALC_EF_TIMEOUT
             self.calc_ef_timeout = max(0, min(CALC_EF_TIMEOUT_MAX, loaded_calc_timeout))
+
+            display_units.load_state_ini(
+                dict(cfg["units"]) if cfg.has_section("units") else {}
+            )
 
             last_fto_path = normalize_windows_path(general.get("last_fto_path", "").strip())
             if last_fto_path and os.path.isfile(last_fto_path):
