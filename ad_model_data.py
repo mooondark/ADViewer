@@ -388,13 +388,6 @@ def _find_linear_beam_type_label(el: dict) -> str:
     return tr_ui("label_element_linear")
 
 
-def _radians_to_degrees(value):
-    try:
-        return math.degrees(float(value))
-    except Exception:
-        return None
-
-
 def _format_angle_degrees(value) -> str:
     return du.fmt(value, "angle")
 
@@ -699,17 +692,21 @@ def _build_planar_takeoff(planar_elements: list) -> list:
         except Exception:
             pass
         thickness_text = _format_length_cm_fixed(thickness_value, 2)
-        bucket = totals.setdefault(thickness_text, {"sort_value": sort_value, "area": 0.0})
+        try:
+            bucket_key = round(float(thickness_value), 6)
+        except Exception:
+            bucket_key = thickness_text
+        bucket = totals.setdefault(bucket_key, {"sort_value": sort_value, "area": 0.0, "text": thickness_text})
         if bucket.get("sort_value") is None and sort_value is not None:
             bucket["sort_value"] = sort_value
         bucket["area"] += area
     ordered = sorted(
         totals.items(),
-        key=lambda item: (float("inf") if item[1].get("sort_value") is None else item[1].get("sort_value"), str(item[0]).lower())
+        key=lambda item: (float("inf") if item[1].get("sort_value") is None else item[1].get("sort_value"), str(item[1].get("text")).lower())
     )
     return [
-        {"name": name, "area": data["area"], "area_text": du.fmt(data["area"], "area")}
-        for name, data in ordered
+        {"name": data["text"], "area": data["area"], "area_text": du.fmt(data["area"], "area")}
+        for _key, data in ordered
     ]
 
 
@@ -1251,15 +1248,15 @@ def _to_float_or_none(value):
 
 
 def _format_force_kn(value) -> str:
-    return du.fmt(value, "force")
+    return du.fmt(_to_float_or_none(value), "force")
 
 
 def _format_moment_knm(value) -> str:
-    return du.fmt(value, "moment")
+    return du.fmt(_to_float_or_none(value), "moment")
 
 
 def _format_length_m(value) -> str:
-    return du.fmt(value, "length")
+    return du.fmt(_to_float_or_none(value), "length")
 
 
 def _extract_result_item_by_id(payloads, support_eid: int) -> dict:
@@ -1517,13 +1514,14 @@ def read_linear_element_diagram_results(host: str, element_eid: int, analysis_ca
         if series:
             break
 
+    _diag_kind = _result_kind(family_label, value_label)
     return {
         "kind": "linear_diagram",
         "element_eid": int(element_eid),
         "family_label": _analysis_result_display_label(family_label),
         "value_label": str(value_label or "").strip(),
         "unit": _linear_result_unit(family_label, value_label),
-        "decimals": (lambda k: du.decimals(k) if k else 3)(_result_kind(family_label, value_label)),
+        "decimals": du.decimals(_diag_kind) if _diag_kind else 3,
         "series": series,
         "title": f"{str(family_label or '').strip()} - {str(value_label or '').strip()}",
         "source_found": bool(selected_item),

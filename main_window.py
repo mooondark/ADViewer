@@ -95,7 +95,7 @@ from ad_api_client import *
 from ad_model_data import *
 # Imports explicites des fonctions privées utilisées par le reste du monolithe
 from ad_model_data import (
-    __init__, _analysis_result_display_label, _build_ad_local_axes, _cross_vector3, _format_fixed_unit,
+    __init__, _analysis_result_display_label, _build_ad_local_axes, _cross_vector3,
     _normalize_result_family_key, _normalize_vector3, _rotate_vector_around_axis,
 )
 
@@ -1222,6 +1222,8 @@ class MainWindow(QMainWindow):
             display_units.load_state_ini(
                 dict(cfg["units"]) if cfg.has_section("units") else {}
             )
+            if not cfg.has_section("units"):
+                config_updated = True
 
             last_fto_path = normalize_windows_path(general.get("last_fto_path", "").strip())
             if last_fto_path and os.path.isfile(last_fto_path):
@@ -3151,7 +3153,7 @@ class MainWindow(QMainWindow):
         else:
             table = self._create_properties_table(1)
             self._set_table_name_item(table, 0, tr_ui("takeoff_total_area"))
-            self._set_table_value_item(table, 0, _format_fixed_unit(load_area_total, "m²", 2))
+            self._set_table_value_item(table, 0, display_units.fmt(load_area_total, "area"))
             self._finalize_properties_table(table)
             content_layout.addWidget(table)
         layout.addWidget(content)
