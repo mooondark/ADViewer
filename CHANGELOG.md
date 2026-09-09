@@ -2,6 +2,22 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.01
+
+### FR
+- Poutres à section variable : l'onglet Propriétés affiche désormais deux lignes « Section début » et « Section fin » au lieu d'une seule.
+- Nouveau curseur « Transparence profilés » (défaut 65 %), actif uniquement en mode « Profilés + Faces cachées » ; le curseur de transparence des surfaces n'agit plus sur les solides des filaires.
+- Chargement d'un modèle : le retour au mode d'affichage par défaut (« Filaire + Faces cachées ») se fait maintenant avant le rendu du nouveau modèle, ce qui évite un premier rendu intermédiaire en mode Profilés (lent sur les gros modèles).
+- Correction : `sectionOrientationAngle` (renvoyé en radians par l'API) était converti une seconde fois lors de la construction du repère local — le repère des diagrammes de résultats n'était quasiment pas tourné pour les barres à section orientée. Les diagrammes s'orientent maintenant dans le bon plan.
+- Correction : après une multi-sélection de filaires et l'affichage d'un diagramme, une sélection unique ultérieure rechargeait les résultats de l'ancienne multi-sélection ; il est de nouveau possible d'obtenir les résultats d'un seul élément.
+
+### EN
+- Variable-section beams: the Properties tab now shows two rows, "Start section" and "End section", instead of a single one.
+- New "Profiles transparency" slider (default 65%), active only in "Profiles + Hidden faces" mode; the surfaces transparency slider no longer affects the linear-element solids.
+- Model load: the reset to the default render mode ("Wireframe + Hidden faces") now happens before the new model is rendered, avoiding an intermediate render in Profiles mode (slow on large models).
+- Fix: `sectionOrientationAngle` (returned in radians by the API) was converted a second time when building the local frame — the results-diagram frame was barely rotated for beams with an oriented section. Diagrams now orient in the correct plane.
+- Fix: after a multi-selection of linear elements and showing a diagram, a later single selection reloaded the results of the previous multi-selection; single-element results are available again.
+
 ## 2.00
 
 ### FR

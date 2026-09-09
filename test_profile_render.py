@@ -55,6 +55,23 @@ def test_section_frame_matches_ifc_convention():
     assert v == (0.0, 0.0, 1.0), v
 
 
+def test_build_ad_local_axes_angle_in_radians():
+    # sectionOrientationAngle de l'API AD est en radians : _build_ad_local_axes
+    # doit tourner de pi/2 pour une valeur pi/2 (repere des diagrammes de resultats).
+    a0 = md._build_ad_local_axes((0, 0, 0), (4, 0, 0), 0.0)
+    a90 = md._build_ad_local_axes((0, 0, 0), (4, 0, 0), math.pi / 2)
+    assert abs(a0["z"][2]) < 1e-6 and abs(abs(a0["y"][2]) - 1.0) < 1e-6   # z lateral, y vertical
+    assert abs(abs(a90["z"][2]) - 1.0) < 1e-4                             # z devenu vertical
+    assert abs(a90["y"][2]) < 1e-4                                        # y devenu lateral
+    # et line_properties expose bien l'angle en radians
+    el = {"generalBeamType": "Beam", "section": {"value": 1},
+          "sectionOrientationAngle": math.pi / 2,
+          "geomPtStart": {"x": 0, "y": 0, "z": 0}, "geomPtEnd": {"x": 4, "y": 0, "z": 0}}
+    p = md.extract_linear_element_properties(el, {1: "S235"}, {1: "IPE 300"})
+    assert abs(p["section_orientation_angle_rad"] - math.pi / 2) < 1e-9
+    assert "section_orientation_angle_deg" not in p
+
+
 def test_zed_section_not_mirrored():
     # Z : semelle haute -> +x du polygone, semelle basse -> -x
     # non miroir (u=+Y) => correlation Y*Z du solide > 0
@@ -311,6 +328,38 @@ def test_selection_recolor_swaps_scalars_without_rebuild():
     w._selected_items = []
     w._apply_profiles_selection_colors()
     assert base_pd.GetCellData().GetScalars() is None
+
+
+def test_profiles_transparency_dedicated_slider():
+    import vtk
+    w = VTKViewerWidget.__new__(VTKViewerWidget)
+    w._transparency_percent = 90            # slider "surfaces" : ne doit PAS toucher les profils
+    w._profiles_transparency_percent = 40   # opacite attendue = 0.6
+    w.planar_faces_base_opacity = 0.35
+    w.load_areas_faces_base_opacity = 0.30
+    w.support_planar_faces_base_opacity = 0.35
+    w._planar_faces_actor = w._load_areas_faces_actor = w._support_planar_faces_actor = None
+    w._selection_overlay_actors = []
+    w._profiles_actor = vtk.vtkActor()
+    w._profiles_actor.SetMapper(vtk.vtkPolyDataMapper())
+
+    w._display_mode = "profiles_hidden"
+    w._apply_face_opacity_state()
+    assert abs(w._profiles_actor.GetProperty().GetOpacity() - 0.6) < 1e-6   # 1 - 40/100
+
+    # le slider surfaces n'a aucun effet sur le solide des profils
+    w._transparency_percent = 10
+    w._apply_face_opacity_state()
+    assert abs(w._profiles_actor.GetProperty().GetOpacity() - 0.6) < 1e-6
+
+    w._display_mode = "profiles_full"
+    w._apply_face_opacity_state()
+    assert w._profiles_actor.GetProperty().GetOpacity() == 1.0
+
+    w._profiles_transparency_percent = 0   # slider dedie au minimum -> opaque en faces cachees
+    w._display_mode = "profiles_hidden"
+    w._apply_face_opacity_state()
+    assert w._profiles_actor.GetProperty().GetOpacity() == 1.0
 
 
 def test_selection_recolor_preserves_section_colors():

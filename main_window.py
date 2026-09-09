@@ -1000,6 +1000,8 @@ class MainWindow(QMainWindow):
         self.cmb_display_mode = None
         self.transparency_slider = None
         self.transparency_value_label = None
+        self.profiles_transparency_slider = None
+        self.profiles_transparency_value_label = None
         self.theme_name = DEFAULT_THEME
         set_active_theme(self.theme_name)
         self.api_server_exe = DEFAULT_API_SERVER_EXE
@@ -2055,6 +2057,30 @@ class MainWindow(QMainWindow):
         transparency_row.addWidget(self.transparency_value_label)
         action_card.layout.addLayout(transparency_row)
 
+        profiles_transparency_title = QLabel(tr_ui("transparency_profiles"))
+        profiles_transparency_title.setStyleSheet(f"color:{FG_DIM};")
+        action_card.layout.addWidget(profiles_transparency_title)
+
+        profiles_transparency_row = QHBoxLayout()
+        profiles_transparency_row.setContentsMargins(0, 0, 0, 0)
+        profiles_transparency_row.setSpacing(4)
+
+        self.profiles_transparency_slider = QSlider(Qt.Horizontal)
+        self.profiles_transparency_slider.setRange(0, 100)
+        self.profiles_transparency_slider.setValue(INITIAL_PROFILES_TRANSPARENCY_PERCENT)
+        self.profiles_transparency_slider.setSingleStep(5)
+        self.profiles_transparency_slider.setPageStep(10)
+        self.profiles_transparency_slider.valueChanged.connect(self.on_profiles_transparency_changed)
+
+        self.profiles_transparency_value_label = QLabel(
+            tr_ui("transparency_value", value=INITIAL_PROFILES_TRANSPARENCY_PERCENT)
+        )
+        self.profiles_transparency_value_label.setStyleSheet(f"color:{FG_DIM}; min-width:48px;")
+
+        profiles_transparency_row.addWidget(self.profiles_transparency_slider, 1)
+        profiles_transparency_row.addWidget(self.profiles_transparency_value_label)
+        action_card.layout.addLayout(profiles_transparency_row)
+
         display_title = QLabel(tr_ui("display"))
         display_title.setStyleSheet(f"color:{FG_DIM}; font-weight:bold;")
         action_card.layout.addWidget(display_title)
@@ -2478,6 +2504,7 @@ class MainWindow(QMainWindow):
         right_splitter.setSizes([810, 390])
 
         self.viewer.set_faces_transparency(INITIAL_TRANSPARENCY_PERCENT)
+        self.viewer.set_profiles_transparency(INITIAL_PROFILES_TRANSPARENCY_PERCENT)
         self.viewer.set_display_mode(self.cmb_display_mode.currentData())
         self._update_transparency_controls_state()
         self._update_api_button_state()
@@ -4065,6 +4092,10 @@ class MainWindow(QMainWindow):
         Reçoit une liste de dicts {"role": str, "index": int}.
         Liste vide = aucune sélection.
         """
+        # Toujours refleter la selection courante : sans ca une ancienne
+        # multi-selection restait active et ecrasait une selection unique
+        # ulterieure au moment d'afficher les resultats.
+        self._current_multi_selection = list(selection_list or [])
         self.current_linear_diagram_payload = None
         if self.viewer is not None:
             self.viewer.clear_planar_support_result_centroid()
@@ -4195,15 +4226,12 @@ class MainWindow(QMainWindow):
             # Utiliser le premier item pour les combos (les résultats seront chargés et superposés)
             first = selection_list[0]
             self._update_analysis_results_value_combo(first)
-            # Stocker tous les items sélectionnés pour le chargement multi-diagramme
             self.current_analysis_selection = dict(first)
-            self._current_multi_selection = list(selection_list)
             self._set_analysis_results_output_message(tr_ui("multi_select_results_linear_hint"))
         else:
             # Hétérogène ou non-filaire : griser les résultats
             self._update_analysis_results_value_combo({})
             self.current_analysis_selection = {}
-            self._current_multi_selection = list(selection_list)
             self._set_analysis_results_output_message(tr_ui("multi_select_results_heterogeneous"))
 
     def _install_view_shortcuts(self):
@@ -4521,6 +4549,14 @@ class MainWindow(QMainWindow):
         if self.transparency_value_label is not None:
             color = FG_DIM if enabled else BORDER
             self.transparency_value_label.setStyleSheet(f"color:{color}; min-width:48px;")
+
+        # "Transparence profilés" : actif uniquement en Profilés + Faces cachées
+        profiles_enabled = (mode == "profiles_hidden")
+        if self.profiles_transparency_slider is not None:
+            self.profiles_transparency_slider.setEnabled(profiles_enabled)
+        if self.profiles_transparency_value_label is not None:
+            color = FG_DIM if profiles_enabled else BORDER
+            self.profiles_transparency_value_label.setStyleSheet(f"color:{color}; min-width:48px;")
 
     def _update_api_button_state(self):
         running = bool(self.api_server_process and self.api_server_process.poll() is None)
@@ -5197,6 +5233,14 @@ class MainWindow(QMainWindow):
         if self.viewer:
             self.viewer.set_faces_transparency(value)
 
+    def on_profiles_transparency_changed(self, value: int):
+        if self.profiles_transparency_value_label:
+            self.profiles_transparency_value_label.setText(
+                tr_ui("transparency_value", value=value)
+            )
+        if self.viewer:
+            self.viewer.set_profiles_transparency(value)
+
     def browse_fto(self):
         filename, _ = QFileDialog.getOpenFileName(
             self,
@@ -5248,7 +5292,7 @@ class MainWindow(QMainWindow):
         widgets = [
             self.load_btn, self.calc_btn, self.fit_btn,
             self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn,
-            self.transparency_slider,
+            self.transparency_slider, self.profiles_transparency_slider,
             self.start_api_btn,
             self.chk_lines, self.chk_planars, self.chk_load_areas,
             self.chk_support_punctual, self.chk_support_linear, self.chk_support_planar,
@@ -5333,6 +5377,17 @@ class MainWindow(QMainWindow):
             return
         self._close_project_session(tr_log("project_closed_before_new_load"))
 
+        # Modele precedent ferme : revenir au mode d'affichage par defaut AVANT
+        # de charger le nouveau modele, pour que le rendu du nouveau modele ne
+        # construise pas d'abord les solides profils (lent sur gros modeles).
+        if self.cmb_display_mode is not None:
+            self.cmb_display_mode.blockSignals(True)
+            self.cmb_display_mode.setCurrentIndex(self.cmb_display_mode.findData("wire_hidden"))
+            self.cmb_display_mode.blockSignals(False)
+            self._update_transparency_controls_state()
+        if self.viewer is not None:
+            self.viewer.reset_display_mode_default()
+
         self.set_loading(True)
         self.worker = LoadModelWorker(host, fto_path, expect_results=expect_results)
         self.worker.log.connect(self.log)
@@ -5354,12 +5409,6 @@ class MainWindow(QMainWindow):
             self.chk_color_by_section.blockSignals(True)
             self.chk_color_by_section.setChecked(True)
             self.chk_color_by_section.blockSignals(False)
-        # Chaque chargement revient au mode d'affichage par defaut
-        if self.cmb_display_mode is not None:
-            self.cmb_display_mode.blockSignals(True)
-            self.cmb_display_mode.setCurrentIndex(self.cmb_display_mode.findData("wire_hidden"))
-            self.cmb_display_mode.blockSignals(False)
-            self._update_transparency_controls_state()
         self._set_load_progress(100, "Rendu terminé.")
         self.viewer.load_model(model_data)
         self.viewer.set_color_by_section(True)
@@ -5469,6 +5518,7 @@ class MainWindow(QMainWindow):
             show_marker=self.chk_marker.isChecked(),
             display_mode=self.cmb_display_mode.currentData(),
             transparency_percent=self.transparency_slider.value(),
+            profiles_transparency_percent=self.profiles_transparency_slider.value(),
         )
 
         self.log(tr_log("render_updated"), "ok")

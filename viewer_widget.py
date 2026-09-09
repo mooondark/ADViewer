@@ -29,6 +29,7 @@ from viewer_config import (
     SUPPORT_PUNCTUAL_SIZE, SUPPORT_PUNCTUAL_LINE_WIDTH,
     SUPPORT_LINEAR_LINE_WIDTH, SUPPORT_PLANAR_LINE_WIDTH,
     INITIAL_TRANSPARENCY_PERCENT,
+    INITIAL_PROFILES_TRANSPARENCY_PERCENT,
     DEFAULT_VIEW_PROJECTION,
     MESH_LINE_WIDTH,
     MESH_COLOR,
@@ -422,6 +423,7 @@ class VTKViewerWidget(QFrame):
         self.mesh_line_width = MESH_LINE_WIDTH
 
         self._transparency_percent = INITIAL_TRANSPARENCY_PERCENT
+        self._profiles_transparency_percent = INITIAL_PROFILES_TRANSPARENCY_PERCENT
         self.planar_faces_base_opacity = 0.35
         self.load_areas_faces_base_opacity = 0.30
         self.support_planar_faces_base_opacity = 0.35
@@ -1661,7 +1663,7 @@ class VTKViewerWidget(QFrame):
         local_axes = ((line_property or {}).get("local_axes") or {}) if isinstance(line_property, dict) else {}
         normal = _normalize_vector3(local_axes.get("z")) if isinstance(local_axes, dict) else None
         if normal is None:
-            rebuilt = _build_ad_local_axes(p1, p2, (line_property or {}).get("section_orientation_angle_deg", 0.0) if isinstance(line_property, dict) else 0.0)
+            rebuilt = _build_ad_local_axes(p1, p2, (line_property or {}).get("section_orientation_angle_rad", 0.0) if isinstance(line_property, dict) else 0.0)
             normal = _normalize_vector3((rebuilt or {}).get("z")) if isinstance(rebuilt, dict) else None
         if normal is None:
             normal = _normalize_vector3(_cross_vector3(u, (0.0, 0.0, 1.0)))
@@ -2340,6 +2342,13 @@ class VTKViewerWidget(QFrame):
         self._apply_face_opacity_state()
         self.render_window.Render()
 
+    def set_profiles_transparency(self, percent: int):
+        """Opacite des solides de profils, appliquee seulement en mode
+        Profilés + Faces cachées."""
+        self._profiles_transparency_percent = max(0, min(100, int(percent)))
+        self._apply_face_opacity_state()
+        self.render_window.Render()
+
     def _apply_face_opacity_state(self):
         if self._display_mode in ("full", "profiles_full"):
             planar_opacity = 1.0
@@ -2359,6 +2368,15 @@ class VTKViewerWidget(QFrame):
             self._load_areas_faces_actor.GetProperty().SetOpacity(load_area_opacity)
         if self._support_planar_faces_actor:
             self._support_planar_faces_actor.GetProperty().SetOpacity(support_planar_opacity)
+        if self._profiles_actor:
+            # solides des filaires : opacite pilotee par le slider dedie
+            # "Transparence profilés", uniquement en "Profilés + Faces cachées" ;
+            # opaques en "Profilés + Rendu plein".
+            if self._display_mode == "profiles_hidden":
+                p = max(0, min(100, int(self._profiles_transparency_percent)))
+                self._profiles_actor.GetProperty().SetOpacity(1.0 - p / 100.0)
+            else:
+                self._profiles_actor.GetProperty().SetOpacity(1.0)
         for actor in self._selection_overlay_actors:
             if actor.GetProperty() is not None and actor.GetProperty().GetOpacity() < 1.0:
                 actor.GetProperty().SetOpacity(selection_face_opacity)
@@ -2578,6 +2596,18 @@ class VTKViewerWidget(QFrame):
         self.renderer.AddActor(actor)
         self.render_window.Render()
 
+    def reset_display_mode_default(self):
+        """Repasse au mode par defaut (wire_hidden) SANS reconstruire la
+        geometrie. A appeler avant le chargement d'un nouveau modele pour que
+        le rebuild suivant ne construise pas inutilement les solides profils."""
+        self._display_mode = "wire_hidden"
+        if self._profiles_actor is not None:
+            self._remove_actor(self._profiles_actor)
+            self._profiles_actor = None
+        self._profiles_base_pd = None
+        self._profiles_base_colors = None
+        self._apply_visibility_state()
+
     def set_display_mode(self, mode: str):
         if mode not in _ALL_DISPLAY_MODES:
             mode = "wireframe"
@@ -2601,6 +2631,7 @@ class VTKViewerWidget(QFrame):
         show_marker: bool,
         display_mode: str,
         transparency_percent: int,
+        profiles_transparency_percent: int = INITIAL_PROFILES_TRANSPARENCY_PERCENT,
     ) -> None:
         """Applique en une seule passe l'intégralité de l'état d'affichage.
 
@@ -2629,6 +2660,7 @@ class VTKViewerWidget(QFrame):
         self._show_marker            = show_marker
         self._display_mode           = display_mode
         self._transparency_percent   = max(0, min(100, int(transparency_percent)))
+        self._profiles_transparency_percent = max(0, min(100, int(profiles_transparency_percent)))
 
         # Appliquer l'orientation_widget (logique propre à show_marker,
         # normalement dans set_show_marker)

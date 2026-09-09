@@ -481,11 +481,18 @@ def extract_linear_element_properties(el: dict, material_by_eid: dict, section_b
     start_relaxation = _extract_release_flags(_dict_get_ci(relaxation, "startBoundaryConnection"))
     end_relaxation = _extract_release_flags(_dict_get_ci(relaxation, "endBoundaryConnection"))
 
-    rows = [
-        (tr_ui("prop_material"), material),
-        (tr_ui("prop_section"), section),
-        (tr_ui("prop_orientation"), orientation),
-    ]
+    # Poutre variable : deux sections (debut / fin) au lieu d'une seule
+    is_variable = _normalize_enum_token(_dict_get_ci(el, "generalBeamType")).endswith("variablebeam")
+    section_end_eid = _extract_ref_eid(el, "sectionEnd")
+    section_end = section_by_eid.get(section_end_eid, None) if section_end_eid is not None else None
+
+    rows = [(tr_ui("prop_material"), material)]
+    if is_variable and section_end:
+        rows.append((tr_ui("prop_section_start"), section))
+        rows.append((tr_ui("prop_section_end"), section_end))
+    else:
+        rows.append((tr_ui("prop_section"), section))
+    rows.append((tr_ui("prop_orientation"), orientation))
 
     relaxation_elastique = _dict_get_ci(el, "relaxationElastique")
     if _contains_true_value(relaxation_elastique):
@@ -495,7 +502,7 @@ def extract_linear_element_properties(el: dict, material_by_eid: dict, section_b
     user_id = _extract_user_id(el)
     start_pt = _point3d_from_api(_dict_get_ci(el, "geomPtStart"))
     end_pt = _point3d_from_api(_dict_get_ci(el, "geomPtEnd"))
-    orientation_angle = _dict_get_ci(el, "sectionOrientationAngle")
+    orientation_angle = _dict_get_ci(el, "sectionOrientationAngle")  # radians (API AD)
     local_axes = _build_ad_local_axes(start_pt, end_pt, orientation_angle) if start_pt is not None and end_pt is not None else None
 
     return {
@@ -510,7 +517,7 @@ def extract_linear_element_properties(el: dict, material_by_eid: dict, section_b
         "section": section,
         "material_eid": material_eid,
         "section_eid": section_eid,
-        "section_orientation_angle_deg": float(orientation_angle or 0.0) if orientation_angle not in (None, "") else 0.0,
+        "section_orientation_angle_rad": float(orientation_angle or 0.0) if orientation_angle not in (None, "") else 0.0,
         "local_axes": local_axes or {},
     }
 
@@ -562,7 +569,9 @@ def _rotate_vector_around_axis(vec, axis, angle_rad: float):
     )
 
 
-def _build_ad_local_axes(start_pt, end_pt, section_orientation_angle_deg=0.0):
+def _build_ad_local_axes(start_pt, end_pt, section_orientation_angle_rad=0.0):
+    # section_orientation_angle_rad : angle beta EN RADIANS (l'API AD renvoie
+    # sectionOrientationAngle en radians, cf. display_units grandeur "angle").
     x_local = _normalize_vector3((
         float(end_pt[0]) - float(start_pt[0]),
         float(end_pt[1]) - float(start_pt[1]),
@@ -586,7 +595,7 @@ def _build_ad_local_axes(start_pt, end_pt, section_orientation_angle_deg=0.0):
     if y_local_0 is None:
         return None
 
-    angle_rad = math.radians(float(section_orientation_angle_deg or 0.0))
+    angle_rad = float(section_orientation_angle_rad or 0.0)
     y_local = _rotate_vector_around_axis(y_local_0, x_local, angle_rad) if abs(angle_rad) > 1e-12 else y_local_0
     z_local = _rotate_vector_around_axis(z_local_0, x_local, angle_rad) if abs(angle_rad) > 1e-12 else z_local_0
     y_local = _normalize_vector3(y_local)

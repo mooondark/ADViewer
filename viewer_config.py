@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "2.00"
+APP_VERSION = "2.01"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -203,6 +203,7 @@ SUPPORT_LINEAR_LINE_WIDTH = 2.5
 SUPPORT_PLANAR_LINE_WIDTH = 2.5
 
 INITIAL_TRANSPARENCY_PERCENT = 30
+INITIAL_PROFILES_TRANSPARENCY_PERCENT = 65  # slider "Transparence profilés" (mode Profilés + Faces cachées)
 
 MESH_LINE_WIDTH = 1.0
 MESH_COLOR = (0.0, 1.0, 0.0)  # #00ff00
@@ -293,6 +294,7 @@ MSG_UI = {
     "fit_view": "Zoom étendu",
     "iso_view": "Vue isométrique",
     "transparency": "Transparence",
+    "transparency_profiles": "Transparence profilés",
     "transparency_value": "{value} %",
 
     "display": "Affichage",
@@ -351,6 +353,8 @@ MSG_UI = {
     "takeoff_total_area": "Aire totale",
     "prop_material": "Matériau",
     "prop_section": "Section",
+    "prop_section_start": "Section début",
+    "prop_section_end": "Section fin",
     "prop_orientation": "Orientation",
     "prop_relaxation_elastic": "Relaxations élastiques",
     "prop_relaxation_elastic_present": "Des relaxations élastiques sont présentes",
