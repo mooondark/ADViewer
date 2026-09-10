@@ -317,6 +317,8 @@ class VTKViewerWidget(QFrame):
     windowSelectModeChanged = Signal(bool)
     # Emis a la fin d'une selection par fenetre : liste finale [{"role","index"}, ...].
     windowSelectionDone = Signal(list)
+    # Emis quand le mode "zoom fenetre" est active/desactive.
+    zoomWindowModeChanged = Signal(bool)
     ELEMENT_INDEX_ARRAY = "element_index"
 
     def __init__(self, parent=None):
@@ -496,6 +498,11 @@ class VTKViewerWidget(QFrame):
         self._win_pt1 = None
         self._window_rect_actor = None
         self._window_rect_pd = None
+
+        # Mode "zoom fenetre" : meme interaction que la selection par fenetre,
+        # mais le 2e clic recadre la camera sur le rectangle trace.
+        self._zoom_window_mode = False
+        self._zoom_win_pt1 = None
 
         self.vtk_widget.Initialize()
         self.vtk_widget.Start()
@@ -1994,6 +2001,9 @@ class VTKViewerWidget(QFrame):
         if self._window_select_mode:
             self.set_window_select_mode(False)   # clic droit = annuler
             return
+        if self._zoom_window_mode:
+            self.set_zoom_window_mode(False)     # clic droit = annuler
+            return
         self.vtk_widget.setFocus()
         x, y = self.interactor.GetEventPosition()
         ctrl = bool(self.interactor.GetControlKey())
@@ -2024,6 +2034,16 @@ class VTKViewerWidget(QFrame):
             self._window_select_from_rect(p1, (x, y), additive)
             self.set_window_select_mode(False)
             return
+        if self._zoom_window_mode:
+            self.vtk_widget.setFocus()
+            x, y = self.interactor.GetEventPosition()
+            self._left_press_pos = None
+            if self._zoom_win_pt1 is None:
+                self._zoom_win_pt1 = (x, y)     # point 1
+                return
+            self._zoom_to_rect(self._zoom_win_pt1, (x, y))   # point 2 -> zoom + fin
+            self.set_zoom_window_mode(False)
+            return
         self.vtk_widget.setFocus()
         x, y = self.interactor.GetEventPosition()
         ctrl = bool(self.interactor.GetControlKey())
@@ -2042,7 +2062,7 @@ class VTKViewerWidget(QFrame):
         self.interactor_style.OnLeftButtonDown()
 
     def _on_left_button_release(self, obj, event):
-        if self._window_select_mode:
+        if self._window_select_mode or self._zoom_window_mode:
             return
         x, y = self.interactor.GetEventPosition()
         press_pos = self._left_press_pos
@@ -2064,6 +2084,9 @@ class VTKViewerWidget(QFrame):
             if self._window_select_mode:
                 self.set_window_select_mode(False)
                 return
+            if self._zoom_window_mode:
+                self.set_zoom_window_mode(False)
+                return
             self.clear_selection()
             return
 
@@ -2075,6 +2098,8 @@ class VTKViewerWidget(QFrame):
         active = bool(active)
         if active == self._window_select_mode:
             return
+        if active and self._zoom_window_mode:
+            self.set_zoom_window_mode(False)
         self._window_select_mode = active
         self._win_pt1 = None
         if active:
@@ -2090,10 +2115,86 @@ class VTKViewerWidget(QFrame):
         self.windowSelectModeChanged.emit(active)
 
     def _on_window_select_mouse_move(self, obj, event):
-        if not self._window_select_mode or self._win_pt1 is None:
+        if self._window_select_mode:
+            pt1 = self._win_pt1
+        elif self._zoom_window_mode:
+            pt1 = self._zoom_win_pt1
+        else:
+            return
+        if pt1 is None:
             return
         x, y = self.interactor.GetEventPosition()
-        self._update_window_rect(self._win_pt1, (x, y))
+        self._update_window_rect(pt1, (x, y))
+
+    def set_zoom_window_mode(self, active: bool):
+        """Active/desactive le zoom fenetre : clic point 1, deplacement (rectangle
+        pointille), clic point 2 -> recadrage camera sur le rectangle puis fin
+        du mode."""
+        active = bool(active)
+        if active == self._zoom_window_mode:
+            return
+        if active and self._window_select_mode:
+            self.set_window_select_mode(False)
+        self._zoom_window_mode = active
+        self._zoom_win_pt1 = None
+        if active:
+            if self._plain_style is None:
+                self._plain_style = vtk.vtkInteractorStyleUser()
+                self._plain_style.SetDefaultRenderer(self.renderer)
+            self.interactor.SetInteractorStyle(self._plain_style)
+            self.vtk_widget.setCursor(Qt.CrossCursor)
+        else:
+            self.interactor.SetInteractorStyle(self.interactor_style)
+            self.vtk_widget.unsetCursor()
+            self._hide_window_rect()
+        self.zoomWindowModeChanged.emit(active)
+
+    def _zoom_to_rect(self, p0, p1):
+        """Recadre la camera sur le rectangle ecran (p0, p1). Portage de la
+        logique caméra de vtkInteractorStyleRubberBandZoom : translation pour
+        amener le centre du rectangle au centre de la vue, puis facteur de zoom."""
+        x0, x1 = sorted((p0[0], p1[0]))
+        y0, y1 = sorted((p0[1], p1[1]))
+        w = x1 - x0
+        h = y1 - y0
+        if w < 3 and h < 3:
+            return
+        ren = self.renderer
+        cam = ren.GetActiveCamera()
+        if cam is None:
+            return
+        size = ren.GetSize()
+        if not size or size[0] <= 0 or size[1] <= 0:
+            return
+
+        fp = cam.GetFocalPoint()
+        pos = cam.GetPosition()
+        ren.SetWorldPoint(fp[0], fp[1], fp[2], 1.0)
+        ren.WorldToDisplay()
+        depth = ren.GetDisplayPoint()[2]
+
+        def _unproject(dx, dy):
+            ren.SetDisplayPoint(float(dx), float(dy), depth)
+            ren.DisplayToWorld()
+            wx, wy, wz, ww = ren.GetWorldPoint()
+            if ww != 0.0:
+                wx, wy, wz = wx / ww, wy / ww, wz / ww
+            return wx, wy, wz
+
+        wr = _unproject((x0 + x1) / 2.0, (y0 + y1) / 2.0)
+        wc = _unproject(size[0] / 2.0, size[1] / 2.0)
+        tr = (wr[0] - wc[0], wr[1] - wc[1], wr[2] - wc[2])
+        cam.SetFocalPoint(fp[0] + tr[0], fp[1] + tr[1], fp[2] + tr[2])
+        cam.SetPosition(pos[0] + tr[0], pos[1] + tr[1], pos[2] + tr[2])
+
+        factor = size[0] / w if w > h else size[1] / h
+        if cam.GetParallelProjection():
+            cam.Zoom(factor)
+        else:
+            cam.Dolly(factor)
+        ren.ResetCameraClippingRange()
+        self.render_window.Render()
+        self._update_view_overlay()
 
     def _ensure_window_rect_actor(self):
         if self._window_rect_actor is not None:

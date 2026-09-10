@@ -8,11 +8,15 @@
 - Nouvelle fonction « Sélection par fenêtre » : icône dédiée et raccourci via Alt+S.
 - Fenêtre tracée de gauche à droite : seules les entités entièrement comprises dans le rectangle sont sélectionnées. Tracée de droite à gauche : entités comprises et entités intersectées par le rectangle. Ctrl ajoute à la sélection courante. Clic droit ou Échap annule.
 - Le journal affiche un récapitulatif après une sélection par fenêtre et après « Isoler » (nombre d'éléments par type : filaires, surfaciques, parois, appuis, charges).
+- Nouvelle fonction « Zoom fenêtre » : icône dédiée (à côté de « Zoom étendu ») et raccourci Alt+W. Deux clics définissent un rectangle (comme la sélection par fenêtre) sur lequel la caméra se recadre. Clic droit ou Échap annule.
+- Pendant le chargement d'un modèle, toutes les icônes de la section « Actions » sont maintenant grisées et désactivées ; les modes actifs (sélection par fenêtre, zoom fenêtre, isolation) sont annulés au démarrage du chargement.
 
 ### EN
 - New "Window selection" tool: dedicated icon and Alt+S shortcut.
 - Window drawn left to right: only entities fully enclosed in the rectangle are selected. Drawn right to left: enclosed entities plus entities crossed by the rectangle. Ctrl adds to the current selection. Right-click or Esc cancels.
 - The log shows a summary after a window selection and after "Isolate" (element count per type: linear, planar, walls, supports, loads).
+- New "Window zoom" tool: dedicated icon (next to "Zoom to fit") and Alt+W shortcut. Two clicks define a rectangle (like the window selection) the camera zooms to. Right-click or Esc cancels.
+- While a model is loading, all icons in the "Actions" section are now greyed out and disabled; active modes (window selection, window zoom, isolation) are cancelled when loading starts.
 
 ## 2.01
 

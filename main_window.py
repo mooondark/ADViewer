@@ -991,6 +991,8 @@ class MainWindow(QMainWindow):
         self.camera_btn = None
         self.window_select_btn = None
         self.shortcut_window_select = None
+        self.zoom_window_btn = None
+        self.shortcut_zoom_window = None
         self.shortcut_view_front_back = None
         self.shortcut_view_left_right = None
         self.shortcut_view_top_bottom = None
@@ -1652,6 +1654,42 @@ class MainWindow(QMainWindow):
             'OCIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxp'
             'bmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+'
         ),
+        "zoom_etendu": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTUgOUwyMCA0'
+            'TTIwIDRWOE0yMCA0SDE2IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0i'
+            'MS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91'
+            'bmQiLz4KPHBhdGggZD0iTTkgMTVMNCAyME00IDIwVjE2TTQgMjBIOCIgc3Ryb2tl'
+            'PSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJv'
+            'dW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg=='
+        ),
+        "zoom_fenetre": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9hZGVkIHRvOiBT'
+            'VkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNWRyBSZXBvIE1peGVyIFRvb2xz'
+            'IC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0'
+            'IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBk'
+            'PSJNMjAuMTI0MSAyMC4xMTg1QzIwLjY2NTQgMTkuNTc1OCAyMSAxOC44MjcgMjEgMThDMjEgMTYu'
+            'MzQzMSAxOS42NTY5IDE1IDE4IDE1QzE2LjM0MzEgMTUgMTUgMTYuMzQzMSAxNSAxOEMxNSAxOS42'
+            'NTY5IDE2LjM0MzEgMjEgMTggMjFDMTguODI5OSAyMSAxOS41ODEgMjAuNjYzIDIwLjEyNDEgMjAu'
+            'MTE4NVpNMjAuMTI0MSAyMC4xMTg1TDIyIDIyIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0'
+            'aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4K'
+            'PHBhdGggZD0iTTcgMkg0VjUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0'
+            'cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJN'
+            'NCAxMVYxMyIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVj'
+            'YXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0xMSAySDEzIiBz'
+            'dHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQi'
+            'IHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTExIDIySDEzIiBzdHJva2U9IiMw'
+            'MDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1s'
+            'aW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTIwIDExVjEzIiBzdHJva2U9IiMwMDAwMDAiIHN0'
+            'cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0i'
+            'cm91bmQiLz4KPHBhdGggZD0iTTE3IDJIMjBWNSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lk'
+            'dGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+'
+            'CjxwYXRoIGQ9Ik03IDIySDRWMTkiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUi'
+            'IHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
+        ),
     }
 
     def _make_view_icon(self, kind: str) -> QIcon:
@@ -1703,6 +1741,8 @@ class MainWindow(QMainWindow):
     def _refresh_toolbar_icons(self):
         """Reapplique les icones de la toolbar apres un changement de theme."""
         btn_kinds = [
+            (self.fit_btn,         "zoom_etendu"),
+            (self.zoom_window_btn, "zoom_fenetre"),
             (self.view_front_btn,  "front_back"),
             (self.view_left_btn,   "left_right"),
             (self.view_top_btn,    "top_bottom"),
@@ -1749,11 +1789,6 @@ class MainWindow(QMainWindow):
             }}
             QPushButton#primary {{
                 font-weight: bold;
-            }}
-            QPushButton#fitBtn {{
-                background: {ACCENT};
-                border: 1px solid {ACCENT};
-                color: white;
             }}
             QPushButton#clearLogBtn {{
                 padding: 4px 10px;
@@ -1998,9 +2033,21 @@ class MainWindow(QMainWindow):
     def _build_actions_card(self, left_layout):
         action_card = Card(tr_ui("actions"))
 
-        self.fit_btn = QPushButton(tr_ui("fit_view"))
-        self.fit_btn.setObjectName("fitBtn")
+        self.fit_btn = QPushButton()
+        self.fit_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.fit_btn, "zoom_etendu", "Zoom étendu (Double clic molette)")
         self.fit_btn.clicked.connect(self.viewer_fit_proxy)
+
+        self.zoom_window_btn = QPushButton()
+        self.zoom_window_btn.setCheckable(True)
+        self.zoom_window_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.zoom_window_btn, "zoom_fenetre", tr_ui("tooltip_zoom_window"))
+        self.zoom_window_btn.toggled.connect(self.on_zoom_window_toggled)
+
+        sc_zoom_win = QShortcut(QKeySequence("Alt+W"), self)
+        sc_zoom_win.setContext(Qt.ApplicationShortcut)
+        sc_zoom_win.activated.connect(self.zoom_window_btn.toggle)
+        self.shortcut_zoom_window = sc_zoom_win
 
         views_row = QHBoxLayout()
         views_row.setContentsMargins(0, 0, 0, 0)
@@ -2086,7 +2133,15 @@ class MainWindow(QMainWindow):
         select_row.addWidget(self.window_select_btn)
         select_row.addStretch(1)
 
-        action_card.layout.addWidget(self.fit_btn)
+        fit_row = QHBoxLayout()
+        fit_row.setContentsMargins(0, 0, 0, 0)
+        fit_row.setSpacing(3)
+        fit_row.addStretch(1)
+        fit_row.addWidget(self.fit_btn)
+        fit_row.addWidget(self.zoom_window_btn)
+        fit_row.addStretch(1)
+
+        action_card.layout.addLayout(fit_row)
         action_card.layout.addLayout(views_row)
         action_card.layout.addLayout(filter_row)
         action_card.layout.addLayout(select_row)
@@ -2244,6 +2299,7 @@ class MainWindow(QMainWindow):
         self.viewer.selectionChanged.connect(self.on_viewer_selection_changed)
         self.viewer.windowSelectModeChanged.connect(self._sync_window_select_button)
         self.viewer.windowSelectionDone.connect(self._log_selection_summary)
+        self.viewer.zoomWindowModeChanged.connect(self._sync_zoom_window_button)
         self._update_display_checkboxes()
         viewer_card.layout.addWidget(self.viewer, 1)
         right_splitter.addWidget(viewer_card)
@@ -4478,6 +4534,10 @@ class MainWindow(QMainWindow):
         if self.viewer is not None:
             self.viewer.set_window_select_mode(bool(checked))
 
+    def on_zoom_window_toggled(self, checked: bool):
+        if self.viewer is not None:
+            self.viewer.set_zoom_window_mode(bool(checked))
+
     _ROLE_COUNT_KEYS = {
         "lines": "selection_count_lines",
         "planars": "selection_count_planars",
@@ -4513,6 +4573,13 @@ class MainWindow(QMainWindow):
 
     def _sync_window_select_button(self, active: bool):
         btn = self.window_select_btn
+        if btn is not None and btn.isChecked() != bool(active):
+            btn.blockSignals(True)
+            btn.setChecked(bool(active))
+            btn.blockSignals(False)
+
+    def _sync_zoom_window_button(self, active: bool):
+        btn = self.zoom_window_btn
         if btn is not None and btn.isChecked() != bool(active):
             btn.blockSignals(True)
             btn.setChecked(bool(active))
@@ -5397,8 +5464,10 @@ class MainWindow(QMainWindow):
 
     def set_loading(self, loading: bool):
         widgets = [
-            self.load_btn, self.calc_btn, self.fit_btn,
+            self.load_btn, self.calc_btn, self.fit_btn, self.zoom_window_btn,
             self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn,
+            self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn,
+            self.window_select_btn,
             self.transparency_slider, self.profiles_transparency_slider,
             self.start_api_btn,
             self.chk_lines, self.chk_planars, self.chk_load_areas,
@@ -5408,6 +5477,21 @@ class MainWindow(QMainWindow):
         for w in widgets:
             if w is not None:
                 w.setEnabled(not loading)
+
+        # Au demarrage du chargement : decocher et annuler les modes actifs de la
+        # carte Actions (selection par fenetre, zoom fenetre, isolation).
+        if loading:
+            if self.viewer is not None:
+                self.viewer.set_window_select_mode(False)
+                self.viewer.set_zoom_window_mode(False)
+                if self.viewer.has_isolated_selection():
+                    self.viewer.set_isolated_selection(None)
+            for btn in (self.window_select_btn, self.zoom_window_btn):
+                if btn is not None and btn.isChecked():
+                    btn.blockSignals(True)
+                    btn.setChecked(False)
+                    btn.blockSignals(False)
+            self._apply_isolate_button_icon(False)
 
         # chk_mesh est géré séparément : il doit toujours être décoché et grisé
         # pendant le chargement, et rester grisé après si aucun résultat n'est dispo.

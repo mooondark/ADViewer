@@ -545,6 +545,7 @@ MSG_UI = {
     "tooltip_isolation_active": "Isolation active",
     "tooltip_screenshot": "Enregistrer la vue en PNG",
     "tooltip_window_select": "Sélection par fenêtre (Alt+S)",
+    "tooltip_zoom_window": "Zoom fenêtre (Alt+W)",
 
     "selection_summary_header": "Sélection effectuée :",
     "selection_summary_none": "Sélection effectuée : aucun élément.",
