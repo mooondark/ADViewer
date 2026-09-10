@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.02
+
+### FR
+- Nouvelle fonction « Sélection par fenêtre » : icône dédiée et raccourci via Alt+S.
+- Fenêtre tracée de gauche à droite : seules les entités entièrement comprises dans le rectangle sont sélectionnées. Tracée de droite à gauche : entités comprises et entités intersectées par le rectangle. Ctrl ajoute à la sélection courante. Clic droit ou Échap annule.
+- Le journal affiche un récapitulatif après une sélection par fenêtre et après « Isoler » (nombre d'éléments par type : filaires, surfaciques, parois, appuis, charges).
+
+### EN
+- New "Window selection" tool: dedicated icon and Alt+S shortcut.
+- Window drawn left to right: only entities fully enclosed in the rectangle are selected. Drawn right to left: enclosed entities plus entities crossed by the rectangle. Ctrl adds to the current selection. Right-click or Esc cancels.
+- The log shows a summary after a window selection and after "Isolate" (element count per type: linear, planar, walls, supports, loads).
+
 ## 2.01
 
 ### FR

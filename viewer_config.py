@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "2.01"
+APP_VERSION = "2.02"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -544,6 +544,22 @@ MSG_UI = {
     "tooltip_isolate": "Isoler la sélection",
     "tooltip_isolation_active": "Isolation active",
     "tooltip_screenshot": "Enregistrer la vue en PNG",
+    "tooltip_window_select": "Sélection par fenêtre (Alt+S)",
+
+    "selection_summary_header": "Sélection effectuée :",
+    "selection_summary_none": "Sélection effectuée : aucun élément.",
+    "isolation_summary_header": "Isolation effectuée :",
+    "isolation_summary_cleared": "Isolation annulée.",
+    "selection_count_lines": "{count} filaire(s)",
+    "selection_count_planars": "{count} surfacique(s)",
+    "selection_count_load_areas": "{count} paroi(s)",
+    "selection_count_support_punctual": "{count} appui(s) ponctuel(s)",
+    "selection_count_support_linear": "{count} appui(s) linéaire(s)",
+    "selection_count_support_planar": "{count} appui(s) surfacique(s)",
+    "selection_count_punctual_load": "{count} charge(s) ponctuelle(s)",
+    "selection_count_linear_load": "{count} charge(s) linéaire(s)",
+    "selection_count_planar_load": "{count} charge(s) surfacique(s)",
+
     "view_label_front": "Vue de face",
     "view_label_back": "Vue de derrière",
     "view_label_left": "Vue de gauche",

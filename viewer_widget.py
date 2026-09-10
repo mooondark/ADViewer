@@ -56,6 +56,33 @@ def _poly2_area(loop):
     return abs(a) * 0.5
 
 
+def _seg_intersects_rect(ax, ay, bx, by, xmin, ymin, xmax, ymax):
+    """Liang-Barsky : True si le segment [a,b] touche le rectangle axis-aligned
+    (contact ou recouvrement, segment entierement interieur inclus)."""
+    dx = bx - ax
+    dy = by - ay
+    p = (-dx, dx, -dy, dy)
+    q = (ax - xmin, xmax - ax, ay - ymin, ymax - ay)
+    u1, u2 = 0.0, 1.0
+    for pi, qi in zip(p, q):
+        if pi == 0.0:
+            if qi < 0.0:
+                return False
+        else:
+            t = qi / pi
+            if pi < 0.0:
+                if t > u2:
+                    return False
+                if t > u1:
+                    u1 = t
+            else:
+                if t < u1:
+                    return False
+                if t < u2:
+                    u2 = t
+    return u1 <= u2
+
+
 class ConstrainedOrbitStyle(vtk.vtkInteractorStyleUser):
     def __init__(self, parent=None):
         super().__init__()
@@ -286,6 +313,10 @@ class VTKViewerWidget(QFrame):
     # Émet la liste complète des items sélectionnés : [{"role": str, "index": int}, ...]
     # Liste vide = aucune sélection.
     selectionChanged = Signal(list)
+    # Emis quand le mode "selection par fenetre" est active/desactive.
+    windowSelectModeChanged = Signal(bool)
+    # Emis a la fin d'une selection par fenetre : liste finale [{"role","index"}, ...].
+    windowSelectionDone = Signal(list)
     ELEMENT_INDEX_ARRAY = "element_index"
 
     def __init__(self, parent=None):
@@ -452,11 +483,19 @@ class VTKViewerWidget(QFrame):
         self.interactor.AddObserver("LeftButtonPressEvent", self._on_left_button_press, 1.0)
         self.interactor.AddObserver("LeftButtonReleaseEvent", self._on_left_button_release, 1.0)
         self.interactor.AddObserver("KeyPressEvent", self._on_key_press, 1.0)
+        self.interactor.AddObserver("MouseMoveEvent", self._on_window_select_mouse_move, 0.5)
         self.interactor.AddObserver("MouseMoveEvent", self._on_overlay_mouse_move, 0.0)
 
         # Position du dernier press gauche — pour distinguer clic de glisser
         self._left_press_pos = None
         self._left_press_ctrl = False
+
+        # Mode "selection par fenetre" : clic point 1, deplacement, clic point 2.
+        self._window_select_mode = False
+        self._plain_style = None
+        self._win_pt1 = None
+        self._window_rect_actor = None
+        self._window_rect_pd = None
 
         self.vtk_widget.Initialize()
         self.vtk_widget.Start()
@@ -1952,6 +1991,9 @@ class VTKViewerWidget(QFrame):
         return True
 
     def _on_right_button_press(self, obj, event):
+        if self._window_select_mode:
+            self.set_window_select_mode(False)   # clic droit = annuler
+            return
         self.vtk_widget.setFocus()
         x, y = self.interactor.GetEventPosition()
         ctrl = bool(self.interactor.GetControlKey())
@@ -1970,6 +2012,18 @@ class VTKViewerWidget(QFrame):
         self.interactor_style.OnRightButtonDown()
 
     def _on_left_button_press(self, obj, event):
+        if self._window_select_mode:
+            self.vtk_widget.setFocus()
+            x, y = self.interactor.GetEventPosition()
+            self._left_press_pos = None         # neutralise _on_left_button_release
+            if self._win_pt1 is None:
+                self._win_pt1 = (x, y)          # point 1
+                return
+            p1 = self._win_pt1                  # point 2 -> selection + fin du mode
+            additive = bool(self.interactor.GetControlKey())
+            self._window_select_from_rect(p1, (x, y), additive)
+            self.set_window_select_mode(False)
+            return
         self.vtk_widget.setFocus()
         x, y = self.interactor.GetEventPosition()
         ctrl = bool(self.interactor.GetControlKey())
@@ -1988,6 +2042,8 @@ class VTKViewerWidget(QFrame):
         self.interactor_style.OnLeftButtonDown()
 
     def _on_left_button_release(self, obj, event):
+        if self._window_select_mode:
+            return
         x, y = self.interactor.GetEventPosition()
         press_pos = self._left_press_pos
         self._left_press_pos = None
@@ -2005,8 +2061,187 @@ class VTKViewerWidget(QFrame):
     def _on_key_press(self, obj, event):
         key = self.interactor.GetKeySym() if self.interactor is not None else ""
         if key in ("Escape", "escape"):
+            if self._window_select_mode:
+                self.set_window_select_mode(False)
+                return
             self.clear_selection()
             return
+
+    def set_window_select_mode(self, active: bool):
+        """Active/desactive la selection par fenetre : clic point 1, deplacement
+        (rectangle pointille), clic point 2 -> selection puis fin du mode.
+        gauche->droite : entites entierement comprises.
+        droite->gauche : entites comprises + intersectees."""
+        active = bool(active)
+        if active == self._window_select_mode:
+            return
+        self._window_select_mode = active
+        self._win_pt1 = None
+        if active:
+            if self._plain_style is None:
+                self._plain_style = vtk.vtkInteractorStyleUser()
+                self._plain_style.SetDefaultRenderer(self.renderer)
+            self.interactor.SetInteractorStyle(self._plain_style)
+            self.vtk_widget.setCursor(Qt.CrossCursor)
+        else:
+            self.interactor.SetInteractorStyle(self.interactor_style)
+            self.vtk_widget.unsetCursor()
+            self._hide_window_rect()
+        self.windowSelectModeChanged.emit(active)
+
+    def _on_window_select_mouse_move(self, obj, event):
+        if not self._window_select_mode or self._win_pt1 is None:
+            return
+        x, y = self.interactor.GetEventPosition()
+        self._update_window_rect(self._win_pt1, (x, y))
+
+    def _ensure_window_rect_actor(self):
+        if self._window_rect_actor is not None:
+            return
+        pts = vtk.vtkPoints()
+        pts.SetNumberOfPoints(4)
+        lines = vtk.vtkCellArray()
+        lines.InsertNextCell(5)
+        for i in (0, 1, 2, 3, 0):
+            lines.InsertCellPoint(i)
+        pd = vtk.vtkPolyData()
+        pd.SetPoints(pts)
+        pd.SetLines(lines)
+        coord = vtk.vtkCoordinate()
+        coord.SetCoordinateSystemToDisplay()
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper.SetInputData(pd)
+        mapper.SetTransformCoordinate(coord)
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+        actor.SetPickable(False)
+        actor.SetVisibility(False)
+        prop = actor.GetProperty()
+        is_dark = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
+        prop.SetColor(*((0.95, 0.95, 0.95) if is_dark else (0.10, 0.10, 0.10)))
+        prop.SetLineWidth(1.0)
+        # ponytail: pointilles via vtkProperty2D ; trait plein si le backend GL
+        # ignore le stipple.
+        prop.SetLineStipplePattern(0xF0F0)
+        prop.SetLineStippleRepeatFactor(1)
+        self._window_rect_pd = pd
+        self._window_rect_actor = actor
+        self.renderer.AddViewProp(actor)
+
+    def _update_window_rect(self, p1, p2):
+        self._ensure_window_rect_actor()
+        (x1, y1), (x2, y2) = p1, p2
+        pts = self._window_rect_pd.GetPoints()
+        pts.SetPoint(0, x1, y1, 0.0)
+        pts.SetPoint(1, x2, y1, 0.0)
+        pts.SetPoint(2, x2, y2, 0.0)
+        pts.SetPoint(3, x1, y2, 0.0)
+        pts.Modified()
+        self._window_rect_pd.Modified()
+        self._window_rect_actor.SetVisibility(True)
+        self.render_window.Render()
+
+    def _hide_window_rect(self):
+        if self._window_rect_actor is not None and self._window_rect_actor.GetVisibility():
+            self._window_rect_actor.SetVisibility(False)
+            self.render_window.Render()
+
+    def _window_select_from_rect(self, p0, p1, additive):
+        x0, x1 = sorted((p0[0], p1[0]))
+        y0, y1 = sorted((p0[1], p1[1]))
+        crossing = p1[0] < p0[0]   # trace de droite a gauche => inclut les intersectees
+
+        # Rectangle degenere (simple clic) -> picking ponctuel classique.
+        if (x1 - x0) < 3 and (y1 - y0) < 3:
+            cands = self._pick_selection_candidates(int(round(p1[0])), int(round(p1[1])))
+            if cands:
+                c = cands[0]
+                self._select_item(c["role"], c["index"], additive=additive)
+            elif not additive:
+                self.clear_selection()
+            self.windowSelectionDone.emit(list(self._selected_items))
+            return
+
+        cam = self.renderer.GetActiveCamera()
+        if cam is None:
+            return
+        w, h = self.renderer.GetSize()
+        m = cam.GetCompositeProjectionTransformMatrix(self.renderer.GetTiledAspectRatio(), -1.0, 1.0)
+
+        def _proj(pt):
+            o = m.MultiplyPoint((pt[0], pt[1], pt[2], 1.0))
+            if abs(o[3]) < 1e-9:
+                return None
+            return ((o[0] / o[3] * 0.5 + 0.5) * w, (o[1] / o[3] * 0.5 + 0.5) * h)
+
+        FACE_ROLES = ("planars", "load_areas", "support_planar")
+        all_in = {}   # cle -> toutes les cellules vues jusqu'ici entierement dans le rectangle
+        cross = {}    # cle -> au moins une cellule touchant le rectangle
+
+        # ponytail: boucle python O(cellules) par selection-fenetre ; OK jusqu'a
+        # ~100k cellules. Passer a vtk.util.numpy_support (projection vectorisee)
+        # si le rendu du modele est plus lourd.
+        for info in self._pickable_actors.values():
+            actor = info["actor"]
+            if actor is None or not actor.GetVisibility():
+                continue
+            role = info["role"]
+            pd = self._get_actor_polydata(actor)
+            if pd is None:
+                continue
+            arr = pd.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
+            pts = pd.GetPoints()
+            if arr is None or pts is None:
+                continue
+            for cid in range(pd.GetNumberOfCells()):
+                key = (role, int(arr.GetTuple1(cid)))
+                cell = pd.GetCell(cid)
+                npc = cell.GetNumberOfPoints()
+                if npc == 0:
+                    continue
+                scr = []
+                ok = True
+                for k in range(npc):
+                    sp = _proj(pts.GetPoint(cell.GetPointId(k)))
+                    if sp is None:
+                        ok = False
+                        break
+                    scr.append(sp)
+                if not ok:
+                    all_in[key] = False
+                    continue
+                cell_in = all(x0 <= sx <= x1 and y0 <= sy <= y1 for sx, sy in scr)
+                all_in[key] = all_in.get(key, True) and cell_in
+                if cross.get(key):
+                    continue
+                if npc == 1:
+                    if cell_in:
+                        cross[key] = True
+                    continue
+                closed = npc >= 3 and role in FACE_ROLES
+                n_edges = npc if closed else npc - 1
+                for e in range(n_edges):
+                    ax, ay = scr[e]
+                    bx, by = scr[(e + 1) % npc]
+                    if _seg_intersects_rect(ax, ay, bx, by, x0, y0, x1, y1):
+                        cross[key] = True
+                        break
+
+        keys = [k for k, v in all_in.items() if v or (crossing and cross.get(k))]
+        new_items = [{"role": r, "index": i} for (r, i) in sorted(keys)]
+        if additive:
+            have = {(it["role"], it["index"]) for it in self._selected_items}
+            new_items = list(self._selected_items) + [
+                it for it in new_items if (it["role"], it["index"]) not in have
+            ]
+        self._selected_items = new_items
+        self._selected_item = self._selected_items[0] if self._selected_items else None
+        self._selection_candidates = []
+        self._selection_candidate_keys = []
+        self._selection_cycle_index = -1
+        self.selectionChanged.emit(list(self._selected_items))
+        self._refresh_selection_overlay()
+        self.windowSelectionDone.emit(list(self._selected_items))
 
     def get_selected_items(self) -> list:
         """Retourne la liste des items actuellement sélectionnés : [{"role", "index"}, ...]."""

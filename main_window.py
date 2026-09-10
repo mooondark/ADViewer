@@ -989,6 +989,8 @@ class MainWindow(QMainWindow):
         self.filter_btn = None
         self.clear_filter_btn = None
         self.camera_btn = None
+        self.window_select_btn = None
+        self.shortcut_window_select = None
         self.shortcut_view_front_back = None
         self.shortcut_view_left_right = None
         self.shortcut_view_top_bottom = None
@@ -1518,6 +1520,42 @@ class MainWindow(QMainWindow):
     # Le rendu est effectue a la volee par QPixmap.loadFromData() avec adaptation de couleur
     # selon le theme actif (noir en theme clair, blanc en theme sombre).
     _SVG_VECTOR_DATA = {
+        "window_select": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNC45OTg0IDJI'
+            'MlY0Ljk5ODRINC45OTg0VjJaIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0'
+            'aD0iMS40OTkyIiBzdHJva2UtbWl0ZXJsaW1pdD0iMS41IiBzdHJva2UtbGluZWNh'
+            'cD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTQu'
+            'OTk4NTQgMy41MDA0OUgxOC45OTg3IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13'
+            'aWR0aD0iMS41MDMzNSIgc3Ryb2tlLW1pdGVybGltaXQ9IjEuNSIgc3Ryb2tlLWxp'
+            'bmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9'
+            'Ik0zLjUgNC45OTgwNVYxOSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9'
+            'IjEuMzU1ODkiIHN0cm9rZS1taXRlcmxpbWl0PSIxLjUiIHN0cm9rZS1saW5lY2Fw'
+            'PSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMjAu'
+            'NDk3OCA0Ljk5OTUxVjE5LjAwMTUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdp'
+            'ZHRoPSIxLjM1NTg5IiBzdHJva2UtbWl0ZXJsaW1pdD0iMS41IiBzdHJva2UtbGlu'
+            'ZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0i'
+            'TTQuOTk4NTQgMjAuNTAwNUgxOC45OTg3IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9r'
+            'ZS13aWR0aD0iMS41MDMzNSIgc3Ryb2tlLW1pdGVybGltaXQ9IjEuNSIgc3Ryb2tl'
+            'LWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRo'
+            'IGQ9Ik00Ljk5ODQgMTlIMlYyMS45OTg0SDQuOTk4NFYxOVoiIHN0cm9rZT0iIzAw'
+            'MDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjQ5OTIiIHN0cm9rZS1taXRlcmxpbWl0PSIx'
+            'LjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3Vu'
+            'ZCIvPgo8cGF0aCBkPSJNMjEuOTk3NCAyLjAwMDk4SDE4Ljk5OVY0Ljk5OTM4SDIx'
+            'Ljk5NzRWMi4wMDA5OFoiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIx'
+            'LjQ5OTIiIHN0cm9rZS1taXRlcmxpbWl0PSIxLjUiIHN0cm9rZS1saW5lY2FwPSJy'
+            'b3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMjEuOTk3'
+            'NCAxOS4wMDFIMTguOTk5VjIxLjk5OTRIMjEuOTk3NFYxOS4wMDFaIiBzdHJva2U9'
+            'IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS40OTkyIiBzdHJva2UtbWl0ZXJsaW1p'
+            'dD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0i'
+            'cm91bmQiLz4KPHBhdGggZD0iTTkgMTJIMTJNMTUgMTJIMTJNMTIgMTJWOU0xMiAx'
+            'MlYxNSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tl'
+            'LWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3Zn'
+            'Pg=='
+        ),
         "appliquer": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
             'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
@@ -1671,6 +1709,7 @@ class MainWindow(QMainWindow):
             (self.view_iso_btn,    "iso"),
             (self.filter_btn,      "filter"),
             (self.clear_filter_btn,"filter_clear"),
+            (self.window_select_btn, "window_select"),
             (self.camera_btn,      "camera"),
             (self.browse_fto_btn,  "parcourir"),
             (self.clear_log_btn,   "effacer"),
@@ -2029,9 +2068,28 @@ class MainWindow(QMainWindow):
         filter_row.addWidget(self.camera_btn)
         filter_row.addStretch(1)
 
+        self.window_select_btn = QPushButton()
+        self.window_select_btn.setCheckable(True)
+        self.window_select_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.window_select_btn, "window_select", tr_ui("tooltip_window_select"))
+        self.window_select_btn.toggled.connect(self.on_window_select_toggled)
+
+        sc_win = QShortcut(QKeySequence("Alt+S"), self)
+        sc_win.setContext(Qt.ApplicationShortcut)
+        sc_win.activated.connect(self.window_select_btn.toggle)
+        self.shortcut_window_select = sc_win
+
+        select_row = QHBoxLayout()
+        select_row.setContentsMargins(0, 0, 0, 0)
+        select_row.setSpacing(3)
+        select_row.addStretch(1)
+        select_row.addWidget(self.window_select_btn)
+        select_row.addStretch(1)
+
         action_card.layout.addWidget(self.fit_btn)
         action_card.layout.addLayout(views_row)
         action_card.layout.addLayout(filter_row)
+        action_card.layout.addLayout(select_row)
 
         transparency_title = QLabel(tr_ui("transparency"))
         transparency_title.setStyleSheet(f"color:{FG_DIM};")
@@ -2184,6 +2242,8 @@ class MainWindow(QMainWindow):
         viewer_card = Card(tr_ui("view3d"), use_shadow=False)
         self.viewer = VTKViewerWidget()
         self.viewer.selectionChanged.connect(self.on_viewer_selection_changed)
+        self.viewer.windowSelectModeChanged.connect(self._sync_window_select_button)
+        self.viewer.windowSelectionDone.connect(self._log_selection_summary)
         self._update_display_checkboxes()
         viewer_card.layout.addWidget(self.viewer, 1)
         right_splitter.addWidget(viewer_card)
@@ -4414,6 +4474,50 @@ class MainWindow(QMainWindow):
                 result.add((role, index))
         return result
 
+    def on_window_select_toggled(self, checked: bool):
+        if self.viewer is not None:
+            self.viewer.set_window_select_mode(bool(checked))
+
+    _ROLE_COUNT_KEYS = {
+        "lines": "selection_count_lines",
+        "planars": "selection_count_planars",
+        "load_areas": "selection_count_load_areas",
+        "support_punctual": "selection_count_support_punctual",
+        "support_linear": "selection_count_support_linear",
+        "support_planar": "selection_count_support_planar",
+        "punctual_load": "selection_count_punctual_load",
+        "linear_load": "selection_count_linear_load",
+        "planar_load": "selection_count_planar_load",
+    }
+
+    def _log_items_summary(self, header_key: str, items: list) -> bool:
+        counts = {}
+        for it in (items or []):
+            role = str((it or {}).get("role") or "")
+            counts[role] = counts.get(role, 0) + 1
+        body = [
+            "  - " + tr_ui(key, count=counts[role])
+            for role, key in self._ROLE_COUNT_KEYS.items()
+            if counts.get(role)
+        ]
+        if not body:
+            return False
+        self.log(tr_ui(header_key), "info")
+        for line in body:
+            self.log(line, "info")
+        return True
+
+    def _log_selection_summary(self, items: list):
+        if not self._log_items_summary("selection_summary_header", items):
+            self.log(tr_ui("selection_summary_none"), "info")
+
+    def _sync_window_select_button(self, active: bool):
+        btn = self.window_select_btn
+        if btn is not None and btn.isChecked() != bool(active):
+            btn.blockSignals(True)
+            btn.setChecked(bool(active))
+            btn.blockSignals(False)
+
     def toggle_isolation(self):
         if self.current_model_data is None or self.viewer is None:
             self._apply_isolate_button_icon(False)
@@ -4436,10 +4540,12 @@ class MainWindow(QMainWindow):
                 # Sélection inchangée ou vide → annuler l'isolation
                 self.viewer.set_isolated_selection(None)
                 self._apply_isolate_button_icon(False)
+                self.log(tr_ui("isolation_summary_cleared"), "info")
             else:
                 # Sélection différente → isoler les éléments actuellement sélectionnés
                 self.viewer.set_isolated_selection(selected_items)
                 self._apply_isolate_button_icon(True)
+                self._log_items_summary("isolation_summary_header", selected_items)
             self._update_display_checkboxes()
             self._refresh_mesh_display()
             return
@@ -4452,6 +4558,7 @@ class MainWindow(QMainWindow):
         # Passer la liste complète — set_isolated_selection accepte une list
         self.viewer.set_isolated_selection(selected_items)
         self._apply_isolate_button_icon(True)
+        self._log_items_summary("isolation_summary_header", selected_items)
         self._update_display_checkboxes()
         self._refresh_mesh_display()
 
