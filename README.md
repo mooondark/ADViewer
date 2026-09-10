@@ -9,14 +9,16 @@ Visualiseur 3D pour les modèles Advance Design.
 
 ## Fonctionnalités
 
-- Visualisation 3D
+- Visualisation 3D : rendu filaire / profilé / plein
 - Sélection d'objets
 - Extraction des propriétés
 - Métré automatique
 - Métré par matériau
 - Résultats sur appuis (ponctuels, linéaires et surfaciques), résultats sur les voiles (torseurs) et sur les éléments filaires (diagrammes)
-- Export des résultats au format .xlsx
-- Export IFC
+- Export des résultats des filaires au format .xlsx
+- Export au format IFC
+- Filtrage / Isolation des élements
+- Enregistrement au format .PNG
 
 ## Documentation
 

@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "2.02"
+APP_VERSION = "2.03"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -287,6 +287,7 @@ MSG_UI = {
     "browse": "Parcourir...",
     "start_api": "Démarrer API",
     "stop_api": "Arrêter API",
+    "restart_api": "Redémarrer API",
 
     "actions": "Actions",
     "load_model": "Charger le modèle",

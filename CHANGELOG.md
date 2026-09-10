@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.03
+
+### FR
+- Le bouton « Démarrer/Arrêter API » est remplacé par trois icônes : On, Off et Redémarrer (infobulles dédiées). L'icône On ou Off est atténuée selon l'état de l'API ; Redémarrer n'est actif que si l'API tourne.
+- Le bouton « Charger le modèle » devient une icône, placée sur la même ligne que le champ chemin et le bouton Parcourir. Il est désactivé tant que l'API n'est pas démarrée ou que le chemin est vide.
+- Carte « Projet » réorganisée : ligne 1 = contrôles API, ligne 2 = chemin + Parcourir + Charger.
+
+### EN
+- The "Start/Stop API" button is replaced by three icons: On, Off and Restart (with dedicated tooltips). The On or Off icon is dimmed depending on the API state; Restart is enabled only while the API is running.
+- The "Load model" button becomes an icon, on the same row as the path field and the Browse button. It is disabled while the API is not running or the path is empty.
+- "Project" card reorganised: row 1 = API controls, row 2 = path + Browse + Load.
+
 ## 2.02
 
 ### FR

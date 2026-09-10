@@ -1010,7 +1010,9 @@ class MainWindow(QMainWindow):
         set_active_theme(self.theme_name)
         self.api_server_exe = DEFAULT_API_SERVER_EXE
         self.api_host = DEFAULT_HOST
-        self.start_api_btn = None
+        self.api_on_btn = None
+        self.api_off_btn = None
+        self.api_restart_btn = None
         self.api_server_process = None
         self.act_theme_dark = None
         self.act_theme_light = None
@@ -1522,6 +1524,84 @@ class MainWindow(QMainWindow):
     # Le rendu est effectue a la volee par QPixmap.loadFromData() avec adaptation de couleur
     # selon le theme actif (noir en theme clair, blanc en theme sombre).
     _SVG_VECTOR_DATA = {
+        "api_on": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMSAxNVY5QzEg'
+            'NS42ODYyOSAzLjY4NjI5IDMgNyAzSDE3QzIwLjMxMzcgMyAyMyA1LjY4NjI5IDIz'
+            'IDlWMTVDMjMgMTguMzEzNyAyMC4zMTM3IDIxIDE3IDIxSDdDMy42ODYyOSAyMSAx'
+            'IDE4LjMxMzcgMSAxNVoiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIx'
+            'LjUiLz4KPHBhdGggZD0iTTkgOUMxMC42NTY5IDkgMTIgMTAuMzQzMSAxMiAxMkMx'
+            'MiAxMy42NTY5IDEwLjY1NjkgMTUgOSAxNUM3LjM0MzE1IDE1IDYgMTMuNjU2OSA2'
+            'IDEyQzYgMTAuMzQzMSA3LjM0MzE1IDkgOSA5WiIgc3Ryb2tlPSIjMDAwMDAwIiBz'
+            'dHJva2Utd2lkdGg9IjEuNSIvPgo8cGF0aCBkPSJNMTQgMTVWOUwxOCAxNVY5IiBz'
+            'dHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNh'
+            'cD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+        ),
+        "api_off": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMSAxNVY5QzEg'
+            'NS42ODYyOSAzLjY4NjI5IDMgNyAzSDE3QzIwLjMxMzcgMyAyMyA1LjY4NjI5IDIz'
+            'IDlWMTVDMjMgMTguMzEzNyAyMC4zMTM3IDIxIDE3IDIxSDdDMy42ODYyOSAyMSAx'
+            'IDE4LjMxMzcgMSAxNVoiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIx'
+            'LjUiLz4KPHBhdGggZD0iTTcgOUM4LjY1Njg1IDkgMTAgMTAuMzQzMSAxMCAxMkMx'
+            'MCAxMy42NTY5IDguNjU2ODUgMTUgNyAxNUM1LjM0MzE1IDE1IDQgMTMuNjU2OSA0'
+            'IDEyQzQgMTAuMzQzMSA1LjM0MzE1IDkgNyA5WiIgc3Ryb2tlPSIjMDAwMDAwIiBz'
+            'dHJva2Utd2lkdGg9IjEuNSIvPgo8cGF0aCBkPSJNMTIgMTVWOUwxNSA5IiBzdHJv'
+            'a2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0i'
+            'cm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTE3IDE1'
+            'VjlMMjAgOSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ry'
+            'b2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjxw'
+            'YXRoIGQ9Ik0xMi4wMDAxIDEySDE0LjU3MTUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ry'
+            'b2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxp'
+            'bmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTcuMDAwMSAxMkgxOS41NzE1IiBz'
+            'dHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNh'
+            'cD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+        ),
+        "api_restart": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMjEuMTY3OSA4'
+            'QzE5LjYyNDcgNC40NjgxOSAxNi4xMDA2IDIgMTEuOTk5OSAyQzYuODE0NTkgMiAy'
+            'LjU1MTA0IDUuOTQ2NjggMi4wNDkzMiAxMSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJv'
+            'a2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGlu'
+            'ZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0xNyA4SDIxLjRDMjEuNzMxNCA4IDIy'
+            'IDcuNzMxMzcgMjIgNy40VjMiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRo'
+            'PSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJy'
+            'b3VuZCIvPgo8cGF0aCBkPSJNMi44ODE0NiAxNkM0LjQyNDU4IDE5LjUzMTggNy45'
+            'NDg3NCAyMiAxMi4wNDk0IDIyQzE3LjIzNDcgMjIgMjEuNDk4MyAxOC4wNTMzIDIy'
+            'IDEzIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2Ut'
+            'bGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGgg'
+            'ZD0iTTcuMDQ5MzIgMTZIMi42NDkzMkMyLjMxNzk1IDE2IDIuMDQ5MzIgMTYuMjY4'
+            'NiAyLjA0OTMyIDE2LjZWMjEiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRo'
+            'PSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJy'
+            'b3VuZCIvPgo8L3N2Zz4='
+        ),
+        "charger_modele": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNOCAyMUgyMC40'
+            'QzIwLjczMTQgMjEgMjEgMjAuNzMxNCAyMSAyMC40VjMuNkMyMSAzLjI2ODYzIDIw'
+            'LjczMTQgMyAyMC40IDNIMy42QzMuMjY4NjMgMyAzIDMuMjY4NjMgMyAzLjZWMTYi'
+            'IHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5l'
+            'Y2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJN'
+            'MTAgNkwxOCA2IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBz'
+            'dHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4K'
+            'PHBhdGggZD0iTTYgNkg3IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0i'
+            'MS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91'
+            'bmQiLz4KPHBhdGggZD0iTTMuNSAyMC41TDEyIDEyTTEyIDEyVjE2TTEyIDEySDgi'
+            'IHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5l'
+            'Y2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
+        ),
         "window_select": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
             'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
@@ -1737,6 +1817,19 @@ class MainWindow(QMainWindow):
         pm.fill(Qt.transparent)
         return QIcon(pm)
 
+    def _make_api_icon(self, kind: str, dim: bool = False) -> QIcon:
+        icon = self._make_view_icon(kind)
+        if not dim:
+            return icon
+        pm = icon.pixmap(48, 48)
+        faded = QPixmap(pm.size())
+        faded.fill(Qt.transparent)
+        p = QPainter(faded)
+        p.setOpacity(0.3)
+        p.drawPixmap(0, 0, pm)
+        p.end()
+        return QIcon(faded)
+
 
     def _refresh_toolbar_icons(self):
         """Reapplique les icones de la toolbar apres un changement de theme."""
@@ -1753,6 +1846,7 @@ class MainWindow(QMainWindow):
             (self.camera_btn,      "camera"),
             (self.browse_fto_btn,  "parcourir"),
             (self.clear_log_btn,   "effacer"),
+            (self.load_btn,        "charger_modele"),
         ]
         for btn, kind in btn_kinds:
             if btn is not None:
@@ -2002,33 +2096,67 @@ class MainWindow(QMainWindow):
 
     def _build_project_card(self, left_layout):
         file_card = Card(tr_ui("project"))
+
+        self.host_edit = QLineEdit(self.api_host)
+        self.host_edit.setVisible(False)
+
+        self.api_on_btn = QPushButton()
+        self.api_on_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.api_on_btn, "api_on", tr_ui("start_api"))
+        self.api_on_btn.clicked.connect(self.start_api_server)
+
+        self.api_off_btn = QPushButton()
+        self.api_off_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.api_off_btn, "api_off", tr_ui("stop_api"))
+        self.api_off_btn.clicked.connect(lambda: self.stop_api_server())
+
+        self.api_restart_btn = QPushButton()
+        self.api_restart_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.api_restart_btn, "api_restart", tr_ui("restart_api"))
+        self.api_restart_btn.clicked.connect(self._restart_api_server)
+
+        api_label = QLabel("API")
+        api_label.setStyleSheet("font-weight:bold;")
+
+        # Ligne 1 : API + On + Off + Restart
+        api_row = QHBoxLayout()
+        api_row.addWidget(api_label)
+        api_row.addSpacing(4)
+        api_row.addWidget(self.api_on_btn)
+        api_row.addWidget(self.api_off_btn)
+        api_row.addWidget(self.api_restart_btn)
+        api_row.addStretch(1)
+        file_card.layout.addLayout(api_row)
+
+        # Ligne 2 : chemin + parcourir + charger
         self.fto_edit = QLineEdit()
         self.fto_edit.setPlaceholderText(tr_ui("project_file"))
+
         self.browse_fto_btn = QPushButton()
         self.browse_fto_btn.setProperty("iconOnly", True)
         self._setup_view_button(self.browse_fto_btn, "parcourir", tr_ui("browse"))
         self.browse_fto_btn.clicked.connect(self.browse_fto)
 
-        hb1 = QHBoxLayout()
-        hb1.addWidget(self.fto_edit, 1)
-        hb1.addWidget(self.browse_fto_btn)
-
-        file_card.layout.addWidget(QLabel(tr_ui("project_file")))
-        file_card.layout.addLayout(hb1)
-
-        self.host_edit = QLineEdit(self.api_host)
-        self.host_edit.setVisible(False)
-
-        self.start_api_btn = QPushButton(tr_ui("start_api"))
-        self.start_api_btn.clicked.connect(self.toggle_api_server)
-        file_card.layout.addWidget(self.start_api_btn)
-
-        self.load_btn = QPushButton(tr_ui("load_model"))
-        self.load_btn.setObjectName("primary")
+        self.load_btn = QPushButton()
+        self.load_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.load_btn, "charger_modele", tr_ui("load_model"))
         self.load_btn.clicked.connect(self.load_model)
-        file_card.layout.addWidget(self.load_btn)
+
+        path_row = QHBoxLayout()
+        path_row.addWidget(self.fto_edit, 1)
+        path_row.addWidget(self.browse_fto_btn)
+        path_row.addWidget(self.load_btn)
+        file_card.layout.addLayout(path_row)
+
+        self.fto_edit.textChanged.connect(self._update_load_btn_state)
+        self._update_load_btn_state()
 
         left_layout.addWidget(file_card)
+
+    def _update_load_btn_state(self):
+        if self.load_btn is not None and self.fto_edit is not None:
+            api_running = bool(self.api_server_process and self.api_server_process.poll() is None)
+            self.load_btn.setEnabled(api_running and bool(self.fto_edit.text().strip()))
 
     def _build_actions_card(self, left_layout):
         action_card = Card(tr_ui("actions"))
@@ -4734,19 +4862,16 @@ class MainWindow(QMainWindow):
 
     def _update_api_button_state(self):
         running = bool(self.api_server_process and self.api_server_process.poll() is None)
-        if self.start_api_btn is None:
-            return
-        if running:
-            self.start_api_btn.setText(tr_ui("stop_api"))
-            self.start_api_btn.setObjectName("apiStopBtn")
-        else:
-            self.start_api_btn.setText(tr_ui("start_api"))
-            self.start_api_btn.setObjectName("")
+        if not running:
             self.api_server_process = None
             self.api_server_started_by_viewer = False
-        self.start_api_btn.style().unpolish(self.start_api_btn)
-        self.start_api_btn.style().polish(self.start_api_btn)
-        self.start_api_btn.update()
+        if self.api_on_btn is None:
+            return
+        self.api_on_btn.setIcon(self._make_api_icon("api_on", dim=not running))
+        self.api_off_btn.setIcon(self._make_api_icon("api_off", dim=running))
+        self.api_restart_btn.setIcon(self._make_api_icon("api_restart", dim=not running))
+        self.api_restart_btn.setEnabled(running)
+        self._update_load_btn_state()
 
     def apply_theme(self, theme_name: str):
         self.theme_name = theme_name if theme_name in QT_MATERIAL_THEMES else DEFAULT_THEME
@@ -5009,6 +5134,8 @@ class MainWindow(QMainWindow):
         dlg.exec()
 
     def start_api_server(self):
+        if self.api_server_process and self.api_server_process.poll() is None:
+            return
         exe_path = normalize_windows_path(self.api_server_exe)
         self.api_server_exe = exe_path
 
@@ -5086,13 +5213,6 @@ class MainWindow(QMainWindow):
         session.reset_api_session()
         self.project_session = None
         return self._restart_api_server()
-
-    def toggle_api_server(self):
-        running = bool(self.api_server_process and self.api_server_process.poll() is None)
-        if running:
-            self.stop_api_server(log_on_success=True)
-        else:
-            self.start_api_server()
 
     def open_settings_dialog(self):
         dlg = SettingsDialog(
@@ -5469,7 +5589,7 @@ class MainWindow(QMainWindow):
             self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn,
             self.window_select_btn,
             self.transparency_slider, self.profiles_transparency_slider,
-            self.start_api_btn,
+            self.api_on_btn, self.api_off_btn, self.api_restart_btn,
             self.chk_lines, self.chk_planars, self.chk_load_areas,
             self.chk_support_punctual, self.chk_support_linear, self.chk_support_planar,
             self.chk_marker, self.chk_color_by_section, self.cmb_display_mode, self.clear_log_btn
@@ -5527,16 +5647,16 @@ class MainWindow(QMainWindow):
             self.spin_linear_load_scale.setEnabled(False)
 
         if loading:
-            self.load_btn.setText(tr_ui("loading"))
             if self.load_progress_container is not None:
                 self.load_progress_container.setVisible(True)
             self._set_load_progress(0, "Préparation du chargement...")
         else:
-            self.load_btn.setText(tr_ui("load_model"))
             if self.load_progress_container is not None:
                 self.load_progress_container.setVisible(False)
             self._set_load_progress(0, "Chargement en attente")
             self._update_transparency_controls_state()
+            self._update_api_button_state()
+            self._update_load_btn_state()
 
     def load_model(self):
         expect_results = self._pending_expect_results
