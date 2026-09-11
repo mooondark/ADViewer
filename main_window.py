@@ -39,7 +39,8 @@ try:
         QSplitter, QCheckBox, QComboBox, QMenu, QDialog, QFormLayout,
         QDialogButtonBox, QDoubleSpinBox, QSpinBox, QSlider, QColorDialog, QProgressBar, QMessageBox,
         QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QGraphicsDropShadowEffect,
-        QScrollArea, QToolButton, QGridLayout, QListView, QInputDialog
+        QScrollArea, QToolButton, QGridLayout, QListView, QInputDialog,
+        QRadioButton, QButtonGroup
     )
 except ImportError as e:
     raise RuntimeError("Le module 'PySide6' est requis. Installez les dépendances de l'application avant l'exécution.") from e
@@ -460,6 +461,58 @@ class ApiUrlConfigDialog(QDialog):
 
     def get_value(self) -> str:
         return self.url_edit.text().strip().rstrip("/")
+
+
+class PngExportConfigDialog(QDialog):
+    _RESOLUTION_MODES = ("hd", "fhd", "qhd", "4k")
+
+    def __init__(self, current_mode: str, current_scale: int, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(tr_ui("png_export_dialog_title"))
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+        self._group = QButtonGroup(self)
+        self._radios = {}
+
+        row = QHBoxLayout()
+        radio_multiplier = QRadioButton(tr_ui("png_export_mode_multiplier"))
+        self._group.addButton(radio_multiplier)
+        self._radios["multiplier"] = radio_multiplier
+        row.addWidget(radio_multiplier)
+
+        self._scale_spin = QSpinBox()
+        self._scale_spin.setRange(PNG_EXPORT_SCALE_MIN, PNG_EXPORT_SCALE_MAX)
+        self._scale_spin.setValue(max(PNG_EXPORT_SCALE_MIN, min(PNG_EXPORT_SCALE_MAX, int(current_scale))))
+        row.addWidget(self._scale_spin)
+        row.addStretch(1)
+        layout.addLayout(row)
+
+        radio_multiplier.toggled.connect(self._scale_spin.setEnabled)
+
+        for mode in self._RESOLUTION_MODES:
+            radio = QRadioButton(tr_ui(f"png_export_mode_{mode}"))
+            self._group.addButton(radio)
+            self._radios[mode] = radio
+            layout.addWidget(radio)
+
+        selected = current_mode if current_mode in self._radios else DEFAULT_PNG_EXPORT_MODE
+        self._radios[selected].setChecked(True)
+        self._scale_spin.setEnabled(selected == "multiplier")
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def get_mode(self) -> str:
+        for mode, radio in self._radios.items():
+            if radio.isChecked():
+                return mode
+        return DEFAULT_PNG_EXPORT_MODE
+
+    def get_scale(self) -> int:
+        return int(self._scale_spin.value())
 
 
 class AboutDialog(QDialog):
@@ -1020,6 +1073,7 @@ class MainWindow(QMainWindow):
         self.act_view_projection_orthogonal = None
         self.view_projection_mode = DEFAULT_VIEW_PROJECTION
         self.png_export_scale = DEFAULT_PNG_EXPORT_SCALE
+        self.png_export_mode = DEFAULT_PNG_EXPORT_MODE
         self.calc_ef_timeout = DEFAULT_CALC_EF_TIMEOUT
         self.calc_btn = None
         self.calc_worker = None
@@ -1145,6 +1199,7 @@ class MainWindow(QMainWindow):
             "last_fto_path": normalize_windows_path(self.fto_edit.text().strip()) if getattr(self, "fto_edit", None) is not None else "",
             "view_projection": self.view_projection_mode,
             "png_export_scale": str(self.png_export_scale),
+            "png_export_mode": self.png_export_mode,
             "calc_ef_timeout": str(self.calc_ef_timeout),
         }
         cfg["styles"] = {
@@ -1220,6 +1275,13 @@ class MainWindow(QMainWindow):
             except (TypeError, ValueError):
                 loaded_png_scale = DEFAULT_PNG_EXPORT_SCALE
             self.png_export_scale = max(PNG_EXPORT_SCALE_MIN, min(PNG_EXPORT_SCALE_MAX, loaded_png_scale))
+
+            loaded_png_mode = str(general.get("png_export_mode", DEFAULT_PNG_EXPORT_MODE) or DEFAULT_PNG_EXPORT_MODE).strip().lower()
+            if loaded_png_mode not in ("multiplier",) + tuple(PNG_EXPORT_RESOLUTIONS.keys()):
+                loaded_png_mode = DEFAULT_PNG_EXPORT_MODE
+            self.png_export_mode = loaded_png_mode
+            if not (cfg.has_section("general") and "png_export_mode" in cfg["general"]):
+                config_updated = True
 
             try:
                 loaded_calc_timeout = int(str(general.get("calc_ef_timeout", DEFAULT_CALC_EF_TIMEOUT)).strip())
@@ -1603,40 +1665,27 @@ class MainWindow(QMainWindow):
             'Y2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
         ),
         "window_select": (
-            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
-            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
-            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
-            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
-            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNC45OTg0IDJI'
-            'MlY0Ljk5ODRINC45OTg0VjJaIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0'
-            'aD0iMS40OTkyIiBzdHJva2UtbWl0ZXJsaW1pdD0iMS41IiBzdHJva2UtbGluZWNh'
-            'cD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTQu'
-            'OTk4NTQgMy41MDA0OUgxOC45OTg3IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13'
-            'aWR0aD0iMS41MDMzNSIgc3Ryb2tlLW1pdGVybGltaXQ9IjEuNSIgc3Ryb2tlLWxp'
-            'bmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9'
-            'Ik0zLjUgNC45OTgwNVYxOSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9'
-            'IjEuMzU1ODkiIHN0cm9rZS1taXRlcmxpbWl0PSIxLjUiIHN0cm9rZS1saW5lY2Fw'
-            'PSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMjAu'
-            'NDk3OCA0Ljk5OTUxVjE5LjAwMTUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdp'
-            'ZHRoPSIxLjM1NTg5IiBzdHJva2UtbWl0ZXJsaW1pdD0iMS41IiBzdHJva2UtbGlu'
-            'ZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0i'
-            'TTQuOTk4NTQgMjAuNTAwNUgxOC45OTg3IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9r'
-            'ZS13aWR0aD0iMS41MDMzNSIgc3Ryb2tlLW1pdGVybGltaXQ9IjEuNSIgc3Ryb2tl'
-            'LWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRo'
-            'IGQ9Ik00Ljk5ODQgMTlIMlYyMS45OTg0SDQuOTk4NFYxOVoiIHN0cm9rZT0iIzAw'
-            'MDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjQ5OTIiIHN0cm9rZS1taXRlcmxpbWl0PSIx'
-            'LjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3Vu'
-            'ZCIvPgo8cGF0aCBkPSJNMjEuOTk3NCAyLjAwMDk4SDE4Ljk5OVY0Ljk5OTM4SDIx'
-            'Ljk5NzRWMi4wMDA5OFoiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIx'
-            'LjQ5OTIiIHN0cm9rZS1taXRlcmxpbWl0PSIxLjUiIHN0cm9rZS1saW5lY2FwPSJy'
-            'b3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMjEuOTk3'
-            'NCAxOS4wMDFIMTguOTk5VjIxLjk5OTRIMjEuOTk3NFYxOS4wMDFaIiBzdHJva2U9'
-            'IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS40OTkyIiBzdHJva2UtbWl0ZXJsaW1p'
-            'dD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0i'
-            'cm91bmQiLz4KPHBhdGggZD0iTTkgMTJIMTJNMTUgMTJIMTJNMTIgMTJWOU0xMiAx'
-            'MlYxNSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tl'
-            'LWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3Zn'
-            'Pg=='
+            'PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmlld0JveD0iMCAwIDI0IDI0IiBm'
+            'aWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxw'
+            'YXRoIGQ9Ik00Ljk5OCAySDJ2Mi45OThoMi45OTh6IiBzdHJva2U9IiMwMDAwMDAiIHN0'
+            'cm9rZS13aWR0aD0iMS40OTkiIHN0cm9rZS1taXRlcmxpbWl0PSIxLjUiIHN0cm9rZS1s'
+            'aW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9'
+            'Ik00Ljk5OSAzLjUwMWgxNCIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEu'
+            'NTAzIiBzdHJva2UtbWl0ZXJsaW1pdD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQi'
+            'IHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNMy41IDQuOTk5VjE5'
+            'TTIwLjQ5OCA1djE0LjAwMiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEu'
+            'MzU2IiBzdHJva2UtbWl0ZXJsaW1pdD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQi'
+            'IHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNNC45OTkgMjAuNTAx'
+            'aDE0IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41MDMiIHN0cm9rZS1t'
+            'aXRlcmxpbWl0PSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVq'
+            'b2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik00Ljk5OCAxOUgydjIuOTk4aDIuOTk4ek0y'
+            'MS45OTcgMi4wMDJIMTlWNWgyLjk5OHptMCAxN0gxOVYyMmgyLjk5OHoiIHN0cm9rZT0i'
+            'IzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjQ5OSIgc3Ryb2tlLW1pdGVybGltaXQ9IjEu'
+            'NSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+'
+            'CiAgPHBhdGggY2xpcC1ydWxlPSJldmVub2RkIiBkPSJtMTAuOTk3IDE1LjAwMi0zLTcg'
+            'NyAzLTIuOTk4Ljk5OXptMS4wMDItMyAyLjk5OCAzeiIgc3Ryb2tlPSIjMDAwMDAwIiBz'
+            'dHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLW1pdGVybGltaXQ9IjEuNSIgc3Ryb2tlLWxp'
+            'bmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo='
         ),
         "appliquer": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
@@ -1735,16 +1784,12 @@ class MainWindow(QMainWindow):
             'bmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+'
         ),
         "zoom_etendu": (
-            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
-            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
-            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
-            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
-            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTUgOUwyMCA0'
-            'TTIwIDRWOE0yMCA0SDE2IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0i'
-            'MS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91'
-            'bmQiLz4KPHBhdGggZD0iTTkgMTVMNCAyME00IDIwVjE2TTQgMjBIOCIgc3Ryb2tl'
-            'PSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJv'
-            'dW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg=='
+            'PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmlld0JveD0iMCAwIDI0IDI0IiBm'
+            'aWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxw'
+            'YXRoIGQ9Ik05IDkgNCA0bTAgMHY0bTAtNGg0bTcgNSA1LTVtMCAwdjRtMC00aC00TTkg'
+            'MTVsLTUgNW0wIDB2LTRtMCA0aDRtNy01IDUgNW0wIDB2LTRtMCA0aC00IiBzdHJva2U9'
+            'IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQi'
+            'IHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
         ),
         "zoom_fenetre": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9hZGVkIHRvOiBT'
@@ -4636,7 +4681,10 @@ class MainWindow(QMainWindow):
             index += 1
 
         try:
-            self.viewer.save_screenshot(candidate, scale=self.png_export_scale)
+            if self.png_export_mode == "multiplier":
+                self.viewer.save_screenshot(candidate, scale=self.png_export_scale)
+            else:
+                self.viewer.save_screenshot(candidate, target_size=PNG_EXPORT_RESOLUTIONS[self.png_export_mode])
         except Exception as exc:
             self.log(tr_log("screenshot_failed", details=str(exc)))
             return
@@ -4947,26 +4995,14 @@ class MainWindow(QMainWindow):
             self.log(tr_log("api_url_loaded", url=new_url))
 
     def open_png_export_dialog(self):
-        try:
-            current = int(self.png_export_scale)
-        except (TypeError, ValueError):
-            current = DEFAULT_PNG_EXPORT_SCALE
-        current = max(PNG_EXPORT_SCALE_MIN, min(PNG_EXPORT_SCALE_MAX, current))
-        # QInputDialog.getInt : spinbox borne a [1, 3], pas de saisie non entiere possible.
-        value, ok = QInputDialog.getInt(
-            self,
-            tr_ui("png_export_dialog_title"),
-            tr_ui("png_export_dialog_label"),
-            current,
-            PNG_EXPORT_SCALE_MIN,
-            PNG_EXPORT_SCALE_MAX,
-            1,
-        )
-        if not ok:
+        dlg = PngExportConfigDialog(self.png_export_mode, self.png_export_scale, self)
+        if dlg.exec() != QDialog.Accepted:
             return
-        self.png_export_scale = int(value)
+        self.png_export_mode = dlg.get_mode()
+        self.png_export_scale = dlg.get_scale()
         self.save_config()
-        self.log(tr_log("png_export_scale_set", scale=self.png_export_scale))
+        label = tr_ui("png_export_mode_multiplier") if self.png_export_mode == "multiplier" else tr_ui(f"png_export_mode_{self.png_export_mode}")
+        self.log(tr_log("png_export_mode_set", label=label))
 
     def open_units_dialog(self):
         dlg = UnitsDialog(self)

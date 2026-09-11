@@ -534,10 +534,20 @@ class VTKViewerWidget(QFrame):
             if hasattr(self, "render_window") and self.render_window is not None:
                 self.render_window.Render()
 
-    def save_screenshot(self, path: str, scale: int = 1):
-        """Enregistre le rendu VTK courant dans un fichier PNG."""
+    def save_screenshot(self, path: str, scale: int = 1, target_size=None):
+        """Enregistre le rendu VTK courant dans un fichier PNG.
+
+        target_size, si fourni (largeur, hauteur), impose une taille de
+        sortie exacte en pixels (rendu hors ecran), independamment de la
+        taille/du ratio de la fenetre 3D visible. Sinon, `scale` agrandit
+        la fenetre visible par un facteur entier (rendu en mosaique).
+        """
         if self.render_window is None:
             raise RuntimeError("Fenetre de rendu VTK indisponible.")
+
+        if target_size is not None:
+            self._save_screenshot_exact_size(path, target_size)
+            return
 
         try:
             scale = int(scale)
@@ -579,6 +589,40 @@ class VTKViewerWidget(QFrame):
                 camera.DeepCopy(cam_backup)
                 if self.renderer is not None:
                     self.renderer.ResetCameraClippingRange()
+            self.render_window.Render()
+
+    def _save_screenshot_exact_size(self, path: str, target_size):
+        """Rend la scene dans une fenetre VTK hors ecran de taille exacte.
+
+        Le renderer est detache temporairement de la fenetre visible et
+        rattache a une fenetre offscreen `target_size`, pour ne jamais
+        redimensionner la fenetre affichee a l'ecran.
+        """
+        width, height = int(target_size[0]), int(target_size[1])
+        if self.renderer is None:
+            raise RuntimeError("Renderer VTK indisponible.")
+
+        offscreen = vtk.vtkRenderWindow()
+        offscreen.SetOffScreenRendering(1)
+        offscreen.SetSize(width, height)
+
+        self.render_window.RemoveRenderer(self.renderer)
+        offscreen.AddRenderer(self.renderer)
+        try:
+            offscreen.Render()
+            w2i = vtk.vtkWindowToImageFilter()
+            w2i.SetInput(offscreen)
+            w2i.SetInputBufferTypeToRGB()
+            w2i.ReadFrontBufferOff()
+            w2i.Update()
+
+            writer = vtk.vtkPNGWriter()
+            writer.SetFileName(path)
+            writer.SetInputConnection(w2i.GetOutputPort())
+            writer.Write()
+        finally:
+            offscreen.RemoveRenderer(self.renderer)
+            self.render_window.AddRenderer(self.renderer)
             self.render_window.Render()
 
     def _actor_key(self, actor):

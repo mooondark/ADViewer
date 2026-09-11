@@ -45,6 +45,16 @@ DEFAULT_PNG_EXPORT_SCALE = 1
 PNG_EXPORT_SCALE_MIN = 1
 PNG_EXPORT_SCALE_MAX = 3
 
+# Mode d'export PNG : "multiplier" (échelle de la fenêtre courante) ou une
+# résolution standard fixe en pixels.
+DEFAULT_PNG_EXPORT_MODE = "multiplier"
+PNG_EXPORT_RESOLUTIONS = {
+    "hd": (1280, 720),
+    "fhd": (1920, 1080),
+    "qhd": (2560, 1440),
+    "4k": (3840, 2160),
+}
+
 # Calcul éléments finis : délai maximum en secondes avant abandon (0 = illimité).
 DEFAULT_CALC_EF_TIMEOUT = 7200
 CALC_EF_TIMEOUT_MAX = 86400
@@ -638,6 +648,11 @@ MSG_UI = {
     "menu_calc_ef": "Calcul EF",
     "png_export_dialog_title": "Export PNG",
     "png_export_dialog_label": "Échelle du rendu (entier de 1 à 3) :",
+    "png_export_mode_multiplier": "Multiplicateur",
+    "png_export_mode_hd": "HD (1280 × 720)",
+    "png_export_mode_fhd": "FHD (1920 × 1080)",
+    "png_export_mode_qhd": "QHD (2560 × 1440)",
+    "png_export_mode_4k": "4K UHD (3840 × 2160)",
     "menu_units": "Unités et précision",
     "units_dialog_title": "Unités et précision",
     "units_label_decimals": "décimales",
@@ -708,6 +723,7 @@ MSG_LOG = {
     "screenshot_saved": "Vue enregistrée : {path}",
     "screenshot_failed": "Échec de l'enregistrement de la vue : {details}",
     "png_export_scale_set": "Échelle d'export PNG : {scale}",
+    "png_export_mode_set": "Export PNG : {label}",
     "api_connection": "Connexion API : {host}",
     "api_url_loaded": "URL API chargée : {url}",
 
