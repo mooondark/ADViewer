@@ -934,81 +934,115 @@ class LaunchAnalysisWorker(QThread):
 class BuildLoadsWorker(QThread):
     """Worker QThread pour la construction des polydata de charges (thread-safe VTK).
 
-    Construit en arriere-plan les geometries des 3 types de charges actives
-    et emet un signal avec les polydata prets. Le thread principal cree ensuite
-    les acteurs et les ajoute au renderer (non thread-safe).
+    Ne (re)construit que les types de charges marques 'build' (ceux dont la
+    visibilite ou les donnees ont reellement change - cf. MainWindow._loads_dirty) ;
+    'keep' et 'clear' ne declenchent aucun calcul de geometrie. Emet un signal
+    avec les polydata prets ; le thread principal cree ensuite les acteurs et
+    les ajoute au renderer (non thread-safe).
     """
     progress = Signal(int, str)
     finished_batch = Signal(dict)
     error = Signal(str)
 
-    def __init__(self, viewer_widget, punctual_visible: bool, linear_visible: bool, planar_visible: bool):
+    def __init__(self, viewer_widget, punctual_action: str, linear_action: str, planar_action: str):
         super().__init__()
         self._viewer = viewer_widget
-        self._punctual_visible = punctual_visible
-        self._linear_visible   = linear_visible
-        self._planar_visible   = planar_visible
-        self._cancelled        = False
+        self._punctual_action = punctual_action
+        self._linear_action   = linear_action
+        self._planar_action   = planar_action
+        self._cancelled       = False
 
     def cancel(self):
         """Demande l'annulation - le worker se terminera apres l'etape courante."""
         self._cancelled = True
 
+    @staticmethod
+    def _active_count(loads, build: bool, case_filter):
+        if not build or not loads:
+            return 0
+        return len([ld for ld in loads if case_filter is None or ld.get("load_case_eid") == case_filter])
+
     def run(self):
         try:
-            batch = {}
+            v = self._viewer
+            batch = {
+                "punctual_action": self._punctual_action,
+                "linear_action":   self._linear_action,
+                "planar_action":   self._planar_action,
+            }
+
+            total = (
+                self._active_count(v._punctual_load_data, self._punctual_action == "build", v._punctual_load_case_filter)
+                + self._active_count(v._linear_load_data, self._linear_action == "build", v._linear_load_case_filter)
+                + self._active_count(v._planar_load_data, self._planar_action == "build", v._planar_load_case_filter)
+            )
+            done = 0
+            last_pct = -1
+
+            def _progress_cb():
+                nonlocal done, last_pct
+                done += 1
+                if not total:
+                    return
+                pct = done * 100 // total
+                if pct != last_pct:
+                    last_pct = pct
+                    self.progress.emit(pct, tr_ui("progress_build_loads", done=done, total=total))
 
             # --- Charges ponctuelles ---
-            self.progress.emit(5, tr_ui("progress_build_punctual_loads"))
-            if self._punctual_visible and self._viewer._punctual_load_data:
-                batch["punctual"] = self._viewer._build_punctual_load_polydata_batch(
-                    self._viewer._punctual_load_data,
-                    self._viewer.punctual_load_scale,
-                    case_filter=self._viewer._punctual_load_case_filter,
-                    arrow_width=self._viewer.punctual_load_arrow_width,
+            if self._punctual_action == "build" and v._punctual_load_data:
+                batch["punctual"] = v._build_punctual_load_polydata_batch(
+                    v._punctual_load_data,
+                    v.punctual_load_scale,
+                    case_filter=v._punctual_load_case_filter,
+                    arrow_width=v.punctual_load_arrow_width,
+                    progress_cb=_progress_cb,
                 )
-            else:
+                batch["punctual_color"] = v.punctual_load_color
+            elif self._punctual_action == "build":
                 batch["punctual"] = {"arrows": None}
-            batch["punctual_color"] = self._viewer.punctual_load_color
+                batch["punctual_color"] = v.punctual_load_color
 
             if self._cancelled:
                 return
 
             # --- Charges linéaires ---
-            self.progress.emit(40, tr_ui("progress_build_linear_loads"))
-            if self._linear_visible and self._viewer._linear_load_data:
-                batch["linear"] = self._viewer._build_linear_load_polydata_batch(
-                    self._viewer._linear_load_data,
-                    self._viewer.linear_load_scale,
-                    case_filter=self._viewer._linear_load_case_filter,
-                    arrow_width=self._viewer.linear_load_arrow_width,
-                    global_data=self._viewer._linear_load_data,
+            if self._linear_action == "build" and v._linear_load_data:
+                batch["linear"] = v._build_linear_load_polydata_batch(
+                    v._linear_load_data,
+                    v.linear_load_scale,
+                    case_filter=v._linear_load_case_filter,
+                    arrow_width=v.linear_load_arrow_width,
+                    global_data=v._linear_load_data,
+                    progress_cb=_progress_cb,
                 )
-            else:
+                batch["linear_color"] = v.linear_load_color
+            elif self._linear_action == "build":
                 batch["linear"] = {"arrows": None, "tubes": None}
-            batch["linear_color"] = self._viewer.linear_load_color
+                batch["linear_color"] = v.linear_load_color
 
             if self._cancelled:
                 return
 
             # --- Charges surfaciques ---
-            self.progress.emit(70, tr_ui("progress_build_planar_loads"))
-            if self._planar_visible and self._viewer._planar_load_data:
-                batch["planar"] = self._viewer._build_planar_load_polydata_batch(
-                    self._viewer._planar_load_data,
-                    self._viewer.planar_load_scale,
-                    case_filter=self._viewer._planar_load_case_filter,
-                    arrow_width=self._viewer.planar_load_arrow_width,
-                    global_data=self._viewer._planar_load_data,
+            if self._planar_action == "build" and v._planar_load_data:
+                batch["planar"] = v._build_planar_load_polydata_batch(
+                    v._planar_load_data,
+                    v.planar_load_scale,
+                    case_filter=v._planar_load_case_filter,
+                    arrow_width=v.planar_load_arrow_width,
+                    global_data=v._planar_load_data,
+                    progress_cb=_progress_cb,
                 )
-            else:
+                batch["planar_color"] = v.planar_load_color
+            elif self._planar_action == "build":
                 batch["planar"] = {"arrows": None, "tubes": None, "fill": None}
-            batch["planar_color"] = self._viewer.planar_load_color
+                batch["planar_color"] = v.planar_load_color
 
             if self._cancelled:
                 return
 
-            self.progress.emit(95, tr_ui("progress_apply_loads"))
+            self.progress.emit(100, tr_ui("progress_apply_loads"))
             self.finished_batch.emit(batch)
         except Exception:
             import traceback
@@ -1193,6 +1227,7 @@ class MainWindow(QMainWindow):
         self.chk_planar_loads = None
         self.spin_planar_load_scale = None
         self._loads_worker = None   # BuildLoadsWorker en cours
+        self._loads_dirty = {"punctual": True, "linear": True, "planar": True}   # types a (re)construire
         self._profiles_worker = None   # BuildProfilesWorker en cours
         self._loads_debounce_timer = None   # QTimer pour debounce des changements rapides
         self.results_sections_state = {
@@ -5373,7 +5408,7 @@ class MainWindow(QMainWindow):
                 values["planar_load_color"],
                 values["planar_load_arrow_width"],
             )
-            self._trigger_loads_rebuild()
+            self._mark_loads_dirty("punctual", "linear", "planar")
 
             self.log(
                 tr_log(
@@ -5458,6 +5493,20 @@ class MainWindow(QMainWindow):
         w.cancel()
         w.wait()   # Attente bloquante mais courte : le worker verifie _cancelled
 
+    def _mark_loads_dirty(self, *types: str):
+        """Marque un ou plusieurs types de charges ('punctual'/'linear'/'planar')
+        comme necessitant une reconstruction, puis planifie le rebuild. Les
+        types non listes ne sont pas touches -> pas de reconstruction inutile
+        des charges deja affichees et inchangees."""
+        for t in types:
+            self._loads_dirty[t] = True
+        self._trigger_loads_rebuild()
+
+    def _load_action(self, visible: bool, dirty: bool) -> str:
+        if not visible:
+            return "clear"
+        return "build" if dirty else "keep"
+
     def _start_loads_worker(self):
         """Effectivement lance le BuildLoadsWorker (appele par le debounce timer)."""
         if self.viewer is None:
@@ -5465,19 +5514,17 @@ class MainWindow(QMainWindow):
         # Annuler proprement tout worker precedent
         self._cancel_loads_worker()
 
-        p_vis = self.viewer._show_punctual_loads
-        l_vis = self.viewer._show_linear_loads
-        s_vis = self.viewer._show_planar_loads
+        p_action = self._load_action(self.viewer._show_punctual_loads, self._loads_dirty.get("punctual", True))
+        l_action = self._load_action(self.viewer._show_linear_loads, self._loads_dirty.get("linear", True))
+        s_action = self._load_action(self.viewer._show_planar_loads, self._loads_dirty.get("planar", True))
 
-        # Aucune charge visible : vider les acteurs existants immediatement
-        if not p_vis and not l_vis and not s_vis:
+        # Rien a (re)construire (que des 'keep'/'clear') : appliquer directement,
+        # sans thread ni barre de progression.
+        if "build" not in (p_action, l_action, s_action):
             self.viewer.apply_loads_polydata_batch({
-                "punctual": {"arrows": None},
-                "linear":   {"arrows": None, "tubes": None},
-                "planar":   {"arrows": None, "tubes": None, "fill": None},
-                "punctual_color": self.viewer.punctual_load_color,
-                "linear_color":   self.viewer.linear_load_color,
-                "planar_color":   self.viewer.planar_load_color,
+                "punctual_action": p_action,
+                "linear_action":   l_action,
+                "planar_action":   s_action,
             })
             return
 
@@ -5485,7 +5532,7 @@ class MainWindow(QMainWindow):
             self.load_progress_container.setVisible(True)
         self._set_load_progress(0, tr_ui("progress_build_punctual_loads"))
 
-        self._loads_worker = BuildLoadsWorker(self.viewer, p_vis, l_vis, s_vis)
+        self._loads_worker = BuildLoadsWorker(self.viewer, p_action, l_action, s_action)
         self._loads_worker.progress.connect(self._on_loads_progress)
         self._loads_worker.finished_batch.connect(self._on_loads_batch_ready)
         self._loads_worker.error.connect(self._on_loads_error)
@@ -5497,6 +5544,9 @@ class MainWindow(QMainWindow):
     def _on_loads_batch_ready(self, batch: dict):
         if self.viewer is not None:
             self.viewer.apply_loads_polydata_batch(batch)
+        for t in ("punctual", "linear", "planar"):
+            if batch.get(f"{t}_action") == "build":
+                self._loads_dirty[t] = False
         if self.load_progress_container is not None:
             self.load_progress_container.setVisible(False)
         self._set_load_progress(0, "")
@@ -5512,19 +5562,19 @@ class MainWindow(QMainWindow):
         if self.viewer:
             self.viewer._show_punctual_loads = checked
         self.log(tr_log("show_punctual_loads_on" if checked else "show_punctual_loads_off"), "info")
-        self._trigger_loads_rebuild()
+        self._mark_loads_dirty("punctual")
 
     def on_toggle_linear_loads(self, checked: bool):
         if self.viewer:
             self.viewer._show_linear_loads = checked
         self.log(tr_log("show_linear_loads_on" if checked else "show_linear_loads_off"), "info")
-        self._trigger_loads_rebuild()
+        self._mark_loads_dirty("linear")
 
     def on_toggle_planar_loads(self, checked: bool):
         if self.viewer:
             self.viewer._show_planar_loads = checked
         self.log(tr_log("show_planar_loads_on" if checked else "show_planar_loads_off"), "info")
-        self._trigger_loads_rebuild()
+        self._mark_loads_dirty("planar")
 
     def _populate_punctual_load_case_combo(self, load_cases: list):
         """Peuple le combo de filtre par cas de charge (union charges ponctuelles + linéaires + surfaciques)."""
@@ -5560,25 +5610,25 @@ class MainWindow(QMainWindow):
         self.viewer._punctual_load_case_filter = int(case_eid) if case_eid is not None else None
         self.viewer._linear_load_case_filter   = int(case_eid) if case_eid is not None else None
         self.viewer._planar_load_case_filter   = int(case_eid) if case_eid is not None else None
-        self._trigger_loads_rebuild()
+        self._mark_loads_dirty("punctual", "linear", "planar")
 
     def _on_punctual_load_scale_changed(self, value: float):
         if self.viewer is None:
             return
         self.viewer.punctual_load_scale = max(0.1, float(value))
-        self._trigger_loads_rebuild()
+        self._mark_loads_dirty("punctual")
 
     def _on_linear_load_scale_changed(self, value: float):
         if self.viewer is None:
             return
         self.viewer.linear_load_scale = max(0.1, float(value))
-        self._trigger_loads_rebuild()
+        self._mark_loads_dirty("linear")
 
     def _on_planar_load_scale_changed(self, value: float):
         if self.viewer is None:
             return
         self.viewer.planar_load_scale = max(0.1, float(value))
-        self._trigger_loads_rebuild()
+        self._mark_loads_dirty("planar")
 
     def on_toggle_color_by_section(self, checked: bool):
         if self.viewer:
@@ -5882,6 +5932,10 @@ class MainWindow(QMainWindow):
         self._update_analysis_results_value_combo(None)
         self._set_analysis_results_output_message("Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.")
 
+        # Nouveau modele : les charges affichees precedemment (s'il y en a) ne
+        # correspondent plus aux donnees -> forcer la reconstruction au prochain affichage.
+        self._loads_dirty = {"punctual": True, "linear": True, "planar": True}
+
         # Charges ponctuelles - stocker les données, le worker fera le rendu
         self._punctual_load_cases = list((model_data or {}).get("punctual_load_cases", []) or [])
         punctual_loads = list((model_data or {}).get("punctual_loads", []) or [])
@@ -5930,6 +5984,12 @@ class MainWindow(QMainWindow):
         planar_loads = list((model_data or {}).get("planar_loads", []) or [])
         self.viewer._planar_load_data = list(planar_loads)
         self.viewer.planar_load_count = len(planar_loads)
+        # Desactive/reinitialise a chaque nouveau chargement (comme _show_punctual_loads
+        # /_linear_loads et leurs case_filter dans viewer_widget.load_model()) : la checkbox
+        # ci-dessous est reinitialisee visuellement via blockSignals, donc on_toggle_planar_loads
+        # n'est pas declenche et self.viewer._show_planar_loads doit etre resynchronise ici.
+        self.viewer._show_planar_loads = False
+        self.viewer._planar_load_case_filter = None
         has_planar = bool(planar_loads)
         if self.chk_planar_loads is not None:
             self.chk_planar_loads.setEnabled(has_planar)

@@ -8,11 +8,17 @@
 - Export PNG (bouton caméra) : la boîte de dialogue permet désormais de choisir entre le multiplicateur existant (1 à 3) et des résolutions standard fixes (HD 1280×720, FHD 1920×1080, QHD 2560×1440, 4K UHD 3840×2160). Le choix (mode et valeur) est sauvegardé dans le fichier de configuration.
 - Nouvelles icônes pour « Sélection par fenêtre » et « Zoom étendu ».
 - Modes « Profilés + Faces cachées » et « Profilés + Rendu plein » : une barre de progression s'affiche désormais pendant la construction des solides (progression élément par élément, plus de gel de l'interface) ; le temps de construction a aussi été réduit pour les sections sans trou et les profils simples.
+- Affichage des charges (ponctuelles/linéaires/surfaciques) : la barre de progression avance désormais élément par élément, comme pour les modes Profilés (au lieu de paliers fixes par étape).
+- Affichage des charges : cocher/décocher un type de charge, changer son échelle ou son cas de charge ne reconstruit plus que ce qui a réellement changé, au lieu de systématiquement reconstruire tous les types actuellement affichés.
+- Correction : après un changement de modèle, le type de charge « surfaciques » pouvait rester marqué comme affiché en interne (bien que la case soit décochée à l'écran), provoquant sa reconstruction inutile dès qu'un autre type de charge était affiché.
 
 ### EN
 - PNG export (camera button): the dialog now lets you choose between the existing multiplier (1 to 3) and fixed standard resolutions (HD 1280×720, FHD 1920×1080, QHD 2560×1440, 4K UHD 3840×2160). The choice (mode and value) is now saved in the configuration file.
 - New icons for "Window selection" and "Zoom to fit".
 - "Profiles + Hidden faces" and "Profiles + Full render" modes: a progress bar is now shown while building the solids (progress per processed element, no more UI freeze); build time was also reduced for hole-free sections and simple profiles.
+- Load display (point/linear/planar): the progress bar now advances element by element, like the Profiles modes (instead of fixed per-stage steps).
+- Load display: toggling a load type, changing its scale, or changing its load case no longer rebuilds every currently displayed load type, only what actually changed.
+- Fix: after switching models, the "planar" load type could stay internally marked as shown (even though its checkbox was unchecked), causing it to be needlessly rebuilt as soon as another load type was displayed.
 
 ## 2.03
 

@@ -8,7 +8,7 @@ __pycache__/
 
 #Viewer
 *.ini
-test_*.py
+tests/
 
 # Exception : ignorer tous les fichiers cachés sauf .gitignore
 .*

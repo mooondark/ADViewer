@@ -3330,8 +3330,12 @@ class VTKViewerWidget(QFrame):
         return actor
 
     def _build_punctual_load_polydata_batch(self, loads: list, scale: float,
-                                             case_filter=None, arrow_width: float = 0.04):
+                                             case_filter=None, arrow_width: float = 0.04,
+                                             progress_cb=None):
         """Construit les polydata batchés pour les charges ponctuelles (thread-safe).
+
+        progress_cb, si fourni, est appele sans argument apres chaque charge
+        traitee (utilise par BuildLoadsWorker pour la barre de progression).
 
         Retourne un dict:
           'arrows' : vtkPolyData fusionné (fleches + arcs), ou None
@@ -3506,6 +3510,8 @@ class VTKViewerWidget(QFrame):
                     if pd is not None:
                         append_all.AddInputData(pd)
                         has_any = True
+            if progress_cb is not None:
+                progress_cb()
 
         if not has_any:
             return {"arrows": None}
@@ -3955,8 +3961,11 @@ class VTKViewerWidget(QFrame):
 
     def _build_linear_load_polydata_batch(self, loads: list, scale: float,
                                            case_filter=None, arrow_width: float = 0.02,
-                                           global_data: list = None) -> dict:
+                                           global_data: list = None, progress_cb=None) -> dict:
         """Construit les polydata batchés pour les charges linéaires (thread-safe).
+
+        progress_cb, si fourni, est appele sans argument apres chaque charge
+        traitee (utilise par BuildLoadsWorker pour la barre de progression).
 
         Retourne un dict:
           'arrows' : vtkPolyData (fleches), ou None
@@ -4211,6 +4220,8 @@ class VTKViewerWidget(QFrame):
                 if pd is not None:
                     append_tubes.AddInputData(pd)
                     has_tubes = True
+            if progress_cb is not None:
+                progress_cb()
 
         arrows_pd = None
         tubes_pd  = None
@@ -4591,8 +4602,11 @@ class VTKViewerWidget(QFrame):
 
     def _build_planar_load_polydata_batch(self, loads: list, scale: float,
                                            case_filter=None, arrow_width: float = 0.02,
-                                           global_data: list = None) -> dict:
+                                           global_data: list = None, progress_cb=None) -> dict:
         """Construit les polydata batchés pour les charges surfaciques (thread-safe).
+
+        progress_cb, si fourni, est appele sans argument apres chaque charge
+        traitee (utilise par BuildLoadsWorker pour la barre de progression).
 
         Retourne un dict:
           'arrows' : vtkPolyData (fleches), ou None
@@ -4729,6 +4743,8 @@ class VTKViewerWidget(QFrame):
             return pd
 
         for ld in active:
+            if progress_cb is not None:
+                progress_cb()
             try:
                 global_idx = ref_data.index(ld)
             except ValueError:
@@ -4794,11 +4810,16 @@ class VTKViewerWidget(QFrame):
 
         Doit etre appele depuis le thread principal.
         batch = {
-          'punctual': {'arrows': vtkPolyData|None},
+          'punctual_action'/'linear_action'/'planar_action': 'build'|'keep'|'clear',
+          'punctual': {'arrows': vtkPolyData|None},               # si action == 'build'
           'linear':   {'arrows': vtkPolyData|None, 'tubes': vtkPolyData|None},
           'planar':   {'arrows': vtkPolyData|None, 'tubes': vtkPolyData|None, 'fill': vtkPolyData|None},
           'punctual_color': tuple, 'linear_color': tuple, 'planar_color': tuple,
         }
+        'keep' : le type n'a pas change (ni visibilite ni donnees) -> acteurs
+        existants laisses tels quels, pas de reconstruction.
+        'clear' : type masque -> acteurs existants retires.
+        'build' (defaut, retro-compatible) : reconstruction habituelle.
         """
         def _make_solid_actor(pd, color, ambient=0.3, diffuse=0.7, opacity=1.0):
             if pd is None or pd.GetNumberOfCells() == 0:
@@ -4815,10 +4836,12 @@ class VTKViewerWidget(QFrame):
             return actor
 
         # --- Ponctuelles ---
-        for actor in self._punctual_load_actors:
-            self._remove_actor(actor)
-        self._punctual_load_actors = []
-        if self._show_punctual_loads:
+        punctual_action = batch.get("punctual_action", "build")
+        if punctual_action != "keep":
+            for actor in self._punctual_load_actors:
+                self._remove_actor(actor)
+            self._punctual_load_actors = []
+        if punctual_action == "build" and self._show_punctual_loads:
             p_color = batch.get("punctual_color", self.punctual_load_color)
             p_data  = batch.get("punctual", {})
             actor = _make_solid_actor(p_data.get("arrows"), p_color)
@@ -4827,10 +4850,12 @@ class VTKViewerWidget(QFrame):
                 self._punctual_load_actors.append(actor)
 
         # --- Linéaires ---
-        for actor in self._linear_load_actors:
-            self._remove_actor(actor)
-        self._linear_load_actors = []
-        if self._show_linear_loads:
+        linear_action = batch.get("linear_action", "build")
+        if linear_action != "keep":
+            for actor in self._linear_load_actors:
+                self._remove_actor(actor)
+            self._linear_load_actors = []
+        if linear_action == "build" and self._show_linear_loads:
             l_color = batch.get("linear_color", self.linear_load_color)
             l_data  = batch.get("linear", {})
             for key in ("arrows", "tubes"):
@@ -4840,10 +4865,12 @@ class VTKViewerWidget(QFrame):
                     self._linear_load_actors.append(actor)
 
         # --- Surfaciques ---
-        for actor in self._planar_load_actors:
-            self._remove_actor(actor)
-        self._planar_load_actors = []
-        if self._show_planar_loads:
+        planar_action = batch.get("planar_action", "build")
+        if planar_action != "keep":
+            for actor in self._planar_load_actors:
+                self._remove_actor(actor)
+            self._planar_load_actors = []
+        if planar_action == "build" and self._show_planar_loads:
             s_color = batch.get("planar_color", self.planar_load_color)
             s_data  = batch.get("planar", {})
             for key in ("arrows", "tubes"):

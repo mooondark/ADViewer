@@ -594,6 +594,7 @@ MSG_UI = {
     "progress_build_punctual_loads": "Construction charges ponctuelles...",
     "progress_build_linear_loads": "Construction charges linéaires...",
     "progress_build_planar_loads": "Construction charges surfaciques...",
+    "progress_build_loads": "Construction des charges : {done}/{total}",
     "progress_apply_loads": "Application des charges...",
     "progress_build_profiles": "Construction des profilés : {done}/{total}",
     "progress_prepare_results": "Préparation des résultats...",
