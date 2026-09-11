@@ -57,10 +57,40 @@ def test_lang_en_placeholders_match_lang_fr():
             )
 
 
+def test_set_language_switches_active_dict():
+    viewer_config.set_language("en")
+    try:
+        assert viewer_config.tr_ui("project") == lang_en.MSG_UI["project"]
+    finally:
+        viewer_config.set_language("fr")
+
+
+def test_set_language_unknown_code_falls_back_to_default():
+    viewer_config.set_language("xx")
+    try:
+        assert viewer_config.get_language() == "fr"
+        assert viewer_config.tr_ui("project") == "Projet"
+    finally:
+        viewer_config.set_language("fr")
+
+
+def test_missing_key_in_active_language_falls_back_to_french():
+    viewer_config.set_language("en")
+    try:
+        del lang_en.MSG_UI["project"]
+        assert viewer_config.tr_ui("project") == "Projet"
+    finally:
+        lang_en.MSG_UI["project"] = "Project"
+        viewer_config.set_language("fr")
+
+
 if __name__ == "__main__":
     test_lang_fr_has_expected_dicts()
     test_viewer_config_reexports_lang_fr()
     test_tr_ui_unchanged_behavior()
     test_lang_en_has_same_keys_as_lang_fr()
     test_lang_en_placeholders_match_lang_fr()
+    test_set_language_switches_active_dict()
+    test_set_language_unknown_code_falls_back_to_default()
+    test_missing_key_in_active_language_falls_back_to_french()
     print("OK")

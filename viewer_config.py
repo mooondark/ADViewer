@@ -290,25 +290,50 @@ LINEAR_BEAM_TYPE_LABELS = {
 #  Internationalisation (i18n)
 # ======================================================================
 
-from lang import lang_fr
+from lang import lang_fr, lang_en
+
+LANGUAGES = {
+    "fr": ("Français", lang_fr),
+    "en": ("English", lang_en),
+}
+DEFAULT_LANGUAGE = "fr"
 
 MSG_UI = lang_fr.MSG_UI
 MSG_LOG = lang_fr.MSG_LOG
 MSG_ERR = lang_fr.MSG_ERR
 
+_active_language = DEFAULT_LANGUAGE
+
+
+def set_language(code: str) -> None:
+    global _active_language
+    _active_language = code if code in LANGUAGES else DEFAULT_LANGUAGE
+
+
+def get_language() -> str:
+    return _active_language
+
+
+def _lookup(dict_name: str, key: str) -> str:
+    _, module = LANGUAGES.get(_active_language, LANGUAGES[DEFAULT_LANGUAGE])
+    text = getattr(module, dict_name).get(key)
+    if text is None:
+        text = getattr(lang_fr, dict_name).get(key, key)
+    return text
+
 
 def tr_ui(key: str, **kwargs) -> str:
-    text = MSG_UI.get(key, key)
+    text = _lookup("MSG_UI", key)
     return text.format(**kwargs) if kwargs else text
 
 
 def tr_log(key: str, **kwargs) -> str:
-    text = MSG_LOG.get(key, key)
+    text = _lookup("MSG_LOG", key)
     return text.format(**kwargs) if kwargs else text
 
 
 def tr_err(key: str, **kwargs) -> str:
-    text = MSG_ERR.get(key, key)
+    text = _lookup("MSG_ERR", key)
     return text.format(**kwargs) if kwargs else text
 
 
