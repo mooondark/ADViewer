@@ -26,12 +26,6 @@ def test_lang_fr_has_expected_dicts():
     assert isinstance(lang_fr.MSG_ERR, dict) and len(lang_fr.MSG_ERR) > 0
 
 
-def test_viewer_config_reexports_lang_fr():
-    assert viewer_config.MSG_UI is lang_fr.MSG_UI
-    assert viewer_config.MSG_LOG is lang_fr.MSG_LOG
-    assert viewer_config.MSG_ERR is lang_fr.MSG_ERR
-
-
 def test_tr_ui_unchanged_behavior():
     assert viewer_config.tr_ui("project") == "Projet"
     assert viewer_config.tr_ui("missing_key_xyz") == "missing_key_xyz"
@@ -86,7 +80,6 @@ def test_missing_key_in_active_language_falls_back_to_french():
 
 if __name__ == "__main__":
     test_lang_fr_has_expected_dicts()
-    test_viewer_config_reexports_lang_fr()
     test_tr_ui_unchanged_behavior()
     test_lang_en_has_same_keys_as_lang_fr()
     test_lang_en_placeholders_match_lang_fr()

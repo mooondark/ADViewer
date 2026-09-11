@@ -298,10 +298,6 @@ LANGUAGES = {
 }
 DEFAULT_LANGUAGE = "fr"
 
-MSG_UI = lang_fr.MSG_UI
-MSG_LOG = lang_fr.MSG_LOG
-MSG_ERR = lang_fr.MSG_ERR
-
 _active_language = DEFAULT_LANGUAGE
 
 

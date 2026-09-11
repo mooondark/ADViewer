@@ -2202,14 +2202,12 @@ class MainWindow(QMainWindow):
         language_group = QActionGroup(self)
         language_group.setExclusive(True)
 
-        self._language_actions = {}
         for code, (label, _module) in LANGUAGES.items():
             act = QAction(label, self, checkable=True)
             act.setChecked(code == get_language())
             act.triggered.connect(lambda checked, c=code: checked and self.apply_language(c))
             language_group.addAction(act)
             language_menu.addAction(act)
-            self._language_actions[code] = act
 
         # Sous-menu Vue 3D
         view3d_menu = QMenu(tr_ui("menu_view3d"), self)
@@ -6244,14 +6242,12 @@ def main():
     if not app_icon.isNull():
         app.setWindowIcon(app_icon)
 
-    qt_translator = QTranslator()
-    qt_translator.load(
-        "qt_fr",
-        QLibraryInfo.path(QLibraryInfo.TranslationsPath)
-    )
-    app.installTranslator(qt_translator)
-
     w = MainWindow(app=app)
+
+    qt_translator = QTranslator()
+    if qt_translator.load(f"qt_{get_language()}", QLibraryInfo.path(QLibraryInfo.TranslationsPath)):
+        app.installTranslator(qt_translator)
+
     w.show()
     sys.exit(app.exec())
 

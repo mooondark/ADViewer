@@ -263,7 +263,7 @@ MSG_UI = {
     "filter_by_thickness": "By thickness",
     "filter_by_materials": "By materials",
     "tooltip_view_front_back": "Front/back view (Alt+&)",
-    "tooltip_view_left_right": "Left/right view (Alt+e)",
+    "tooltip_view_left_right": "Left/right view (Alt+é)",
     'tooltip_view_top_bottom': 'Top/bottom view (Alt+")',
     "tooltip_view_iso": "Isometric view (Alt+')",
     "tooltip_filter": "Filter",
