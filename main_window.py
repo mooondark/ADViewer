@@ -1110,6 +1110,7 @@ _EXPORT_COMP_KIND = {
 class MainWindow(QMainWindow):
     def __init__(self, app=None):
         super().__init__()
+        set_language(self._read_saved_language())
         self.app_ref = app
         self.app_icon = load_app_icon("cube.ico", "cube.png", "icon.ico", "icon.png")
         if not self.app_icon.isNull():
@@ -1246,6 +1247,15 @@ class MainWindow(QMainWindow):
     def _config_path(self):
         return os.path.join(get_app_dir(), CONFIG_FILE)
 
+    def _read_saved_language(self):
+        path = os.path.join(get_app_dir(), CONFIG_FILE)
+        if not os.path.isfile(path):
+            return DEFAULT_LANGUAGE
+        cfg = configparser.ConfigParser()
+        cfg.read(path, encoding="utf-8")
+        code = cfg["general"].get("language", DEFAULT_LANGUAGE) if cfg.has_section("general") else DEFAULT_LANGUAGE
+        return code if code in LANGUAGES else DEFAULT_LANGUAGE
+
     def _script_dir(self):
         return get_app_dir()
 
@@ -1279,6 +1289,7 @@ class MainWindow(QMainWindow):
         cfg = configparser.ConfigParser()
         cfg["general"] = {
             "theme": self.theme_name,
+            "language": get_language(),
             "api_server_exe": self.api_server_exe,
             "api_url": self.api_host,
             "last_fto_path": normalize_windows_path(self.fto_edit.text().strip()) if getattr(self, "fto_edit", None) is not None else "",
