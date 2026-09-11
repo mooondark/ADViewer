@@ -6,9 +6,11 @@
 
 ### FR
 - Nouvelle entrée « Fermer » dans le menu Fichier (après « Ouvrir ») : ferme le projet en cours côté API s'il est encore ouvert, décharge le fichier affiché dans le viewer et réinitialise l'interface (compteurs, filtres, résultats) à son état initial.
+- Le logiciel est désormais disponible en anglais : nouveau sous-menu « Language » dans Paramètres (Français / English). Le changement de langue s'applique au redémarrage de l'application.
 
 ### EN
 - New "Close" entry in the File menu (after "Open"): closes the current project on the API side if still open, unloads the currently displayed file in the viewer, and resets the interface (counts, filters, results) to its initial state.
+- The software is now available in English: new "Language" submenu in Settings (Français / English). The language change takes effect on the next application restart.
 
 ## 2.04
 
