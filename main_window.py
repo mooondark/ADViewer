@@ -1153,6 +1153,7 @@ class MainWindow(QMainWindow):
         self.api_server_process = None
         self.act_theme_dark = None
         self.act_theme_light = None
+        self._pending_language = None
         self.act_view_projection_perspective = None
         self.act_view_projection_orthogonal = None
         self.view_projection_mode = DEFAULT_VIEW_PROJECTION
@@ -1289,7 +1290,7 @@ class MainWindow(QMainWindow):
         cfg = configparser.ConfigParser()
         cfg["general"] = {
             "theme": self.theme_name,
-            "language": get_language(),
+            "language": getattr(self, "_pending_language", None) or get_language(),
             "api_server_exe": self.api_server_exe,
             "api_url": self.api_host,
             "last_fto_path": normalize_windows_path(self.fto_edit.text().strip()) if getattr(self, "fto_edit", None) is not None else "",
@@ -2193,6 +2194,22 @@ class MainWindow(QMainWindow):
         self.act_theme_light.triggered.connect(lambda checked: checked and self.apply_theme("light"))
         theme_group.addAction(self.act_theme_light)
         theme_menu.addAction(self.act_theme_light)
+
+        # Sous-menu Language
+        language_menu = QMenu(tr_ui("menu_language"), self)
+        settings_menu.addMenu(language_menu)
+
+        language_group = QActionGroup(self)
+        language_group.setExclusive(True)
+
+        self._language_actions = {}
+        for code, (label, _module) in LANGUAGES.items():
+            act = QAction(label, self, checkable=True)
+            act.setChecked(code == get_language())
+            act.triggered.connect(lambda checked, c=code: checked and self.apply_language(c))
+            language_group.addAction(act)
+            language_menu.addAction(act)
+            self._language_actions[code] = act
 
         # Sous-menu Vue 3D
         view3d_menu = QMenu(tr_ui("menu_view3d"), self)
@@ -5020,6 +5037,13 @@ class MainWindow(QMainWindow):
         self.api_restart_btn.setIcon(self._make_api_icon("api_restart", dim=not running))
         self.api_restart_btn.setEnabled(running)
         self._update_load_btn_state()
+
+    def apply_language(self, code: str) -> None:
+        if code not in LANGUAGES:
+            return
+        self._pending_language = code
+        self.save_config()
+        QMessageBox.information(self, tr_ui("menu_language"), tr_ui("language_restart_required"))
 
     def apply_theme(self, theme_name: str):
         self.theme_name = theme_name if theme_name in QT_MATERIAL_THEMES else DEFAULT_THEME

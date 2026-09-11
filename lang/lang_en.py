@@ -5,6 +5,8 @@ English UI, log and error strings.
 """
 
 MSG_UI = {
+    "language_restart_required": "Restart the application to apply the language change.",
+    "menu_language": "Language",
     "project": "Project",
     "project_file": ".fto file",
     "api_url": "API URL",

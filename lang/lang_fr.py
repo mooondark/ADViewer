@@ -5,6 +5,8 @@ Textes d'interface, journal et erreurs en français (langue de référence).
 """
 
 MSG_UI = {
+    "language_restart_required": "Redémarrez l'application pour appliquer le changement de langue.",
+    "menu_language": "Language",
     "project": "Projet",
     "project_file": "Fichier .fto",
     "api_url": "URL API",
