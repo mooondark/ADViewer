@@ -1015,6 +1015,55 @@ class BuildLoadsWorker(QThread):
             self.error.emit(traceback.format_exc())
 
 
+class BuildProfilesWorker(QThread):
+    """Worker QThread pour la construction du solide des profils (switch vers
+    un mode 'Profilés + ...'). Construit le polydata en arriere-plan
+    (thread-safe VTK, pas de creation d'acteur) et emet une progression par
+    element traite ; le thread principal cree ensuite l'acteur et l'ajoute au
+    renderer (non thread-safe), comme pour BuildLoadsWorker.
+    """
+    progress = Signal(int, str)
+    finished_ok = Signal(object)
+    error = Signal(str)
+
+    def __init__(self, viewer_widget, mode: str, line_indexes, filtered_lines, filtered_line_sections):
+        super().__init__()
+        self._viewer = viewer_widget
+        self._mode = mode
+        self._line_indexes = line_indexes
+        self._filtered_lines = filtered_lines
+        self._filtered_line_sections = filtered_line_sections
+
+    def run(self):
+        try:
+            def _cb(done, total):
+                pct = int(done * 100 / total) if total else 100
+                self.progress.emit(pct, tr_ui("progress_build_profiles", done=done, total=total))
+
+            base_pd = self._viewer._build_profiles_polydata(
+                self._filtered_lines,
+                self._filtered_line_sections,
+                element_indexes=self._line_indexes,
+                progress_cb=_cb,
+            )
+            self.finished_ok.emit(base_pd)
+        except Exception:
+            import traceback
+            self.error.emit(traceback.format_exc())
+
+
+_DISPLAY_MODE_LOG_MAP = {
+    "wireframe": "mode_wireframe",
+    "hidden_faces": "mode_hidden_faces",
+    "wire_hidden": "mode_wire_hidden",
+    "full": "mode_full",
+    "profiles_hidden": "mode_profiles_hidden",
+    "profiles_full": "mode_profiles_full",
+}
+
+_PROFILE_MODES = ("profiles_hidden", "profiles_full")
+
+
 _EXPORT_COMP_KIND = {
     "dx": "section_length", "dy": "section_length", "dz": "section_length", "d": "section_length",
     "fx": "force", "fy": "force", "fz": "force",
@@ -1144,6 +1193,7 @@ class MainWindow(QMainWindow):
         self.chk_planar_loads = None
         self.spin_planar_load_scale = None
         self._loads_worker = None   # BuildLoadsWorker en cours
+        self._profiles_worker = None   # BuildProfilesWorker en cours
         self._loads_debounce_timer = None   # QTimer pour debounce des changements rapides
         self.results_sections_state = {
             "linear_section": True,
@@ -5540,19 +5590,64 @@ class MainWindow(QMainWindow):
 
     def on_display_mode_changed(self, index: int):
         mode = self.cmb_display_mode.currentData()
-        if self.viewer:
-            self.viewer.set_display_mode(mode)
-        self._update_transparency_controls_state()
+        if self.viewer is None:
+            return
 
-        mode_map = {
-            "wireframe": "mode_wireframe",
-            "hidden_faces": "mode_hidden_faces",
-            "wire_hidden": "mode_wire_hidden",
-            "full": "mode_full",
-            "profiles_hidden": "mode_profiles_hidden",
-            "profiles_full": "mode_profiles_full",
-        }
-        self.log(tr_log(mode_map.get(mode, "mode_wireframe")), "info")
+        entering_profiles = mode in _PROFILE_MODES and self.viewer._display_mode not in _PROFILE_MODES
+        if entering_profiles:
+            self._trigger_profiles_build(mode)
+            return
+
+        self.viewer.set_display_mode(mode)
+        self._update_transparency_controls_state()
+        self.log(tr_log(_DISPLAY_MODE_LOG_MAP.get(mode, "mode_wireframe")), "info")
+
+    def _trigger_profiles_build(self, mode: str):
+        """Construit le solide des profils en arriere-plan (BuildProfilesWorker)
+        pour ne pas geler l'UI et animer la barre de progression element par
+        element - seule l'entree dans un mode Profiles est couteuse."""
+        line_indexes = self.viewer._filtered_line_indexes()
+        filtered_lines = self.viewer._select_items_by_indexes(self.viewer._model_data.get("lines", []), line_indexes)
+        filtered_line_sections = self.viewer._select_items_by_indexes(
+            self.viewer._model_data.get("line_sections", []) or [], line_indexes
+        )
+
+        self.cmb_display_mode.setEnabled(False)
+        if self.load_progress_container is not None:
+            self.load_progress_container.setVisible(True)
+        self._set_load_progress(0, tr_ui("progress_build_profiles", done=0, total=len(filtered_lines)))
+
+        self._profiles_worker = BuildProfilesWorker(self.viewer, mode, line_indexes, filtered_lines, filtered_line_sections)
+        self._profiles_worker.progress.connect(self._on_profiles_progress)
+        self._profiles_worker.finished_ok.connect(self._on_profiles_build_ready)
+        self._profiles_worker.error.connect(self._on_profiles_build_error)
+        self._profiles_worker.start()
+
+    def _on_profiles_progress(self, value: int, message: str):
+        self._set_load_progress(value, message)
+
+    def _on_profiles_build_ready(self, base_pd):
+        mode = self._profiles_worker._mode if self._profiles_worker is not None else None
+        if self.viewer is not None and mode is not None:
+            self.viewer._display_mode = mode
+            self.viewer._apply_profiles_build_result(base_pd)
+            self.viewer._apply_visibility_state()
+            self.viewer.render_window.Render()
+        if self.load_progress_container is not None:
+            self.load_progress_container.setVisible(False)
+        self._set_load_progress(0, "")
+        self.cmb_display_mode.setEnabled(True)
+        self._update_transparency_controls_state()
+        if mode is not None:
+            self.log(tr_log(_DISPLAY_MODE_LOG_MAP.get(mode, "mode_wireframe")), "info")
+        self._profiles_worker = None
+
+    def _on_profiles_build_error(self, error_text: str):
+        self.log("Erreur construction profilés : " + error_text.splitlines()[0], "error")
+        if self.load_progress_container is not None:
+            self.load_progress_container.setVisible(False)
+        self.cmb_display_mode.setEnabled(True)
+        self._profiles_worker = None
 
     def on_transparency_changed(self, value: int):
         if self.transparency_value_label:

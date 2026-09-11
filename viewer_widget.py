@@ -1051,6 +1051,12 @@ class VTKViewerWidget(QFrame):
         if len(outer) < 3:
             return None
 
+        if not openings:
+            # Pas de trou : polygone simple, pas besoin de vtkContourTriangulator
+            # (evite un vtkContourTriangulator.Update() par capuchon, x2 par
+            # element x5800 sur un gros modele -> gain majeur en mode Profiles).
+            return self._single_polygon_polydata(outer)
+
         points = vtk.vtkPoints()
         lines = vtk.vtkCellArray()
         pid = 0
@@ -1088,6 +1094,11 @@ class VTKViewerWidget(QFrame):
         if out.GetNumberOfCells() > 0:
             return out
 
+        return self._single_polygon_polydata(outer)
+
+    @staticmethod
+    def _single_polygon_polydata(outer):
+        """Polydata a une seule cellule polygone (contour simple, sans trou)."""
         points = vtk.vtkPoints()
         polygon = vtk.vtkPolygon()
         polygon.GetPointIds().SetNumberOfIds(len(outer))
@@ -1270,6 +1281,13 @@ class VTKViewerWidget(QFrame):
                 pieces.append(([_xform(h["poly_start"])], _at(float(h["t_start"])),
                                [_xform(h["poly_end"])], _at(float(h["t_end"]))))
 
+        if len(pieces) == 1:
+            # Cas majoritaire (pas de profil compose, pas de jarret) : pas besoin
+            # de vtkAppendPolyData pour fusionner une seule piece avec elle-meme.
+            loops_a, to3d_a, loops_b, to3d_b = pieces[0]
+            pd = self._loft_solid_polydata(loops_a, to3d_a, loops_b, to3d_b, source_idx)
+            return pd if (pd is not None and pd.GetNumberOfCells() > 0) else None
+
         append = vtk.vtkAppendPolyData()
         added = False
         for loops_a, to3d_a, loops_b, to3d_b in pieces:
@@ -1284,11 +1302,16 @@ class VTKViewerWidget(QFrame):
         out.ShallowCopy(append.GetOutput())
         return out if out.GetNumberOfCells() > 0 else None
 
-    def _build_profiles_polydata(self, lines, line_sections, element_indexes=None):
+    def _build_profiles_polydata(self, lines, line_sections, element_indexes=None, progress_cb=None):
+        """progress_cb(done, total), si fourni, est appele a chaque palier de
+        pourcentage franchi (utilise par BuildProfilesWorker pour la barre de
+        progression lors du switch vers un mode Profiles)."""
         append = vtk.vtkAppendPolyData()
         appended = False
         mapped_indexes = list(element_indexes or [])
         sections = list(line_sections or [])
+        total = len(lines or [])
+        last_pct = -1
         for idx, seg in enumerate(lines or []):
             if not seg or len(seg) != 2:
                 continue
@@ -1308,6 +1331,11 @@ class VTKViewerWidget(QFrame):
                     pd.GetCellData().SetScalars(colors)
                 append.AddInputData(pd)
                 appended = True
+            if progress_cb is not None and total:
+                pct = (idx + 1) * 100 // total
+                if pct != last_pct:
+                    last_pct = pct
+                    progress_cb(idx + 1, total)
         if not appended:
             return None
         append.Update()
@@ -5036,7 +5064,14 @@ class VTKViewerWidget(QFrame):
                 self._model_data.get("line_sections", []) or [], line_indexes
             )
         base_pd = self._build_profiles_polydata(filtered_lines, filtered_line_sections, element_indexes=line_indexes)
+        self._apply_profiles_build_result(base_pd)
+
+    def _apply_profiles_build_result(self, base_pd):
+        """Cree/remplace l'acteur des profils a partir d'un polydata deja
+        construit. Extrait de _rebuild_profiles_actor pour etre reutilisable
+        par le callback de BuildProfilesWorker (switch de mode asynchrone)."""
         self._profiles_base_pd = base_pd
+        self._profiles_base_colors = None
         if base_pd is not None:
             sc = base_pd.GetCellData().GetArray("section_colors")   # present si color_by_section
             if sc is not None:

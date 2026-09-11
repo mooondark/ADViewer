@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "2.03"
+APP_VERSION = "2.04"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -595,6 +595,7 @@ MSG_UI = {
     "progress_build_linear_loads": "Construction charges linéaires...",
     "progress_build_planar_loads": "Construction charges surfaciques...",
     "progress_apply_loads": "Application des charges...",
+    "progress_build_profiles": "Construction des profilés : {done}/{total}",
     "progress_prepare_results": "Préparation des résultats...",
     "progress_close_project": "Fermeture du projet...",
 

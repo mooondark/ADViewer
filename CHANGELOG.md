@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.04
+
+### FR
+- Export PNG (bouton caméra) : la boîte de dialogue permet désormais de choisir entre le multiplicateur existant (1 à 3) et des résolutions standard fixes (HD 1280×720, FHD 1920×1080, QHD 2560×1440, 4K UHD 3840×2160). Le choix (mode et valeur) est sauvegardé dans le fichier de configuration.
+- Nouvelles icônes pour « Sélection par fenêtre » et « Zoom étendu ».
+- Modes « Profilés + Faces cachées » et « Profilés + Rendu plein » : une barre de progression s'affiche désormais pendant la construction des solides (progression élément par élément, plus de gel de l'interface) ; le temps de construction a aussi été réduit pour les sections sans trou et les profils simples.
+
+### EN
+- PNG export (camera button): the dialog now lets you choose between the existing multiplier (1 to 3) and fixed standard resolutions (HD 1280×720, FHD 1920×1080, QHD 2560×1440, 4K UHD 3840×2160). The choice (mode and value) is now saved in the configuration file.
+- New icons for "Window selection" and "Zoom to fit".
+- "Profiles + Hidden faces" and "Profiles + Full render" modes: a progress bar is now shown while building the solids (progress per processed element, no more UI freeze); build time was also reduced for hole-free sections and simple profiles.
+
 ## 2.03
 
 ### FR
