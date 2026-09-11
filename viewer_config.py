@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "2.04"
+APP_VERSION = "2.05"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -639,6 +639,7 @@ MSG_UI = {
     "menu_file": "Fichier",
     "menu_open": "Ouvrir",
     "menu_export_ifc": "Export IFC",
+    "menu_close": "Fermer",
     "menu_about": "À propos",
     "menu_fit": "Recentrer",
     "menu_iso": "Vue isométrique",
@@ -736,6 +737,7 @@ MSG_LOG = {
     "project_closed_after_read": "Projet fermé.",
     "project_kept_open_for_results": "Projet conservé ouvert pour les résultats.",
     "project_closed_before_new_load": "Projet précédent fermé avant nouveau chargement.",
+    "project_closed_by_user": "Projet fermé.",
     "project_closed_on_exit": "Projet fermé à la fermeture du viewer.",
     "project_session_mismatch": "Le projet ouvert ne correspond pas au fichier courant.",
 

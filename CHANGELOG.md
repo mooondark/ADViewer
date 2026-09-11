@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.05
+
+### FR
+- Nouvelle entrée « Fermer » dans le menu Fichier (après « Ouvrir ») : ferme le projet en cours côté API s'il est encore ouvert, décharge le fichier affiché dans le viewer et réinitialise l'interface (compteurs, filtres, résultats) à son état initial.
+
+### EN
+- New "Close" entry in the File menu (after "Open"): closes the current project on the API side if still open, unloads the currently displayed file in the viewer, and resets the interface (counts, filters, results) to its initial state.
+
 ## 2.04
 
 ### FR

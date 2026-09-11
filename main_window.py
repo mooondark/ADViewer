@@ -2128,6 +2128,10 @@ class MainWindow(QMainWindow):
         act_open.triggered.connect(self.browse_fto)
         file_menu.addAction(act_open)
 
+        act_close = QAction(tr_ui("menu_close"), self)
+        act_close.triggered.connect(self.close_current_project)
+        file_menu.addAction(act_close)
+
         act_export_ifc = QAction(tr_ui("menu_export_ifc"), self)
         act_export_ifc.triggered.connect(self.export_ifc_from_viewer)
         file_menu.addAction(act_export_ifc)
@@ -5754,6 +5758,54 @@ class MainWindow(QMainWindow):
         if closed and log_message:
             self.log(log_message, "info")
         return closed
+
+    def close_current_project(self):
+        self._close_project_session(tr_log("project_closed_by_user"))
+
+        self.current_model_data = None
+        self.current_sections = []
+        self.current_thicknesses = []
+        self.current_materials = []
+        self.current_section_counts = {}
+        self.current_thickness_counts = {}
+        self.current_material_counts = {}
+        self.selected_sections = set()
+        self.selected_thicknesses = set()
+        self.selected_materials = set()
+        self.current_analysis_result_value_label = tr_ui("analysis_result_displacements")
+        self.current_model_has_analysis_results = False
+        self._fem_nodes = []
+        self._fem_connectivity_by_eid = {}
+        self._punctual_load_cases = []
+        self._linear_load_cases = []
+        self._planar_load_cases = []
+
+        if self.viewer is not None:
+            self.viewer.clear_scene()
+            self.viewer.load_mesh([], [])
+            self.viewer.render_window.Render()
+            self._update_display_checkboxes()
+
+        for chk in (self.chk_punctual_loads, self.chk_linear_loads, self.chk_planar_loads):
+            if chk is not None:
+                chk.setEnabled(False)
+                chk.blockSignals(True)
+                chk.setChecked(False)
+                chk.blockSignals(False)
+        if self.chk_mesh is not None:
+            self.chk_mesh.setEnabled(False)
+            self.chk_mesh.blockSignals(True)
+            self.chk_mesh.setChecked(False)
+            self.chk_mesh.blockSignals(False)
+        self._populate_punctual_load_case_combo([])
+        self._populate_results_case_combination_combo([])
+        self._set_properties_message("Sélectionnez un élément pour afficher ses propriétés.")
+        self._set_analysis_results_status(False)
+        self._update_analysis_results_value_combo(None)
+        self._set_analysis_results_output_message("Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.")
+        self._set_load_progress(0, "Chargement en attente")
+        self._update_load_btn_state()
+        self._update_transparency_controls_state()
 
     def _sync_project_session_state(self, model_data: dict, session_manager=None):
         self.current_analysis_result_value_label = tr_ui("analysis_result_displacements")
