@@ -434,6 +434,24 @@ MSG_UI = {
     "label_section_blocking": "Fixity",
     "color_by_section_on": "Color by section enabled",
     "color_by_section_off": "Color by section disabled",
+
+    "tooltip_fit_view": "Zoom to fit (Double middle-click)",
+    "tooltip_analysis_diagram_scale": "Diagram scale: {value}",
+    "label_unlimited": "unlimited",
+    "isolation_select_element_first": "Select an element before enabling isolation.",
+    "analysis_diagrams_shown_multi": "Diagrams shown: {title} ({loaded}/{total} elements).",
+    "analysis_no_diagram_value": "No diagram value available for this selection.",
+    "analysis_diagram_element_not_found": "Diagram computed, but the selected linear element cannot be found in the view.",
+    "analysis_results_read_error": "Error reading results.",
+    "prop_no_support_punctual": "No properties available for this point support.",
+    "prop_no_support_linear": "No properties available for this linear support.",
+    "prop_no_support_planar": "No properties available for this planar support.",
+    "properties_available_hint": "Properties available for linear elements, planar elements and supports.",
+    "properties_select_element": "Select an element to display its properties.",
+    "progress_loading_pending": "Loading pending",
+    "progress_preparing_load": "Preparing to load...",
+    "progress_render_done": "Render complete.",
+    "progress_loading_interrupted": "Loading interrupted.",
 }
 
 MSG_LOG = {
@@ -550,6 +568,14 @@ MSG_LOG = {
     "progress_read_fem_mesh": "Reading FEM mesh...",
     "progress_finalizing": "Finalizing...",
     "progress_load_done": "Loading complete.",
+
+    "log_results_read_error": "Error reading results",
+    "log_api_not_responding_after_restart": "The API is not responding after restart.",
+    "log_loads_build_error": "Load build error: {details}",
+    "log_profiles_build_error": "Profile build error: {details}",
+    "log_fem_mesh_loaded": "FEM mesh: {nodes} nodes, {elements} elements ({faces} faces).",
+    "log_fem_mesh_no_data": "FEM mesh: no data received from the API.",
+    "log_reset_before_load_failed": "Could not reset the API before loading the new model.",
 }
 
 MSG_ERR = {

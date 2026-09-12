@@ -434,6 +434,24 @@ MSG_UI = {
     "label_section_blocking": "Blocage",
     "color_by_section_on": "Couleur par section activée",
     "color_by_section_off": "Couleur par section désactivée",
+
+    "tooltip_fit_view": "Zoom étendu (Double clic molette)",
+    "tooltip_analysis_diagram_scale": "Échelle diagramme : {value}",
+    "label_unlimited": "illimité",
+    "isolation_select_element_first": "Sélectionnez un élément avant d'activer l'isolation.",
+    "analysis_diagrams_shown_multi": "Diagrammes affichés : {title} ({loaded}/{total} éléments).",
+    "analysis_no_diagram_value": "Aucune valeur de diagramme disponible pour cette sélection.",
+    "analysis_diagram_element_not_found": "Diagramme calculé, mais l'élément filaire sélectionné est introuvable dans la vue.",
+    "analysis_results_read_error": "Erreur lors de la lecture des résultats.",
+    "prop_no_support_punctual": "Aucune propriété disponible pour cet appui ponctuel.",
+    "prop_no_support_linear": "Aucune propriété disponible pour cet appui linéaire.",
+    "prop_no_support_planar": "Aucune propriété disponible pour cet appui surfacique.",
+    "properties_available_hint": "Propriétés disponibles pour les éléments filaires, surfaciques et les appuis.",
+    "properties_select_element": "Sélectionnez un élément pour afficher ses propriétés.",
+    "progress_loading_pending": "Chargement en attente",
+    "progress_preparing_load": "Préparation du chargement...",
+    "progress_render_done": "Rendu terminé.",
+    "progress_loading_interrupted": "Chargement interrompu.",
 }
 
 MSG_LOG = {
@@ -550,6 +568,14 @@ MSG_LOG = {
     "progress_read_fem_mesh": "Lecture du maillage FEM...",
     "progress_finalizing": "Finalisation...",
     "progress_load_done": "Chargement terminé.",
+
+    "log_results_read_error": "Erreur lecture résultats",
+    "log_api_not_responding_after_restart": "L'API ne répond pas après redémarrage.",
+    "log_loads_build_error": "Erreur construction charges : {details}",
+    "log_profiles_build_error": "Erreur construction profilés : {details}",
+    "log_fem_mesh_loaded": "Maillage FEM : {nodes} nœuds, {elements} éléments ({faces} mailles).",
+    "log_fem_mesh_no_data": "Maillage FEM : aucune donnée reçue de l'API.",
+    "log_reset_before_load_failed": "Impossible de réinitialiser l'API avant le chargement du nouveau modèle.",
 }
 
 MSG_ERR = {

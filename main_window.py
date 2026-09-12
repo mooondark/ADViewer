@@ -560,7 +560,7 @@ class AboutDialog(QDialog):
 class FilterDialog(QDialog):
     def __init__(self, sections, thicknesses, materials, selected_sections, selected_thicknesses, selected_materials, initial_tab=0, parent=None, *, section_counts=None, thickness_counts=None, material_counts=None):
         super().__init__(parent)
-        self.setWindowTitle("Filtre")
+        self.setWindowTitle(tr_ui("tooltip_filter"))
         self.setModal(True)
         self.resize(640, 420)
         self._section_checkboxes = []
@@ -2323,7 +2323,7 @@ class MainWindow(QMainWindow):
 
         self.fit_btn = QPushButton()
         self.fit_btn.setProperty("iconOnly", True)
-        self._setup_view_button(self.fit_btn, "zoom_etendu", "Zoom étendu (Double clic molette)")
+        self._setup_view_button(self.fit_btn, "zoom_etendu", tr_ui("tooltip_fit_view"))
         self.fit_btn.clicked.connect(self.viewer_fit_proxy)
 
         self.zoom_window_btn = QPushButton()
@@ -2625,7 +2625,7 @@ class MainWindow(QMainWindow):
         progress_layout.setContentsMargins(0, 0, 0, 0)
         progress_layout.setSpacing(2)
 
-        self.load_progress_label = QLabel("Chargement en attente")
+        self.load_progress_label = QLabel(tr_ui("progress_loading_pending"))
         self.load_progress_label.setStyleSheet(f"color:{FG_DIM};")
 
         self.load_progress_bar = QProgressBar()
@@ -3242,7 +3242,7 @@ class MainWindow(QMainWindow):
             sections.append((None, current_rows))
 
         if not sections:
-            self._set_analysis_results_output_message("Aucun résultat disponible pour cette sélection.")
+            self._set_analysis_results_output_message(tr_ui("analysis_results_none_for_selection"))
             return
 
         first_block = True
@@ -4378,7 +4378,7 @@ class MainWindow(QMainWindow):
                 display_comp = params.get("value_label") or params.get("value_key", "")
                 display_title = f"{display_family} {display_comp}" if display_comp else display_family
                 self._set_analysis_results_output_message(
-                    f"Diagrammes affichés : {display_title} ({loaded}/{total} éléments)."
+                    tr_ui("analysis_diagrams_shown_multi", title=display_title, loaded=loaded, total=total)
                 )
             return
         target = pending.pop(0)
@@ -4428,13 +4428,13 @@ class MainWindow(QMainWindow):
                 self.viewer.clear_result_diagram()
             if not series:
                 self.current_linear_diagram_payload = None
-                self._set_analysis_results_output_message("Aucune valeur de diagramme disponible pour cette sélection.")
+                self._set_analysis_results_output_message(tr_ui("analysis_no_diagram_value"))
                 return
             line_index = int((self.current_analysis_selection or {}).get("index", -1))
             lines = list((self.current_model_data or {}).get("lines", []) or [])
             if self.viewer is None or line_index < 0 or line_index >= len(lines):
                 self.current_linear_diagram_payload = None
-                self._set_analysis_results_output_message("Diagramme calculé, mais l'élément filaire sélectionné est introuvable dans la vue.")
+                self._set_analysis_results_output_message(tr_ui("analysis_diagram_element_not_found"))
                 return
             line_properties = list((self.current_model_data or {}).get("line_properties", []) or [])
             line_property = line_properties[line_index] if 0 <= line_index < len(line_properties) else {}
@@ -4479,10 +4479,10 @@ class MainWindow(QMainWindow):
         self.current_linear_diagram_payload = None
         if self.viewer is not None:
             self.viewer.clear_planar_support_result_centroid()
-        self._set_analysis_results_output_message("Erreur lors de la lecture des résultats.")
+        self._set_analysis_results_output_message(tr_ui("analysis_results_read_error"))
         text = str(error_text or "").strip()
         if text:
-            self.log("Erreur lecture résultats", "error")
+            self.log(tr_log("log_results_read_error"), "error")
             for line in text.splitlines()[:12]:
                 self.log(line, "error")
 
@@ -4535,7 +4535,7 @@ class MainWindow(QMainWindow):
                 if 0 <= index < len(items):
                     self._render_punctual_support_properties(items[index])
                 else:
-                    self._set_properties_message("Aucune propriété disponible pour cet appui ponctuel.")
+                    self._set_properties_message(tr_ui("prop_no_support_punctual"))
                 return
 
             if role == "support_linear":
@@ -4544,7 +4544,7 @@ class MainWindow(QMainWindow):
                 if 0 <= index < len(items):
                     self._render_punctual_support_properties(items[index])
                 else:
-                    self._set_properties_message("Aucune propriété disponible pour cet appui linéaire.")
+                    self._set_properties_message(tr_ui("prop_no_support_linear"))
                 return
 
             if role == "support_planar":
@@ -4553,7 +4553,7 @@ class MainWindow(QMainWindow):
                 if 0 <= index < len(items):
                     self._render_punctual_support_properties(items[index])
                 else:
-                    self._set_properties_message("Aucune propriété disponible pour cet appui surfacique.")
+                    self._set_properties_message(tr_ui("prop_no_support_planar"))
                 return
 
             if role in ("planars", "planar", "element_planar"):
@@ -4601,7 +4601,7 @@ class MainWindow(QMainWindow):
                     self._set_properties_message(tr_ui("prop_no_planar_load"))
                 return
 
-            self._set_properties_message("Propriétés disponibles pour les éléments filaires, surfaciques et les appuis.")
+            self._set_properties_message(tr_ui("properties_available_hint"))
             return
 
         # --- Sélection multiple (len >= 2) ---
@@ -4910,7 +4910,7 @@ class MainWindow(QMainWindow):
 
         # Pas d'isolation active → isoler la sélection courante
         if not selected_items:
-            self._set_analysis_results_output_message("Sélectionnez un élément avant d'activer l'isolation.")
+            self._set_analysis_results_output_message(tr_ui("isolation_select_element_first"))
             self._apply_isolate_button_icon(False)
             return
         # Passer la liste complète — set_isolated_selection accepte une list
@@ -4924,7 +4924,7 @@ class MainWindow(QMainWindow):
         if self.viewer is not None:
             self.viewer.set_linear_result_scale_factor(value)
         if self.analysis_results_scale_spin is not None:
-            self.analysis_results_scale_spin.setToolTip(f"Échelle diagramme : {float(value):.1f}")
+            self.analysis_results_scale_spin.setToolTip(tr_ui("tooltip_analysis_diagram_scale", value=f"{float(value):.1f}"))
         self._refresh_current_linear_diagram()
 
     def _refresh_current_linear_diagram(self):
@@ -5176,7 +5176,7 @@ class MainWindow(QMainWindow):
             return
         self.calc_ef_timeout = int(value)
         self.save_config()
-        label = f"{value} s" if value > 0 else "illimité"
+        label = f"{value} s" if value > 0 else tr_ui("label_unlimited")
         self.log(tr_log("calc_ef_timeout_set", value=label), "info")
 
     def launch_analysis_from_viewer(self):
@@ -5354,7 +5354,7 @@ class MainWindow(QMainWindow):
                 return True
             except Exception:
                 time.sleep(0.5)
-        self.log("L'API ne répond pas après redémarrage.", "error")
+        self.log(tr_log("log_api_not_responding_after_restart"), "error")
         return False
 
     def _reset_api_between_model_loads_if_needed(self) -> bool:
@@ -5590,7 +5590,7 @@ class MainWindow(QMainWindow):
         self._loads_worker = None
 
     def _on_loads_error(self, error_text: str):
-        self.log("Erreur construction charges : " + error_text.splitlines()[0], "error")
+        self.log(tr_log("log_loads_build_error", details=error_text.splitlines()[0]), "error")
         if self.load_progress_container is not None:
             self.load_progress_container.setVisible(False)
         self._loads_worker = None
@@ -5730,7 +5730,7 @@ class MainWindow(QMainWindow):
         self._profiles_worker = None
 
     def _on_profiles_build_error(self, error_text: str):
-        self.log("Erreur construction profilés : " + error_text.splitlines()[0], "error")
+        self.log(tr_log("log_profiles_build_error", details=error_text.splitlines()[0]), "error")
         if self.load_progress_container is not None:
             self.load_progress_container.setVisible(False)
         self.cmb_display_mode.setEnabled(True)
@@ -5832,11 +5832,11 @@ class MainWindow(QMainWindow):
             self.chk_mesh.blockSignals(False)
         self._populate_punctual_load_case_combo([])
         self._populate_results_case_combination_combo([])
-        self._set_properties_message("Sélectionnez un élément pour afficher ses propriétés.")
+        self._set_properties_message(tr_ui("properties_select_element"))
         self._set_analysis_results_status(False)
         self._update_analysis_results_value_combo(None)
-        self._set_analysis_results_output_message("Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.")
-        self._set_load_progress(0, "Chargement en attente")
+        self._set_analysis_results_output_message(tr_ui("analysis_results_empty"))
+        self._set_load_progress(0, tr_ui("progress_loading_pending"))
         self._update_load_btn_state()
         self._update_transparency_controls_state()
 
@@ -5915,11 +5915,11 @@ class MainWindow(QMainWindow):
         if loading:
             if self.load_progress_container is not None:
                 self.load_progress_container.setVisible(True)
-            self._set_load_progress(0, "Préparation du chargement...")
+            self._set_load_progress(0, tr_ui("progress_preparing_load"))
         else:
             if self.load_progress_container is not None:
                 self.load_progress_container.setVisible(False)
-            self._set_load_progress(0, "Chargement en attente")
+            self._set_load_progress(0, tr_ui("progress_loading_pending"))
             self._update_transparency_controls_state()
             self._update_api_button_state()
             self._update_load_btn_state()
@@ -5950,7 +5950,7 @@ class MainWindow(QMainWindow):
         self.clear_log()
         self.log(tr_log("api_connection", host=host), "info")
         if not self._reset_api_between_model_loads_if_needed():
-            self.log("Impossible de réinitialiser l'API avant le chargement du nouveau modèle.", "error")
+            self.log(tr_log("log_reset_before_load_failed"), "error")
             return
         self._close_project_session(tr_log("project_closed_before_new_load"))
 
@@ -5986,7 +5986,7 @@ class MainWindow(QMainWindow):
             self.chk_color_by_section.blockSignals(True)
             self.chk_color_by_section.setChecked(True)
             self.chk_color_by_section.blockSignals(False)
-        self._set_load_progress(100, "Rendu terminé.")
+        self._set_load_progress(100, tr_ui("progress_render_done"))
         self.viewer.load_model(model_data)
         self.viewer.set_color_by_section(True)
         self.viewer.set_linear_result_scale_factor(self.analysis_results_scale_spin.value() if self.analysis_results_scale_spin is not None else 10.0)
@@ -5999,8 +5999,10 @@ class MainWindow(QMainWindow):
         self._fem_connectivity_by_eid = dict((model_data or {}).get("fem_by_eid", {}) or {})
         if self._fem_nodes and self._fem_connectivity_by_eid:
             total_faces = sum(len(f) for f in self._fem_connectivity_by_eid.values())
-            self.log("Maillage FEM : {} nœuds, {} éléments ({} mailles).".format(
-                len(self._fem_nodes), len(self._fem_connectivity_by_eid), total_faces), "ok")
+            self.log(tr_log(
+                "log_fem_mesh_loaded",
+                nodes=len(self._fem_nodes), elements=len(self._fem_connectivity_by_eid), faces=total_faces,
+            ), "ok")
             # Le maillage VTK sera construit à la demande via on_toggle_mesh /
             # _refresh_mesh_display. On efface tout acteur résiduel pour l'instant.
             self.viewer.load_mesh([], [])
@@ -6009,13 +6011,13 @@ class MainWindow(QMainWindow):
             self._fem_connectivity_by_eid = {}
             self.viewer.load_mesh([], [])
             if (model_data or {}).get("has_analysis_results"):
-                self.log("Maillage FEM : aucune donnée reçue de l'API.", "warn")
-        self._set_properties_message("Sélectionnez un élément pour afficher ses propriétés.")
+                self.log(tr_log("log_fem_mesh_no_data"), "warn")
+        self._set_properties_message(tr_ui("properties_select_element"))
         self._render_results(model_data)
         self._set_analysis_results_status((model_data or {}).get("has_analysis_results"))
         self._populate_results_case_combination_combo((model_data or {}).get("results_cases_combinations", []))
         self._update_analysis_results_value_combo(None)
-        self._set_analysis_results_output_message("Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.")
+        self._set_analysis_results_output_message(tr_ui("analysis_results_empty"))
 
         # Nouveau modele : les charges affichees precedemment (s'il y en a) ne
         # correspondent plus aux donnees -> forcer la reconstruction au prochain affichage.
@@ -6132,10 +6134,10 @@ class MainWindow(QMainWindow):
     def on_model_error(self, error_text: str):
         self.project_session = None
         self.current_model_has_analysis_results = False
-        self._set_load_progress(0, "Chargement interrompu.")
+        self._set_load_progress(0, tr_ui("progress_loading_interrupted"))
         self._set_analysis_results_status(False)
         self._update_analysis_results_value_combo(None)
-        self._set_analysis_results_output_message("Sélectionnez un appui ponctuel, linéaire ou surfacique pour afficher ses résultats.")
+        self._set_analysis_results_output_message(tr_ui("analysis_results_empty"))
         if self.chk_mesh is not None:
             self.chk_mesh.setEnabled(False)
             self.chk_mesh.blockSignals(True)
