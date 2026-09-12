@@ -452,6 +452,10 @@ MSG_UI = {
     "progress_preparing_load": "Préparation du chargement...",
     "progress_render_done": "Rendu terminé.",
     "progress_loading_interrupted": "Chargement interrompu.",
+    "about_version": "Version : {version}",
+    "about_link_viewer_repo": "Dépôt GitHub du viewer",
+    "about_link_api_repo": "Dépôt GitHub de l'API",
+    "about_link_graitec": "Site de Graitec",
 }
 
 MSG_LOG = {

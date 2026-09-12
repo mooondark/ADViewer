@@ -533,14 +533,14 @@ class AboutDialog(QDialog):
         title.setStyleSheet(f"color:{ACCENT}; font-size:16px; font-weight:bold;")
         layout.addWidget(title)
 
-        version = QLabel(f"Version : {APP_VERSION}")
+        version = QLabel(tr_ui("about_version", version=APP_VERSION))
         version.setAlignment(Qt.AlignCenter)
         version.setStyleSheet(f"color:{FG};")
         layout.addWidget(version)
 
-        html = """<a href="https://github.com/mooondark/ADViewer">Dépôt GitHub du viewer</a><br>
-<a href="https://github.com/Graitec-Group/advance-design-api">Dépôt GitHub de l'API</a><br>
-<a href="https://www.graitec.com">Site de Graitec</a>"""
+        html = f"""<a href="https://github.com/mooondark/ADViewer">{tr_ui("about_link_viewer_repo")}</a><br>
+<a href="https://github.com/Graitec-Group/advance-design-api">{tr_ui("about_link_api_repo")}</a><br>
+<a href="https://www.graitec.com">{tr_ui("about_link_graitec")}</a>"""
         links = QLabel(html)
         links.setAlignment(Qt.AlignCenter)
         links.setWordWrap(True)
