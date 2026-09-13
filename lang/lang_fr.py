@@ -456,6 +456,12 @@ MSG_UI = {
     "about_link_viewer_repo": "Dépôt GitHub du viewer",
     "about_link_api_repo": "Dépôt GitHub de l'API",
     "about_link_graitec": "Site de Graitec",
+    "update_available_title": "Mise à jour disponible",
+    "update_available_body": "Une nouvelle version ({version}) est disponible.\n\n{url}",
+    "update_up_to_date": "Votre version est à jour.",
+    "update_check_failed_body": "Vérification de mise à jour impossible (pas d'accès réseau ?).",
+    "menu_check_update": "Vérifier les mises à jour",
+    "update_check_title": "Vérification mise à jour",
 }
 
 MSG_LOG = {
@@ -580,6 +586,8 @@ MSG_LOG = {
     "log_fem_mesh_loaded": "Maillage FEM : {nodes} nœuds, {elements} éléments ({faces} mailles).",
     "log_fem_mesh_no_data": "Maillage FEM : aucune donnée reçue de l'API.",
     "log_reset_before_load_failed": "Impossible de réinitialiser l'API avant le chargement du nouveau modèle.",
+    "update_available": "Nouvelle version disponible : {version}",
+    "update_check_failed": "Vérification de mise à jour impossible (pas d'accès réseau ?).",
 }
 
 MSG_ERR = {

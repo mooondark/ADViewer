@@ -820,6 +820,31 @@ class Card(QFrame):
         self.setGraphicsEffect(shadow)
 
 
+class UpdateCheckWorker(QThread):
+    success = Signal(bool, str, str)
+    error = Signal()
+
+    def run(self):
+        try:
+            resp = requests.get(
+                "https://api.github.com/repos/mooondark/ADViewer/tags",
+                timeout=5,
+            )
+            resp.raise_for_status()
+            tags = resp.json()
+            if not tags:
+                self.error.emit()
+                return
+            latest = tags[0]["name"].lstrip("v")
+            latest_tuple = tuple(int(p) for p in latest.split("."))
+            current_tuple = tuple(int(p) for p in APP_VERSION.split("."))
+            is_newer = latest_tuple > current_tuple
+            url = f"https://github.com/mooondark/ADViewer/releases/tag/{tags[0]['name']}"
+            self.success.emit(is_newer, latest, url)
+        except Exception:
+            self.error.emit()
+
+
 class LoadAnalysisResultsWorker(QThread):
     success = Signal(object)
     error = Signal(str)
@@ -2152,6 +2177,10 @@ class MainWindow(QMainWindow):
         act_about.triggered.connect(self.open_about_dialog)
         file_menu.addAction(act_about)
 
+        act_check_update = QAction(tr_ui("menu_check_update"), self)
+        act_check_update.triggered.connect(self.check_for_update_manual)
+        file_menu.addAction(act_check_update)
+
         file_menu.addSeparator()
 
         act_quit = QAction(tr_ui("menu_quit"), self)
@@ -2917,6 +2946,35 @@ class MainWindow(QMainWindow):
         self._set_analysis_results_output_message(tr_ui("analysis_results_empty"))
         self._update_analysis_scale_controls(None)
         self.log(tr_log("ready"), "info")
+        self._start_update_check()
+
+    def _start_update_check(self, manual: bool = False):
+        self._update_check_worker = UpdateCheckWorker()
+        self._update_check_worker.success.connect(
+            lambda is_newer, version, url: self._on_update_check_success(is_newer, version, url, manual)
+        )
+        self._update_check_worker.error.connect(lambda: self._on_update_check_failed(manual))
+        self._update_check_worker.start()
+
+    def check_for_update_manual(self):
+        self._start_update_check(manual=True)
+
+    def _on_update_check_success(self, is_newer: bool, latest_version: str, release_url: str, manual: bool):
+        if is_newer:
+            self.log(tr_log("update_available", version=latest_version), "warn")
+            title = tr_ui("update_check_title") if manual else tr_ui("update_available_title")
+            QMessageBox.information(
+                self,
+                title,
+                tr_ui("update_available_body", version=latest_version, url=release_url),
+            )
+        elif manual:
+            QMessageBox.information(self, tr_ui("update_check_title"), tr_ui("update_up_to_date"))
+
+    def _on_update_check_failed(self, manual: bool):
+        self.log(tr_log("update_check_failed"), "info")
+        if manual:
+            QMessageBox.warning(self, tr_ui("update_check_title"), tr_ui("update_check_failed_body"))
 
     def _build_ui(self):
         main_splitter = self._create_main_layout()

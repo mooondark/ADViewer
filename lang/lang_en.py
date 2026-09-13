@@ -456,6 +456,12 @@ MSG_UI = {
     "about_link_viewer_repo": "Viewer GitHub repository",
     "about_link_api_repo": "API GitHub repository",
     "about_link_graitec": "Graitec website",
+    "update_available_title": "Update available",
+    "update_available_body": "A new version ({version}) is available.\n\n{url}",
+    "update_up_to_date": "Your version is up to date.",
+    "update_check_failed_body": "Update check failed (no network access?).",
+    "menu_check_update": "Check for updates",
+    "update_check_title": "Update check",
 }
 
 MSG_LOG = {
@@ -580,6 +586,8 @@ MSG_LOG = {
     "log_fem_mesh_loaded": "FEM mesh: {nodes} nodes, {elements} elements ({faces} faces).",
     "log_fem_mesh_no_data": "FEM mesh: no data received from the API.",
     "log_reset_before_load_failed": "Could not reset the API before loading the new model.",
+    "update_available": "New version available: {version}",
+    "update_check_failed": "Update check failed (no network access?).",
 }
 
 MSG_ERR = {

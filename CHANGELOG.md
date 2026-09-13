@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.06
+
+### FR
+- Vérification des mises à jour : au démarrage, une notification silencieuse signale si une nouvelle version est disponible sur le dépôt GitHub (lien vers la release). Nouvelle entrée « Vérifier les mises à jour » dans le menu Fichier pour lancer la vérification manuellement (indique aussi si la version est déjà à jour, ou si la vérification a échoué faute d'accès réseau).
+
+### EN
+- Update check: on startup, a silent notification signals if a newer version is available on the GitHub repository (link to the release). New "Check for updates" entry in the File menu to trigger the check manually (also reports if the version is already up to date, or if the check failed due to no network access).
+
 ## 2.05
 
 ### FR
