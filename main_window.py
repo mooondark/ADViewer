@@ -2963,11 +2963,14 @@ class MainWindow(QMainWindow):
         if is_newer:
             self.log(tr_log("update_available", version=latest_version), "warn")
             title = tr_ui("update_check_title") if manual else tr_ui("update_available_title")
-            QMessageBox.information(
-                self,
-                title,
-                tr_ui("update_available_body", version=latest_version, url=release_url),
-            )
+            safe_url = html.escape(release_url)
+            box = QMessageBox(self)
+            box.setIcon(QMessageBox.Information)
+            box.setWindowTitle(title)
+            box.setTextFormat(Qt.RichText)
+            box.setTextInteractionFlags(Qt.TextBrowserInteraction)
+            box.setText(tr_ui("update_available_body", version=latest_version, url=f'<a href="{safe_url}">{safe_url}</a>'))
+            box.exec()
         elif manual:
             QMessageBox.information(self, tr_ui("update_check_title"), tr_ui("update_up_to_date"))
 

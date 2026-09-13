@@ -457,7 +457,7 @@ MSG_UI = {
     "about_link_api_repo": "API GitHub repository",
     "about_link_graitec": "Graitec website",
     "update_available_title": "Update available",
-    "update_available_body": "A new version ({version}) is available.\n\n{url}",
+    "update_available_body": "A new version ({version}) is available.<br><br>{url}",
     "update_up_to_date": "Your version is up to date.",
     "update_check_failed_body": "Update check failed (no network access?).",
     "menu_check_update": "Check for updates",
