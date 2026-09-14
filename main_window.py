@@ -38,9 +38,9 @@ try:
         QPushButton, QLineEdit, QTextEdit, QVBoxLayout, QHBoxLayout,
         QSplitter, QCheckBox, QComboBox, QMenu, QDialog, QFormLayout,
         QDialogButtonBox, QDoubleSpinBox, QSpinBox, QSlider, QColorDialog, QProgressBar, QMessageBox,
-        QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QGraphicsDropShadowEffect,
+        QTabWidget, QTabBar, QStackedWidget, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QGraphicsDropShadowEffect,
         QScrollArea, QToolButton, QGridLayout, QListView, QInputDialog,
-        QRadioButton, QButtonGroup
+        QRadioButton, QButtonGroup, QTreeWidget, QTreeWidgetItem
     )
 except ImportError as e:
     raise RuntimeError("Le module 'PySide6' est requis. Installez les dépendances de l'application avant l'exécution.") from e
@@ -1197,6 +1197,8 @@ class MainWindow(QMainWindow):
         self.load_progress_label = None
         self.load_progress_bar = None
         self.side_tabs = None
+        self.side_tabs_row2 = None
+        self.side_content_stack = None
 
         self.help_label = None
         self.title_bar = None
@@ -1214,6 +1216,8 @@ class MainWindow(QMainWindow):
         self.filter_dialog_tab_index = 0
         self.properties_container = None
         self.properties_layout = None
+        self.systems_tree = None
+        self.systems_empty_label = None
         self.results_container = None
         self.results_layout = None
         self.results_scroll = None
@@ -2042,6 +2046,7 @@ class MainWindow(QMainWindow):
 
     def _apply_style(self):
         # qt-material handles the global stylesheet; we only add app-specific tweaks
+        systems_tree_bg = "#e6e6e6" if self.theme_name == "light" else PANEL
         self.setStyleSheet(
             f"""
             QFrame#titleBar {{
@@ -2107,6 +2112,15 @@ class MainWindow(QMainWindow):
             QTabBar::tab:!selected {{
                 margin-top: 4px;
                 color: {FG_DIM};
+            }}
+            /* Fond plus fonce pour l'arbre SYSTEMES : les traits de connexion
+               (blancs, non stylables via QSS sur ::branch) restent invisibles
+               sur le fond clair par defaut. */
+            QTreeWidget#systemsTree {{
+                background: {systems_tree_bg};
+            }}
+            QTreeWidget#systemsTree::branch {{
+                background: {systems_tree_bg};
             }}
             /* Boutons d'icône (vues, filtres) - bordure uniforme */
             QPushButton[iconOnly="true"] {{
@@ -2671,6 +2685,93 @@ class MainWindow(QMainWindow):
         log_tab_layout.addWidget(self.log_edit, 1)
         return log_tab
 
+    def _build_systems_tab(self):
+        systems_tab = QWidget()
+        systems_layout = QVBoxLayout(systems_tab)
+        systems_layout.setContentsMargins(6, 6, 6, 6)
+        systems_layout.setSpacing(4)
+
+        self.systems_tree = QTreeWidget()
+        self.systems_tree.setObjectName("systemsTree")
+        self.systems_tree.setHeaderHidden(True)
+        self.systems_tree.setSelectionMode(QTreeWidget.ExtendedSelection)
+        self.systems_tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.systems_tree.customContextMenuRequested.connect(self._on_systems_tree_context_menu)
+        systems_layout.addWidget(self.systems_tree, 1)
+
+        self.systems_empty_label = QLabel(tr_ui("systems_empty"))
+        self.systems_empty_label.setWordWrap(True)
+        self.systems_empty_label.setStyleSheet(f"color:{FG_DIM};")
+        systems_layout.addWidget(self.systems_empty_label)
+
+        return systems_tab
+
+    @staticmethod
+    def _system_tree_label(node: dict) -> str:
+        name = str(node.get("user_name") or "")
+        user_id = node.get("user_id")
+        label = f"{user_id} - {name}" if user_id not in (None, "") else name
+        if node.get("is_level"):
+            height = float(node.get("level_top") or 0) - float(node.get("level_bottom") or 0)
+            label += f"  (h = {height:.2f} m)"
+        return label
+
+    def _populate_systems_tab(self, model_data: dict = None):
+        if self.systems_tree is None:
+            return
+        self.systems_tree.clear()
+        systems_tree = (model_data or {}).get("systems_tree") or {}
+        nodes = systems_tree.get("nodes") or {}
+        roots = systems_tree.get("roots") or []
+        self.systems_empty_label.setVisible(not roots)
+        self.systems_tree.setVisible(bool(roots))
+
+        def add_node(parent_item, eid):
+            node = nodes.get(eid)
+            if node is None:
+                return
+            item = QTreeWidgetItem([self._system_tree_label(node)])
+            item.setData(0, Qt.UserRole, eid)
+            if parent_item is None:
+                self.systems_tree.addTopLevelItem(item)
+                item.setExpanded(True)  # racine (ex. "Structure") toujours developpee au demarrage
+            else:
+                parent_item.addChild(item)
+            for child_eid in sorted(node.get("children") or []):
+                add_node(item, child_eid)
+
+        for root_eid in roots:
+            add_node(None, root_eid)
+
+    def _on_systems_tree_context_menu(self, pos):
+        items = self.systems_tree.selectedItems()
+        if not items or self.viewer is None:
+            return
+        menu = QMenu(self)
+        action_select = menu.addAction(tr_ui("systems_select"))
+        action_isolate = menu.addAction(tr_ui("systems_isolate"))
+        chosen = menu.exec(self.systems_tree.viewport().mapToGlobal(pos))
+        if chosen is None:
+            return
+
+        root_eids = [it.data(0, Qt.UserRole) for it in items]
+        model_data = self.current_model_data or {}
+        nodes = (model_data.get("systems_tree") or {}).get("nodes") or {}
+        system_eids = collect_system_descendant_eids(nodes, root_eids)
+        selection_items = resolve_system_selection_items(model_data.get("system_direct_items") or {}, system_eids)
+
+        if chosen is action_select:
+            self.viewer.set_selected_items(selection_items)
+            self._log_selection_summary(selection_items)
+        elif chosen is action_isolate:
+            self.viewer.set_isolated_selection(selection_items, rebuild_profiles=False)
+            self._apply_isolate_button_icon(bool(selection_items))
+            if not self._log_items_summary("isolation_summary_header", selection_items):
+                self.log(tr_ui("isolation_summary_cleared"), "info")
+            self._update_display_checkboxes()
+            self._refresh_mesh_display()
+            self._refresh_profiles_if_needed()
+
     def _build_properties_tab(self):
         properties_tab = QWidget()
         properties_layout = QVBoxLayout(properties_tab)
@@ -2895,37 +2996,105 @@ class MainWindow(QMainWindow):
         return loads_tab
 
     def _build_side_tabs(self, right_splitter):
-        side_tabs = QTabWidget()
-        self.side_tabs = side_tabs
-        side_tabs.setTabPosition(QTabWidget.North)
-        side_tabs.setDocumentMode(False)
-        side_tabs.setMinimumWidth(390)
-        side_tab_bar = side_tabs.tabBar()
-        side_tab_bar.setExpanding(False)
-        side_tab_bar.setUsesScrollButtons(False)
-        side_tab_bar.setElideMode(Qt.ElideNone)
+        # Deux lignes d'onglets (SYSTÈMES sous JOURNAL) : un QTabWidget ne
+        # gère qu'une seule ligne, on assemble donc 2 QTabBar autonomes
+        # partageant un même QStackedWidget de contenu.
+        row1 = QTabBar()
+        row1.setExpanding(False)
+        row1.setUsesScrollButtons(False)
+        row1.setElideMode(Qt.ElideNone)
+
+        row2 = QTabBar()
+        row2.setExpanding(False)
+        row2.setUsesScrollButtons(False)
+        row2.setElideMode(Qt.ElideNone)
 
         log_tab = self._build_log_tab()
         properties_tab = self._build_properties_tab()
         results_tab = self._build_results_tab()
         analysis_results_tab = self._build_analysis_results_tab()
         loads_tab = self._build_loads_tab()
+        systems_tab = self._build_systems_tab()
 
-        side_tabs.addTab(log_tab, tr_ui("journal"))
-        side_tabs.addTab(properties_tab, tr_ui("properties"))
-        side_tabs.addTab(results_tab, tr_ui("takeoff"))
-        side_tabs.addTab(analysis_results_tab, tr_ui("results"))
-        side_tabs.addTab(loads_tab, tr_ui("loads_panel_title"))
+        row1.addTab(tr_ui("journal"))
+        row1.addTab(tr_ui("properties"))
+        row1.addTab(tr_ui("takeoff"))
+        row1.addTab(tr_ui("results"))
+        row1.addTab(tr_ui("loads_panel_title"))
+        row2.addTab(tr_ui("systems"))
 
-        # Wrapper : onglets + barre de progression commune en bas (visible depuis tous les onglets)
+        content_stack = QStackedWidget()
+        for tab_widget in (log_tab, properties_tab, results_tab, analysis_results_tab, loads_tab, systems_tab):
+            content_stack.addWidget(tab_widget)
+        row2_first_index = content_stack.count() - 1  # index du contenu Systèmes
+
+        self.side_tabs = row1
+        self.side_tabs_row2 = row2
+        self.side_content_stack = content_stack
+        self._side_row2_first_index = row2_first_index
+
+        row1.tabBarClicked.connect(self._activate_side_tab)
+        row2.tabBarClicked.connect(lambda _index: self._activate_side_systems_tab())
+        self._activate_side_tab(0)  # etat initial : Journal actif, Systemes inactif
+
+        row1_line = QHBoxLayout()
+        row1_line.setContentsMargins(0, 0, 0, 0)
+        row1_line.setSpacing(0)
+        row1_line.addWidget(row1)
+        row1_line.addStretch(1)
+
+        row2_line = QHBoxLayout()
+        row2_line.setContentsMargins(0, 0, 0, 0)
+        row2_line.setSpacing(0)
+        row2_line.addWidget(row2)
+        row2_line.addStretch(1)
+
+        # Wrapper : 2 lignes d'onglets + contenu + barre de progression commune en bas
         side_panel = QWidget()
+        side_panel.setMinimumWidth(390)
         side_panel_layout = QVBoxLayout(side_panel)
         side_panel_layout.setContentsMargins(0, 0, 0, 0)
         side_panel_layout.setSpacing(0)
-        side_panel_layout.addWidget(side_tabs, 1)
+        side_panel_layout.addLayout(row1_line)
+        side_panel_layout.addLayout(row2_line)
+        side_panel_layout.addWidget(content_stack, 1)
         side_panel_layout.addWidget(self.load_progress_container)
         right_splitter.addWidget(side_panel)
-        return side_tabs
+        return row1
+
+    def _set_side_tab_row_active(self, bar, active: bool):
+        """Force visuellement l'onglet courant d'une ligne a paraitre (in)actif.
+
+        QTabBar impose toujours un onglet "current" des qu'il contient des
+        tabs (setCurrentIndex(-1) est ignore) : avec 2 lignes independantes,
+        on doit donc surcharger localement le style :selected pour que la
+        ligne non active ne s'affiche pas comme selectionnee.
+        """
+        if active:
+            bar.setStyleSheet("")
+        else:
+            bar.setStyleSheet(
+                f"QTabBar::tab:selected {{ background: transparent; color: {FG_DIM}; margin-top: 4px; }}"
+            )
+
+    def _activate_side_tab(self, index: int):
+        """Active un onglet de la ligne 1 (Journal/Propriétés/.../Charges)."""
+        if self.side_tabs is None or self.side_content_stack is None:
+            return
+        self.side_tabs.setCurrentIndex(index)
+        self.side_content_stack.setCurrentIndex(index)
+        self._set_side_tab_row_active(self.side_tabs, True)
+        if self.side_tabs_row2 is not None:
+            self._set_side_tab_row_active(self.side_tabs_row2, False)
+
+    def _activate_side_systems_tab(self):
+        """Active l'onglet Systèmes (ligne 2)."""
+        if self.side_tabs_row2 is None or self.side_content_stack is None:
+            return
+        self.side_content_stack.setCurrentIndex(self._side_row2_first_index)
+        self._set_side_tab_row_active(self.side_tabs_row2, True)
+        if self.side_tabs is not None:
+            self._set_side_tab_row_active(self.side_tabs, False)
 
     def _finalize_ui_state(self, main_splitter, right_splitter):
         main_splitter.setStretchFactor(0, 0)
@@ -4795,9 +4964,10 @@ class MainWindow(QMainWindow):
             self.selected_sections = set(str(v) for v in sections)
             self.selected_thicknesses = set(str(v) for v in thicknesses)
             self.selected_materials = set(str(v) for v in materials)
-            self.viewer.set_structural_filters(self.selected_sections, self.selected_thicknesses, self.selected_materials)
+            self.viewer.set_structural_filters(self.selected_sections, self.selected_thicknesses, self.selected_materials, rebuild_profiles=False)
             self._update_display_checkboxes()
             self._refresh_mesh_display()
+            self._refresh_profiles_if_needed()
 
     def clear_structural_filters(self):
         if self.current_model_data is None or self.viewer is None:
@@ -4805,9 +4975,10 @@ class MainWindow(QMainWindow):
         self.selected_sections = set(self.current_sections)
         self.selected_thicknesses = set(self.current_thicknesses)
         self.selected_materials = set(self.current_materials)
-        self.viewer.set_structural_filters(self.selected_sections, self.selected_thicknesses, self.selected_materials)
+        self.viewer.set_structural_filters(self.selected_sections, self.selected_thicknesses, self.selected_materials, rebuild_profiles=False)
         self._update_display_checkboxes()
         self._refresh_mesh_display()
+        self._refresh_profiles_if_needed()
 
     def _make_isolate_icon(self, active: bool):
         """Icone isoler (SVG). Couleur : accent si actif, sinon adaptee au theme."""
@@ -4957,16 +5128,17 @@ class MainWindow(QMainWindow):
             isolated = self._normalize_selection_items(self.viewer.get_isolated_selection())
             if not current or current == isolated:
                 # Sélection inchangée ou vide → annuler l'isolation
-                self.viewer.set_isolated_selection(None)
+                self.viewer.set_isolated_selection(None, rebuild_profiles=False)
                 self._apply_isolate_button_icon(False)
                 self.log(tr_ui("isolation_summary_cleared"), "info")
             else:
                 # Sélection différente → isoler les éléments actuellement sélectionnés
-                self.viewer.set_isolated_selection(selected_items)
+                self.viewer.set_isolated_selection(selected_items, rebuild_profiles=False)
                 self._apply_isolate_button_icon(True)
                 self._log_items_summary("isolation_summary_header", selected_items)
             self._update_display_checkboxes()
             self._refresh_mesh_display()
+            self._refresh_profiles_if_needed()
             return
 
         # Pas d'isolation active → isoler la sélection courante
@@ -4975,10 +5147,11 @@ class MainWindow(QMainWindow):
             self._apply_isolate_button_icon(False)
             return
         # Passer la liste complète — set_isolated_selection accepte une list
-        self.viewer.set_isolated_selection(selected_items)
+        self.viewer.set_isolated_selection(selected_items, rebuild_profiles=False)
         self._apply_isolate_button_icon(True)
         self._log_items_summary("isolation_summary_header", selected_items)
         self._update_display_checkboxes()
+        self._refresh_profiles_if_needed()
         self._refresh_mesh_display()
 
     def on_analysis_scale_changed(self, value: float):
@@ -5281,7 +5454,7 @@ class MainWindow(QMainWindow):
         self._calc_reload_fto = ""
 
         if self.side_tabs is not None:
-            self.side_tabs.setCurrentIndex(0)
+            self._activate_side_tab(0)
 
         self.calc_btn.setEnabled(False)
         self.load_btn.setEnabled(False)
@@ -5750,6 +5923,17 @@ class MainWindow(QMainWindow):
         self._update_transparency_controls_state()
         self.log(tr_log(_DISPLAY_MODE_LOG_MAP.get(mode, "mode_wireframe")), "info")
 
+    def _refresh_profiles_if_needed(self):
+        """A appeler apres un changement d'isolation ou de filtres structuraux
+        fait avec rebuild_profiles=False : si l'affichage courant est un mode
+        Profiles, relance la construction du solide en arriere-plan (barre de
+        progression), sinon ne fait rien (rien de couteux a reconstruire)."""
+        if self.viewer is None or self.cmb_display_mode is None:
+            return
+        mode = self.cmb_display_mode.currentData()
+        if mode in _PROFILE_MODES:
+            self._trigger_profiles_build(mode)
+
     def _trigger_profiles_build(self, mode: str):
         """Construit le solide des profils en arriere-plan (BuildProfilesWorker)
         pour ne pas geler l'UI et animer la barre de progression element par
@@ -5873,6 +6057,7 @@ class MainWindow(QMainWindow):
         self._punctual_load_cases = []
         self._linear_load_cases = []
         self._planar_load_cases = []
+        self._populate_systems_tab(None)
 
         if self.viewer is not None:
             self.viewer.clear_scene()
@@ -6074,6 +6259,7 @@ class MainWindow(QMainWindow):
             if (model_data or {}).get("has_analysis_results"):
                 self.log(tr_log("log_fem_mesh_no_data"), "warn")
         self._set_properties_message(tr_ui("properties_select_element"))
+        self._populate_systems_tab(model_data)
         self._render_results(model_data)
         self._set_analysis_results_status((model_data or {}).get("has_analysis_results"))
         self._populate_results_case_combination_combo((model_data or {}).get("results_cases_combinations", []))

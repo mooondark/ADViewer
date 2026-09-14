@@ -2420,6 +2420,24 @@ class VTKViewerWidget(QFrame):
         """Retourne la liste des items actuellement sélectionnés : [{"role", "index"}, ...]."""
         return list(self._selected_items)
 
+    def set_selected_items(self, items: list):
+        """Remplace la sélection courante par la liste d'items fournie : [{"role", "index"}, ...]."""
+        valid = []
+        for item in (items or []):
+            if not isinstance(item, dict):
+                continue
+            role = str(item.get("role") or "").strip()
+            index = int(item.get("index", -1))
+            if role and index >= 0:
+                valid.append({"role": role, "index": index})
+        self._selected_items = valid
+        self._selected_item = valid[0] if valid else None
+        self._selection_candidates = []
+        self._selection_candidate_keys = []
+        self._selection_cycle_index = -1
+        self.selectionChanged.emit(list(self._selected_items))
+        self._refresh_selection_overlay()
+
     def get_display_counts(self):
         return {
             "lines": self.lines_count,
@@ -5073,14 +5091,21 @@ class VTKViewerWidget(QFrame):
         source = list(items or [])
         return [source[int(idx)] for idx in indexes if 0 <= int(idx) < len(source)]
 
-    def _rebuild_profiles_actor(self, line_indexes=None, filtered_lines=None, filtered_line_sections=None):
+    def _rebuild_profiles_actor(self, line_indexes=None, filtered_lines=None, filtered_line_sections=None, synchronous=True):
         """Reconstruit le solide des profils (couteux : tous les elements). La
         selection ne passe PAS par ici : elle ne fait qu'echanger le tableau de
-        couleurs par cellule via _apply_profiles_selection_colors()."""
+        couleurs par cellule via _apply_profiles_selection_colors().
+
+        synchronous=False : si l'affichage est en mode Profiles, ne reconstruit
+        PAS ici (laisse l'acteur existant tel quel) - l'appelant relance la
+        construction en arriere-plan (BuildProfilesWorker + barre de
+        progression) pour eviter de geler l'UI sur un gros modele."""
         self._profiles_base_pd = None
         self._profiles_base_colors = None
         if self._display_mode not in _PROFILE_MODES:
             self._replace_actor("_profiles_actor", None, role="lines", pickable=True)
+            return
+        if not synchronous:
             return
         if line_indexes is None:
             line_indexes = self._filtered_line_indexes()
@@ -5160,7 +5185,7 @@ class VTKViewerWidget(QFrame):
         mapper.ScalarVisibilityOn()
         pd.Modified()
 
-    def _rebuild_filtered_structural_actors(self):
+    def _rebuild_filtered_structural_actors(self, rebuild_profiles=True):
         line_indexes = self._filtered_line_indexes()
         planar_indexes = self._filtered_planar_indexes()
         filtered_lines = self._select_items_by_indexes(self._model_data.get("lines", []), line_indexes)
@@ -5327,7 +5352,7 @@ class VTKViewerWidget(QFrame):
             role="lines",
             pickable=True,
         )
-        self._rebuild_profiles_actor(line_indexes, filtered_lines, filtered_line_sections)
+        self._rebuild_profiles_actor(line_indexes, filtered_lines, filtered_line_sections, synchronous=rebuild_profiles)
         self._replace_actor(
             "_planar_actor",
             self._make_wire_actor(self._build_loops_wire_polydata(filtered_planars, element_indexes=planar_indexes), self.planar_color, self.planar_line_width),
@@ -5388,19 +5413,26 @@ class VTKViewerWidget(QFrame):
         self.renderer.ResetCameraClippingRange()
         self.render_window.Render()
 
-    def set_structural_filters(self, section_names=None, thickness_names=None, material_names=None):
+    def set_structural_filters(self, section_names=None, thickness_names=None, material_names=None, rebuild_profiles=True):
+        """rebuild_profiles=False : ne reconstruit pas immediatement le solide
+        des profils (coûteux) meme si l'affichage est en mode Profiles -
+        l'appelant est alors responsable de relancer la construction en
+        arriere-plan (cf. main_window._refresh_profiles_if_needed) pour
+        garder la barre de progression et ne pas geler l'UI."""
         self._filter_section_names = None if section_names is None else set(str(v) for v in section_names)
         self._filter_thickness_names = None if thickness_names is None else set(str(v) for v in thickness_names)
         self._filter_material_names = None if material_names is None else set(str(v) for v in material_names)
-        self._rebuild_filtered_structural_actors()
+        self._rebuild_filtered_structural_actors(rebuild_profiles=rebuild_profiles)
 
-    def set_isolated_selection(self, selection):
+    def set_isolated_selection(self, selection, rebuild_profiles=True):
         """Isole un ou plusieurs éléments.
 
         Accepte :
         - None  → annule l'isolation
         - dict  {"role": str, "index": int} → isole un seul élément (compatibilité)
         - list  [{"role": str, "index": int}, ...] → isole plusieurs éléments
+
+        rebuild_profiles=False : voir set_structural_filters.
         """
         if selection is None:
             self._isolated_selection = []
@@ -5419,7 +5451,7 @@ class VTKViewerWidget(QFrame):
             self._isolated_selection = valid
         else:
             self._isolated_selection = []
-        self._rebuild_filtered_structural_actors()
+        self._rebuild_filtered_structural_actors(rebuild_profiles=rebuild_profiles)
 
     def has_isolated_selection(self) -> bool:
         return bool(self._isolated_selection)

@@ -2,6 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.07
+
+### FR
+- Nouvel onglet « Systèmes » (sur une deuxième ligne d'onglets, sous « Journal ») : affiche l'arborescence des systèmes structuraux du modèle (systèmes et sous-systèmes uniquement), avec développement/réduction par système. La hauteur (h = ...) est affichée pour les systèmes de type niveau. Clic droit sur un ou plusieurs systèmes sélectionnés : « Sélectionner » ou « Isoler » applique l'action à tous les éléments du ou des systèmes et de leurs sous-systèmes ; le journal affiche le même récapitulatif que pour une sélection par fenêtre.
+- Correction : en modes « Profilés + ... », annuler une isolation (ou modifier les filtres structuraux) ne reconstruisait pas le solide des profils via la barre de progression, contrairement à l'entrée dans ce mode d'affichage — sur un gros modèle, l'interface pouvait sembler figée pendant cette reconstruction. La reconstruction passe désormais systématiquement par la barre de progression en arrière-plan.
+
+### EN
+- New "Systems" tab (on a second row of tabs, below "Journal"): displays the model's structural system tree (systems and sub-systems only), with per-system expand/collapse. Height (h = ...) is shown for level-type systems. Right-click on one or more selected systems: "Select" or "Isolate" applies the action to all elements of the system(s) and their sub-systems; the journal shows the same summary as a window selection.
+- Fix: in "Profiles + ..." display modes, cancelling an isolation (or changing structural filters) did not rebuild the profile solid through the progress bar, unlike entering that display mode — on a large model, the UI could appear frozen during that rebuild. The rebuild now always goes through the background progress bar.
+
 ## 2.06
 
 ### FR

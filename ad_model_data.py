@@ -111,6 +111,8 @@ class ModelDataDict(TypedDict, total=False):
     linear_load_cases: list  # liste de dicts {eid, label} — cas de charge uniques
     planar_loads: list   # liste de dicts {pts, fx, fy, fz, coeff1, coeff2, coeff3, user_id, load_case_eid, load_case_label}
     planar_load_cases: list  # liste de dicts {eid, label} — cas de charge uniques
+    systems_tree: dict    # {"roots": [eid,...], "nodes": {eid: {eid, user_id, user_name, is_level, level_number, level_top, level_bottom, is_wall_group, children}}}
+    system_direct_items: dict  # {system_eid: [{"role","index"}, ...]} — membres directs (hors sous-systemes)
 
 
 def normalize_results_case_entry(kind: str, eid, label: str) -> ResultsCaseEntry:
@@ -145,6 +147,12 @@ def build_model_data(payload: dict) -> ModelDataDict:
         data[key] = list(value) if isinstance(value, (list, tuple)) else []
     data["all_material_by_eid"] = dict(data.get("all_material_by_eid") or {})
     data["fem_by_eid"] = dict(data.get("fem_by_eid") or {})
+    data["system_direct_items"] = dict(data.get("system_direct_items") or {})
+    systems_tree = data.get("systems_tree") or {}
+    data["systems_tree"] = {
+        "roots": list(systems_tree.get("roots") or []),
+        "nodes": dict(systems_tree.get("nodes") or {}),
+    }
     data["load_area_takeoff"] = data.get("load_area_takeoff") if data.get("load_area_takeoff") is not None else []
     data["normalized_path"] = normalize_windows_path(str(data.get("normalized_path") or "")) if data.get("normalized_path") else ""
     data["project_closed"] = bool(data.get("project_closed"))
@@ -2332,6 +2340,100 @@ def _build_haunch_pieces(el: dict, base_dims: dict, base_sec_obj: dict, beam_typ
     return pieces
 
 
+def _eid_val(ref) -> Optional[int]:
+    """Extrait la valeur entiere d'un champ EID ({"value": int} ou int direct)."""
+    if isinstance(ref, dict):
+        ref = ref.get("value")
+    try:
+        return int(ref) if ref is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _extract_system_ids(el: dict) -> list:
+    """Liste des EID de systemes (systemIDs) auxquels un element appartient."""
+    if not isinstance(el, dict):
+        return []
+    return [v for v in (_eid_val(s) for s in (el.get("systemIDs") or [])) if v is not None]
+
+
+def _build_systems_tree(system_ids: list, system_objects: list) -> dict:
+    """Construit l'arbre des systemes structuraux (som.System).
+
+    Un systeme est racine s'il n'apparait dans aucun subSystemIDs (le champ
+    parentID n'est pas fiable pour la hierarchie, cf script d'export fourni).
+    """
+    nodes = {}
+    for eid, obj in zip(system_ids or [], system_objects or []):
+        if not isinstance(obj, dict):
+            continue
+        try:
+            eid = int(eid)
+        except (TypeError, ValueError):
+            continue
+        children = [c for c in (_eid_val(s) for s in (obj.get("subSystemIDs") or [])) if c is not None]
+        nodes[eid] = {
+            "eid": eid,
+            "user_id": obj.get("userID"),
+            "user_name": _get_username(obj),
+            "is_level": bool(obj.get("isLevel")),
+            "level_number": obj.get("levelNumber"),
+            "level_top": obj.get("levelTop"),
+            "level_bottom": obj.get("levelBottom"),
+            "is_wall_group": bool(obj.get("isWallGroup")),
+            "children": children,
+        }
+    referenced_as_child = set()
+    for node in nodes.values():
+        for child_eid in node["children"]:
+            if child_eid in nodes:
+                referenced_as_child.add(child_eid)
+    roots = sorted(eid for eid in nodes if eid not in referenced_as_child)
+    return {"roots": roots, "nodes": nodes}
+
+
+def _build_system_direct_items(role_lists: list) -> dict:
+    """Index inverse EID systeme -> items {role, index} des elements membres directs.
+
+    role_lists : liste de (role, system_ids_par_element) ou system_ids_par_element[i]
+    est la liste des EID de systemes de l'element d'index i pour ce role.
+    """
+    direct = {}
+    for role, system_ids_per_element in role_lists:
+        for index, system_eids in enumerate(system_ids_per_element):
+            for system_eid in (system_eids or []):
+                direct.setdefault(system_eid, []).append({"role": role, "index": index})
+    return direct
+
+
+def collect_system_descendant_eids(nodes: dict, root_eids) -> set:
+    """Reunion d'un ensemble de systemes racines et de tous leurs descendants."""
+    collected = set()
+    stack = list(root_eids)
+    while stack:
+        eid = stack.pop()
+        if eid in collected:
+            continue
+        collected.add(eid)
+        node = (nodes or {}).get(eid)
+        if node:
+            stack.extend(node.get("children") or [])
+    return collected
+
+
+def resolve_system_selection_items(system_direct_items: dict, system_eids) -> list:
+    """Union dedupliquee des items {role, index} membres directs des systemes donnes."""
+    seen = set()
+    items = []
+    for system_eid in system_eids:
+        for item in (system_direct_items or {}).get(system_eid, []) or []:
+            key = (item["role"], item["index"])
+            if key not in seen:
+                seen.add(key)
+                items.append(item)
+    return items
+
+
 def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict) -> dict:
     linear_elements = list(objects_data.get("linear_elements", []) or [])
     planar_elements = list(objects_data.get("planar_elements", []) or [])
@@ -2374,6 +2476,11 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
     planar_support_eids = []
     planar_support_properties = []
 
+    planar_system_ids = []
+    punctual_support_system_ids = []
+    linear_support_system_ids = []
+    planar_support_system_ids = []
+
     linear_takeoff = _build_linear_takeoff(linear_elements, linear_section_by_eid)
     linear_material_takeoff = _build_linear_material_takeoff(linear_elements, linear_material_by_eid)
     planar_takeoff = _build_planar_takeoff(planar_elements)
@@ -2398,6 +2505,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
         planars.append(geom)
         planar_eids.append(int(planar_eid) if planar_eid is not None else None)
         planar_properties.append(extract_planar_element_properties(el, planar_material_by_eid))
+        planar_system_ids.append(_extract_system_ids(el))
 
     for el in load_area_elements:
         geom = extract_load_area_geometry(el)
@@ -2412,6 +2520,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
             punctual_supports.append((float(pt["x"]), float(pt["y"]), float(pt["z"])))
             punctual_support_eids.append(int(support_eid) if support_eid is not None else None)
             punctual_support_properties.append(extract_punctual_support_properties(el))
+            punctual_support_system_ids.append(_extract_system_ids(el))
 
     for support_eid, el in zip(linear_support_ids, linear_support_elements):
         p1 = el.get("geomPtStart")
@@ -2423,6 +2532,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
             ])
             linear_support_eids.append(int(support_eid) if support_eid is not None else None)
             linear_support_properties.append(extract_linear_support_properties(el))
+            linear_support_system_ids.append(_extract_system_ids(el))
 
     for support_eid, el in zip(planar_support_ids, planar_support_elements):
         pts = el.get("geomPtsList") or []
@@ -2433,14 +2543,26 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
             planar_supports.append({"outer": outer, "openings": []})
             planar_support_eids.append(int(support_eid) if support_eid is not None else None)
             planar_support_properties.append(extract_planar_support_properties(el))
+            planar_support_system_ids.append(_extract_system_ids(el))
 
     openings_count = sum(len(p["openings"]) for p in planars)
+
+    line_eids = [int(eid) if eid is not None else None for eid in linear_ids]
+    line_system_ids = [_extract_system_ids(el) for el in linear_elements]
+    system_direct_items = _build_system_direct_items([
+        ("lines", line_system_ids),
+        ("planars", planar_system_ids),
+        ("support_punctual", punctual_support_system_ids),
+        ("support_linear", linear_support_system_ids),
+        ("support_planar", planar_support_system_ids),
+    ])
 
     return {
         "lines": lines,
         "line_properties": line_properties,
         "line_sections": line_sections,
-        "line_eids": [int(eid) if eid is not None else None for eid in linear_ids],
+        "line_eids": line_eids,
+        "system_direct_items": system_direct_items,
         "planars": planars,
         "planar_eids": planar_eids,
         "planar_properties": planar_properties,
@@ -2631,6 +2753,11 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         progress(86, tr_ui("progress_read_planar_loads"))
         planar_loads_payload = _build_planar_loads_payload(host, ids_data, objects_data)
 
+        progress(87, tr_ui("progress_read_systems"))
+        system_ids = get_informational_ids(host, "StructuralSystem")
+        system_objects = get_informational_elements_objects(host, system_ids)
+        systems_tree = _build_systems_tree(system_ids, system_objects)
+
         progress(88, tr_ui("progress_prepare_results"))
         result = build_model_data({
             **geometry_payload,
@@ -2641,6 +2768,7 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
             "results_cases_combinations": results_cases_combinations,
             "fem_nodes": fem_nodes,
             "fem_by_eid": fem_by_eid,
+            "systems_tree": systems_tree,
         })
         result.update(session.export_state())
         result = build_model_data(result)
