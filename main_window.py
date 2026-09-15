@@ -2112,6 +2112,18 @@ class MainWindow(QMainWindow):
             QTabBar::tab:!selected {{
                 margin-top: 4px;
                 color: {FG_DIM};
+                border: 1px solid {BORDER};
+                border-bottom: none;
+            }}
+            /* Ligne d'onglets (Journal.../Systemes) marquee inactive via la
+               propriete dynamique rowActive (cf _set_side_tab_row_active) :
+               son onglet "current" doit paraitre comme les autres non-selectionnes. */
+            QTabBar[rowActive="false"]::tab:selected {{
+                margin-top: 4px;
+                color: {FG_DIM};
+                background: transparent;
+                border: 1px solid {BORDER};
+                border-bottom: none;
             }}
             /* Fond plus fonce pour l'arbre SYSTEMES : les traits de connexion
                (blancs, non stylables via QSS sur ::branch) restent invisibles
@@ -2716,6 +2728,25 @@ class MainWindow(QMainWindow):
             label += f"  (h = {height:.2f} m)"
         return label
 
+    # Ordre demande pour le tooltip : filaire, surfacique, appuis, parois (load_areas).
+    _SYSTEMS_TOOLTIP_ROLE_ORDER = (
+        "lines", "planars", "support_punctual", "support_linear", "support_planar", "load_areas",
+    )
+
+    def _system_tree_tooltip(self, direct_items: dict, nodes: dict, eid) -> str:
+        system_eids = collect_system_descendant_eids(nodes, [eid])
+        items = resolve_system_selection_items(direct_items, system_eids)
+        counts = {}
+        for it in items:
+            role = it.get("role")
+            counts[role] = counts.get(role, 0) + 1
+        lines = [
+            tr_ui(self._ROLE_COUNT_KEYS[role], count=counts[role])
+            for role in self._SYSTEMS_TOOLTIP_ROLE_ORDER
+            if counts.get(role)
+        ]
+        return "\n".join(lines)
+
     def _populate_systems_tab(self, model_data: dict = None):
         if self.systems_tree is None:
             return
@@ -2723,6 +2754,7 @@ class MainWindow(QMainWindow):
         systems_tree = (model_data or {}).get("systems_tree") or {}
         nodes = systems_tree.get("nodes") or {}
         roots = systems_tree.get("roots") or []
+        direct_items = (model_data or {}).get("system_direct_items") or {}
         self.systems_empty_label.setVisible(not roots)
         self.systems_tree.setVisible(bool(roots))
 
@@ -2732,6 +2764,9 @@ class MainWindow(QMainWindow):
                 return
             item = QTreeWidgetItem([self._system_tree_label(node)])
             item.setData(0, Qt.UserRole, eid)
+            tooltip = self._system_tree_tooltip(direct_items, nodes, eid)
+            if tooltip:
+                item.setToolTip(0, tooltip)
             if parent_item is None:
                 self.systems_tree.addTopLevelItem(item)
                 item.setExpanded(True)  # racine (ex. "Structure") toujours developpee au demarrage
@@ -3067,15 +3102,15 @@ class MainWindow(QMainWindow):
 
         QTabBar impose toujours un onglet "current" des qu'il contient des
         tabs (setCurrentIndex(-1) est ignore) : avec 2 lignes independantes,
-        on doit donc surcharger localement le style :selected pour que la
-        ligne non active ne s'affiche pas comme selectionnee.
+        on marque donc la ligne inactive via une propriete dynamique
+        (rowActive) lue par le QSS global de _apply_style() - un setStyleSheet()
+        local sur la QTabBar ecraserait les regles globales (dont le contour
+        :!selected) au lieu de les completer.
         """
-        if active:
-            bar.setStyleSheet("")
-        else:
-            bar.setStyleSheet(
-                f"QTabBar::tab:selected {{ background: transparent; color: {FG_DIM}; margin-top: 4px; }}"
-            )
+        bar.setProperty("rowActive", bool(active))
+        bar.style().unpolish(bar)
+        bar.style().polish(bar)
+        bar.update()
 
     def _activate_side_tab(self, index: int):
         """Active un onglet de la ligne 1 (Journal/Propriétés/.../Charges)."""

@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.08
+
+### FR
+- Onglet « Systèmes » : chaque système/sous-système affiche désormais une infobulle listant le nombre d'éléments contenus dans la branche (système + sous-systèmes), une ligne par type non nul : filaire, surfacique, appui ponctuel, appui linéaire, appui surfacique, paroi (élément de type « load area »).
+- Onglet « Systèmes » : le système racine est développé automatiquement au chargement du modèle.
+- Onglets (toutes les lignes) : les onglets non actifs ont maintenant un contour visible, comme dans les autres logiciels, y compris en thème clair où ils se distinguaient mal du fond.
+
+### EN
+- "Systems" tab: each system/sub-system now shows a tooltip listing the number of elements contained in the branch (system + sub-systems), one line per non-zero type: linear, planar, punctual support, linear support, planar support, wall (load area element).
+- "Systems" tab: the root system is now automatically expanded when the model loads.
+- Tabs (all rows): inactive tabs now have a visible outline, like in other software, including in the light theme where they used to blend into the background.
+
 ## 2.07
 
 ### FR

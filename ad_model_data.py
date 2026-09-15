@@ -2477,6 +2477,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
     planar_support_properties = []
 
     planar_system_ids = []
+    load_area_system_ids = []
     punctual_support_system_ids = []
     linear_support_system_ids = []
     planar_support_system_ids = []
@@ -2513,6 +2514,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
             continue
         load_areas.append(geom)
         load_area_properties.append(extract_load_area_properties(el))
+        load_area_system_ids.append(_extract_system_ids(el))
 
     for support_eid, el in zip(punctual_support_ids, punctual_support_elements):
         pt = el.get("geomPt")
@@ -2552,6 +2554,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
     system_direct_items = _build_system_direct_items([
         ("lines", line_system_ids),
         ("planars", planar_system_ids),
+        ("load_areas", load_area_system_ids),
         ("support_punctual", punctual_support_system_ids),
         ("support_linear", linear_support_system_ids),
         ("support_planar", planar_support_system_ids),
