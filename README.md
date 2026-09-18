@@ -4,8 +4,7 @@
 
 Visualiseur 3D pour les modèles Advance Design.
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/084a2d40-3d2b-4fa9-beca-dde87c08598c" />
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8b130e32-8adb-40ba-b1f0-4949ba838323" />
 
 ## Fonctionnalités
 
