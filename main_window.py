@@ -1218,6 +1218,9 @@ class MainWindow(QMainWindow):
         self.properties_layout = None
         self.systems_tree = None
         self.systems_empty_label = None
+        self.status_content = None
+        self.status_empty_label = None
+        self.status_widgets = {}
         self.results_container = None
         self.results_layout = None
         self.results_scroll = None
@@ -1240,6 +1243,7 @@ class MainWindow(QMainWindow):
         self.current_analysis_result_family_key = "deplacements"
         self.current_analysis_result_component_label = "d"
         self.current_model_has_analysis_results = False
+        self.current_analysis_status = {}
         self.project_session = None
         self._fem_nodes: list = []
         self._fem_connectivity_by_eid: dict = {}
@@ -2458,6 +2462,11 @@ class MainWindow(QMainWindow):
         filter_row.addWidget(self.camera_btn)
         filter_row.addStretch(1)
 
+        self.calc_btn = QPushButton()
+        self.calc_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.calc_btn, "calculer", tr_ui("calc_ef_button"))
+        self.calc_btn.clicked.connect(self.launch_analysis_from_viewer)
+
         self.window_select_btn = QPushButton()
         self.window_select_btn.setCheckable(True)
         self.window_select_btn.setProperty("iconOnly", True)
@@ -2469,25 +2478,19 @@ class MainWindow(QMainWindow):
         sc_win.activated.connect(self.window_select_btn.toggle)
         self.shortcut_window_select = sc_win
 
-        select_row = QHBoxLayout()
-        select_row.setContentsMargins(0, 0, 0, 0)
-        select_row.setSpacing(3)
-        select_row.addStretch(1)
-        select_row.addWidget(self.window_select_btn)
-        select_row.addStretch(1)
-
         fit_row = QHBoxLayout()
         fit_row.setContentsMargins(0, 0, 0, 0)
         fit_row.setSpacing(3)
         fit_row.addStretch(1)
         fit_row.addWidget(self.fit_btn)
         fit_row.addWidget(self.zoom_window_btn)
+        fit_row.addWidget(self.window_select_btn)
+        fit_row.addWidget(self.calc_btn)
         fit_row.addStretch(1)
 
         action_card.layout.addLayout(fit_row)
         action_card.layout.addLayout(views_row)
         action_card.layout.addLayout(filter_row)
-        action_card.layout.addLayout(select_row)
 
         transparency_title = QLabel(tr_ui("transparency"))
         transparency_title.setStyleSheet(f"color:{FG_DIM};")
@@ -2719,6 +2722,98 @@ class MainWindow(QMainWindow):
         return systems_tab
 
     @staticmethod
+    def _read_only_checkbox(text: str = ""):
+        box = QCheckBox(text)
+        box.setAttribute(Qt.WA_TransparentForMouseEvents)
+        box.setFocusPolicy(Qt.NoFocus)
+        return box
+
+    def _build_status_tab(self):
+        status_tab = QWidget()
+        outer = QVBoxLayout(status_tab)
+        outer.setContentsMargins(6, 6, 6, 6)
+        outer.setSpacing(4)
+
+        def section_title(key):
+            title = QLabel(tr_ui(key))
+            title.setStyleSheet("font-weight:bold;")
+            return title
+
+        w = self.status_widgets
+        w["overall"] = QLabel()
+        w["overall"].setWordWrap(True)
+        w["model"] = self._read_only_checkbox(tr_ui("status_analysis_model"))
+        w["mesh"] = QLabel()
+        w["fem"] = self._read_only_checkbox(tr_ui("status_fem_done"))
+        w["fem_cases"] = QLabel()
+        w["families"] = {
+            family: self._read_only_checkbox(tr_ui(f"status_family_{family.lower()}"))
+            for family in ("Concrete", "Steel", "Timber", "Composite")
+        }
+        w["stages"] = self._read_only_checkbox(tr_ui("status_stages_present"))
+        w["stages_done"] = self._read_only_checkbox(tr_ui("status_stages_all_calculated"))
+
+        self.status_content = QWidget()
+        content = QVBoxLayout(self.status_content)
+        content.setContentsMargins(0, 0, 0, 0)
+        content.setSpacing(4)
+        content.addWidget(section_title("status_section_global"))
+        content.addWidget(w["overall"])
+        content.addSpacing(8)
+        content.addWidget(w["model"])
+        content.addWidget(w["mesh"])
+        content.addSpacing(8)
+        content.addWidget(section_title("status_section_fem"))
+        content.addWidget(w["fem"])
+        content.addWidget(w["fem_cases"])
+        content.addSpacing(8)
+        content.addWidget(section_title("status_section_expertise"))
+        for box in w["families"].values():
+            content.addWidget(box)
+        content.addWidget(w["stages"])
+        content.addWidget(w["stages_done"])
+        content.addStretch(1)
+        self.status_content.setVisible(False)
+        outer.addWidget(self.status_content, 1)
+
+        self.status_empty_label = QLabel(tr_ui("status_empty"))
+        self.status_empty_label.setWordWrap(True)
+        self.status_empty_label.setStyleSheet(f"color:{FG_DIM};")
+        outer.addWidget(self.status_empty_label)
+        outer.addStretch(1)
+        return status_tab
+
+    @staticmethod
+    def _status_text(prefix: str, value: str) -> str:
+        text = tr_ui(f"{prefix}_{value}")
+        return value if text == f"{prefix}_{value}" else text
+
+    def _populate_status_tab(self, model_data: dict = None):
+        if self.status_content is None:
+            return
+        status = (model_data or {}).get("analysis_status") or {}
+        self.status_content.setVisible(bool(status))
+        self.status_empty_label.setVisible(not status)
+        if not status:
+            self.status_empty_label.setText(tr_ui("status_unavailable" if model_data else "status_empty"))
+            return
+        w = self.status_widgets
+        w["overall"].setText(self._status_text("status_overall", str(status.get("overallState", "?"))))
+        w["model"].setChecked(bool(status.get("hasAnalysisModel")))
+        w["mesh"].setText(tr_ui("status_mesh", state=self._status_text("status_mesh", str(status.get("meshState", "?")))))
+        fem_done = bool(status.get("femIsCalculated"))
+        w["fem"].setChecked(fem_done)
+        w["fem_cases"].setVisible(fem_done)
+        w["fem_cases"].setText(tr_ui("status_fem_cases", count=int(status.get("femCalculatedCasesCount") or 0)))
+        calculated = {e.get("family"): bool(e.get("isCalculated")) for e in status.get("design") or []}
+        for family, box in w["families"].items():
+            box.setChecked(calculated.get(family, False))
+        has_stages = bool(status.get("hasConstructionStages"))
+        w["stages"].setChecked(has_stages)
+        w["stages_done"].setVisible(has_stages)
+        w["stages_done"].setChecked(bool(status.get("allStagesCalculated")))
+
+    @staticmethod
     def _system_tree_label(node: dict) -> str:
         name = str(node.get("user_name") or "")
         user_id = node.get("user_id")
@@ -2899,14 +2994,6 @@ class MainWindow(QMainWindow):
         self.analysis_results_export_btn.setProperty("iconOnly", True)
         self.analysis_results_export_btn.clicked.connect(self.export_analysis_results_csv)
         results_btn_row.addWidget(self.analysis_results_export_btn)
-        self.calc_btn = QPushButton()
-        self.calc_btn.setToolTip(tr_ui("calc_ef_button"))
-        self.calc_btn.setIcon(self._make_view_icon("calculer"))
-        self.calc_btn.setIconSize(QSize(28, 28))
-        self.calc_btn.setFixedSize(QSize(36, 36))
-        self.calc_btn.setProperty("iconOnly", True)
-        self.calc_btn.clicked.connect(self.launch_analysis_from_viewer)
-        results_btn_row.addWidget(self.calc_btn)
         results_btn_row.addStretch(1)
         analysis_results_layout.addLayout(results_btn_row)
         self.analysis_results_scroll = QScrollArea()
@@ -3050,6 +3137,7 @@ class MainWindow(QMainWindow):
         analysis_results_tab = self._build_analysis_results_tab()
         loads_tab = self._build_loads_tab()
         systems_tab = self._build_systems_tab()
+        status_tab = self._build_status_tab()
 
         row1.addTab(tr_ui("journal"))
         row1.addTab(tr_ui("properties"))
@@ -3057,11 +3145,12 @@ class MainWindow(QMainWindow):
         row1.addTab(tr_ui("results"))
         row1.addTab(tr_ui("loads_panel_title"))
         row2.addTab(tr_ui("systems"))
+        row2.addTab(tr_ui("status"))
 
         content_stack = QStackedWidget()
-        for tab_widget in (log_tab, properties_tab, results_tab, analysis_results_tab, loads_tab, systems_tab):
+        for tab_widget in (log_tab, properties_tab, results_tab, analysis_results_tab, loads_tab, systems_tab, status_tab):
             content_stack.addWidget(tab_widget)
-        row2_first_index = content_stack.count() - 1  # index du contenu Systèmes
+        row2_first_index = content_stack.count() - 2  # index du contenu Systèmes (Statut = +1)
 
         self.side_tabs = row1
         self.side_tabs_row2 = row2
@@ -3069,7 +3158,7 @@ class MainWindow(QMainWindow):
         self._side_row2_first_index = row2_first_index
 
         row1.tabBarClicked.connect(self._activate_side_tab)
-        row2.tabBarClicked.connect(lambda _index: self._activate_side_systems_tab())
+        row2.tabBarClicked.connect(self._activate_side_row2_tab)
         self._activate_side_tab(0)  # etat initial : Journal actif, Systemes inactif
 
         row1_line = QHBoxLayout()
@@ -3122,11 +3211,12 @@ class MainWindow(QMainWindow):
         if self.side_tabs_row2 is not None:
             self._set_side_tab_row_active(self.side_tabs_row2, False)
 
-    def _activate_side_systems_tab(self):
-        """Active l'onglet Systèmes (ligne 2)."""
+    def _activate_side_row2_tab(self, index: int):
+        """Active un onglet de la ligne 2 (Systèmes/Statut)."""
         if self.side_tabs_row2 is None or self.side_content_stack is None:
             return
-        self.side_content_stack.setCurrentIndex(self._side_row2_first_index)
+        self.side_tabs_row2.setCurrentIndex(index)
+        self.side_content_stack.setCurrentIndex(self._side_row2_first_index + index)
         self._set_side_tab_row_active(self.side_tabs_row2, True)
         if self.side_tabs is not None:
             self._set_side_tab_row_active(self.side_tabs, False)
@@ -3342,11 +3432,14 @@ class MainWindow(QMainWindow):
         table.setItem(row, 2, item)
 
     def _set_table_checkbox(self, table, row: int, checked: bool):
-        value = "☑" if checked else "☐"
-        item = QTableWidgetItem(value)
-        item.setFlags(Qt.ItemIsEnabled)
-        item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        table.setItem(row, 2, item)
+        box = self._read_only_checkbox()
+        box.setChecked(bool(checked))
+        cell = QWidget()
+        cell.setStyleSheet("background: transparent;")
+        cell_layout = QHBoxLayout(cell)
+        cell_layout.setContentsMargins(6, 0, 0, 0)
+        cell_layout.addWidget(box)
+        table.setCellWidget(row, 2, cell)
 
     def _finalize_properties_table(self, table):
         table.resizeRowsToContents()
@@ -5543,7 +5636,7 @@ class MainWindow(QMainWindow):
 
     def _on_calc_finished(self):
         self._stop_calc_timer()
-        self.calc_btn.setEnabled(True)
+        self._refresh_calc_button()
         self.load_btn.setEnabled(True)
         self.calc_worker = None
 
@@ -6087,12 +6180,15 @@ class MainWindow(QMainWindow):
         self.selected_materials = set()
         self.current_analysis_result_value_label = tr_ui("analysis_result_displacements")
         self.current_model_has_analysis_results = False
+        self.current_analysis_status = {}
+        self._refresh_calc_button()
         self._fem_nodes = []
         self._fem_connectivity_by_eid = {}
         self._punctual_load_cases = []
         self._linear_load_cases = []
         self._planar_load_cases = []
         self._populate_systems_tab(None)
+        self._populate_status_tab(None)
 
         if self.viewer is not None:
             self.viewer.clear_scene()
@@ -6124,10 +6220,20 @@ class MainWindow(QMainWindow):
     def _sync_project_session_state(self, model_data: dict, session_manager=None):
         self.current_analysis_result_value_label = tr_ui("analysis_result_displacements")
         self.current_model_has_analysis_results = bool((model_data or {}).get("has_analysis_results")) if isinstance(model_data, dict) else False
+        self.current_analysis_status = dict((model_data or {}).get("analysis_status") or {}) if isinstance(model_data, dict) else {}
         session = session_manager if isinstance(session_manager, ProjectSessionManager) else None
         if session is None and isinstance(self.worker, LoadModelWorker):
             session = self.worker.session_manager
         self.project_session = session
+
+    def _refresh_calc_button(self):
+        """Grise le bouton de calcul EF si le modele est deja maille et calcule."""
+        if self.calc_btn is None:
+            return
+        status = self.current_analysis_status
+        done = bool(status.get("femIsCalculated")) and status.get("meshState") == "mesh_available"
+        self.calc_btn.setEnabled(not done)
+        self.calc_btn.setToolTip(tr_ui("calc_ef_button_not_needed" if done else "calc_ef_button"))
 
     def set_loading(self, loading: bool):
         widgets = [
@@ -6144,6 +6250,8 @@ class MainWindow(QMainWindow):
         for w in widgets:
             if w is not None:
                 w.setEnabled(not loading)
+        if not loading:
+            self._refresh_calc_button()
 
         # Au demarrage du chargement : decocher et annuler les modes actifs de la
         # carte Actions (selection par fenetre, zoom fenetre, isolation).
@@ -6295,6 +6403,7 @@ class MainWindow(QMainWindow):
                 self.log(tr_log("log_fem_mesh_no_data"), "warn")
         self._set_properties_message(tr_ui("properties_select_element"))
         self._populate_systems_tab(model_data)
+        self._populate_status_tab(model_data)
         self._render_results(model_data)
         self._set_analysis_results_status((model_data or {}).get("has_analysis_results"))
         self._populate_results_case_combination_combo((model_data or {}).get("results_cases_combinations", []))
@@ -6416,6 +6525,7 @@ class MainWindow(QMainWindow):
     def on_model_error(self, error_text: str):
         self.project_session = None
         self.current_model_has_analysis_results = False
+        self.current_analysis_status = {}
         self._set_load_progress(0, tr_ui("progress_loading_interrupted"))
         self._set_analysis_results_status(False)
         self._update_analysis_results_value_combo(None)

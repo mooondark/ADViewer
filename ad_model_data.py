@@ -112,6 +112,7 @@ class ModelDataDict(TypedDict, total=False):
     planar_loads: list   # liste de dicts {pts, fx, fy, fz, coeff1, coeff2, coeff3, user_id, load_case_eid, load_case_label}
     planar_load_cases: list  # liste de dicts {eid, label} — cas de charge uniques
     systems_tree: dict    # {"roots": [eid,...], "nodes": {eid: {eid, user_id, user_name, is_level, level_number, level_top, level_bottom, is_wall_group, children}}}
+    analysis_status: dict  # reponse GetAnalysisModelStatus, {} si indisponible
     system_direct_items: dict  # {system_eid: [{"role","index"}, ...]} — membres directs (hors sous-systemes)
 
 
@@ -148,6 +149,7 @@ def build_model_data(payload: dict) -> ModelDataDict:
     data["all_material_by_eid"] = dict(data.get("all_material_by_eid") or {})
     data["fem_by_eid"] = dict(data.get("fem_by_eid") or {})
     data["system_direct_items"] = dict(data.get("system_direct_items") or {})
+    data["analysis_status"] = dict(data.get("analysis_status") or {})
     systems_tree = data.get("systems_tree") or {}
     data["systems_tree"] = {
         "roots": list(systems_tree.get("roots") or []),
@@ -291,6 +293,19 @@ def diagnose_results_availability(host: str, retries: int = 0, delay: float = 1.
         if i < attempts - 1:
             time.sleep(delay)
     return False
+
+
+def _resolve_has_results(host: str, analysis_status: dict, expect_results: bool) -> bool:
+    """Disponibilite des resultats : statut API si connu, sonde sinon.
+
+    Juste apres un calcul (expect_results) on garde la sonde : le flag
+    femIsCalculated ne prouve pas que le magasin de resultats est deja lisible.
+    """
+    if analysis_status and not expect_results:
+        return bool(analysis_status.get("femIsCalculated"))
+    if expect_results:
+        return diagnose_results_availability(host, retries=15, delay=1.0)
+    return diagnose_results_availability(host)
 
 
 def _resolve_name_map_by_eids(host: str, eids: set, fetcher) -> dict:
@@ -2723,12 +2738,13 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         progress(66, tr_ui("progress_read_cases"))
         results_cases_combinations = _read_results_cases_data(host)
 
-        if expect_results:
-            progress(70, tr_ui("progress_wait_results"))
-            has_analysis_results = diagnose_results_availability(host, retries=15, delay=1.0)
-        else:
-            progress(70, tr_ui("progress_check_results"))
-            has_analysis_results = diagnose_results_availability(host)
+        try:
+            analysis_status = get_analysis_model_status(host)
+        except Exception:
+            analysis_status = {}
+
+        progress(70, tr_ui("progress_wait_results" if expect_results else "progress_check_results"))
+        has_analysis_results = _resolve_has_results(host, analysis_status, expect_results)
         session.mark_results_state(has_analysis_results)
 
         # Lecture du maillage FEM si des résultats sont disponibles
@@ -2772,6 +2788,7 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
             "fem_nodes": fem_nodes,
             "fem_by_eid": fem_by_eid,
             "systems_tree": systems_tree,
+            "analysis_status": analysis_status,
         })
         result.update(session.export_state())
         result = build_model_data(result)

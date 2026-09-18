@@ -9,6 +9,7 @@ __pycache__/
 
 #Viewer
 *.ini
+API Data/swagger*
 #tests/
 
 # Exception : ignorer tous les fichiers cachés sauf .gitignore

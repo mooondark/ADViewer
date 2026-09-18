@@ -2,6 +2,22 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.09
+
+### FR
+- Nouvel onglet « Statut » (après « Systèmes ») : affiche l'état du modèle lu via l'API (GetAnalysisModelStatus) : état global, modèle analytique et état du maillage, calcul éléments finis (effectué ou non, nombre de cas calculés), expertise (Béton / Métal / Bois / Mixte) et présence de phases de construction, sous forme de cases à cocher.
+- La présence de résultats de calcul est désormais déterminée à partir du statut du modèle (plus rapide, sans sonde de lecture de résultats). La sonde est conservée en secours si le statut est indisponible, et juste après un calcul EF pour confirmer que les résultats sont lisibles.
+- Le bouton « Lancer le calcul (EF) » quitte l'onglet « Résultats » pour le panneau Actions, à droite de « Sélection par fenêtre ». Il est grisé, avec l'infobulle « Calculs non-nécessaires, résultats déjà disponibles », lorsque le modèle est déjà calculé et maillé.
+- Panneau Actions : le bouton « Sélection par fenêtre » est déplacé sur la ligne des boutons de zoom, à droite de « Zoom fenêtre ».
+- Onglet « Propriétés » : les cases à cocher (relaxations, appuis, etc.) sont de vraies cases en lecture seule, identiques à celles de l'onglet « Statut ».
+
+### EN
+- New "Status" tab (after "Systems"): shows the model state read through the API (GetAnalysisModelStatus): overall state, analysis model and mesh state, finite element analysis (done or not, number of calculated cases), expertise (Concrete / Steel / Timber / Composite) and presence of construction stages, using checkboxes.
+- The presence of analysis results is now determined from the model status (faster, no results-reading probe). The probe is kept as a fallback when the status is unavailable, and right after an FE calculation to confirm results are readable.
+- The "Run FE calculation" button moves from the "Results" tab to the Actions panel, to the right of "Window selection". It is greyed out, with the tooltip "Calculation not needed, results already available", when the model is already calculated and meshed.
+- Actions panel: the "Window selection" button moves to the zoom buttons row, to the right of "Zoom window".
+- "Properties" tab: checkboxes (releases, supports, etc.) are now real read-only checkboxes, identical to those of the "Status" tab.
+
 ## 2.08
 
 ### FR

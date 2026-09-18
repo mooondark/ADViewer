@@ -283,6 +283,16 @@ class AdvanceDesignApiClient:
             label="GetInformationalElementsObject",
         ).get("data", [])
 
+    def get_analysis_model_status(self) -> dict:
+        try:
+            resp = requests.get(
+                f"{self.host}/api/Model/analysis/GetAnalysisModelStatus",
+                timeout=15,
+            )
+        except requests.exceptions.RequestException as e:
+            raise ApiUnavailableError(tr_err("api_contact_failed", host=self.host)) from e
+        return _check(resp, "GetAnalysisModelStatus").get("data") or {}
+
     def get_results(self, result_type: str, analysis_case_id: int, element_ids: list) -> list:
         ids = [int(eid) for eid in (element_ids or []) if eid is not None]
         if not ids:
@@ -378,6 +388,10 @@ def get_informational_ids(host: str, info_type: str) -> list:
 
 def get_informational_elements_objects(host: str, ids: list) -> list:
     return get_api_client(host).get_informational_elements_objects(ids)
+
+
+def get_analysis_model_status(host: str) -> dict:
+    return get_api_client(host).get_analysis_model_status()
 
 
 def get_results(host: str, result_type: str, analysis_case_id: int, element_ids: list) -> list:
