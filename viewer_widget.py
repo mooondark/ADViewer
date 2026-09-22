@@ -2438,6 +2438,34 @@ class VTKViewerWidget(QFrame):
         self.selectionChanged.emit(list(self._selected_items))
         self._refresh_selection_overlay()
 
+    @classmethod
+    def scene_light_default_azimuth_elevation(cls):
+        return cls._position_to_azimuth_elevation(*cls.SCENE_LIGHT_DEFAULT_POSITION)
+
+    @staticmethod
+    def _position_to_azimuth_elevation(x: float, y: float, z: float):
+        distance = math.sqrt(x * x + y * y + z * z) or 1.0
+        azimuth = math.degrees(math.atan2(x, y))
+        elevation = math.degrees(math.asin(max(-1.0, min(1.0, z / distance))))
+        return azimuth, elevation
+
+    @classmethod
+    def _azimuth_elevation_to_position(cls, azimuth_deg: float, elevation_deg: float):
+        distance = math.sqrt(sum(c * c for c in cls.SCENE_LIGHT_DEFAULT_POSITION))
+        az = math.radians(azimuth_deg)
+        el = math.radians(elevation_deg)
+        x = distance * math.cos(el) * math.sin(az)
+        y = distance * math.cos(el) * math.cos(az)
+        z = distance * math.sin(el)
+        return x, y, z
+
+    def set_scene_light(self, intensity: float, azimuth_deg: float, elevation_deg: float):
+        if self.scene_light is None:
+            return
+        self.scene_light.SetIntensity(float(intensity))
+        self.scene_light.SetPosition(*self._azimuth_elevation_to_position(azimuth_deg, elevation_deg))
+        self.render_window.Render()
+
     def get_display_counts(self):
         return {
             "lines": self.lines_count,
@@ -2451,13 +2479,19 @@ class VTKViewerWidget(QFrame):
             "planar_loads": self.planar_load_count,
         }
 
+    # Position par defaut de la sceneLight : distance fixe (non exposee), azimut/
+    # elevation calcules a partir de cette position servent de valeurs de reset.
+    SCENE_LIGHT_DEFAULT_POSITION = (50.0, 50.0, 80.0)
+    SCENE_LIGHT_DEFAULT_INTENSITY = 0.9
+
     def _build_scene_base(self):
         light = vtk.vtkLight()
         light.SetLightTypeToSceneLight()
-        light.SetPosition(50, 50, 80)
         light.SetFocalPoint(0, 0, 0)
-        light.SetIntensity(0.9)
+        self.scene_light = light
         self.renderer.AddLight(light)
+        az, el = self.scene_light_default_azimuth_elevation()
+        self.set_scene_light(self.SCENE_LIGHT_DEFAULT_INTENSITY, az, el)
         self._setup_corner_axes()
         self._setup_view_overlay()
 

@@ -18,6 +18,9 @@
 - IFC Export
 - Filter / Isolate elements,
 - Save viewport into PNG file
+- Structural system tree, with selection/isolation by system
+- Model status (mesh, finite element analysis, expertise)
+- 3D scene lighting control
 
 ## Documentation
 - [Version history](CHANGELOG.md)

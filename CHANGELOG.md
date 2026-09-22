@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.10
+
+### FR
+- Nouveau menu « Paramètres > Vue 3D > Éclairage... » : réglage de l'intensité, de l'azimut et de l'élévation de la lumière de la scène 3D, avec application en direct et retour aux valeurs par défaut.
+
+### EN
+- New "Settings > 3D View > Lighting..." menu: adjust intensity, azimuth and elevation of the 3D scene light, with live preview and reset to defaults.
+
 ## 2.09
 
 ### FR

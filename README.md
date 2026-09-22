@@ -18,6 +18,9 @@ Visualiseur 3D pour les modèles Advance Design.
 - Export au format IFC
 - Filtrage / Isolation des élements
 - Enregistrement au format .PNG
+- Arborescence des systèmes structuraux, avec sélection/isolation par système
+- Statut du modèle (maillage, calcul éléments finis, expertise)
+- Réglage de l'éclairage de la scène 3D
 
 ## Documentation
 

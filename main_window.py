@@ -515,6 +515,87 @@ class PngExportConfigDialog(QDialog):
         return int(self._scale_spin.value())
 
 
+class SceneLightDialog(QDialog):
+    """Non modal : chaque changement de valeur applique la lumiere en direct."""
+
+    _INTENSITY_STEPS = 100  # slider entier -> intensite = valeur/_INTENSITY_STEPS
+
+    def __init__(self, viewer, parent=None):
+        super().__init__(parent)
+        self.viewer = viewer
+        self.setWindowTitle(tr_ui("scene_light_dialog_title"))
+        self.setModal(False)
+
+        layout = QVBoxLayout(self)
+
+        def row(label_key, spin_min, spin_max, spin_decimals, spin_suffix, slider_min, slider_max):
+            box = QHBoxLayout()
+            box.addWidget(QLabel(tr_ui(label_key)))
+            slider = QSlider(Qt.Horizontal)
+            slider.setRange(slider_min, slider_max)
+            spin = QDoubleSpinBox()
+            spin.setRange(spin_min, spin_max)
+            spin.setDecimals(spin_decimals)
+            spin.setSuffix(spin_suffix)
+            box.addWidget(slider, 1)
+            box.addWidget(spin)
+            layout.addLayout(box)
+            return slider, spin
+
+        self._intensity_slider, self._intensity_spin = row(
+            "scene_light_intensity", 0.0, 2.0, 2, "", 0, 200)
+        self._azimuth_slider, self._azimuth_spin = row(
+            "scene_light_azimuth", -180.0, 180.0, 0, " °", -180, 180)
+        self._elevation_slider, self._elevation_spin = row(
+            "scene_light_elevation", -90.0, 90.0, 0, " °", -90, 90)
+
+        for slider, spin, scale in (
+            (self._intensity_slider, self._intensity_spin, self._INTENSITY_STEPS),
+            (self._azimuth_slider, self._azimuth_spin, 1),
+            (self._elevation_slider, self._elevation_spin, 1),
+        ):
+            slider.valueChanged.connect(lambda v, s=spin, sc=scale: s.setValue(v / sc))
+            spin.valueChanged.connect(lambda v, sl=slider, sc=scale: sl.setValue(round(v * sc)))
+            spin.valueChanged.connect(self._apply)
+
+        reset_btn = QPushButton(tr_ui("scene_light_reset"))
+        reset_btn.clicked.connect(self._reset)
+        layout.addWidget(reset_btn)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.rejected.connect(self.close)
+        buttons.button(QDialogButtonBox.Close).clicked.connect(self.close)
+        layout.addWidget(buttons)
+
+        self._load_current_values()
+
+    def _load_current_values(self):
+        light = self.viewer.scene_light if self.viewer is not None else None
+        if light is not None:
+            x, y, z = light.GetPosition()
+            az, el = self.viewer._position_to_azimuth_elevation(x, y, z)
+            intensity = light.GetIntensity()
+        else:
+            az, el = self.viewer.scene_light_default_azimuth_elevation()
+            intensity = self.viewer.SCENE_LIGHT_DEFAULT_INTENSITY
+        self._intensity_spin.setValue(intensity)
+        self._azimuth_spin.setValue(az)
+        self._elevation_spin.setValue(el)
+
+    def _reset(self):
+        az, el = self.viewer.scene_light_default_azimuth_elevation()
+        self._intensity_spin.setValue(self.viewer.SCENE_LIGHT_DEFAULT_INTENSITY)
+        self._azimuth_spin.setValue(az)
+        self._elevation_spin.setValue(el)
+
+    def _apply(self):
+        if self.viewer is None:
+            return
+        self.viewer.set_scene_light(
+            self._intensity_spin.value(), self._azimuth_spin.value(), self._elevation_spin.value()
+        )
+
+
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1169,6 +1250,7 @@ class MainWindow(QMainWindow):
         self.profiles_transparency_slider = None
         self.profiles_transparency_value_label = None
         self.theme_name = DEFAULT_THEME
+        self._scene_light_dialog = None
         set_active_theme(self.theme_name)
         self.api_server_exe = DEFAULT_API_SERVER_EXE
         self.api_host = DEFAULT_HOST
@@ -2284,6 +2366,11 @@ class MainWindow(QMainWindow):
         self.act_view_projection_orthogonal.triggered.connect(lambda checked: checked and self.apply_view_projection("orthogonal"))
         projection_group.addAction(self.act_view_projection_orthogonal)
         view3d_menu.addAction(self.act_view_projection_orthogonal)
+
+        view3d_menu.addSeparator()
+        act_scene_light = QAction(tr_ui("menu_scene_light"), self)
+        act_scene_light.triggered.connect(self.open_scene_light_dialog)
+        view3d_menu.addAction(act_scene_light)
 
         # Sous-menu Configuration
         configuration_menu = QMenu(tr_ui("menu_configuration"), self)
@@ -5069,6 +5156,15 @@ class MainWindow(QMainWindow):
             material_counts[k] = material_counts.get(k, 0) + 1
 
         return sections, thicknesses, materials, section_counts, thickness_counts, material_counts
+
+    def open_scene_light_dialog(self):
+        if self.viewer is None:
+            return
+        if self._scene_light_dialog is None:
+            self._scene_light_dialog = SceneLightDialog(self.viewer, self)
+        self._scene_light_dialog.show()
+        self._scene_light_dialog.raise_()
+        self._scene_light_dialog.activateWindow()
 
     def open_filter_dialog(self):
         if self.current_model_data is None or self.viewer is None:
