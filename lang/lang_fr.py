@@ -421,6 +421,7 @@ MSG_UI = {
     "calc_ef_dialog_label": "Délai maximum en secondes (0 = illimité) :",
     "calc_ef_button": "Lancer le calcul (EF)",
     "calc_ef_button_not_needed": "Calculs non-nécessaires, résultats déjà disponibles",
+    "calc_ef_button_force_hint": "Ctrl+clic pour forcer le calcul",
     "calc_ef_confirm_title": "Calcul éléments finis",
     "calc_ef_confirm_text": "Voulez-vous lancer le calcul éléments finis ?\nCette opération peut durer plusieurs minutes.",
     "calc_ef_no_project": "Aucun projet disponible pour le calcul éléments finis.",

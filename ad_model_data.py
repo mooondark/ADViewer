@@ -1328,6 +1328,20 @@ def _extract_result_item_by_id(payloads, support_eid: int) -> dict:
     return item if isinstance(item, dict) else {}
 
 
+def _extract_element_linear_result_item(payloads) -> dict:
+    """GetResults sur un element filaire renvoie un id qui ne correspond pas a
+    l'EID demande (constate en pratique) : on ne peut donc pas filtrer par id
+    comme _extract_result_item_by_id. La reponse melange parfois des entrees
+    ResNode (resultat par noeud) et une entree ResElementLinear (celle qui
+    porte resDiagrams, ce qu'on veut) ; on identifie donc cette derniere par
+    son $type plutot que par position dans la liste.
+    """
+    for candidate in payloads or []:
+        if isinstance(candidate, dict) and candidate.get("$type") == "ResElementLinear":
+            return candidate
+    return payloads[0] if payloads and isinstance(payloads[0], dict) else {}
+
+
 def _build_support_torsor_rows(item: dict) -> list:
     if not isinstance(item, dict) or not item:
         return []
@@ -1556,7 +1570,7 @@ def read_linear_element_diagram_results(host: str, element_eid: int, analysis_ca
     series = []
     for result_type in search_types:
         payloads = get_results(host, result_type, analysis_case_id, [element_eid])
-        item = _extract_result_item_by_id(payloads, element_eid)
+        item = _extract_element_linear_result_item(payloads)
         if not item:
             continue
         selected_item = item
@@ -1598,8 +1612,8 @@ def read_linear_element_family_export(host: str, element_eid: int, analysis_case
     item = {}
     for result_type in search_types:
         payloads = get_results(host, result_type, analysis_case_id, [element_eid])
-        item = _extract_result_item_by_id(payloads, element_eid)
-        if isinstance(item, dict) and item:
+        item = _extract_element_linear_result_item(payloads)
+        if item:
             break
     if not isinstance(item, dict):
         item = {}

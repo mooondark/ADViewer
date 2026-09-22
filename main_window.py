@@ -34,7 +34,7 @@ try:
     from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF
     from PySide6.QtGui import QAction, QActionGroup, QTextCursor, QColor, QIcon, QPixmap, QPainter, QPen, QKeySequence, QShortcut, QPainterPath, QBrush, QPolygonF
     from PySide6.QtWidgets import (
-        QApplication, QMainWindow, QWidget, QFileDialog, QFrame, QLabel,
+        QApplication, QMainWindow, QWidget, QFileDialog, QFrame, QLabel, QGraphicsOpacityEffect,
         QPushButton, QLineEdit, QTextEdit, QVBoxLayout, QHBoxLayout,
         QSplitter, QCheckBox, QComboBox, QMenu, QDialog, QFormLayout,
         QDialogButtonBox, QDoubleSpinBox, QSpinBox, QSlider, QColorDialog, QProgressBar, QMessageBox,
@@ -2551,6 +2551,9 @@ class MainWindow(QMainWindow):
 
         self.calc_btn = QPushButton()
         self.calc_btn.setProperty("iconOnly", True)
+        self._calc_btn_opacity_effect = QGraphicsOpacityEffect(self.calc_btn)
+        self.calc_btn.setGraphicsEffect(self._calc_btn_opacity_effect)
+        self._calc_done = False
         self._setup_view_button(self.calc_btn, "calculer", tr_ui("calc_ef_button"))
         self.calc_btn.clicked.connect(self.launch_analysis_from_viewer)
 
@@ -5640,6 +5643,8 @@ class MainWindow(QMainWindow):
     def launch_analysis_from_viewer(self):
         if self.calc_worker is not None and self.calc_worker.isRunning():
             return
+        if self._calc_done and not (QApplication.keyboardModifiers() & Qt.ControlModifier):
+            return
 
         answer = QMessageBox.question(
             self,
@@ -6323,13 +6328,20 @@ class MainWindow(QMainWindow):
         self.project_session = session
 
     def _refresh_calc_button(self):
-        """Grise le bouton de calcul EF si le modele est deja maille et calcule."""
+        """Grise visuellement le bouton de calcul EF si le modele est deja maille
+        et calcule, sans le desactiver : Ctrl+clic permet de forcer le calcul
+        (voir launch_analysis_from_viewer)."""
         if self.calc_btn is None:
             return
         status = self.current_analysis_status
         done = bool(status.get("femIsCalculated")) and status.get("meshState") == "mesh_available"
-        self.calc_btn.setEnabled(not done)
-        self.calc_btn.setToolTip(tr_ui("calc_ef_button_not_needed" if done else "calc_ef_button"))
+        self._calc_done = done
+        self.calc_btn.setEnabled(True)
+        self._calc_btn_opacity_effect.setOpacity(0.4 if done else 1.0)
+        tooltip = tr_ui("calc_ef_button_not_needed") if done else tr_ui("calc_ef_button")
+        if done:
+            tooltip += "\n" + tr_ui("calc_ef_button_force_hint")
+        self.calc_btn.setToolTip(tooltip)
 
     def set_loading(self, loading: bool):
         widgets = [

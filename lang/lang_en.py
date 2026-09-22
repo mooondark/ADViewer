@@ -420,6 +420,7 @@ MSG_UI = {
     "calc_ef_dialog_title": "Finite element calculation",
     "calc_ef_dialog_label": "Maximum delay in seconds (0 = unlimited):",
     "calc_ef_button_not_needed": "Calculation not needed, results already available",
+    "calc_ef_button_force_hint": "Ctrl+click to force the calculation",
     "calc_ef_button": "Run calculation (FE)",
     "calc_ef_confirm_title": "Finite element calculation",
     "calc_ef_confirm_text": "Do you want to run the finite element calculation?\nThis operation may take several minutes.",

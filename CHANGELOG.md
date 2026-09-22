@@ -6,9 +6,13 @@
 
 ### FR
 - Nouveau menu « Paramètres > Vue 3D > Éclairage... » : réglage de l'intensité, de l'azimut et de l'élévation de la lumière de la scène 3D, avec application en direct et retour aux valeurs par défaut.
+- Bouton « Lancer le calcul (EF) » : lorsqu'il est grisé (modèle déjà calculé et maillé), Ctrl+clic force le lancement d'un nouveau calcul, avec la même boîte de confirmation habituelle.
+- Correction : l'affichage des résultats de déplacements sur les éléments filaires ne fonctionnait plus (l'élément recherché dans la réponse de l'API n'était pas correctement identifié). Les efforts et contraintes n'étaient pas affectés.
 
 ### EN
 - New "Settings > 3D View > Lighting..." menu: adjust intensity, azimuth and elevation of the 3D scene light, with live preview and reset to defaults.
+- "Run FE calculation" button: when greyed out (model already calculated and meshed), Ctrl+click forces a new calculation, with the same usual confirmation dialog.
+- Fix: displacement results on linear elements were no longer displayed (the element was not correctly identified in the API response). Forces and stresses were not affected.
 
 ## 2.09
 
