@@ -20,6 +20,8 @@ from PySide6.QtWidgets import QFrame, QVBoxLayout
 
 import viewer_config as _cfg
 import display_units as du
+import scene_light as _scene_light
+import flight_navigation as _flight_nav
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_ARROW_WIDTH,
     PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_ARROW_WIDTH,
@@ -36,9 +38,6 @@ from viewer_config import (
     PUNCTUAL_LOAD_COLOR,
     PUNCTUAL_LOAD_SCALE,
     _DARK_VTK_BG,
-    FLIGHT_DEFAULT_SPEED, FLIGHT_FAST_MULTIPLIER, FLIGHT_SLOW_MULTIPLIER,
-    FLIGHT_MOUSE_SENSITIVITY, FLIGHT_VERTICAL_SPEED_FACTOR, FLIGHT_PITCH_LIMIT_DEG,
-    FLIGHT_NEAR_CLIP,
 )
 
 from ad_model_data import _build_ad_local_axes, _cross_vector3, _normalize_vector3, _rotate_vector_around_axis
@@ -328,6 +327,9 @@ class VTKViewerWidget(QFrame):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        # Construit avant tout le reste : apply_theme() (ci-dessous) declenche
+        # _apply_view_overlay_theme(), qui y accede deja.
+        self._flight = _flight_nav.FlightController(self)
         self.apply_theme()
 
         layout = QVBoxLayout(self)
@@ -339,8 +341,6 @@ class VTKViewerWidget(QFrame):
 
         self.renderer = vtk.vtkRenderer()
         self.renderer.SetBackground(*_cfg.VTK_BG)
-        self._scene_light_gizmo_actor = None
-        self._scene_light_gizmo_source = None
 
         self.render_window = self.vtk_widget.GetRenderWindow()
         self.render_window.AddRenderer(self.renderer)
@@ -479,7 +479,6 @@ class VTKViewerWidget(QFrame):
         # Overlay coin haut-gauche : vue courante + position 3D de la souris.
         self._has_model = False
         self._view_overlay_actor = None
-        self._flight_controls_overlay_actor = None
         self._overlay_mouse_world_txt = "X : --   Y : --   Z : --"
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -514,18 +513,6 @@ class VTKViewerWidget(QFrame):
         # mais le 2e clic recadre la camera sur le rectangle trace.
         self._zoom_window_mode = False
         self._zoom_win_pt1 = None
-
-        # Mode "Navigation" (camera libre) - voir set_flight_mode().
-        self._flight_mode = False
-        self._flight_timer = None
-        self._flight_keys_held = set()
-        self._flight_key_bindings = {}
-        self._flight_yaw = 0.0
-        self._flight_pitch = 0.0
-        self._flight_looking = False
-        self._flight_last_look_pos = (0, 0)
-        self._flight_last_tick = 0.0
-        self._flight_saved_camera_state = None
 
         self.vtk_widget.Initialize()
         self.vtk_widget.Start()
@@ -2114,10 +2101,8 @@ class VTKViewerWidget(QFrame):
         return True
 
     def _on_right_button_press(self, obj, event):
-        if self._flight_mode:
-            self._flight_resync_yaw_pitch_from_camera()
-            self._flight_looking = True
-            self._flight_last_look_pos = self.interactor.GetEventPosition()
+        if self._flight.active:
+            self._flight.on_right_button_press()
             return
         if self._window_select_mode:
             self.set_window_select_mode(False)   # clic droit = annuler
@@ -2143,8 +2128,8 @@ class VTKViewerWidget(QFrame):
         self.interactor_style.OnRightButtonDown()
 
     def _on_right_button_release(self, obj, event):
-        if self._flight_mode:
-            self._flight_looking = False
+        if self._flight.active:
+            self._flight.on_right_button_release()
 
     def _on_left_button_press(self, obj, event):
         if self._window_select_mode:
@@ -2188,7 +2173,7 @@ class VTKViewerWidget(QFrame):
         # l'interactor (GetInteractor() renvoie None) : l'appeler plante VTK
         # (deref C++ d'un pointeur nul). L'orbite n'a de toute facon aucun
         # sens pendant le vol, la camera etant deja pilotee par ce mode.
-        if not self._flight_mode:
+        if not self._flight.active:
             self.interactor_style.OnLeftButtonDown()
 
     def _on_left_button_release(self, obj, event):
@@ -2210,14 +2195,8 @@ class VTKViewerWidget(QFrame):
 
     def _on_key_press(self, obj, event):
         key = self.interactor.GetKeySym() if self.interactor is not None else ""
-        if self._flight_mode:
-            if key in ("Escape", "escape"):
-                self.set_flight_mode(False)
-                return
-            if key == "Home":
-                self.fit_view()
-                return
-            self._flight_keys_held.add(key.lower())
+        if self._flight.active:
+            self._flight.on_key_press(key)
             return
         if key in ("Escape", "escape"):
             if self._window_select_mode:
@@ -2230,10 +2209,10 @@ class VTKViewerWidget(QFrame):
             return
 
     def _on_key_release(self, obj, event):
-        if not self._flight_mode:
+        if not self._flight.active:
             return
         key = self.interactor.GetKeySym() if self.interactor is not None else ""
-        self._flight_keys_held.discard(key.lower())
+        self._flight.on_key_release(key)
 
     def _ensure_plain_style(self):
         """Cree paresseusement le style d'interaction neutre partage par les
@@ -2257,7 +2236,7 @@ class VTKViewerWidget(QFrame):
             return
         if active and self._zoom_window_mode:
             self.set_zoom_window_mode(False)
-        if active and self._flight_mode:
+        if active and self._flight.active:
             self.set_flight_mode(False)
         self._window_select_mode = active
         self._win_pt1 = None
@@ -2271,17 +2250,9 @@ class VTKViewerWidget(QFrame):
         self.windowSelectModeChanged.emit(active)
 
     def _on_flight_mouse_move(self, obj, event):
-        if not self._flight_mode or not self._flight_looking:
+        if not self._flight.active:
             return
-        x, y = self.interactor.GetEventPosition()
-        last_x, last_y = self._flight_last_look_pos
-        dx = x - last_x
-        dy = y - last_y
-        self._flight_last_look_pos = (x, y)
-        self._flight_yaw += math.radians(dx * FLIGHT_MOUSE_SENSITIVITY)
-        self._flight_pitch -= math.radians(dy * FLIGHT_MOUSE_SENSITIVITY)
-        self._flight_pitch = self._flight_clamp_pitch(self._flight_pitch, math.radians(FLIGHT_PITCH_LIMIT_DEG))
-        self._flight_apply_look()
+        self._flight.on_mouse_move()
 
     def _on_window_select_mouse_move(self, obj, event):
         if self._window_select_mode:
@@ -2304,7 +2275,7 @@ class VTKViewerWidget(QFrame):
             return
         if active and self._window_select_mode:
             self.set_window_select_mode(False)
-        if active and self._flight_mode:
+        if active and self._flight.active:
             self.set_flight_mode(False)
         self._zoom_window_mode = active
         self._zoom_win_pt1 = None
@@ -2534,26 +2505,12 @@ class VTKViewerWidget(QFrame):
         self.selectionChanged.emit(list(self._selected_items))
         self._refresh_selection_overlay()
 
-    @classmethod
-    def scene_light_default_azimuth_elevation(cls):
-        return cls._position_to_azimuth_elevation(*cls.SCENE_LIGHT_DEFAULT_POSITION)
-
-    @staticmethod
-    def _position_to_azimuth_elevation(x: float, y: float, z: float):
-        distance = math.sqrt(x * x + y * y + z * z) or 1.0
-        azimuth = math.degrees(math.atan2(x, y))
-        elevation = math.degrees(math.asin(max(-1.0, min(1.0, z / distance))))
-        return azimuth, elevation
-
-    @classmethod
-    def _azimuth_elevation_to_position(cls, azimuth_deg: float, elevation_deg: float):
-        distance = math.sqrt(sum(c * c for c in cls.SCENE_LIGHT_DEFAULT_POSITION))
-        az = math.radians(azimuth_deg)
-        el = math.radians(elevation_deg)
-        x = distance * math.cos(el) * math.sin(az)
-        y = distance * math.cos(el) * math.cos(az)
-        z = distance * math.sin(el)
-        return x, y, z
+    # Delegues vers scene_light.py (extrait pour isoler ce sous-ensemble
+    # autonome) : signatures et comportement inchanges pour les appelants
+    # (main_window.py, tests/test_scene_light.py).
+    scene_light_default_azimuth_elevation = staticmethod(_scene_light.default_azimuth_elevation)
+    _position_to_azimuth_elevation = staticmethod(_scene_light.position_to_azimuth_elevation)
+    _azimuth_elevation_to_position = staticmethod(_scene_light.azimuth_elevation_to_position)
 
     def set_scene_light(self, intensity: float, azimuth_deg: float, elevation_deg: float):
         if self.scene_light is None:
@@ -2562,301 +2519,25 @@ class VTKViewerWidget(QFrame):
         self.scene_light.SetPosition(*self._azimuth_elevation_to_position(azimuth_deg, elevation_deg))
         self.render_window.Render()
 
-    # Repere visuel temporaire (origine -> position de la sceneLight), affiche
-    # uniquement pendant que la boite de dialogue Eclairage est ouverte.
-    SCENE_LIGHT_GIZMO_COLOR = (1.0, 0.85, 0.2)
-
     def show_scene_light_gizmo(self, position):
-        if self._scene_light_gizmo_actor is None:
-            source = vtk.vtkLineSource()
-            mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputConnection(source.GetOutputPort())
-            actor = vtk.vtkActor()
-            actor.SetMapper(mapper)
-            actor.PickableOff()
-            actor.GetProperty().SetColor(*self.SCENE_LIGHT_GIZMO_COLOR)
-            actor.GetProperty().SetLineWidth(2.0)
-            actor.GetProperty().LightingOff()
-            self._scene_light_gizmo_source = source
-            self._scene_light_gizmo_actor = actor
-            self.renderer.AddActor(actor)
-        self._scene_light_gizmo_source.SetPoint1(0.0, 0.0, 0.0)
-        self._scene_light_gizmo_source.SetPoint2(*position)
-        self._scene_light_gizmo_source.Update()
-        self.render_window.Render()
+        self._scene_light_gizmo.show(position)
 
     def hide_scene_light_gizmo(self):
-        if self._scene_light_gizmo_actor is not None:
-            self.renderer.RemoveActor(self._scene_light_gizmo_actor)
-            self._scene_light_gizmo_actor = None
-            self._scene_light_gizmo_source = None
-            self.render_window.Render()
-
-    # ------------------------------------------------------------------
-    # Mode Navigation (camera libre) - fonctions de calcul pur, testables
-    # sans fenetre VTK reelle (pas d'acces a self, ni a self.renderer).
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _flight_direction_vectors(yaw: float):
-        """Vecteurs forward/right/up pour le deplacement : forward est la
-        direction de visee horizontale (independante du pitch), up est l'axe
-        Z mondial fixe - voir section 3 de la spec."""
-        forward = (math.sin(yaw), math.cos(yaw), 0.0)
-        right = (math.cos(yaw), -math.sin(yaw), 0.0)
-        up = (0.0, 0.0, 1.0)
-        return forward, right, up
-
-    @staticmethod
-    def _flight_look_direction(yaw: float, pitch: float):
-        """Direction de visee complete (regard), meme convention azimut/
-        elevation que _azimuth_elevation_to_position (yaw=azimut, pitch=
-        elevation, distance=1)."""
-        cp = math.cos(pitch)
-        return (cp * math.sin(yaw), cp * math.cos(yaw), math.sin(pitch))
-
-    @staticmethod
-    def _flight_movement_vector(keys_held: set, forward, right, up, key_bindings: dict):
-        """Somme les contributions des touches actives puis normalise le
-        resultat (une touche en diagonale ne va pas plus vite qu'une seule)."""
-        ax, ay, az = 0.0, 0.0, 0.0
-        if key_bindings.get("forward") in keys_held:
-            ax, ay, az = ax + forward[0], ay + forward[1], az + forward[2]
-        if key_bindings.get("backward") in keys_held:
-            ax, ay, az = ax - forward[0], ay - forward[1], az - forward[2]
-        if key_bindings.get("right") in keys_held:
-            ax, ay, az = ax + right[0], ay + right[1], az + right[2]
-        if key_bindings.get("left") in keys_held:
-            ax, ay, az = ax - right[0], ay - right[1], az - right[2]
-        if key_bindings.get("up") in keys_held:
-            ax, ay, az = ax + up[0], ay + up[1], az + up[2]
-        if key_bindings.get("down") in keys_held:
-            ax, ay, az = ax - up[0], ay - up[1], az - up[2]
-        length = math.sqrt(ax * ax + ay * ay + az * az)
-        if length < 1e-9:
-            return (0.0, 0.0, 0.0)
-        return (ax / length, ay / length, az / length)
-
-    @staticmethod
-    def _flight_safe_position(position, bounds, view_direction, margin_ratio: float = 0.02):
-        """Heuristique par boite englobante (pas une vraie collision, cf.
-        section 6 de la spec) : si la position est a l'interieur (ou trop
-        proche) de la boite visible, on la repousse le long de l'axe
-        centre -> position jusqu'a une distance sure a l'exterieur. Cas
-        degenere (position == centre exact) : repli sur -view_direction."""
-        if bounds is None:
-            return tuple(position)
-        xmin, xmax, ymin, ymax, zmin, zmax = bounds
-        cx, cy, cz = (xmin + xmax) / 2.0, (ymin + ymax) / 2.0, (zmin + zmax) / 2.0
-        diag = math.sqrt((xmax - xmin) ** 2 + (ymax - ymin) ** 2 + (zmax - zmin) ** 2)
-        if diag < 1e-9:
-            return tuple(position)
-        margin = diag * margin_ratio
-        px, py, pz = position
-        inside = (
-            xmin - margin <= px <= xmax + margin
-            and ymin - margin <= py <= ymax + margin
-            and zmin - margin <= pz <= zmax + margin
-        )
-        if not inside:
-            return tuple(position)
-        vx, vy, vz = px - cx, py - cy, pz - cz
-        vlen = math.sqrt(vx * vx + vy * vy + vz * vz)
-        if vlen < 1e-9:
-            dvx, dvy, dvz = view_direction
-            dlen = math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz) or 1.0
-            vx, vy, vz, vlen = -dvx / dlen, -dvy / dlen, -dvz / dlen, 1.0
-        safe_distance = diag / 2.0 + margin
-        scale = safe_distance / vlen
-        return (cx + vx * scale, cy + vy * scale, cz + vz * scale)
-
-    @staticmethod
-    def _flight_clamp_pitch(pitch: float, limit: float) -> float:
-        """Borne le tangage pour eviter que la camera ne se retourne (critere
-        d'acceptation de la spec) - extrait en fonction pure pour etre
-        testable independamment du reste de _on_flight_mouse_move."""
-        return max(-limit, min(limit, pitch))
-
-    @staticmethod
-    def _flight_controls_overlay_text(key_bindings: dict) -> str:
-        def pair(action_a, action_b):
-            return f"{key_bindings.get(action_a, '?').upper()}/{key_bindings.get(action_b, '?').upper()}"
-        lines = [
-            f"{_cfg.tr_ui('flight_control_forward_back')} : {pair('forward', 'backward')}",
-            f"{_cfg.tr_ui('flight_control_left_right')} : {pair('left', 'right')}",
-            f"{_cfg.tr_ui('flight_control_up_down')} : {pair('up', 'down')}",
-            _cfg.tr_ui("flight_control_look"),
-            _cfg.tr_ui("flight_control_fast"),
-            _cfg.tr_ui("flight_control_slow"),
-            _cfg.tr_ui("flight_control_reset"),
-            _cfg.tr_ui("flight_control_exit"),
-        ]
-        return "\n".join(lines)
-
-    # Distance fixe (unites modele) utilisee pour placer le point focal devant
-    # la camera pendant le regard - seule la direction compte, une distance
-    # fixe evite les soucis numeriques si la distance d'origine etait
-    # tres petite ou tres grande.
-    FLIGHT_LOOK_DISTANCE = 10.0
+        self._scene_light_gizmo.hide()
 
     def set_flight_mode(self, active: bool):
         """Active/desactive le mode Navigation (camera libre). Meme schema que
         set_window_select_mode/set_zoom_window_mode : drapeau d'etat + bascule
-        vers un style d'interaction neutre pendant le mode."""
+        vers un style d'interaction neutre pendant le mode. Logique complete
+        dans flight_navigation.FlightController."""
         active = bool(active)
-        if active == self._flight_mode:
+        if active == self._flight.active:
             return
         if active:
-            if self._window_select_mode:
-                self.set_window_select_mode(False)
-            if self._zoom_window_mode:
-                self.set_zoom_window_mode(False)
-            camera = self.renderer.GetActiveCamera()
-            self._flight_saved_camera_state = {
-                "position": camera.GetPosition(),
-                "focal_point": camera.GetFocalPoint(),
-                "view_up": camera.GetViewUp(),
-                "view_angle": camera.GetViewAngle(),
-                "parallel_projection": bool(camera.GetParallelProjection()),
-            }
-            # Seule la projection change (perspective, necessaire pour une camera
-            # libre) : le champ de vision (ViewAngle) n'est pas touche, pour ne
-            # pas modifier le niveau de zoom apparent a l'activation du mode.
-            camera.SetParallelProjection(0)
-
-            px, py, pz = camera.GetPosition()
-            fx, fy, fz = camera.GetFocalPoint()
-            direction = camera.GetDirectionOfProjection()
-            bounds = self._get_visible_bounds()
-            safe = self._flight_safe_position((px, py, pz), bounds, direction)
-            if safe != (px, py, pz):
-                ddx, ddy, ddz = fx - px, fy - py, fz - pz
-                camera.SetPosition(*safe)
-                camera.SetFocalPoint(safe[0] + ddx, safe[1] + ddy, safe[2] + ddz)
-                direction = camera.GetDirectionOfProjection()
-
-            self._flight_resync_yaw_pitch_from_camera()
-
-            self._flight_keys_held = set()
-            self._flight_key_bindings = _cfg.get_flight_key_bindings()
-            self._flight_looking = False
-            self._flight_last_look_pos = (0, 0)
-            self._flight_mode = True
-
-            self.interactor.SetInteractorStyle(self._ensure_plain_style())
-            self.vtk_widget.setFocus()
-
-            self._flight_clamp_clip_and_render()
-            self._show_flight_overlay()
-
-            self._flight_last_tick = time.monotonic()
-            if self._flight_timer is None:
-                self._flight_timer = QTimer(self)
-                self._flight_timer.setInterval(16)
-                self._flight_timer.timeout.connect(self._flight_tick)
-            self._flight_timer.start()
+            self._flight.activate()
         else:
-            self._flight_mode = False
-            if self._flight_timer is not None:
-                self._flight_timer.stop()
-            self._flight_keys_held = set()
-            self._flight_looking = False
-            state = self._flight_saved_camera_state
-            if state is not None:
-                camera = self.renderer.GetActiveCamera()
-                camera.SetPosition(*state["position"])
-                camera.SetFocalPoint(*state["focal_point"])
-                camera.SetViewUp(*state["view_up"])
-                camera.SetViewAngle(state["view_angle"])
-                camera.SetParallelProjection(1 if state["parallel_projection"] else 0)
-                self._flight_saved_camera_state = None
-            self.interactor.SetInteractorStyle(self.interactor_style)
-            self.renderer.ResetCameraClippingRange()
-            self._hide_flight_overlay()
-            if self.render_window is not None:
-                self.render_window.Render()
-            self._update_view_overlay()
+            self._flight.deactivate()
         self.flightModeChanged.emit(active)
-
-    def _flight_resync_yaw_pitch_from_camera(self):
-        """Recalcule yaw/pitch a partir de la direction reelle de la camera.
-        A appeler avant tout usage de _flight_yaw/_flight_pitch qui pourrait
-        suivre un changement de camera hors mode Navigation (boutons de vue,
-        raccourcis Alt+...)."""
-        camera = self.renderer.GetActiveCamera()
-        direction = camera.GetDirectionOfProjection()
-        dnorm = math.sqrt(sum(c * c for c in direction)) or 1.0
-        dx, dy, dz = direction[0] / dnorm, direction[1] / dnorm, direction[2] / dnorm
-        self._flight_pitch = math.asin(max(-1.0, min(1.0, dz)))
-        self._flight_yaw = math.atan2(dx, dy)
-
-    def _flight_clamp_clip_and_render(self):
-        self.renderer.ResetCameraClippingRange()
-        camera = self.renderer.GetActiveCamera()
-        near, far = camera.GetClippingRange()
-        if near < FLIGHT_NEAR_CLIP:
-            camera.SetClippingRange(FLIGHT_NEAR_CLIP, far)
-        if self.render_window is not None:
-            self.render_window.Render()
-
-    def _flight_apply_look(self):
-        camera = self.renderer.GetActiveCamera()
-        px, py, pz = camera.GetPosition()
-        dx, dy, dz = self._flight_look_direction(self._flight_yaw, self._flight_pitch)
-        distance = self.FLIGHT_LOOK_DISTANCE
-        camera.SetFocalPoint(px + dx * distance, py + dy * distance, pz + dz * distance)
-        camera.SetViewUp(0.0, 0.0, 1.0)
-        camera.OrthogonalizeViewUp()
-        self._flight_clamp_clip_and_render()
-
-    def _flight_tick(self):
-        if not self._flight_mode or self.renderer is None:
-            return
-        if not self.vtk_widget.hasFocus():
-            self._flight_keys_held = set()
-            return
-        self._flight_resync_yaw_pitch_from_camera()
-        now = time.monotonic()
-        dt = now - self._flight_last_tick
-        self._flight_last_tick = now
-        if dt <= 0.0 or dt > 0.5:
-            return
-        # Avancer/reculer suit la direction de visee complete (yaw + pitch),
-        # pour pouvoir plonger/remonter en avancant. Gauche/droite (strafe)
-        # et monter/descendre restent horizontaux/verticaux purs.
-        _, right, up = self._flight_direction_vectors(self._flight_yaw)
-        forward = self._flight_look_direction(self._flight_yaw, self._flight_pitch)
-        move = self._flight_movement_vector(self._flight_keys_held, forward, right, up, self._flight_key_bindings)
-        if move == (0.0, 0.0, 0.0):
-            return
-        if self.interactor is not None and self.interactor.GetShiftKey():
-            multiplier = FLIGHT_FAST_MULTIPLIER
-        elif self.interactor is not None and self.interactor.GetControlKey():
-            multiplier = FLIGHT_SLOW_MULTIPLIER
-        else:
-            multiplier = 1.0
-        speed = FLIGHT_DEFAULT_SPEED * multiplier * dt
-        dx = move[0] * speed
-        dy = move[1] * speed
-        dz = move[2] * speed * FLIGHT_VERTICAL_SPEED_FACTOR
-        camera = self.renderer.GetActiveCamera()
-        px, py, pz = camera.GetPosition()
-        fx, fy, fz = camera.GetFocalPoint()
-        camera.SetPosition(px + dx, py + dy, pz + dz)
-        camera.SetFocalPoint(fx + dx, fy + dy, fz + dz)
-        self._flight_clamp_clip_and_render()
-
-    def _show_flight_overlay(self):
-        self._update_view_overlay(render=False)
-        actor = getattr(self, "_flight_controls_overlay_actor", None)
-        if actor is not None:
-            actor.SetInput(self._flight_controls_overlay_text(self._flight_key_bindings))
-            actor.SetVisibility(True)
-
-    def _hide_flight_overlay(self):
-        actor = getattr(self, "_flight_controls_overlay_actor", None)
-        if actor is not None:
-            actor.SetVisibility(False)
 
     def get_display_counts(self):
         return {
@@ -2871,10 +2552,10 @@ class VTKViewerWidget(QFrame):
             "planar_loads": self.planar_load_count,
         }
 
-    # Position par defaut de la sceneLight : distance fixe (non exposee), azimut/
-    # elevation calcules a partir de cette position servent de valeurs de reset.
-    SCENE_LIGHT_DEFAULT_POSITION = (50.0, 50.0, 80.0)
-    SCENE_LIGHT_DEFAULT_INTENSITY = 0.9
+    # Valeurs par defaut re-exposees depuis scene_light.py (main_window.py les
+    # lit via self.viewer.SCENE_LIGHT_DEFAULT_*).
+    SCENE_LIGHT_DEFAULT_POSITION = _scene_light.DEFAULT_POSITION
+    SCENE_LIGHT_DEFAULT_INTENSITY = _scene_light.DEFAULT_INTENSITY
 
     def _build_scene_base(self):
         light = vtk.vtkLight()
@@ -2882,11 +2563,12 @@ class VTKViewerWidget(QFrame):
         light.SetFocalPoint(0, 0, 0)
         self.scene_light = light
         self.renderer.AddLight(light)
+        self._scene_light_gizmo = _scene_light.SceneLightGizmo(self.renderer, self.render_window)
         az, el = self.scene_light_default_azimuth_elevation()
         self.set_scene_light(self.SCENE_LIGHT_DEFAULT_INTENSITY, az, el)
         self._setup_corner_axes()
         self._setup_view_overlay()
-        self._setup_flight_controls_overlay()
+        self._flight.setup_overlay()
 
     def _setup_view_overlay(self):
         actor = vtk.vtkTextActor()
@@ -2906,31 +2588,13 @@ class VTKViewerWidget(QFrame):
         self.renderer.AddViewProp(actor)
         self._apply_view_overlay_theme()
 
-    def _setup_flight_controls_overlay(self):
-        actor = vtk.vtkTextActor()
-        actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
-        actor.GetPositionCoordinate().SetValue(0.988, 0.985)
-        actor.SetTextScaleModeToNone()
-        actor.SetPickable(False)
-        actor.SetVisibility(False)
-        tp = actor.GetTextProperty()
-        tp.SetFontFamilyToArial()
-        tp.SetFontSize(12)
-        tp.SetJustificationToRight()
-        tp.SetVerticalJustificationToTop()
-        tp.SetLineSpacing(1.2)
-        tp.ShadowOff()
-        self._flight_controls_overlay_actor = actor
-        self.renderer.AddViewProp(actor)
-        self._apply_view_overlay_theme()
-
     def _apply_view_overlay_theme(self):
         is_dark = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
         color = (0.92, 0.94, 0.98) if is_dark else (0.12, 0.16, 0.22)
-        for attr in ("_view_overlay_actor", "_flight_controls_overlay_actor"):
-            actor = getattr(self, attr, None)
-            if actor is not None:
-                actor.GetTextProperty().SetColor(*color)
+        actor = getattr(self, "_view_overlay_actor", None)
+        if actor is not None:
+            actor.GetTextProperty().SetColor(*color)
+        self._flight.apply_overlay_theme(color)
 
     def _current_view_label(self) -> str:
         cam = self.renderer.GetActiveCamera() if self.renderer is not None else None
@@ -2963,7 +2627,7 @@ class VTKViewerWidget(QFrame):
         if actor is None:
             return
 
-        if getattr(self, "_flight_mode", False):
+        if self._flight.active:
             actor.SetInput(_cfg.tr_ui("flight_mode_overlay"))
             if not actor.GetVisibility():
                 actor.SetVisibility(True)
