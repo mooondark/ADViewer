@@ -2257,7 +2257,7 @@ class VTKViewerWidget(QFrame):
         dx = x - last_x
         dy = y - last_y
         self._flight_last_look_pos = (x, y)
-        self._flight_yaw -= math.radians(dx * FLIGHT_MOUSE_SENSITIVITY)
+        self._flight_yaw += math.radians(dx * FLIGHT_MOUSE_SENSITIVITY)
         self._flight_pitch -= math.radians(dy * FLIGHT_MOUSE_SENSITIVITY)
         self._flight_pitch = self._flight_clamp_pitch(self._flight_pitch, math.radians(FLIGHT_PITCH_LIMIT_DEG))
         self._flight_apply_look()
