@@ -15,7 +15,7 @@ import hashlib
 import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkRenderingCore import vtkBillboardTextActor3D
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtWidgets import QFrame, QVBoxLayout
 
 import viewer_config as _cfg
@@ -36,6 +36,9 @@ from viewer_config import (
     PUNCTUAL_LOAD_COLOR,
     PUNCTUAL_LOAD_SCALE,
     _DARK_VTK_BG,
+    FLIGHT_DEFAULT_SPEED, FLIGHT_FAST_MULTIPLIER, FLIGHT_SLOW_MULTIPLIER,
+    FLIGHT_MOUSE_SENSITIVITY, FLIGHT_VERTICAL_SPEED_FACTOR, FLIGHT_PITCH_LIMIT_DEG,
+    FLIGHT_NEAR_CLIP, FLIGHT_FOV_DEG,
 )
 
 from ad_model_data import _build_ad_local_axes, _cross_vector3, _normalize_vector3, _rotate_vector_around_axis
@@ -319,6 +322,8 @@ class VTKViewerWidget(QFrame):
     windowSelectionDone = Signal(list)
     # Emis quand le mode "zoom fenetre" est active/desactive.
     zoomWindowModeChanged = Signal(bool)
+    # Emis quand le mode "Navigation" (camera libre) est active/desactive.
+    flightModeChanged = Signal(bool)
     ELEMENT_INDEX_ARRAY = "element_index"
 
     def __init__(self, parent=None):
@@ -482,10 +487,13 @@ class VTKViewerWidget(QFrame):
         self.set_isometric_view()
 
         self.interactor.AddObserver("RightButtonPressEvent", self._on_right_button_press, 1.0)
+        self.interactor.AddObserver("RightButtonReleaseEvent", self._on_right_button_release, 1.0)
         self.interactor.AddObserver("LeftButtonPressEvent", self._on_left_button_press, 1.0)
         self.interactor.AddObserver("LeftButtonReleaseEvent", self._on_left_button_release, 1.0)
         self.interactor.AddObserver("KeyPressEvent", self._on_key_press, 1.0)
+        self.interactor.AddObserver("KeyReleaseEvent", self._on_key_release, 1.0)
         self.interactor.AddObserver("MouseMoveEvent", self._on_window_select_mouse_move, 0.5)
+        self.interactor.AddObserver("MouseMoveEvent", self._on_flight_mouse_move, 0.5)
         self.interactor.AddObserver("MouseMoveEvent", self._on_overlay_mouse_move, 0.0)
 
         # Position du dernier press gauche — pour distinguer clic de glisser
@@ -503,6 +511,19 @@ class VTKViewerWidget(QFrame):
         # mais le 2e clic recadre la camera sur le rectangle trace.
         self._zoom_window_mode = False
         self._zoom_win_pt1 = None
+
+        # Mode "Navigation" (camera libre) - voir set_flight_mode().
+        self._flight_mode = False
+        self._flight_timer = None
+        self._flight_keys_held = set()
+        self._flight_key_bindings = {}
+        self._flight_yaw = 0.0
+        self._flight_pitch = 0.0
+        self._flight_looking = False
+        self._flight_last_look_pos = (0, 0)
+        self._flight_last_tick = 0.0
+        self._flight_saved_camera_state = None
+        self._flight_controls_overlay_actor = None
 
         self.vtk_widget.Initialize()
         self.vtk_widget.Start()
@@ -2070,6 +2091,10 @@ class VTKViewerWidget(QFrame):
         return True
 
     def _on_right_button_press(self, obj, event):
+        if self._flight_mode:
+            self._flight_looking = True
+            self._flight_last_look_pos = self.interactor.GetEventPosition()
+            return
         if self._window_select_mode:
             self.set_window_select_mode(False)   # clic droit = annuler
             return
@@ -2092,6 +2117,10 @@ class VTKViewerWidget(QFrame):
             self._select_item(selected["role"], selected["index"], additive=ctrl)
             return
         self.interactor_style.OnRightButtonDown()
+
+    def _on_right_button_release(self, obj, event):
+        if self._flight_mode:
+            self._flight_looking = False
 
     def _on_left_button_press(self, obj, event):
         if self._window_select_mode:
@@ -2152,6 +2181,15 @@ class VTKViewerWidget(QFrame):
 
     def _on_key_press(self, obj, event):
         key = self.interactor.GetKeySym() if self.interactor is not None else ""
+        if self._flight_mode:
+            if key in ("Escape", "escape"):
+                self.set_flight_mode(False)
+                return
+            if key == "Home":
+                self.fit_view()
+                return
+            self._flight_keys_held.add(key.lower())
+            return
         if key in ("Escape", "escape"):
             if self._window_select_mode:
                 self.set_window_select_mode(False)
@@ -2161,6 +2199,12 @@ class VTKViewerWidget(QFrame):
                 return
             self.clear_selection()
             return
+
+    def _on_key_release(self, obj, event):
+        if not self._flight_mode:
+            return
+        key = self.interactor.GetKeySym() if self.interactor is not None else ""
+        self._flight_keys_held.discard(key.lower())
 
     def set_window_select_mode(self, active: bool):
         """Active/desactive la selection par fenetre : clic point 1, deplacement
@@ -2185,6 +2229,19 @@ class VTKViewerWidget(QFrame):
             self.vtk_widget.unsetCursor()
             self._hide_window_rect()
         self.windowSelectModeChanged.emit(active)
+
+    def _on_flight_mouse_move(self, obj, event):
+        if not self._flight_mode or not self._flight_looking:
+            return
+        x, y = self.interactor.GetEventPosition()
+        last_x, last_y = self._flight_last_look_pos
+        dx = x - last_x
+        dy = y - last_y
+        self._flight_last_look_pos = (x, y)
+        self._flight_yaw -= math.radians(dx * FLIGHT_MOUSE_SENSITIVITY)
+        self._flight_pitch -= math.radians(dy * FLIGHT_MOUSE_SENSITIVITY)
+        self._flight_pitch = self._flight_clamp_pitch(self._flight_pitch, math.radians(FLIGHT_PITCH_LIMIT_DEG))
+        self._flight_apply_look()
 
     def _on_window_select_mouse_move(self, obj, event):
         if self._window_select_mode:
@@ -2566,6 +2623,148 @@ class VTKViewerWidget(QFrame):
             _cfg.tr_ui("flight_control_exit"),
         ]
         return "\n".join(lines)
+
+    # Distance fixe (unites modele) utilisee pour placer le point focal devant
+    # la camera pendant le regard - seule la direction compte, une distance
+    # fixe evite les soucis numeriques si la distance d'origine etait
+    # tres petite ou tres grande.
+    FLIGHT_LOOK_DISTANCE = 10.0
+
+    def set_flight_mode(self, active: bool):
+        """Active/desactive le mode Navigation (camera libre). Meme schema que
+        set_window_select_mode/set_zoom_window_mode : drapeau d'etat + bascule
+        vers un style d'interaction neutre pendant le mode."""
+        active = bool(active)
+        if active == self._flight_mode:
+            return
+        if active:
+            if self._window_select_mode:
+                self.set_window_select_mode(False)
+            if self._zoom_window_mode:
+                self.set_zoom_window_mode(False)
+            camera = self.renderer.GetActiveCamera()
+            self._flight_saved_camera_state = {
+                "position": camera.GetPosition(),
+                "focal_point": camera.GetFocalPoint(),
+                "view_up": camera.GetViewUp(),
+                "view_angle": camera.GetViewAngle(),
+                "parallel_projection": bool(camera.GetParallelProjection()),
+            }
+            camera.SetParallelProjection(0)
+            camera.SetViewAngle(FLIGHT_FOV_DEG)
+
+            px, py, pz = camera.GetPosition()
+            fx, fy, fz = camera.GetFocalPoint()
+            direction = camera.GetDirectionOfProjection()
+            bounds = self._get_visible_bounds()
+            safe = self._flight_safe_position((px, py, pz), bounds, direction)
+            if safe != (px, py, pz):
+                ddx, ddy, ddz = fx - px, fy - py, fz - pz
+                camera.SetPosition(*safe)
+                camera.SetFocalPoint(safe[0] + ddx, safe[1] + ddy, safe[2] + ddz)
+                direction = camera.GetDirectionOfProjection()
+
+            dnorm = math.sqrt(sum(c * c for c in direction)) or 1.0
+            dx, dy, dz = direction[0] / dnorm, direction[1] / dnorm, direction[2] / dnorm
+            self._flight_pitch = math.asin(max(-1.0, min(1.0, dz)))
+            self._flight_yaw = math.atan2(dx, dy)
+
+            self._flight_keys_held = set()
+            self._flight_key_bindings = _cfg.get_flight_key_bindings()
+            self._flight_looking = False
+            self._flight_last_look_pos = (0, 0)
+            self._flight_mode = True
+
+            if self._plain_style is None:
+                self._plain_style = vtk.vtkInteractorStyleUser()
+                self._plain_style.SetDefaultRenderer(self.renderer)
+            self.interactor.SetInteractorStyle(self._plain_style)
+
+            self._flight_clamp_clip_and_render()
+            self._show_flight_overlay()
+
+            self._flight_last_tick = time.monotonic()
+            if self._flight_timer is None:
+                self._flight_timer = QTimer(self)
+                self._flight_timer.setInterval(16)
+                self._flight_timer.timeout.connect(self._flight_tick)
+            self._flight_timer.start()
+        else:
+            self._flight_mode = False
+            if self._flight_timer is not None:
+                self._flight_timer.stop()
+            self._flight_keys_held = set()
+            self._flight_looking = False
+            state = self._flight_saved_camera_state
+            if state is not None:
+                camera = self.renderer.GetActiveCamera()
+                camera.SetPosition(*state["position"])
+                camera.SetFocalPoint(*state["focal_point"])
+                camera.SetViewUp(*state["view_up"])
+                camera.SetViewAngle(state["view_angle"])
+                camera.SetParallelProjection(1 if state["parallel_projection"] else 0)
+                self._flight_saved_camera_state = None
+            self.interactor.SetInteractorStyle(self.interactor_style)
+            self.renderer.ResetCameraClippingRange()
+            self._hide_flight_overlay()
+            if self.render_window is not None:
+                self.render_window.Render()
+            self._update_view_overlay()
+        self.flightModeChanged.emit(active)
+
+    def _flight_clamp_clip_and_render(self):
+        self.renderer.ResetCameraClippingRange()
+        camera = self.renderer.GetActiveCamera()
+        near, far = camera.GetClippingRange()
+        if near < FLIGHT_NEAR_CLIP:
+            camera.SetClippingRange(FLIGHT_NEAR_CLIP, far)
+        if self.render_window is not None:
+            self.render_window.Render()
+
+    def _flight_apply_look(self):
+        camera = self.renderer.GetActiveCamera()
+        px, py, pz = camera.GetPosition()
+        dx, dy, dz = self._flight_look_direction(self._flight_yaw, self._flight_pitch)
+        distance = self.FLIGHT_LOOK_DISTANCE
+        camera.SetFocalPoint(px + dx * distance, py + dy * distance, pz + dz * distance)
+        camera.SetViewUp(0.0, 0.0, 1.0)
+        camera.OrthogonalizeViewUp()
+        self._flight_clamp_clip_and_render()
+
+    def _flight_tick(self):
+        if not self._flight_mode or self.renderer is None:
+            return
+        now = time.monotonic()
+        dt = now - self._flight_last_tick
+        self._flight_last_tick = now
+        if dt <= 0.0 or dt > 0.5:
+            return
+        forward, right, up = self._flight_direction_vectors(self._flight_yaw)
+        move = self._flight_movement_vector(self._flight_keys_held, forward, right, up, self._flight_key_bindings)
+        if move == (0.0, 0.0, 0.0):
+            return
+        if self.interactor is not None and self.interactor.GetShiftKey():
+            multiplier = FLIGHT_FAST_MULTIPLIER
+        elif self.interactor is not None and self.interactor.GetControlKey():
+            multiplier = FLIGHT_SLOW_MULTIPLIER
+        else:
+            multiplier = 1.0
+        speed = FLIGHT_DEFAULT_SPEED * multiplier * dt
+        dx = move[0] * speed
+        dy = move[1] * speed
+        dz = move[2] * speed * FLIGHT_VERTICAL_SPEED_FACTOR
+        camera = self.renderer.GetActiveCamera()
+        px, py, pz = camera.GetPosition()
+        fx, fy, fz = camera.GetFocalPoint()
+        camera.SetPosition(px + dx, py + dy, pz + dz)
+        camera.SetFocalPoint(fx + dx, fy + dy, fz + dz)
+        self._flight_clamp_clip_and_render()
+
+    def _show_flight_overlay(self):
+        pass  # corps reel ajoute par la tache suivante (integration overlay)
+
+    def _hide_flight_overlay(self):
+        pass  # corps reel ajoute par la tache suivante (integration overlay)
 
     def get_display_counts(self):
         return {
