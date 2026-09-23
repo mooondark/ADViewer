@@ -349,6 +349,7 @@ MSG_UI = {
     "settings_title": "Paramètres",
     "menu_view3d": "Vue 3D",
     "menu_scene_light": "Éclairage...",
+    "tooltip_scene_light": "Modifier l'éclairage",
     "scene_light_dialog_title": "Éclairage de la scène",
     "scene_light_intensity": "Intensité",
     "scene_light_azimuth": "Azimut",

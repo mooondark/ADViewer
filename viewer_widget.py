@@ -334,6 +334,8 @@ class VTKViewerWidget(QFrame):
 
         self.renderer = vtk.vtkRenderer()
         self.renderer.SetBackground(*_cfg.VTK_BG)
+        self._scene_light_gizmo_actor = None
+        self._scene_light_gizmo_source = None
 
         self.render_window = self.vtk_widget.GetRenderWindow()
         self.render_window.AddRenderer(self.renderer)
@@ -2465,6 +2467,36 @@ class VTKViewerWidget(QFrame):
         self.scene_light.SetIntensity(float(intensity))
         self.scene_light.SetPosition(*self._azimuth_elevation_to_position(azimuth_deg, elevation_deg))
         self.render_window.Render()
+
+    # Repere visuel temporaire (origine -> position de la sceneLight), affiche
+    # uniquement pendant que la boite de dialogue Eclairage est ouverte.
+    SCENE_LIGHT_GIZMO_COLOR = (1.0, 0.85, 0.2)
+
+    def show_scene_light_gizmo(self, position):
+        if self._scene_light_gizmo_actor is None:
+            source = vtk.vtkLineSource()
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(source.GetOutputPort())
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.PickableOff()
+            actor.GetProperty().SetColor(*self.SCENE_LIGHT_GIZMO_COLOR)
+            actor.GetProperty().SetLineWidth(2.0)
+            actor.GetProperty().LightingOff()
+            self._scene_light_gizmo_source = source
+            self._scene_light_gizmo_actor = actor
+            self.renderer.AddActor(actor)
+        self._scene_light_gizmo_source.SetPoint1(0.0, 0.0, 0.0)
+        self._scene_light_gizmo_source.SetPoint2(*position)
+        self._scene_light_gizmo_source.Update()
+        self.render_window.Render()
+
+    def hide_scene_light_gizmo(self):
+        if self._scene_light_gizmo_actor is not None:
+            self.renderer.RemoveActor(self._scene_light_gizmo_actor)
+            self._scene_light_gizmo_actor = None
+            self._scene_light_gizmo_source = None
+            self.render_window.Render()
 
     def get_display_counts(self):
         return {

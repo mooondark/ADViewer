@@ -594,6 +594,22 @@ class SceneLightDialog(QDialog):
         self.viewer.set_scene_light(
             self._intensity_spin.value(), self._azimuth_spin.value(), self._elevation_spin.value()
         )
+        self._update_gizmo()
+
+    def _update_gizmo(self):
+        position = self.viewer._azimuth_elevation_to_position(
+            self._azimuth_spin.value(), self._elevation_spin.value()
+        )
+        self.viewer.show_scene_light_gizmo(position)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._update_gizmo()
+
+    def closeEvent(self, event):
+        if self.viewer is not None:
+            self.viewer.hide_scene_light_gizmo()
+        super().closeEvent(event)
 
 
 class AboutDialog(QDialog):
@@ -1232,6 +1248,7 @@ class MainWindow(QMainWindow):
         self.filter_btn = None
         self.clear_filter_btn = None
         self.camera_btn = None
+        self.scene_light_btn = None
         self.window_select_btn = None
         self.shortcut_window_select = None
         self.zoom_window_btn = None
@@ -1972,6 +1989,32 @@ class MainWindow(QMainWindow):
             'IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJv'
             'dW5kIi8+PC9zdmc+'
         ),
+        "light_bulb": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRm',
+            'LTgiPz48IS0tIFVwbG9hZGVkIHRvOiBTVkcgUmVwbywg',
+            'd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNWRyBS',
+            'ZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4',
+            'MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAw',
+            'IDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDov',
+            'L3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJN',
+            'OSAxOEgxNSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Ut',
+            'd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5k',
+            'IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRo',
+            'IGQ9Ik0xMCAyMUgxNCIgc3Ryb2tlPSIjMDAwMDAwIiBz',
+            'dHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9',
+            'InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+',
+            'CjxwYXRoIGQ9Ik05LjAwMDgyIDE1QzkuMDAwOTggMTMg',
+            'OC41MDA5OCAxMi41IDcuNTAwODIgMTEuNUM2LjUwMDY3',
+            'IDEwLjUgNi4wMjQyMiA5LjQ4Njg5IDYuMDAwODIgOEM1',
+            'Ljk1Mjg0IDQuOTUwMjkgOC4wMDA2NyAzIDEyLjAwMDgg',
+            'M0MxNi4wMDEgMyAxOC4wNDg4IDQuOTUwMjkgMTguMDAw',
+            'OCA4QzE3Ljk3NzQgOS40ODY4OSAxNy41MDA3IDEwLjUg',
+            'MTYuNTAwOCAxMS41QzE1LjUwMSAxMi41IDE1LjAwMSAx',
+            'MyAxNS4wMDA4IDE1IiBzdHJva2U9IiMwMDAwMDAiIHN0',
+            'cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0i',
+            'cm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4K',
+            'PC9zdmc+'
+        ),
         "isoler": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHdpZHRo'
             'PSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxs'
@@ -2101,6 +2144,7 @@ class MainWindow(QMainWindow):
             (self.clear_filter_btn,"filter_clear"),
             (self.window_select_btn, "window_select"),
             (self.camera_btn,      "camera"),
+            (self.scene_light_btn, "light_bulb"),
             (self.browse_fto_btn,  "parcourir"),
             (self.clear_log_btn,   "effacer"),
             (self.load_btn,        "charger_modele"),
@@ -2539,6 +2583,11 @@ class MainWindow(QMainWindow):
         self._setup_view_button(self.camera_btn, "camera", tr_ui("tooltip_screenshot"))
         self.camera_btn.clicked.connect(self.save_vtk_screenshot)
 
+        self.scene_light_btn = QPushButton()
+        self.scene_light_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.scene_light_btn, "light_bulb", tr_ui("tooltip_scene_light"))
+        self.scene_light_btn.clicked.connect(self.open_scene_light_dialog)
+
         filter_row = QHBoxLayout()
         filter_row.setContentsMargins(0, 0, 0, 0)
         filter_row.setSpacing(3)
@@ -2547,6 +2596,7 @@ class MainWindow(QMainWindow):
         filter_row.addWidget(self.clear_filter_btn)
         filter_row.addWidget(self.isolate_btn)
         filter_row.addWidget(self.camera_btn)
+        filter_row.addWidget(self.scene_light_btn)
         filter_row.addStretch(1)
 
         self.calc_btn = QPushButton()
@@ -6347,7 +6397,7 @@ class MainWindow(QMainWindow):
         widgets = [
             self.load_btn, self.calc_btn, self.fit_btn, self.zoom_window_btn,
             self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn,
-            self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn,
+            self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn, self.scene_light_btn,
             self.window_select_btn,
             self.transparency_slider, self.profiles_transparency_slider,
             self.api_on_btn, self.api_off_btn, self.api_restart_btn,
