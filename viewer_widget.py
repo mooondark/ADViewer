@@ -477,6 +477,7 @@ class VTKViewerWidget(QFrame):
         # Overlay coin haut-gauche : vue courante + position 3D de la souris.
         self._has_model = False
         self._view_overlay_actor = None
+        self._flight_controls_overlay_actor = None
         self._overlay_mouse_world_txt = "X : --   Y : --   Z : --"
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -523,7 +524,6 @@ class VTKViewerWidget(QFrame):
         self._flight_last_look_pos = (0, 0)
         self._flight_last_tick = 0.0
         self._flight_saved_camera_state = None
-        self._flight_controls_overlay_actor = None
 
         self.vtk_widget.Initialize()
         self.vtk_widget.Start()
@@ -2761,10 +2761,16 @@ class VTKViewerWidget(QFrame):
         self._flight_clamp_clip_and_render()
 
     def _show_flight_overlay(self):
-        pass  # corps reel ajoute par la tache suivante (integration overlay)
+        self._update_view_overlay(render=False)
+        actor = getattr(self, "_flight_controls_overlay_actor", None)
+        if actor is not None:
+            actor.SetInput(self._flight_controls_overlay_text(self._flight_key_bindings))
+            actor.SetVisibility(True)
 
     def _hide_flight_overlay(self):
-        pass  # corps reel ajoute par la tache suivante (integration overlay)
+        actor = getattr(self, "_flight_controls_overlay_actor", None)
+        if actor is not None:
+            actor.SetVisibility(False)
 
     def get_display_counts(self):
         return {
@@ -2794,6 +2800,7 @@ class VTKViewerWidget(QFrame):
         self.set_scene_light(self.SCENE_LIGHT_DEFAULT_INTENSITY, az, el)
         self._setup_corner_axes()
         self._setup_view_overlay()
+        self._setup_flight_controls_overlay()
 
     def _setup_view_overlay(self):
         actor = vtk.vtkTextActor()
@@ -2813,13 +2820,31 @@ class VTKViewerWidget(QFrame):
         self.renderer.AddViewProp(actor)
         self._apply_view_overlay_theme()
 
+    def _setup_flight_controls_overlay(self):
+        actor = vtk.vtkTextActor()
+        actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
+        actor.GetPositionCoordinate().SetValue(0.988, 0.985)
+        actor.SetTextScaleModeToNone()
+        actor.SetPickable(False)
+        actor.SetVisibility(False)
+        tp = actor.GetTextProperty()
+        tp.SetFontFamilyToArial()
+        tp.SetFontSize(12)
+        tp.SetJustificationToRight()
+        tp.SetVerticalJustificationToTop()
+        tp.SetLineSpacing(1.2)
+        tp.ShadowOff()
+        self._flight_controls_overlay_actor = actor
+        self.renderer.AddViewProp(actor)
+        self._apply_view_overlay_theme()
+
     def _apply_view_overlay_theme(self):
-        actor = getattr(self, "_view_overlay_actor", None)
-        if actor is None:
-            return
         is_dark = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
         color = (0.92, 0.94, 0.98) if is_dark else (0.12, 0.16, 0.22)
-        actor.GetTextProperty().SetColor(*color)
+        for attr in ("_view_overlay_actor", "_flight_controls_overlay_actor"):
+            actor = getattr(self, attr, None)
+            if actor is not None:
+                actor.GetTextProperty().SetColor(*color)
 
     def _current_view_label(self) -> str:
         cam = self.renderer.GetActiveCamera() if self.renderer is not None else None
@@ -2850,6 +2875,14 @@ class VTKViewerWidget(QFrame):
     def _update_view_overlay(self, display_x=None, display_y=None, render: bool = True):
         actor = getattr(self, "_view_overlay_actor", None)
         if actor is None:
+            return
+
+        if getattr(self, "_flight_mode", False):
+            actor.SetInput(_cfg.tr_ui("flight_mode_overlay"))
+            if not actor.GetVisibility():
+                actor.SetVisibility(True)
+            if render and self.render_window is not None:
+                self.render_window.Render()
             return
 
         if not self._has_model:
