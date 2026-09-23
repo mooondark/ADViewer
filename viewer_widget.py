@@ -1233,18 +1233,11 @@ class VTKViewerWidget(QFrame):
         (cas du coin de jarret cote contact, ecrase a plat)."""
         append = vtk.vtkAppendPolyData()
         added = False
-        # Capuchon "a" (debut) et "b" (fin) partagent le meme repere u/v et le
-        # meme sens de parcours de contour : sans inversion, leurs normales
-        # calculees pointeraient dans la MEME direction 3D au lieu d'etre
-        # opposees (l'une doit regarder vers -beam, l'autre vers +beam) - on
-        # inverse donc le sens du capuchon de debut pour que les deux
-        # capuchons pointent bien vers l'exterieur du solide.
-        for side, to3d, loops in (("a", to3d_a, loops_a), ("b", to3d_b, loops_b)):
+        for to3d, loops in ((to3d_a, loops_a), (to3d_b, loops_b)):
             if _poly2_area(loops[0]) < 1e-9:
                 continue  # contour ecrase (cote contact d'un jarret) : pas de capuchon
-            ordered = [list(reversed(loop)) for loop in loops] if side == "a" else loops
-            outer3d = [to3d(p) for p in ordered[0]]
-            holes3d = [[to3d(p) for p in ordered[k]] for k in range(1, len(ordered))]
+            outer3d = [to3d(p) for p in loops[0]]
+            holes3d = [[to3d(p) for p in loops[k]] for k in range(1, len(loops))]
             cap = self._build_surface_polydata_with_openings(outer3d, holes3d)
             if cap is not None and cap.GetNumberOfCells() > 0:
                 append.AddInputData(self._tag_cells(cap, source_idx))
@@ -1371,17 +1364,32 @@ class VTKViewerWidget(QFrame):
             return None
         append.Update()
 
+        # Capuchons et parois sont construits comme des morceaux de polydata
+        # distincts (points non partages, meme aux aretes communes) : sans
+        # soudure, ConsistencyOn ne peut harmoniser le sens des normales qu'a
+        # l'interieur de chaque morceau isole, jamais entre eux - d'ou des
+        # faces noires/mal eclairees aleatoires. vtkCleanPolyData soude les
+        # points geometriquement coincidents (tolerance exacte : ils viennent
+        # de la meme formule to3d()) pour que chaque profil devienne un seul
+        # solide connecte, sur lequel ConsistencyOn peut alors se propager
+        # correctement.
+        clean = vtk.vtkCleanPolyData()
+        clean.SetInputConnection(append.GetOutputPort())
+        clean.PointMergingOn()
+        clean.SetTolerance(0.0)
+        clean.Update()
+
         normals = vtk.vtkPolyDataNormals()
-        normals.SetInputConnection(append.GetOutputPort())
+        normals.SetInputConnection(clean.GetOutputPort())
         normals.ComputePointNormalsOff()
         normals.ComputeCellNormalsOn()
         normals.ConsistencyOn()
-        # Pas d'AutoOrientNormalsOn : peu fiable, meme sur un solide ferme
-        # unique (verifie empiriquement - inverse parfois une face au hasard),
-        # et incorrect par construction sur des centaines de profils disjoints
-        # fusionnes (elements noirs/mal eclaires constate en pratique).
-        # ConsistencyOn suffit : chaque cellule (capuchons + parois) est deja
-        # generee avec un sens de rotation correct.
+        # Pas d'AutoOrientNormalsOn : peu fiable, meme sur un solide ferme et
+        # soude (verifie empiriquement - inverse parfois une face au hasard).
+        # ConsistencyOn seul rend le sens uniforme sur tout le solide soude,
+        # mais ce sens uniforme se trouve etre vers l'interieur (verifie
+        # empiriquement) - FlipNormalsOn corrige ca globalement.
+        normals.FlipNormalsOn()
         normals.SplittingOff()
         normals.Update()
 
