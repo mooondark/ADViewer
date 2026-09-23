@@ -21,6 +21,7 @@
 - Structural system tree, with selection/isolation by system
 - Model status (mesh, finite element analysis, expertise)
 - 3D scene lighting control
+- Navigation mode: keyboard/mouse free-flight camera
 
 ## Documentation
 - [Version history](CHANGELOG.md)

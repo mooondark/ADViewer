@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.11
+
+### FR
+- Nouveau mode **Navigation** (caméra libre) : bouton dédié juste après « Vue isométrique ». Déplacement au clavier (ZQSD en français, WASD en anglais, selon la langue de l'application), regard à la souris (clic droit maintenu), accélération (Maj) et ralenti (Ctrl), retour à la vue étendue (Home), sortie sans effacer la sélection (Échap). La sélection d'éléments au clic gauche reste disponible pendant le mode. Avancer/reculer suit la direction de visée complète (pour plonger/remonter en regardant vers le bas ou le haut) ; se déplacer à gauche/droite et monter/descendre restent horizontaux/verticaux purs. Repère d'éclairage visible pendant le dialogue Éclairage : ligne origine → position de la lumière.
+- Correction : un clic gauche sur une zone vide en mode Navigation provoquait un plantage du viewer (aucun message d'erreur).
+- Correction : certains éléments filaires en mode « Profilés + rendu plein » s'affichaient mal éclairés ou noirs (défaut dans le calcul des normales des solides de profilés, indépendant du mode Navigation mais plus visible du fait de la possibilité de s'en approcher de très près). Amélioration significative, non garantie parfaite sur tous les cas.
+
+### EN
+- New **Navigation** mode (free-flight camera): dedicated button right after "Isometric view". Keyboard movement (ZQSD in French, WASD in English, depending on the application language), mouse look (hold right-click), speed boost (Shift) and slow-down (Ctrl), reset view (Home), exit without clearing the selection (Escape). Left-click element selection still works during the mode. Forward/backward follows the full look direction (to dive/climb while looking down or up); strafing left/right and moving up/down stay purely horizontal/vertical. Lighting gizmo visible during the Lighting dialog: origin → light position line.
+- Fix: left-clicking empty space while in Navigation mode crashed the viewer (no error message).
+- Fix: some linear elements in "Profiles + full render" mode appeared poorly lit or black (defect in the profile solid normal computation, unrelated to Navigation mode but more noticeable since it now allows getting very close). Significant improvement, not guaranteed perfect in every case.
+
 ## 2.10
 
 ### FR

@@ -21,6 +21,7 @@ Visualiseur 3D pour les modèles Advance Design.
 - Arborescence des systèmes structuraux, avec sélection/isolation par système
 - Statut du modèle (maillage, calcul éléments finis, expertise)
 - Réglage de l'éclairage de la scène 3D
+- Mode Navigation : caméra libre au clavier/souris
 
 ## Documentation
 
