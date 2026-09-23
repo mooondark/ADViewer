@@ -310,6 +310,39 @@ def get_language() -> str:
     return _active_language
 
 
+# ======================================================================
+#  Mode Navigation (camera libre)
+# ======================================================================
+
+DEFAULT_NAVIGATION_MODE = "orbit"
+FLIGHT_DEFAULT_SPEED = 1.0
+FLIGHT_FAST_MULTIPLIER = 5.0
+FLIGHT_SLOW_MULTIPLIER = 0.2
+FLIGHT_MOUSE_SENSITIVITY = 0.12
+FLIGHT_VERTICAL_SPEED_FACTOR = 1.0
+FLIGHT_PITCH_LIMIT_DEG = 89.0
+FLIGHT_NEAR_CLIP = 0.01
+FLIGHT_FOV_DEG = 65.0
+
+# Touches (keysym VTK, minuscules) selon la disposition clavier associee a la
+# langue active de l'appli (pas la disposition OS reelle) - equivalence de
+# position physique ZQSD (AZERTY) <-> WASD (QWERTY).
+FLIGHT_KEY_BINDINGS_FR = {
+    "forward": "z", "backward": "s",
+    "left": "q", "right": "d",
+    "up": "a", "down": "e",
+}
+FLIGHT_KEY_BINDINGS_EN = {
+    "forward": "w", "backward": "s",
+    "left": "a", "right": "d",
+    "up": "q", "down": "e",
+}
+
+
+def get_flight_key_bindings() -> dict:
+    return FLIGHT_KEY_BINDINGS_EN if get_language() == "en" else FLIGHT_KEY_BINDINGS_FR
+
+
 def _lookup(dict_name: str, key: str) -> str:
     _, module = LANGUAGES.get(_active_language, LANGUAGES[DEFAULT_LANGUAGE])
     text = getattr(module, dict_name).get(key)

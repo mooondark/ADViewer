@@ -31,7 +31,7 @@ except ImportError as e:
     raise RuntimeError("Le module 'requests' est requis. Installez les dépendances de l'application avant l'exécution.") from e
 
 try:
-    from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF
+    from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF, QEvent
     from PySide6.QtGui import QAction, QActionGroup, QTextCursor, QColor, QIcon, QPixmap, QPainter, QPen, QKeySequence, QShortcut, QPainterPath, QBrush, QPolygonF
     from PySide6.QtWidgets import (
         QApplication, QMainWindow, QWidget, QFileDialog, QFrame, QLabel, QGraphicsOpacityEffect,
@@ -1245,6 +1245,7 @@ class MainWindow(QMainWindow):
         self.view_left_btn = None
         self.view_top_btn = None
         self.view_iso_btn = None
+        self.flight_btn = None
         self.filter_btn = None
         self.clear_filter_btn = None
         self.camera_btn = None
@@ -2015,6 +2016,23 @@ class MainWindow(QMainWindow):
             'cm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4K',
             'PC9zdmc+'
         ),
+        "flight_mode": (
+            'PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmll',
+            'd0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxu',
+            'cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0K',
+            'ICA8cGF0aCBkPSJtMTIuNDQgOS4xMjctMS40MDggNS42',
+            'MzUgNC45MyA2LjMzOW0tNS42MzQtMi44MTdMOC4yMTUg',
+            'MjEuMSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lk',
+            'dGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBz',
+            'dHJva2UtbGluZWpvaW49InJvdW5kIi8+DQogIDxwYXRo',
+            'IGQ9Ik04LjIxNSAxMy4zNTNjMC0zLjk0NCAyLjgxNy00',
+            'LjIyNiA0LjIyNi00LjIyNmgxLjQwOGMuMjM1IDEuMTc0',
+            'IDEuMjY4IDMuNjYzIDMuNTIyIDQuMjI2TTEzIDdhMiAy',
+            'IDAgMSAwIDAtNCAyIDIgMCAwIDAgMCA0IiBzdHJva2U9',
+            'IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJv',
+            'a2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9p',
+            'bj0icm91bmQiLz4NCjwvc3ZnPg=='
+        ),
         "isoler": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHdpZHRo'
             'PSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxs'
@@ -2140,6 +2158,7 @@ class MainWindow(QMainWindow):
             (self.view_left_btn,   "left_right"),
             (self.view_top_btn,    "top_bottom"),
             (self.view_iso_btn,    "iso"),
+            (self.flight_btn,      "flight_mode"),
             (self.filter_btn,      "filter"),
             (self.clear_filter_btn,"filter_clear"),
             (self.window_select_btn, "window_select"),
@@ -2552,9 +2571,15 @@ class MainWindow(QMainWindow):
         self._setup_view_button(self.view_iso_btn, "iso", tr_ui("tooltip_view_iso"))
         self.view_iso_btn.clicked.connect(self.viewer_iso_proxy)
 
+        self.flight_btn = QPushButton()
+        self.flight_btn.setCheckable(True)
+        self.flight_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.flight_btn, "flight_mode", tr_ui("tooltip_flight_mode"))
+        self.flight_btn.toggled.connect(self.on_flight_toggled)
+
         self._install_view_shortcuts()
 
-        for btn in (self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn):
+        for btn in (self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn, self.flight_btn):
             views_row.addWidget(btn)
         views_row.addStretch(1)
 
@@ -2786,6 +2811,8 @@ class MainWindow(QMainWindow):
         self.viewer.windowSelectModeChanged.connect(self._sync_window_select_button)
         self.viewer.windowSelectionDone.connect(self._log_selection_summary)
         self.viewer.zoomWindowModeChanged.connect(self._sync_zoom_window_button)
+        self.viewer.flightModeChanged.connect(self._sync_flight_button)
+        self.viewer.flightModeChanged.connect(self._on_flight_mode_shortcut_guard)
         self._update_display_checkboxes()
         viewer_card.layout.addWidget(self.viewer, 1)
         right_splitter.addWidget(viewer_card)
@@ -5338,6 +5365,10 @@ class MainWindow(QMainWindow):
         if self.viewer is not None:
             self.viewer.set_zoom_window_mode(bool(checked))
 
+    def on_flight_toggled(self, checked: bool):
+        if self.viewer is not None:
+            self.viewer.set_flight_mode(bool(checked))
+
     _ROLE_COUNT_KEYS = {
         "lines": "selection_count_lines",
         "planars": "selection_count_planars",
@@ -5384,6 +5415,29 @@ class MainWindow(QMainWindow):
             btn.blockSignals(True)
             btn.setChecked(bool(active))
             btn.blockSignals(False)
+
+    def _sync_flight_button(self, active: bool):
+        btn = self.flight_btn
+        if btn is not None and btn.isChecked() != bool(active):
+            btn.blockSignals(True)
+            btn.setChecked(bool(active))
+            btn.blockSignals(False)
+
+    def _on_flight_mode_shortcut_guard(self, active: bool):
+        # Empeche les raccourcis de QAction (Ctrl+Q, Alt+S/W, ...) de se
+        # declencher pendant que le focus est dans la vue 3D en mode Navigation,
+        # ou ils entrent en collision avec les touches de deplacement/modificateurs.
+        widget = self.viewer.vtk_widget
+        if active:
+            widget.installEventFilter(self)
+        else:
+            widget.removeEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.ShortcutOverride and obj is self.viewer.vtk_widget:
+            event.accept()
+            return True
+        return super().eventFilter(obj, event)
 
     def toggle_isolation(self):
         if self.current_model_data is None or self.viewer is None:
@@ -6398,7 +6452,7 @@ class MainWindow(QMainWindow):
             self.load_btn, self.calc_btn, self.fit_btn, self.zoom_window_btn,
             self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn,
             self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn, self.scene_light_btn,
-            self.window_select_btn,
+            self.window_select_btn, self.flight_btn,
             self.transparency_slider, self.profiles_transparency_slider,
             self.api_on_btn, self.api_off_btn, self.api_restart_btn,
             self.chk_lines, self.chk_planars, self.chk_load_areas,
@@ -6412,14 +6466,15 @@ class MainWindow(QMainWindow):
             self._refresh_calc_button()
 
         # Au demarrage du chargement : decocher et annuler les modes actifs de la
-        # carte Actions (selection par fenetre, zoom fenetre, isolation).
+        # carte Actions (selection par fenetre, zoom fenetre, isolation, navigation).
         if loading:
             if self.viewer is not None:
                 self.viewer.set_window_select_mode(False)
                 self.viewer.set_zoom_window_mode(False)
+                self.viewer.set_flight_mode(False)
                 if self.viewer.has_isolated_selection():
                     self.viewer.set_isolated_selection(None)
-            for btn in (self.window_select_btn, self.zoom_window_btn):
+            for btn in (self.window_select_btn, self.zoom_window_btn, self.flight_btn):
                 if btn is not None and btn.isChecked():
                     btn.blockSignals(True)
                     btn.setChecked(False)
