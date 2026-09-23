@@ -315,7 +315,7 @@ def get_language() -> str:
 # ======================================================================
 
 DEFAULT_NAVIGATION_MODE = "orbit"
-FLIGHT_DEFAULT_SPEED = 1.0
+FLIGHT_DEFAULT_SPEED = 1.5
 FLIGHT_FAST_MULTIPLIER = 5.0
 FLIGHT_SLOW_MULTIPLIER = 0.2
 FLIGHT_MOUSE_SENSITIVITY = 0.12
