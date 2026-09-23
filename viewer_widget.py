@@ -2163,7 +2163,12 @@ class VTKViewerWidget(QFrame):
             return
         # Zone vide : ne pas déselectionner ici — attendre le release
         # pour distinguer clic simple (déselectionner) de glisser (orbite).
-        self.interactor_style.OnLeftButtonDown()
+        # En mode Navigation, interactor_style (orbite) est detache de
+        # l'interactor (GetInteractor() renvoie None) : l'appeler plante VTK
+        # (deref C++ d'un pointeur nul). L'orbite n'a de toute facon aucun
+        # sens pendant le vol, la camera etant deja pilotee par ce mode.
+        if not self._flight_mode:
+            self.interactor_style.OnLeftButtonDown()
 
     def _on_left_button_release(self, obj, event):
         if self._window_select_mode or self._zoom_window_mode:
