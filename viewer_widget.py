@@ -1167,7 +1167,8 @@ class VTKViewerWidget(QFrame):
         normals.ComputePointNormalsOff()
         normals.ComputeCellNormalsOn()
         normals.ConsistencyOn()
-        normals.AutoOrientNormalsOn()
+        # Pas d'AutoOrientNormalsOn ici : verifie empiriquement peu fiable,
+        # meme sur une simple face fermee (peut inverser un triangle au hasard).
         normals.SplittingOff()
         normals.Update()
 
@@ -1232,11 +1233,18 @@ class VTKViewerWidget(QFrame):
         (cas du coin de jarret cote contact, ecrase a plat)."""
         append = vtk.vtkAppendPolyData()
         added = False
-        for to3d, loops in ((to3d_a, loops_a), (to3d_b, loops_b)):
+        # Capuchon "a" (debut) et "b" (fin) partagent le meme repere u/v et le
+        # meme sens de parcours de contour : sans inversion, leurs normales
+        # calculees pointeraient dans la MEME direction 3D au lieu d'etre
+        # opposees (l'une doit regarder vers -beam, l'autre vers +beam) - on
+        # inverse donc le sens du capuchon de debut pour que les deux
+        # capuchons pointent bien vers l'exterieur du solide.
+        for side, to3d, loops in (("a", to3d_a, loops_a), ("b", to3d_b, loops_b)):
             if _poly2_area(loops[0]) < 1e-9:
                 continue  # contour ecrase (cote contact d'un jarret) : pas de capuchon
-            outer3d = [to3d(p) for p in loops[0]]
-            holes3d = [[to3d(p) for p in loops[k]] for k in range(1, len(loops))]
+            ordered = [list(reversed(loop)) for loop in loops] if side == "a" else loops
+            outer3d = [to3d(p) for p in ordered[0]]
+            holes3d = [[to3d(p) for p in ordered[k]] for k in range(1, len(ordered))]
             cap = self._build_surface_polydata_with_openings(outer3d, holes3d)
             if cap is not None and cap.GetNumberOfCells() > 0:
                 append.AddInputData(self._tag_cells(cap, source_idx))
@@ -1368,7 +1376,12 @@ class VTKViewerWidget(QFrame):
         normals.ComputePointNormalsOff()
         normals.ComputeCellNormalsOn()
         normals.ConsistencyOn()
-        normals.AutoOrientNormalsOn()
+        # Pas d'AutoOrientNormalsOn : peu fiable, meme sur un solide ferme
+        # unique (verifie empiriquement - inverse parfois une face au hasard),
+        # et incorrect par construction sur des centaines de profils disjoints
+        # fusionnes (elements noirs/mal eclaires constate en pratique).
+        # ConsistencyOn suffit : chaque cellule (capuchons + parois) est deja
+        # generee avec un sens de rotation correct.
         normals.SplittingOff()
         normals.Update()
 
