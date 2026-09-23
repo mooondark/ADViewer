@@ -38,7 +38,7 @@ from viewer_config import (
     _DARK_VTK_BG,
     FLIGHT_DEFAULT_SPEED, FLIGHT_FAST_MULTIPLIER, FLIGHT_SLOW_MULTIPLIER,
     FLIGHT_MOUSE_SENSITIVITY, FLIGHT_VERTICAL_SPEED_FACTOR, FLIGHT_PITCH_LIMIT_DEG,
-    FLIGHT_NEAR_CLIP, FLIGHT_FOV_DEG,
+    FLIGHT_NEAR_CLIP,
 )
 
 from ad_model_data import _build_ad_local_axes, _cross_vector3, _normalize_vector3, _rotate_vector_around_axis
@@ -2719,8 +2719,10 @@ class VTKViewerWidget(QFrame):
                 "view_angle": camera.GetViewAngle(),
                 "parallel_projection": bool(camera.GetParallelProjection()),
             }
+            # Seule la projection change (perspective, necessaire pour une camera
+            # libre) : le champ de vision (ViewAngle) n'est pas touche, pour ne
+            # pas modifier le niveau de zoom apparent a l'activation du mode.
             camera.SetParallelProjection(0)
-            camera.SetViewAngle(FLIGHT_FOV_DEG)
 
             px, py, pz = camera.GetPosition()
             fx, fy, fz = camera.GetFocalPoint()

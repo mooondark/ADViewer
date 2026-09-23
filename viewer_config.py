@@ -322,7 +322,6 @@ FLIGHT_MOUSE_SENSITIVITY = 0.12
 FLIGHT_VERTICAL_SPEED_FACTOR = 1.0
 FLIGHT_PITCH_LIMIT_DEG = 89.0
 FLIGHT_NEAR_CLIP = 0.01
-FLIGHT_FOV_DEG = 65.0
 
 # Touches (keysym VTK, minuscules) selon la disposition clavier associee a la
 # langue active de l'appli (pas la disposition OS reelle) - equivalence de
