@@ -2466,6 +2466,107 @@ class VTKViewerWidget(QFrame):
         self.scene_light.SetPosition(*self._azimuth_elevation_to_position(azimuth_deg, elevation_deg))
         self.render_window.Render()
 
+    # ------------------------------------------------------------------
+    # Mode Navigation (camera libre) - fonctions de calcul pur, testables
+    # sans fenetre VTK reelle (pas d'acces a self, ni a self.renderer).
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _flight_direction_vectors(yaw: float):
+        """Vecteurs forward/right/up pour le deplacement : forward est la
+        direction de visee horizontale (independante du pitch), up est l'axe
+        Z mondial fixe - voir section 3 de la spec."""
+        forward = (math.sin(yaw), math.cos(yaw), 0.0)
+        right = (math.cos(yaw), -math.sin(yaw), 0.0)
+        up = (0.0, 0.0, 1.0)
+        return forward, right, up
+
+    @staticmethod
+    def _flight_look_direction(yaw: float, pitch: float):
+        """Direction de visee complete (regard), meme convention azimut/
+        elevation que _azimuth_elevation_to_position (yaw=azimut, pitch=
+        elevation, distance=1)."""
+        cp = math.cos(pitch)
+        return (cp * math.sin(yaw), cp * math.cos(yaw), math.sin(pitch))
+
+    @staticmethod
+    def _flight_movement_vector(keys_held: set, forward, right, up, key_bindings: dict):
+        """Somme les contributions des touches actives puis normalise le
+        resultat (une touche en diagonale ne va pas plus vite qu'une seule)."""
+        ax, ay, az = 0.0, 0.0, 0.0
+        if key_bindings.get("forward") in keys_held:
+            ax, ay, az = ax + forward[0], ay + forward[1], az + forward[2]
+        if key_bindings.get("backward") in keys_held:
+            ax, ay, az = ax - forward[0], ay - forward[1], az - forward[2]
+        if key_bindings.get("right") in keys_held:
+            ax, ay, az = ax + right[0], ay + right[1], az + right[2]
+        if key_bindings.get("left") in keys_held:
+            ax, ay, az = ax - right[0], ay - right[1], az - right[2]
+        if key_bindings.get("up") in keys_held:
+            ax, ay, az = ax + up[0], ay + up[1], az + up[2]
+        if key_bindings.get("down") in keys_held:
+            ax, ay, az = ax - up[0], ay - up[1], az - up[2]
+        length = math.sqrt(ax * ax + ay * ay + az * az)
+        if length < 1e-9:
+            return (0.0, 0.0, 0.0)
+        return (ax / length, ay / length, az / length)
+
+    @staticmethod
+    def _flight_safe_position(position, bounds, view_direction, margin_ratio: float = 0.02):
+        """Heuristique par boite englobante (pas une vraie collision, cf.
+        section 6 de la spec) : si la position est a l'interieur (ou trop
+        proche) de la boite visible, on la repousse le long de l'axe
+        centre -> position jusqu'a une distance sure a l'exterieur. Cas
+        degenere (position == centre exact) : repli sur -view_direction."""
+        if bounds is None:
+            return tuple(position)
+        xmin, xmax, ymin, ymax, zmin, zmax = bounds
+        cx, cy, cz = (xmin + xmax) / 2.0, (ymin + ymax) / 2.0, (zmin + zmax) / 2.0
+        diag = math.sqrt((xmax - xmin) ** 2 + (ymax - ymin) ** 2 + (zmax - zmin) ** 2)
+        if diag < 1e-9:
+            return tuple(position)
+        margin = diag * margin_ratio
+        px, py, pz = position
+        inside = (
+            xmin - margin <= px <= xmax + margin
+            and ymin - margin <= py <= ymax + margin
+            and zmin - margin <= pz <= zmax + margin
+        )
+        if not inside:
+            return tuple(position)
+        vx, vy, vz = px - cx, py - cy, pz - cz
+        vlen = math.sqrt(vx * vx + vy * vy + vz * vz)
+        if vlen < 1e-9:
+            dvx, dvy, dvz = view_direction
+            dlen = math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz) or 1.0
+            vx, vy, vz, vlen = -dvx / dlen, -dvy / dlen, -dvz / dlen, 1.0
+        safe_distance = diag / 2.0 + margin
+        scale = safe_distance / vlen
+        return (cx + vx * scale, cy + vy * scale, cz + vz * scale)
+
+    @staticmethod
+    def _flight_clamp_pitch(pitch: float, limit: float) -> float:
+        """Borne le tangage pour eviter que la camera ne se retourne (critere
+        d'acceptation de la spec) - extrait en fonction pure pour etre
+        testable independamment du reste de _on_flight_mouse_move."""
+        return max(-limit, min(limit, pitch))
+
+    @staticmethod
+    def _flight_controls_overlay_text(key_bindings: dict) -> str:
+        def pair(action_a, action_b):
+            return f"{key_bindings.get(action_a, '?').upper()}/{key_bindings.get(action_b, '?').upper()}"
+        lines = [
+            f"{_cfg.tr_ui('flight_control_forward_back')} : {pair('forward', 'backward')}",
+            f"{_cfg.tr_ui('flight_control_left_right')} : {pair('left', 'right')}",
+            f"{_cfg.tr_ui('flight_control_up_down')} : {pair('up', 'down')}",
+            _cfg.tr_ui("flight_control_look"),
+            _cfg.tr_ui("flight_control_fast"),
+            _cfg.tr_ui("flight_control_slow"),
+            _cfg.tr_ui("flight_control_reset"),
+            _cfg.tr_ui("flight_control_exit"),
+        ]
+        return "\n".join(lines)
+
     def get_display_counts(self):
         return {
             "lines": self.lines_count,
