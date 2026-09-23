@@ -2092,6 +2092,7 @@ class VTKViewerWidget(QFrame):
 
     def _on_right_button_press(self, obj, event):
         if self._flight_mode:
+            self._flight_resync_yaw_pitch_from_camera()
             self._flight_looking = True
             self._flight_last_look_pos = self.interactor.GetEventPosition()
             return
@@ -2206,6 +2207,18 @@ class VTKViewerWidget(QFrame):
         key = self.interactor.GetKeySym() if self.interactor is not None else ""
         self._flight_keys_held.discard(key.lower())
 
+    def _ensure_plain_style(self):
+        """Cree paresseusement le style d'interaction neutre partage par les
+        modes selection-fenetre / zoom-fenetre / Navigation. L'observateur
+        CharEvent no-op empeche vtkInteractorStyleUser d'executer ses
+        raccourcis clavier VTK par defaut (w/s changent la representation
+        des acteurs, q/e emettent ExitEvent), qui corrompraient le rendu."""
+        if self._plain_style is None:
+            self._plain_style = vtk.vtkInteractorStyleUser()
+            self._plain_style.SetDefaultRenderer(self.renderer)
+            self._plain_style.AddObserver("CharEvent", lambda o, e: None)
+        return self._plain_style
+
     def set_window_select_mode(self, active: bool):
         """Active/desactive la selection par fenetre : clic point 1, deplacement
         (rectangle pointille), clic point 2 -> selection puis fin du mode.
@@ -2216,13 +2229,12 @@ class VTKViewerWidget(QFrame):
             return
         if active and self._zoom_window_mode:
             self.set_zoom_window_mode(False)
+        if active and self._flight_mode:
+            self.set_flight_mode(False)
         self._window_select_mode = active
         self._win_pt1 = None
         if active:
-            if self._plain_style is None:
-                self._plain_style = vtk.vtkInteractorStyleUser()
-                self._plain_style.SetDefaultRenderer(self.renderer)
-            self.interactor.SetInteractorStyle(self._plain_style)
+            self.interactor.SetInteractorStyle(self._ensure_plain_style())
             self.vtk_widget.setCursor(Qt.CrossCursor)
         else:
             self.interactor.SetInteractorStyle(self.interactor_style)
@@ -2264,13 +2276,12 @@ class VTKViewerWidget(QFrame):
             return
         if active and self._window_select_mode:
             self.set_window_select_mode(False)
+        if active and self._flight_mode:
+            self.set_flight_mode(False)
         self._zoom_window_mode = active
         self._zoom_win_pt1 = None
         if active:
-            if self._plain_style is None:
-                self._plain_style = vtk.vtkInteractorStyleUser()
-                self._plain_style.SetDefaultRenderer(self.renderer)
-            self.interactor.SetInteractorStyle(self._plain_style)
+            self.interactor.SetInteractorStyle(self._ensure_plain_style())
             self.vtk_widget.setCursor(Qt.CrossCursor)
         else:
             self.interactor.SetInteractorStyle(self.interactor_style)
@@ -2664,10 +2675,7 @@ class VTKViewerWidget(QFrame):
                 camera.SetFocalPoint(safe[0] + ddx, safe[1] + ddy, safe[2] + ddz)
                 direction = camera.GetDirectionOfProjection()
 
-            dnorm = math.sqrt(sum(c * c for c in direction)) or 1.0
-            dx, dy, dz = direction[0] / dnorm, direction[1] / dnorm, direction[2] / dnorm
-            self._flight_pitch = math.asin(max(-1.0, min(1.0, dz)))
-            self._flight_yaw = math.atan2(dx, dy)
+            self._flight_resync_yaw_pitch_from_camera()
 
             self._flight_keys_held = set()
             self._flight_key_bindings = _cfg.get_flight_key_bindings()
@@ -2675,10 +2683,8 @@ class VTKViewerWidget(QFrame):
             self._flight_last_look_pos = (0, 0)
             self._flight_mode = True
 
-            if self._plain_style is None:
-                self._plain_style = vtk.vtkInteractorStyleUser()
-                self._plain_style.SetDefaultRenderer(self.renderer)
-            self.interactor.SetInteractorStyle(self._plain_style)
+            self.interactor.SetInteractorStyle(self._ensure_plain_style())
+            self.vtk_widget.setFocus()
 
             self._flight_clamp_clip_and_render()
             self._show_flight_overlay()
@@ -2712,6 +2718,18 @@ class VTKViewerWidget(QFrame):
             self._update_view_overlay()
         self.flightModeChanged.emit(active)
 
+    def _flight_resync_yaw_pitch_from_camera(self):
+        """Recalcule yaw/pitch a partir de la direction reelle de la camera.
+        A appeler avant tout usage de _flight_yaw/_flight_pitch qui pourrait
+        suivre un changement de camera hors mode Navigation (boutons de vue,
+        raccourcis Alt+...)."""
+        camera = self.renderer.GetActiveCamera()
+        direction = camera.GetDirectionOfProjection()
+        dnorm = math.sqrt(sum(c * c for c in direction)) or 1.0
+        dx, dy, dz = direction[0] / dnorm, direction[1] / dnorm, direction[2] / dnorm
+        self._flight_pitch = math.asin(max(-1.0, min(1.0, dz)))
+        self._flight_yaw = math.atan2(dx, dy)
+
     def _flight_clamp_clip_and_render(self):
         self.renderer.ResetCameraClippingRange()
         camera = self.renderer.GetActiveCamera()
@@ -2734,6 +2752,10 @@ class VTKViewerWidget(QFrame):
     def _flight_tick(self):
         if not self._flight_mode or self.renderer is None:
             return
+        if not self.vtk_widget.hasFocus():
+            self._flight_keys_held = set()
+            return
+        self._flight_resync_yaw_pitch_from_camera()
         now = time.monotonic()
         dt = now - self._flight_last_tick
         self._flight_last_tick = now

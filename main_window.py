@@ -31,7 +31,7 @@ except ImportError as e:
     raise RuntimeError("Le module 'requests' est requis. Installez les dépendances de l'application avant l'exécution.") from e
 
 try:
-    from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF
+    from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF, QEvent
     from PySide6.QtGui import QAction, QActionGroup, QTextCursor, QColor, QIcon, QPixmap, QPainter, QPen, QKeySequence, QShortcut, QPainterPath, QBrush, QPolygonF
     from PySide6.QtWidgets import (
         QApplication, QMainWindow, QWidget, QFileDialog, QFrame, QLabel, QGraphicsOpacityEffect,
@@ -2762,6 +2762,7 @@ class MainWindow(QMainWindow):
         self.viewer.windowSelectionDone.connect(self._log_selection_summary)
         self.viewer.zoomWindowModeChanged.connect(self._sync_zoom_window_button)
         self.viewer.flightModeChanged.connect(self._sync_flight_button)
+        self.viewer.flightModeChanged.connect(self._on_flight_mode_shortcut_guard)
         self._update_display_checkboxes()
         viewer_card.layout.addWidget(self.viewer, 1)
         right_splitter.addWidget(viewer_card)
@@ -5371,6 +5372,22 @@ class MainWindow(QMainWindow):
             btn.blockSignals(True)
             btn.setChecked(bool(active))
             btn.blockSignals(False)
+
+    def _on_flight_mode_shortcut_guard(self, active: bool):
+        # Empeche les raccourcis de QAction (Ctrl+Q, Alt+S/W, ...) de se
+        # declencher pendant que le focus est dans la vue 3D en mode Navigation,
+        # ou ils entrent en collision avec les touches de deplacement/modificateurs.
+        widget = self.viewer.vtk_widget
+        if active:
+            widget.installEventFilter(self)
+        else:
+            widget.removeEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.ShortcutOverride and obj is self.viewer.vtk_widget:
+            event.accept()
+            return True
+        return super().eventFilter(obj, event)
 
     def toggle_isolation(self):
         if self.current_model_data is None or self.viewer is None:
