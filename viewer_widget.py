@@ -2798,7 +2798,11 @@ class VTKViewerWidget(QFrame):
         self._flight_last_tick = now
         if dt <= 0.0 or dt > 0.5:
             return
-        forward, right, up = self._flight_direction_vectors(self._flight_yaw)
+        # Avancer/reculer suit la direction de visee complete (yaw + pitch),
+        # pour pouvoir plonger/remonter en avancant. Gauche/droite (strafe)
+        # et monter/descendre restent horizontaux/verticaux purs.
+        _, right, up = self._flight_direction_vectors(self._flight_yaw)
+        forward = self._flight_look_direction(self._flight_yaw, self._flight_pitch)
         move = self._flight_movement_vector(self._flight_keys_held, forward, right, up, self._flight_key_bindings)
         if move == (0.0, 0.0, 0.0):
             return
