@@ -88,9 +88,11 @@ class MinimapController:
         self.visible = False
         self.lines_actor = None
         self.planar_actor = None
+        self.planar_faces_actor = None
         self.support_punctual_actor = None
         self.support_linear_actor = None
         self.support_planar_actor = None
+        self.support_planar_faces_actor = None
         self.marker_actor = None
         self.cone_actor = None
         self.timer = None
@@ -185,7 +187,11 @@ class MinimapController:
 
         if self.frame_actor is not None:
             self.frame_actor.GetProperty().SetColor(*color)
-        for attr in ("lines_actor", "planar_actor", "support_punctual_actor", "support_linear_actor", "support_planar_actor"):
+        for attr in (
+            "lines_actor", "planar_actor", "planar_faces_actor",
+            "support_punctual_actor", "support_linear_actor",
+            "support_planar_actor", "support_planar_faces_actor",
+        ):
             actor = getattr(self, attr)
             if actor is not None:
                 actor.GetProperty().SetColor(*color)
@@ -238,10 +244,16 @@ class MinimapController:
         if self.lines_actor is not None:
             self.renderer.AddActor(self.lines_actor)
 
-        planar_pd = host._build_loops_wire_polydata(host._model_data.get("planars", []))
+        planars = host._model_data.get("planars", [])
+        planar_pd = host._build_loops_wire_polydata(planars)
         self.planar_actor = host._make_wire_actor(planar_pd, line_color, 1.0)
         if self.planar_actor is not None:
             self.renderer.AddActor(self.planar_actor)
+
+        planar_faces_pd = host._build_faces_polydata(planars)
+        self.planar_faces_actor = host._make_surface_actor(planar_faces_pd, line_color, 0.5)
+        if self.planar_faces_actor is not None:
+            self.renderer.AddActor(self.planar_faces_actor)
 
         punctual_pd = host._build_punctual_supports_polydata(host._model_data.get("punctual_supports", []))
         self.support_punctual_actor = host._make_wire_actor(punctual_pd, line_color, 1.0)
@@ -253,10 +265,16 @@ class MinimapController:
         if self.support_linear_actor is not None:
             self.renderer.AddActor(self.support_linear_actor)
 
-        planar_sup_pd = host._build_loops_wire_polydata(host._model_data.get("planar_supports", []))
+        planar_supports = host._model_data.get("planar_supports", [])
+        planar_sup_pd = host._build_loops_wire_polydata(planar_supports)
         self.support_planar_actor = host._make_wire_actor(planar_sup_pd, line_color, 1.0)
         if self.support_planar_actor is not None:
             self.renderer.AddActor(self.support_planar_actor)
+
+        support_planar_faces_pd = host._build_faces_polydata(planar_supports)
+        self.support_planar_faces_actor = host._make_surface_actor(support_planar_faces_pd, line_color, 0.5)
+        if self.support_planar_faces_actor is not None:
+            self.renderer.AddActor(self.support_planar_faces_actor)
 
         self.apply_visibility(
             host._show_lines, host._show_planars,
@@ -266,7 +284,11 @@ class MinimapController:
             self._fit_camera_to_model()
 
     def clear_geometry(self):
-        for attr in ("lines_actor", "planar_actor", "support_punctual_actor", "support_linear_actor", "support_planar_actor"):
+        for attr in (
+            "lines_actor", "planar_actor", "planar_faces_actor",
+            "support_punctual_actor", "support_linear_actor",
+            "support_planar_actor", "support_planar_faces_actor",
+        ):
             actor = getattr(self, attr)
             if actor is not None and self.renderer is not None:
                 self.renderer.RemoveActor(actor)
@@ -277,14 +299,29 @@ class MinimapController:
             self.lines_actor.SetVisibility(1 if show_lines else 0)
         if self.planar_actor is not None:
             self.planar_actor.SetVisibility(1 if show_planars else 0)
+        if self.planar_faces_actor is not None:
+            self.planar_faces_actor.SetVisibility(1 if show_planars else 0)
         if self.support_punctual_actor is not None:
             self.support_punctual_actor.SetVisibility(1 if show_support_punctual else 0)
         if self.support_linear_actor is not None:
             self.support_linear_actor.SetVisibility(1 if show_support_linear else 0)
         if self.support_planar_actor is not None:
             self.support_planar_actor.SetVisibility(1 if show_support_planar else 0)
+        if self.support_planar_faces_actor is not None:
+            self.support_planar_faces_actor.SetVisibility(1 if show_support_planar else 0)
 
-    def _fit_camera_to_model(self):
+    def _fit_camera_to_model(self, extra_point=None):
+        """Cadre la camera minicarte sur les bornes du modele (acteurs de
+        geometrie uniquement - marqueur/cone caches pendant le calcul, cf.
+        _fit_camera_to_model). `extra_point`, si fourni (x, y, z), est un
+        point supplementaire a inclure dans le cadrage (position de la
+        camera principale) : necessaire car cette derniere se trouve
+        typiquement hors des bornes du modele (vue isometrique, zoom
+        arriere...), sinon le marqueur/cone tombe hors du champ visible de
+        la minicarte des que l'utilisateur n'est pas exactement a la
+        verticale du modele. `self.model_diagonal`/`self.model_zmax`
+        restent calcules sur la geometrie seule (taille de l'indicateur
+        stable, independante du cadrage elargi)."""
         if self.renderer is None:
             return
         marker_prev_vis = self.marker_actor.GetVisibility() if self.marker_actor is not None else None
@@ -309,12 +346,24 @@ class MinimapController:
         dx, dy, dz = xmax - xmin, ymax - ymin, zmax - zmin
         self.model_diagonal = (dx * dx + dy * dy + dz * dz) ** 0.5
         self.model_zmax = zmax
-        cx, cy = (xmin + xmax) / 2.0, (ymin + ymax) / 2.0
+
+        frame_bounds = list(bounds)
+        if extra_point is not None:
+            ex, ey, ez = extra_point
+            frame_bounds[0] = min(frame_bounds[0], ex)
+            frame_bounds[1] = max(frame_bounds[1], ex)
+            frame_bounds[2] = min(frame_bounds[2], ey)
+            frame_bounds[3] = max(frame_bounds[3], ey)
+            frame_bounds[4] = min(frame_bounds[4], ez)
+            frame_bounds[5] = max(frame_bounds[5], ez)
+
+        cx = (frame_bounds[0] + frame_bounds[1]) / 2.0
+        cy = (frame_bounds[2] + frame_bounds[3]) / 2.0
         camera = self.renderer.GetActiveCamera()
         camera.SetFocalPoint(cx, cy, 0.0)
         camera.SetPosition(cx, cy, 1.0)
         camera.SetViewUp(0.0, 1.0, 0.0)
-        self.renderer.ResetCamera(bounds)
+        self.renderer.ResetCamera(frame_bounds)
         near, far = camera.GetClippingRange()
         camera.SetClippingRange(near, far + max(self.model_diagonal, 1.0))
 
@@ -336,6 +385,7 @@ class MinimapController:
         dx, dy = fx - px, fy - py
 
         marker_z = self.model_zmax + 0.001 * max(self.model_diagonal, 1.0)
+        self._fit_camera_to_model(extra_point=(px, py, marker_z))
         self.marker_actor.SetPosition(px, py, marker_z)
         radius = max(self.model_diagonal * 0.01, 1e-3)
         self.marker_actor.SetScale(radius, radius, 1.0)

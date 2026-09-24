@@ -5,10 +5,10 @@
 ## À paraître
 
 ### FR
-- Nouvelle **Minicarte** : vue orthographique 2D en incrustation (bas-gauche par défaut) montrant le modèle complet en filaire simplifié vu de dessus, avec un indicateur de position/orientation de la caméra principale (cercle + cône, couleur `#cee0f5`). Bouton dédié entre « Sélection par fenêtre » et « Lancer le calcul (EF) », menu « Paramètres > Minicarte » pour choisir le coin (bas-gauche/bas-droite). Désactivée par défaut, état non conservé entre les sessions. Reste disponible en mode Navigation.
+- Nouvelle **Minicarte** : vue orthographique 2D en incrustation (bas-gauche par défaut) montrant le modèle complet en filaire simplifié vu de dessus, avec un indicateur de position/orientation de la caméra principale (cercle + cône, couleur `#cee0f5`). Les éléments surfaciques (et appuis surfaciques) apparaissent avec des faces pleines semi-transparentes en plus des arêtes, pour rester bien visibles. Bouton dédié entre « Sélection par fenêtre » et « Lancer le calcul (EF) », menu « Paramètres > Minicarte » pour choisir le coin (bas-gauche/bas-droite). Désactivée par défaut, état non conservé entre les sessions. Reste disponible en mode Navigation.
 
 ### EN
-- New **Minimap**: 2D orthographic picture-in-picture view (bottom-left by default) showing the full model in simplified top-down wireframe, with a position/orientation indicator for the main camera (circle + cone, color `#cee0f5`). Dedicated button between "Window selection" and "Run FE calculation", "Settings > Minimap" menu to choose the corner (bottom-left/bottom-right). Off by default, state not persisted between sessions. Available during Navigation mode.
+- New **Minimap**: 2D orthographic picture-in-picture view (bottom-left by default) showing the full model in simplified top-down wireframe, with a position/orientation indicator for the main camera (circle + cone, color `#cee0f5`). Planar elements (and planar supports) render with semi-transparent filled faces in addition to their edges, so they stay clearly visible. Dedicated button between "Window selection" and "Run FE calculation", "Settings > Minimap" menu to choose the corner (bottom-left/bottom-right). Off by default, state not persisted between sessions. Available during Navigation mode.
 
 ## 2.11
 
