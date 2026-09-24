@@ -22,6 +22,7 @@ import viewer_config as _cfg
 import display_units as du
 import scene_light as _scene_light
 import flight_navigation as _flight_nav
+import minimap as _minimap
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_ARROW_WIDTH,
     PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_ARROW_WIDTH,
@@ -327,9 +328,11 @@ class VTKViewerWidget(QFrame):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        # Construit avant tout le reste : apply_theme() (ci-dessous) declenche
-        # _apply_view_overlay_theme(), qui y accede deja.
+        # Construits avant tout le reste : apply_theme() (ci-dessous) declenche
+        # _apply_view_overlay_theme(), qui accede deja a _flight et _minimap
+        # (cf. bug corrige lors du refactor Navigation - l'ordre compte).
         self._flight = _flight_nav.FlightController(self)
+        self._minimap = _minimap.MinimapController(self)
         self.apply_theme()
 
         layout = QVBoxLayout(self)
@@ -543,6 +546,11 @@ class VTKViewerWidget(QFrame):
             self.renderer.SetBackground(*_cfg.VTK_BG)
             if hasattr(self, "render_window") and self.render_window is not None:
                 self.render_window.Render()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "_minimap") and self._minimap is not None:
+            self._minimap.update_viewport()
 
     def save_screenshot(self, path: str, scale: int = 1, target_size=None):
         """Enregistre le rendu VTK courant dans un fichier PNG.
@@ -2569,6 +2577,7 @@ class VTKViewerWidget(QFrame):
         self._setup_corner_axes()
         self._setup_view_overlay()
         self._flight.setup_overlay()
+        self._minimap.setup()
 
     def _setup_view_overlay(self):
         actor = vtk.vtkTextActor()
@@ -2595,6 +2604,7 @@ class VTKViewerWidget(QFrame):
         if actor is not None:
             actor.GetTextProperty().SetColor(*color)
         self._flight.apply_overlay_theme(color)
+        self._minimap.apply_theme(color)
 
     def _current_view_label(self) -> str:
         cam = self.renderer.GetActiveCamera() if self.renderer is not None else None
