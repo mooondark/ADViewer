@@ -347,7 +347,12 @@ def get_flight_key_bindings() -> dict:
 # ======================================================================
 
 MINIMAP_CAMERA_COLOR = (0xce / 255.0, 0xe0 / 255.0, 0xf5 / 255.0)
-MINIMAP_CAMERA_OUTLINE_COLOR = (0.10, 0.14, 0.22)  # contour sombre fixe, contraste sur fond clair/sombre
+# Contour vif fixe (orange), pas un ton sombre : sur un modele dense le
+# filaire est deja sombre (theme clair) ou clair (theme sombre), un contour
+# sombre/clair s'y noie. L'orange contraste avec le remplissage bleu pale
+# et avec le filaire quel que soit le theme.
+MINIMAP_CAMERA_OUTLINE_COLOR = (1.0, 0.42, 0.13)
+MINIMAP_CAMERA_CONE_OPACITY = 0.75
 MINIMAP_SIZE_PX = 300.0
 MINIMAP_SYNC_INTERVAL_MS = 200
 MINIMAP_DEFAULT_CORNER = "bottom_left"

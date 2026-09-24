@@ -158,7 +158,7 @@ class MinimapController:
         marker_actor.GetProperty().SetColor(*_cfg.MINIMAP_CAMERA_COLOR)
         marker_actor.GetProperty().EdgeVisibilityOn()
         marker_actor.GetProperty().SetEdgeColor(*_cfg.MINIMAP_CAMERA_OUTLINE_COLOR)
-        marker_actor.GetProperty().SetLineWidth(1.5)
+        marker_actor.GetProperty().SetLineWidth(2.0)
         self.marker_actor = marker_actor
         self.renderer.AddActor(marker_actor)
 
@@ -181,10 +181,10 @@ class MinimapController:
         cone_actor.PickableOff()
         cone_actor.GetProperty().LightingOff()
         cone_actor.GetProperty().SetColor(*_cfg.MINIMAP_CAMERA_COLOR)
-        cone_actor.GetProperty().SetOpacity(0.4)
+        cone_actor.GetProperty().SetOpacity(_cfg.MINIMAP_CAMERA_CONE_OPACITY)
         cone_actor.GetProperty().EdgeVisibilityOn()
         cone_actor.GetProperty().SetEdgeColor(*_cfg.MINIMAP_CAMERA_OUTLINE_COLOR)
-        cone_actor.GetProperty().SetLineWidth(1.5)
+        cone_actor.GetProperty().SetLineWidth(2.0)
         self.cone_actor = cone_actor
         self.renderer.AddActor(cone_actor)
 
