@@ -22,6 +22,7 @@ import viewer_config as _cfg
 import display_units as du
 import scene_light as _scene_light
 import flight_navigation as _flight_nav
+import minimap as _minimap
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_ARROW_WIDTH,
     PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_ARROW_WIDTH,
@@ -327,9 +328,11 @@ class VTKViewerWidget(QFrame):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        # Construit avant tout le reste : apply_theme() (ci-dessous) declenche
-        # _apply_view_overlay_theme(), qui y accede deja.
+        # Construits avant tout le reste : apply_theme() (ci-dessous) declenche
+        # _apply_view_overlay_theme(), qui accede deja a _flight et _minimap
+        # (cf. bug corrige lors du refactor Navigation - l'ordre compte).
         self._flight = _flight_nav.FlightController(self)
+        self._minimap = _minimap.MinimapController(self)
         self.apply_theme()
 
         layout = QVBoxLayout(self)
@@ -543,6 +546,11 @@ class VTKViewerWidget(QFrame):
             self.renderer.SetBackground(*_cfg.VTK_BG)
             if hasattr(self, "render_window") and self.render_window is not None:
                 self.render_window.Render()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "_minimap") and self._minimap is not None:
+            self._minimap.update_viewport()
 
     def save_screenshot(self, path: str, scale: int = 1, target_size=None):
         """Enregistre le rendu VTK courant dans un fichier PNG.
@@ -2539,6 +2547,12 @@ class VTKViewerWidget(QFrame):
             self._flight.deactivate()
         self.flightModeChanged.emit(active)
 
+    def set_minimap_visible(self, visible: bool):
+        self._minimap.set_visible(visible)
+
+    def set_minimap_corner(self, corner: str):
+        self._minimap.set_corner(corner)
+
     def get_display_counts(self):
         return {
             "lines": self.lines_count,
@@ -2569,6 +2583,7 @@ class VTKViewerWidget(QFrame):
         self._setup_corner_axes()
         self._setup_view_overlay()
         self._flight.setup_overlay()
+        self._minimap.setup()
 
     def _setup_view_overlay(self):
         actor = vtk.vtkTextActor()
@@ -2595,6 +2610,7 @@ class VTKViewerWidget(QFrame):
         if actor is not None:
             actor.GetTextProperty().SetColor(*color)
         self._flight.apply_overlay_theme(color)
+        self._minimap.apply_theme(color)
 
     def _current_view_label(self) -> str:
         cam = self.renderer.GetActiveCamera() if self.renderer is not None else None
@@ -2694,6 +2710,7 @@ class VTKViewerWidget(QFrame):
     def clear_scene(self):
         self._has_model = False
         self._update_view_overlay(render=False)
+        self._minimap.clear_geometry()
         self.lines_count = 0
         self.planars_count = 0
         self.load_areas_count = 0
@@ -3020,23 +3037,34 @@ class VTKViewerWidget(QFrame):
         setattr(self, attr, visible)
         self._apply_visibility_state()
 
+    def _sync_minimap_visibility(self):
+        self._minimap.apply_visibility(
+            self._show_lines, self._show_planars,
+            self._show_support_punctual, self._show_support_linear, self._show_support_planar,
+        )
+
     def set_show_lines(self, visible: bool):
         self._set_visible_flag("_show_lines", visible)
+        self._sync_minimap_visibility()
 
     def set_show_planars(self, visible: bool):
         self._set_visible_flag("_show_planars", visible)
+        self._sync_minimap_visibility()
 
     def set_show_load_areas(self, visible: bool):
         self._set_visible_flag("_show_load_areas", visible)
 
     def set_show_support_punctual(self, visible: bool):
         self._set_visible_flag("_show_support_punctual", visible)
+        self._sync_minimap_visibility()
 
     def set_show_support_linear(self, visible: bool):
         self._set_visible_flag("_show_support_linear", visible)
+        self._sync_minimap_visibility()
 
     def set_show_support_planar(self, visible: bool):
         self._set_visible_flag("_show_support_planar", visible)
+        self._sync_minimap_visibility()
 
     def set_show_marker(self, visible: bool):
         self._show_marker = visible
@@ -5140,6 +5168,8 @@ class VTKViewerWidget(QFrame):
         )
         self.set_faces_transparency(self._transparency_percent)
         self.set_show_marker(self._show_marker)
+        self._minimap.clear_geometry()
+        self._minimap.build_geometry()
         self.set_isometric_view()
 
     def _filtered_line_indexes(self):

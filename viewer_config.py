@@ -342,6 +342,16 @@ def get_flight_key_bindings() -> dict:
     return FLIGHT_KEY_BINDINGS_EN if get_language() == "en" else FLIGHT_KEY_BINDINGS_FR
 
 
+# ======================================================================
+#  Minicarte
+# ======================================================================
+
+MINIMAP_CAMERA_COLOR = (0xce / 255.0, 0xe0 / 255.0, 0xf5 / 255.0)
+MINIMAP_SIZE_PX = 300.0
+MINIMAP_SYNC_INTERVAL_MS = 200
+MINIMAP_DEFAULT_CORNER = "bottom_left"
+
+
 def _lookup(dict_name: str, key: str) -> str:
     _, module = LANGUAGES.get(_active_language, LANGUAGES[DEFAULT_LANGUAGE])
     text = getattr(module, dict_name).get(key)
