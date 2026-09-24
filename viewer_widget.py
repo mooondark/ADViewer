@@ -2702,10 +2702,24 @@ class VTKViewerWidget(QFrame):
         widget = vtk.vtkOrientationMarkerWidget()
         widget.SetOrientationMarker(axes)
         widget.SetInteractor(self.interactor)
-        widget.SetViewport(0.02, 0.02, 0.12, 0.12)
+        widget.SetViewport(*self._ORIENTATION_WIDGET_VIEWPORT_BOTTOM_LEFT)
         widget.SetEnabled(1)
         widget.InteractiveOff()
         self.orientation_widget = widget
+
+    _ORIENTATION_WIDGET_VIEWPORT_BOTTOM_LEFT = (0.02, 0.02, 0.12, 0.12)
+    _ORIENTATION_WIDGET_VIEWPORT_BOTTOM_RIGHT = (0.88, 0.02, 0.98, 0.12)
+
+    def _sync_orientation_widget_corner(self):
+        """Le trieder d'axes passe dans le coin oppose quand la minicarte
+        occupe son coin habituel (bas-gauche), pour eviter qu'ils se
+        superposent."""
+        if self.orientation_widget is None:
+            return
+        if self._minimap.visible and self._minimap.corner == "bottom_left":
+            self.orientation_widget.SetViewport(*self._ORIENTATION_WIDGET_VIEWPORT_BOTTOM_RIGHT)
+        else:
+            self.orientation_widget.SetViewport(*self._ORIENTATION_WIDGET_VIEWPORT_BOTTOM_LEFT)
 
     def clear_scene(self):
         self._has_model = False

@@ -347,6 +347,7 @@ def get_flight_key_bindings() -> dict:
 # ======================================================================
 
 MINIMAP_CAMERA_COLOR = (0xce / 255.0, 0xe0 / 255.0, 0xf5 / 255.0)
+MINIMAP_CAMERA_OUTLINE_COLOR = (0.10, 0.14, 0.22)  # contour sombre fixe, contraste sur fond clair/sombre
 MINIMAP_SIZE_PX = 300.0
 MINIMAP_SYNC_INTERVAL_MS = 200
 MINIMAP_DEFAULT_CORNER = "bottom_left"

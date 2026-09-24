@@ -141,10 +141,14 @@ class MinimapController:
         self.frame_actor = frame_actor
         self.host.renderer.AddViewProp(frame_actor)
 
-        marker_source = vtk.vtkDiskSource()
-        marker_source.SetInnerRadius(0.0)
-        marker_source.SetOuterRadius(1.0)
-        marker_source.SetCircumferentialResolution(24)
+        # vtkRegularPolygonSource (polygone plein a une seule cellule) plutot
+        # que vtkDiskSource (triangule en pointe de tarte depuis le centre) :
+        # EdgeVisibility ne doit dessiner que le contour exterieur, pas les
+        # segments radiaux internes.
+        marker_source = vtk.vtkRegularPolygonSource()
+        marker_source.SetRadius(1.0)
+        marker_source.SetNumberOfSides(24)
+        marker_source.GeneratePolygonOn()
         marker_mapper = vtk.vtkPolyDataMapper()
         marker_mapper.SetInputConnection(marker_source.GetOutputPort())
         marker_actor = vtk.vtkActor()
@@ -152,6 +156,9 @@ class MinimapController:
         marker_actor.PickableOff()
         marker_actor.GetProperty().LightingOff()
         marker_actor.GetProperty().SetColor(*_cfg.MINIMAP_CAMERA_COLOR)
+        marker_actor.GetProperty().EdgeVisibilityOn()
+        marker_actor.GetProperty().SetEdgeColor(*_cfg.MINIMAP_CAMERA_OUTLINE_COLOR)
+        marker_actor.GetProperty().SetLineWidth(1.5)
         self.marker_actor = marker_actor
         self.renderer.AddActor(marker_actor)
 
@@ -175,6 +182,9 @@ class MinimapController:
         cone_actor.GetProperty().LightingOff()
         cone_actor.GetProperty().SetColor(*_cfg.MINIMAP_CAMERA_COLOR)
         cone_actor.GetProperty().SetOpacity(0.4)
+        cone_actor.GetProperty().EdgeVisibilityOn()
+        cone_actor.GetProperty().SetEdgeColor(*_cfg.MINIMAP_CAMERA_OUTLINE_COLOR)
+        cone_actor.GetProperty().SetLineWidth(1.5)
         self.cone_actor = cone_actor
         self.renderer.AddActor(cone_actor)
 
@@ -201,6 +211,7 @@ class MinimapController:
     def set_corner(self, corner: str):
         self.corner = corner if corner in ("bottom_left", "bottom_right") else "bottom_left"
         self.update_viewport()
+        self.host._sync_orientation_widget_corner()
 
     def update_viewport(self):
         import viewer_config as _cfg
@@ -411,6 +422,7 @@ class MinimapController:
         if visible == self.visible:
             return
         self.visible = visible
+        self.host._sync_orientation_widget_corner()
         if visible:
             if self.host.render_window is not None:
                 self.host.render_window.AddRenderer(self.renderer)
