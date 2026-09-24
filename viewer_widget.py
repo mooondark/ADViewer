@@ -2547,6 +2547,12 @@ class VTKViewerWidget(QFrame):
             self._flight.deactivate()
         self.flightModeChanged.emit(active)
 
+    def set_minimap_visible(self, visible: bool):
+        self._minimap.set_visible(visible)
+
+    def set_minimap_corner(self, corner: str):
+        self._minimap.set_corner(corner)
+
     def get_display_counts(self):
         return {
             "lines": self.lines_count,

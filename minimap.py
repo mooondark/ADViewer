@@ -67,6 +67,7 @@ def horizontal_half_fov_deg(camera_view_angle_deg: float, aspect_ratio: float, i
 
 
 import vtk
+from PySide6.QtCore import QTimer
 
 
 class MinimapController:
@@ -90,6 +91,10 @@ class MinimapController:
         self.support_punctual_actor = None
         self.support_linear_actor = None
         self.support_planar_actor = None
+        self.marker_actor = None
+        self.cone_actor = None
+        self.timer = None
+        self.model_diagonal = 0.0
 
     def setup(self):
         import viewer_config as _cfg
@@ -131,6 +136,47 @@ class MinimapController:
         frame_actor.PickableOff()
         self.frame_actor = frame_actor
         self.host.renderer.AddViewProp(frame_actor)
+
+        marker_source = vtk.vtkDiskSource()
+        marker_source.SetInnerRadius(0.0)
+        marker_source.SetOuterRadius(1.0)
+        marker_source.SetCircumferentialResolution(24)
+        marker_mapper = vtk.vtkPolyDataMapper()
+        marker_mapper.SetInputConnection(marker_source.GetOutputPort())
+        marker_actor = vtk.vtkActor()
+        marker_actor.SetMapper(marker_mapper)
+        marker_actor.PickableOff()
+        marker_actor.GetProperty().LightingOff()
+        marker_actor.GetProperty().SetColor(*_cfg.MINIMAP_CAMERA_COLOR)
+        self.marker_actor = marker_actor
+        self.renderer.AddActor(marker_actor)
+
+        cone_points = vtk.vtkPoints()
+        for _ in range(3):
+            cone_points.InsertNextPoint(0.0, 0.0, 0.0)
+        cone_cell = vtk.vtkTriangle()
+        cone_cell.GetPointIds().SetId(0, 0)
+        cone_cell.GetPointIds().SetId(1, 1)
+        cone_cell.GetPointIds().SetId(2, 2)
+        cone_cells = vtk.vtkCellArray()
+        cone_cells.InsertNextCell(cone_cell)
+        cone_poly = vtk.vtkPolyData()
+        cone_poly.SetPoints(cone_points)
+        cone_poly.SetPolys(cone_cells)
+        cone_mapper = vtk.vtkPolyDataMapper()
+        cone_mapper.SetInputData(cone_poly)
+        cone_actor = vtk.vtkActor()
+        cone_actor.SetMapper(cone_mapper)
+        cone_actor.PickableOff()
+        cone_actor.GetProperty().LightingOff()
+        cone_actor.GetProperty().SetColor(*_cfg.MINIMAP_CAMERA_COLOR)
+        cone_actor.GetProperty().SetOpacity(0.4)
+        self.cone_actor = cone_actor
+        self.renderer.AddActor(cone_actor)
+
+        self.timer = QTimer(self.host)
+        self.timer.setInterval(_cfg.MINIMAP_SYNC_INTERVAL_MS)
+        self.timer.timeout.connect(self.sync_tick)
 
     def apply_theme(self, color):
         import viewer_config as _cfg
@@ -252,3 +298,57 @@ class MinimapController:
         camera.SetPosition(cx, cy, 1.0)
         camera.SetViewUp(0.0, 1.0, 0.0)
         self.renderer.ResetCamera(bounds)
+
+    def sync_tick(self):
+        if not self.visible or self.renderer is None:
+            return
+        host = self.host
+        main_camera = host.renderer.GetActiveCamera() if host.renderer is not None else None
+        if main_camera is None:
+            return
+
+        from minimap import camera_fov_triangle, horizontal_half_fov_deg
+
+        px, py, pz = main_camera.GetPosition()
+        fx, fy, fz = main_camera.GetFocalPoint()
+        dx, dy = fx - px, fy - py
+
+        marker_z = 0.001 * max(self.model_diagonal, 1.0)
+        self.marker_actor.SetPosition(px, py, marker_z)
+        radius = max(self.model_diagonal * 0.01, 1e-3)
+        self.marker_actor.SetScale(radius, radius, 1.0)
+
+        is_parallel = bool(main_camera.GetParallelProjection())
+        w, h = host.renderer.GetSize() if host.renderer is not None else (1, 1)
+        aspect = (w / h) if h else 1.0
+        half_fov = horizontal_half_fov_deg(main_camera.GetViewAngle(), aspect, is_parallel=is_parallel)
+        cone_size = max(self.model_diagonal * 0.15, 1e-3)
+        triangle = camera_fov_triangle((px, py), (dx, dy), half_fov, cone_size)
+
+        poly = self.cone_actor.GetMapper().GetInput()
+        pts = poly.GetPoints()
+        for i, (x, y) in enumerate(triangle):
+            pts.SetPoint(i, x, y, marker_z)
+        pts.Modified()
+
+        if host.render_window is not None:
+            host.render_window.Render()
+
+    def set_visible(self, visible: bool):
+        visible = bool(visible)
+        if visible == self.visible:
+            return
+        self.visible = visible
+        if visible:
+            self.host.render_window.AddRenderer(self.renderer)
+            self.frame_actor.SetVisibility(True)
+            self.update_viewport()
+            self._fit_camera_to_model()
+            self.timer.start()
+            self.sync_tick()
+        else:
+            self.timer.stop()
+            self.host.render_window.RemoveRenderer(self.renderer)
+            self.frame_actor.SetVisibility(False)
+        if self.host.render_window is not None:
+            self.host.render_window.Render()
