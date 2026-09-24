@@ -2704,6 +2704,7 @@ class VTKViewerWidget(QFrame):
     def clear_scene(self):
         self._has_model = False
         self._update_view_overlay(render=False)
+        self._minimap.clear_geometry()
         self.lines_count = 0
         self.planars_count = 0
         self.load_areas_count = 0
@@ -3030,23 +3031,34 @@ class VTKViewerWidget(QFrame):
         setattr(self, attr, visible)
         self._apply_visibility_state()
 
+    def _sync_minimap_visibility(self):
+        self._minimap.apply_visibility(
+            self._show_lines, self._show_planars,
+            self._show_support_punctual, self._show_support_linear, self._show_support_planar,
+        )
+
     def set_show_lines(self, visible: bool):
         self._set_visible_flag("_show_lines", visible)
+        self._sync_minimap_visibility()
 
     def set_show_planars(self, visible: bool):
         self._set_visible_flag("_show_planars", visible)
+        self._sync_minimap_visibility()
 
     def set_show_load_areas(self, visible: bool):
         self._set_visible_flag("_show_load_areas", visible)
 
     def set_show_support_punctual(self, visible: bool):
         self._set_visible_flag("_show_support_punctual", visible)
+        self._sync_minimap_visibility()
 
     def set_show_support_linear(self, visible: bool):
         self._set_visible_flag("_show_support_linear", visible)
+        self._sync_minimap_visibility()
 
     def set_show_support_planar(self, visible: bool):
         self._set_visible_flag("_show_support_planar", visible)
+        self._sync_minimap_visibility()
 
     def set_show_marker(self, visible: bool):
         self._show_marker = visible
@@ -5150,6 +5162,8 @@ class VTKViewerWidget(QFrame):
         )
         self.set_faces_transparency(self._transparency_percent)
         self.set_show_marker(self._show_marker)
+        self._minimap.clear_geometry()
+        self._minimap.build_geometry()
         self.set_isometric_view()
 
     def _filtered_line_indexes(self):

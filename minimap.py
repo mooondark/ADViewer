@@ -174,3 +174,81 @@ class MinimapController:
             self._fit_camera_to_model()
             if self.host.render_window is not None:
                 self.host.render_window.Render()
+
+    def build_geometry(self):
+        import viewer_config as _cfg
+
+        host = self.host
+        color = _cfg.VTK_BG  # remplace par la couleur neutre du theme juste apres
+        is_dark = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
+        line_color = (0.92, 0.94, 0.98) if is_dark else (0.12, 0.16, 0.22)
+
+        lines_pd = host._build_lines_polydata(host._model_data.get("lines", []), include_section_colors=False)
+        self.lines_actor = host._make_wire_actor(lines_pd, line_color, 1.0)
+        if self.lines_actor is not None:
+            self.renderer.AddActor(self.lines_actor)
+
+        planar_pd = host._build_loops_wire_polydata(host._model_data.get("planars", []))
+        self.planar_actor = host._make_wire_actor(planar_pd, line_color, 1.0)
+        if self.planar_actor is not None:
+            self.renderer.AddActor(self.planar_actor)
+
+        punctual_pd = host._build_punctual_supports_polydata(host._model_data.get("punctual_supports", []))
+        self.support_punctual_actor = host._make_wire_actor(punctual_pd, line_color, 1.0)
+        if self.support_punctual_actor is not None:
+            self.renderer.AddActor(self.support_punctual_actor)
+
+        linear_sup_pd = host._build_lines_polydata(host._model_data.get("linear_supports", []), include_section_colors=False)
+        self.support_linear_actor = host._make_wire_actor(linear_sup_pd, line_color, 1.0)
+        if self.support_linear_actor is not None:
+            self.renderer.AddActor(self.support_linear_actor)
+
+        planar_sup_pd = host._build_loops_wire_polydata(host._model_data.get("planar_supports", []))
+        self.support_planar_actor = host._make_wire_actor(planar_sup_pd, line_color, 1.0)
+        if self.support_planar_actor is not None:
+            self.renderer.AddActor(self.support_planar_actor)
+
+        self.apply_visibility(
+            host._show_lines, host._show_planars,
+            host._show_support_punctual, host._show_support_linear, host._show_support_planar,
+        )
+        if self.visible:
+            self._fit_camera_to_model()
+
+    def clear_geometry(self):
+        for attr in ("lines_actor", "planar_actor", "support_punctual_actor", "support_linear_actor", "support_planar_actor"):
+            actor = getattr(self, attr)
+            if actor is not None and self.renderer is not None:
+                self.renderer.RemoveActor(actor)
+            setattr(self, attr, None)
+
+    def apply_visibility(self, show_lines, show_planars, show_support_punctual, show_support_linear, show_support_planar):
+        if self.lines_actor is not None:
+            self.lines_actor.SetVisibility(1 if show_lines else 0)
+        if self.planar_actor is not None:
+            self.planar_actor.SetVisibility(1 if show_planars else 0)
+        if self.support_punctual_actor is not None:
+            self.support_punctual_actor.SetVisibility(1 if show_support_punctual else 0)
+        if self.support_linear_actor is not None:
+            self.support_linear_actor.SetVisibility(1 if show_support_linear else 0)
+        if self.support_planar_actor is not None:
+            self.support_planar_actor.SetVisibility(1 if show_support_planar else 0)
+
+    def _fit_camera_to_model(self):
+        if self.renderer is None:
+            return
+        bounds = [0.0, -1.0, 0.0, -1.0, 0.0, -1.0]
+        self.renderer.ComputeVisiblePropBounds(bounds)
+        if bounds[1] < bounds[0]:
+            # Aucun acteur/bornes degenerees (modele vide) : rien a cadrer.
+            self.model_diagonal = 0.0
+            return
+        xmin, xmax, ymin, ymax, zmin, zmax = bounds
+        dx, dy, dz = xmax - xmin, ymax - ymin, zmax - zmin
+        self.model_diagonal = (dx * dx + dy * dy + dz * dz) ** 0.5
+        cx, cy = (xmin + xmax) / 2.0, (ymin + ymax) / 2.0
+        camera = self.renderer.GetActiveCamera()
+        camera.SetFocalPoint(cx, cy, 0.0)
+        camera.SetPosition(cx, cy, 1.0)
+        camera.SetViewUp(0.0, 1.0, 0.0)
+        self.renderer.ResetCamera(bounds)
