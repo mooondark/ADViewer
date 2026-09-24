@@ -10,6 +10,7 @@
 - Correction : certains éléments filaires en mode « Profilés + rendu plein » s'affichaient mal éclairés ou noirs (défaut dans le calcul des normales des solides de profilés, indépendant du mode Navigation mais plus visible du fait de la possibilité de s'en approcher de très près). Amélioration significative, non garantie parfaite sur tous les cas.
 - Correction : l'activation du mode Navigation provoquait un zoom arrière involontaire (le champ de vision était forcé à 65°). Le champ de vision n'est plus modifié par le mode.
 - Réorganisation interne (sans changement de comportement) : le code de l'éclairage de la scène et du mode Navigation est isolé dans deux nouveaux fichiers (`scene_light.py`, `flight_navigation.py`) plutôt que dans `viewer_widget.py`.
+- Changement de comportement : en quittant le mode Navigation (Échap ou bouton), la caméra reste à la position/orientation atteinte, au lieu de revenir à la vue précédant l'activation.
 
 ### EN
 - New **Navigation** mode (free-flight camera): dedicated button right after "Isometric view". Keyboard movement (ZQSD in French, WASD in English, depending on the application language), mouse look (hold right-click), speed boost (Shift) and slow-down (Ctrl), reset view (Home), exit without clearing the selection (Escape). Left-click element selection still works during the mode. Forward/backward follows the full look direction (to dive/climb while looking down or up); strafing left/right and moving up/down stay purely horizontal/vertical. Lighting gizmo visible during the Lighting dialog: origin → light position line.
@@ -17,6 +18,7 @@
 - Fix: some linear elements in "Profiles + full render" mode appeared poorly lit or black (defect in the profile solid normal computation, unrelated to Navigation mode but more noticeable since it now allows getting very close). Significant improvement, not guaranteed perfect in every case.
 - Fix: activating Navigation mode caused an unintended zoom-out (the field of view was forced to 65°). The field of view is no longer changed by the mode.
 - Internal reorganization (no behavior change): scene lighting and Navigation mode code moved out of `viewer_widget.py` into two new files (`scene_light.py`, `flight_navigation.py`).
+- Behavior change: exiting Navigation mode (Escape or button) now keeps the camera at the position/orientation reached, instead of returning to the view from before activation.
 
 ## 2.10
 

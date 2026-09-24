@@ -267,11 +267,10 @@ class FlightController:
         self.looking = False
         state = self.saved_camera_state
         if state is not None:
+            # On quitte le mode a la position/orientation atteinte (pas de
+            # retour a la position de depart) : seule la projection
+            # (orthogonale/perspective) redevient celle d'avant l'activation.
             camera = host.renderer.GetActiveCamera()
-            camera.SetPosition(*state["position"])
-            camera.SetFocalPoint(*state["focal_point"])
-            camera.SetViewUp(*state["view_up"])
-            camera.SetViewAngle(state["view_angle"])
             camera.SetParallelProjection(1 if state["parallel_projection"] else 0)
             self.saved_camera_state = None
         host.interactor.SetInteractorStyle(host.interactor_style)
