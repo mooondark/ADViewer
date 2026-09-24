@@ -95,6 +95,8 @@ class MinimapController:
         self.cone_actor = None
         self.timer = None
         self.model_diagonal = 0.0
+        self.model_zmax = 0.0
+        self._last_camera_mtime = -1
 
     def setup(self):
         import viewer_config as _cfg
@@ -183,6 +185,10 @@ class MinimapController:
 
         if self.frame_actor is not None:
             self.frame_actor.GetProperty().SetColor(*color)
+        for attr in ("lines_actor", "planar_actor", "support_punctual_actor", "support_linear_actor", "support_planar_actor"):
+            actor = getattr(self, attr)
+            if actor is not None:
+                actor.GetProperty().SetColor(*color)
         if self.renderer is not None:
             self.renderer.SetBackground(*_cfg.VTK_BG)
 
@@ -192,7 +198,6 @@ class MinimapController:
 
     def update_viewport(self):
         import viewer_config as _cfg
-        from minimap import viewport_rect
 
         if self.renderer is None:
             return
@@ -225,7 +230,6 @@ class MinimapController:
         import viewer_config as _cfg
 
         host = self.host
-        color = _cfg.VTK_BG  # remplace par la couleur neutre du theme juste apres
         is_dark = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
         line_color = (0.92, 0.94, 0.98) if is_dark else (0.12, 0.16, 0.22)
 
@@ -283,8 +287,20 @@ class MinimapController:
     def _fit_camera_to_model(self):
         if self.renderer is None:
             return
-        bounds = [0.0, -1.0, 0.0, -1.0, 0.0, -1.0]
-        self.renderer.ComputeVisiblePropBounds(bounds)
+        marker_prev_vis = self.marker_actor.GetVisibility() if self.marker_actor is not None else None
+        cone_prev_vis = self.cone_actor.GetVisibility() if self.cone_actor is not None else None
+        if self.marker_actor is not None:
+            self.marker_actor.SetVisibility(0)
+        if self.cone_actor is not None:
+            self.cone_actor.SetVisibility(0)
+        try:
+            bounds = [0.0, -1.0, 0.0, -1.0, 0.0, -1.0]
+            self.renderer.ComputeVisiblePropBounds(bounds)
+        finally:
+            if self.marker_actor is not None:
+                self.marker_actor.SetVisibility(marker_prev_vis)
+            if self.cone_actor is not None:
+                self.cone_actor.SetVisibility(cone_prev_vis)
         if bounds[1] < bounds[0]:
             # Aucun acteur/bornes degenerees (modele vide) : rien a cadrer.
             self.model_diagonal = 0.0
@@ -292,12 +308,15 @@ class MinimapController:
         xmin, xmax, ymin, ymax, zmin, zmax = bounds
         dx, dy, dz = xmax - xmin, ymax - ymin, zmax - zmin
         self.model_diagonal = (dx * dx + dy * dy + dz * dz) ** 0.5
+        self.model_zmax = zmax
         cx, cy = (xmin + xmax) / 2.0, (ymin + ymax) / 2.0
         camera = self.renderer.GetActiveCamera()
         camera.SetFocalPoint(cx, cy, 0.0)
         camera.SetPosition(cx, cy, 1.0)
         camera.SetViewUp(0.0, 1.0, 0.0)
         self.renderer.ResetCamera(bounds)
+        near, far = camera.GetClippingRange()
+        camera.SetClippingRange(near, far + max(self.model_diagonal, 1.0))
 
     def sync_tick(self):
         if not self.visible or self.renderer is None:
@@ -307,13 +326,16 @@ class MinimapController:
         if main_camera is None:
             return
 
-        from minimap import camera_fov_triangle, horizontal_half_fov_deg
+        mtime = main_camera.GetMTime()
+        if mtime == self._last_camera_mtime:
+            return
+        self._last_camera_mtime = mtime
 
         px, py, pz = main_camera.GetPosition()
         fx, fy, fz = main_camera.GetFocalPoint()
         dx, dy = fx - px, fy - py
 
-        marker_z = 0.001 * max(self.model_diagonal, 1.0)
+        marker_z = self.model_zmax + 0.001 * max(self.model_diagonal, 1.0)
         self.marker_actor.SetPosition(px, py, marker_z)
         radius = max(self.model_diagonal * 0.01, 1e-3)
         self.marker_actor.SetScale(radius, radius, 1.0)
@@ -340,15 +362,16 @@ class MinimapController:
             return
         self.visible = visible
         if visible:
-            self.host.render_window.AddRenderer(self.renderer)
+            if self.host.render_window is not None:
+                self.host.render_window.AddRenderer(self.renderer)
             self.frame_actor.SetVisibility(True)
             self.update_viewport()
-            self._fit_camera_to_model()
             self.timer.start()
             self.sync_tick()
         else:
             self.timer.stop()
-            self.host.render_window.RemoveRenderer(self.renderer)
+            if self.host.render_window is not None:
+                self.host.render_window.RemoveRenderer(self.renderer)
             self.frame_actor.SetVisibility(False)
-        if self.host.render_window is not None:
-            self.host.render_window.Render()
+            if self.host.render_window is not None:
+                self.host.render_window.Render()
