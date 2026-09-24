@@ -22,6 +22,7 @@ Visualiseur 3D pour les modèles Advance Design.
 - Statut du modèle (maillage, calcul éléments finis, expertise)
 - Réglage de l'éclairage de la scène 3D
 - Mode Navigation : caméra libre au clavier/souris
+- Minicarte : vue 2D en incrustation avec indicateur de position/orientation de la caméra
 
 ## Documentation
 

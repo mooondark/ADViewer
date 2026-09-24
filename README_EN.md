@@ -22,6 +22,7 @@
 - Model status (mesh, finite element analysis, expertise)
 - 3D scene lighting control
 - Navigation mode: keyboard/mouse free-flight camera
+- Minimap: 2D picture-in-picture view with camera position/orientation indicator
 
 ## Documentation
 - [Version history](CHANGELOG.md)

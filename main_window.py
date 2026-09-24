@@ -1251,6 +1251,7 @@ class MainWindow(QMainWindow):
         self.camera_btn = None
         self.scene_light_btn = None
         self.window_select_btn = None
+        self.minimap_btn = None
         self.shortcut_window_select = None
         self.zoom_window_btn = None
         self.shortcut_zoom_window = None
@@ -2033,6 +2034,26 @@ class MainWindow(QMainWindow):
             'a2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9p',
             'bj0icm91bmQiLz4NCjwvc3ZnPg=='
         ),
+        "map": (
+            'PHN2ZyB3aWR0aD0iODAwIiBoZWln',
+            'aHQ9IjgwMCIgdmlld0JveD0iMCAw',
+            'IDI0IDI0IiBmaWxsPSJub25lIiB4',
+            'bWxucz0iaHR0cDovL3d3dy53My5v',
+            'cmcvMjAwMC9zdmciPg0KICA8cGF0',
+            'aCBkPSJtOSAxOS01LjIxIDEuNzM3',
+            'YS42LjYgMCAwIDEtLjc5LS41N1Y1',
+            'LjQzM2EuNi42IDAgMCAxIC40MS0u',
+            'NTY5TDkgM20wIDE2IDYgMm0tNi0y',
+            'VjNtNiAxOCA1LjU5LTEuODYzYS42',
+            'LjYgMCAwIDAgLjQxLS41N1YzLjgz',
+            'MmEuNi42IDAgMCAwLS43OS0uNTY5',
+            'TDE1IDVtMCAxNlY1bTAgMEw5IDMi',
+            'IHN0cm9rZT0iIzAwMDAwMCIgc3Ry',
+            'b2tlLXdpZHRoPSIxLjUiIHN0cm9r',
+            'ZS1saW5lY2FwPSJyb3VuZCIgc3Ry',
+            'b2tlLWxpbmVqb2luPSJyb3VuZCIv',
+            'Pg0KPC9zdmc+',
+        ),
         "isoler": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHdpZHRo'
             'PSI4MDBweCIgaGVpZ2h0PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxs'
@@ -2162,6 +2183,7 @@ class MainWindow(QMainWindow):
             (self.filter_btn,      "filter"),
             (self.clear_filter_btn,"filter_clear"),
             (self.window_select_btn, "window_select"),
+            (self.minimap_btn,     "map"),
             (self.camera_btn,      "camera"),
             (self.scene_light_btn, "light_bulb"),
             (self.browse_fto_btn,  "parcourir"),
@@ -2435,6 +2457,24 @@ class MainWindow(QMainWindow):
         act_scene_light.triggered.connect(self.open_scene_light_dialog)
         view3d_menu.addAction(act_scene_light)
 
+        # Sous-menu Minicarte
+        minimap_menu = QMenu(tr_ui("menu_minimap"), self)
+        settings_menu.addMenu(minimap_menu)
+
+        minimap_group = QActionGroup(self)
+        minimap_group.setExclusive(True)
+
+        self.act_minimap_bottom_left = QAction(tr_ui("minimap_position_bottom_left"), self, checkable=True)
+        self.act_minimap_bottom_left.setChecked(True)
+        self.act_minimap_bottom_left.triggered.connect(lambda checked: checked and self.viewer.set_minimap_corner("bottom_left"))
+        minimap_group.addAction(self.act_minimap_bottom_left)
+        minimap_menu.addAction(self.act_minimap_bottom_left)
+
+        self.act_minimap_bottom_right = QAction(tr_ui("minimap_position_bottom_right"), self, checkable=True)
+        self.act_minimap_bottom_right.triggered.connect(lambda checked: checked and self.viewer.set_minimap_corner("bottom_right"))
+        minimap_group.addAction(self.act_minimap_bottom_right)
+        minimap_menu.addAction(self.act_minimap_bottom_right)
+
         # Sous-menu Configuration
         configuration_menu = QMenu(tr_ui("menu_configuration"), self)
         settings_menu.addMenu(configuration_menu)
@@ -2643,6 +2683,12 @@ class MainWindow(QMainWindow):
         sc_win.activated.connect(self.window_select_btn.toggle)
         self.shortcut_window_select = sc_win
 
+        self.minimap_btn = QPushButton()
+        self.minimap_btn.setCheckable(True)
+        self.minimap_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.minimap_btn, "map", tr_ui("tooltip_minimap"))
+        self.minimap_btn.toggled.connect(self.on_minimap_toggled)
+
         fit_row = QHBoxLayout()
         fit_row.setContentsMargins(0, 0, 0, 0)
         fit_row.setSpacing(3)
@@ -2650,6 +2696,7 @@ class MainWindow(QMainWindow):
         fit_row.addWidget(self.fit_btn)
         fit_row.addWidget(self.zoom_window_btn)
         fit_row.addWidget(self.window_select_btn)
+        fit_row.addWidget(self.minimap_btn)
         fit_row.addWidget(self.calc_btn)
         fit_row.addStretch(1)
 
@@ -5369,6 +5416,10 @@ class MainWindow(QMainWindow):
         if self.viewer is not None:
             self.viewer.set_flight_mode(bool(checked))
 
+    def on_minimap_toggled(self, checked: bool):
+        if self.viewer is not None:
+            self.viewer.set_minimap_visible(checked)
+
     _ROLE_COUNT_KEYS = {
         "lines": "selection_count_lines",
         "planars": "selection_count_planars",
@@ -6452,7 +6503,7 @@ class MainWindow(QMainWindow):
             self.load_btn, self.calc_btn, self.fit_btn, self.zoom_window_btn,
             self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn,
             self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn, self.scene_light_btn,
-            self.window_select_btn, self.flight_btn,
+            self.window_select_btn, self.flight_btn, self.minimap_btn,
             self.transparency_slider, self.profiles_transparency_slider,
             self.api_on_btn, self.api_off_btn, self.api_restart_btn,
             self.chk_lines, self.chk_planars, self.chk_load_areas,
