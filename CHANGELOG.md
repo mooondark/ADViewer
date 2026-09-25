@@ -2,7 +2,7 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
-## À paraître
+## 2.13
 
 ### FR
 - Correction : en projection orthogonale, le cône d'orientation de la minicarte pouvait apparaître comme un simple triangle rectangle au lieu d'un éventail de direction — coïncidence entre l'angle fixe (45°) et la direction à 45° de la vue isométrique par défaut. Angle réduit à 25°.
