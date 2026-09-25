@@ -2,12 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
-## À paraître
+## 2.12
 
 ### FR
+- Mode Navigation : augmentation de la vitesse de déplacement par défaut.
 - Nouvelle **Minicarte** : vue orthographique 2D en incrustation (bas-gauche par défaut) montrant le modèle complet en filaire simplifié vu de dessus, avec un indicateur de position/orientation de la caméra principale (cercle + cône, couleur `#cee0f5`, contour orange vif pour rester visible sur des modèles filaires denses). Les éléments surfaciques (et appuis surfaciques) apparaissent avec des faces pleines semi-transparentes en plus des arêtes, pour rester bien visibles. Le trièdre d'axes passe automatiquement dans le coin opposé lorsque la minicarte occupe le coin bas-gauche, pour éviter le chevauchement. Bouton dédié entre « Sélection par fenêtre » et « Lancer le calcul (EF) », menu « Paramètres > Minicarte » pour choisir le coin (bas-gauche/bas-droite) et la taille (grande 300×300 px par défaut / petite 200×200 px), ces deux préférences étant conservées dans `config.ini`. Désactivée par défaut au lancement (son état affiché/masqué n'est lui pas conservé). Reste disponible en mode Navigation.
 
 ### EN
+- Navigation mode: increased default movement speed.
 - New **Minimap**: 2D orthographic picture-in-picture view (bottom-left by default) showing the full model in simplified top-down wireframe, with a position/orientation indicator for the main camera (circle + cone, color `#cee0f5`, bright orange outline to stay visible on dense wireframe models). Planar elements (and planar supports) render with semi-transparent filled faces in addition to their edges, so they stay clearly visible. The corner axes triad automatically moves to the opposite corner when the minimap occupies the bottom-left corner, avoiding overlap. Dedicated button between "Window selection" and "Run FE calculation", "Settings > Minimap" menu to choose the corner (bottom-left/bottom-right) and the size (large 300×300 px by default / small 200×200 px), both preferences saved to `config.ini`. Off by default on launch (its shown/hidden state itself is not persisted). Available during Navigation mode.
 
 ## 2.11
