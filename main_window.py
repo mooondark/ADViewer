@@ -1282,6 +1282,10 @@ class MainWindow(QMainWindow):
         self._pending_language = None
         self.act_view_projection_perspective = None
         self.act_view_projection_orthogonal = None
+        self.act_minimap_bottom_left = None
+        self.act_minimap_bottom_right = None
+        self.act_minimap_size_large = None
+        self.act_minimap_size_small = None
         self.view_projection_mode = DEFAULT_VIEW_PROJECTION
         self.png_export_scale = DEFAULT_PNG_EXPORT_SCALE
         self.png_export_mode = DEFAULT_PNG_EXPORT_MODE
@@ -1432,6 +1436,8 @@ class MainWindow(QMainWindow):
             "png_export_scale": str(self.png_export_scale),
             "png_export_mode": self.png_export_mode,
             "calc_ef_timeout": str(self.calc_ef_timeout),
+            "minimap_corner": "bottom_right" if (self.act_minimap_bottom_right is not None and self.act_minimap_bottom_right.isChecked()) else "bottom_left",
+            "minimap_size": "small" if (self.act_minimap_size_small is not None and self.act_minimap_size_small.isChecked()) else "large",
         }
         cfg["styles"] = {
             "linear_width": str(self.viewer.linear_line_width),
@@ -1574,6 +1580,8 @@ class MainWindow(QMainWindow):
                 float(styles.get("planar_load_arrow_width", self.viewer.planar_load_arrow_width)),
             )
             self.apply_view_projection(self.view_projection_mode, save=False)
+            self.apply_minimap_corner(general.get("minimap_corner", "bottom_left"), save=False)
+            self.apply_minimap_size(general.get("minimap_size", "large"), save=False)
             self.apply_theme(loaded_theme)
         finally:
             self._suspend_config_save = False
@@ -2350,6 +2358,28 @@ class MainWindow(QMainWindow):
         if save and not self._suspend_config_save:
             self.save_config()
 
+    def apply_minimap_corner(self, corner: str, save: bool = True):
+        normalized = corner if corner in ("bottom_left", "bottom_right") else "bottom_left"
+        if self.viewer is not None:
+            self.viewer.set_minimap_corner(normalized)
+        if self.act_minimap_bottom_left is not None:
+            self.act_minimap_bottom_left.setChecked(normalized == "bottom_left")
+        if self.act_minimap_bottom_right is not None:
+            self.act_minimap_bottom_right.setChecked(normalized == "bottom_right")
+        if save and not self._suspend_config_save:
+            self.save_config()
+
+    def apply_minimap_size(self, size: str, save: bool = True):
+        normalized = size if size in ("large", "small") else "large"
+        if self.viewer is not None:
+            self.viewer.set_minimap_size(normalized)
+        if self.act_minimap_size_large is not None:
+            self.act_minimap_size_large.setChecked(normalized == "large")
+        if self.act_minimap_size_small is not None:
+            self.act_minimap_size_small.setChecked(normalized == "small")
+        if save and not self._suspend_config_save:
+            self.save_config()
+
     def _build_menu(self):
         menu_bar = self.menuBar()
         menu_bar.clear()
@@ -2466,12 +2496,12 @@ class MainWindow(QMainWindow):
 
         self.act_minimap_bottom_left = QAction(tr_ui("minimap_position_bottom_left"), self, checkable=True)
         self.act_minimap_bottom_left.setChecked(True)
-        self.act_minimap_bottom_left.triggered.connect(lambda checked: checked and self.viewer.set_minimap_corner("bottom_left"))
+        self.act_minimap_bottom_left.triggered.connect(lambda checked: checked and self.apply_minimap_corner("bottom_left"))
         minimap_group.addAction(self.act_minimap_bottom_left)
         minimap_menu.addAction(self.act_minimap_bottom_left)
 
         self.act_minimap_bottom_right = QAction(tr_ui("minimap_position_bottom_right"), self, checkable=True)
-        self.act_minimap_bottom_right.triggered.connect(lambda checked: checked and self.viewer.set_minimap_corner("bottom_right"))
+        self.act_minimap_bottom_right.triggered.connect(lambda checked: checked and self.apply_minimap_corner("bottom_right"))
         minimap_group.addAction(self.act_minimap_bottom_right)
         minimap_menu.addAction(self.act_minimap_bottom_right)
 
@@ -2482,12 +2512,12 @@ class MainWindow(QMainWindow):
 
         self.act_minimap_size_large = QAction(tr_ui("minimap_size_large"), self, checkable=True)
         self.act_minimap_size_large.setChecked(True)
-        self.act_minimap_size_large.triggered.connect(lambda checked: checked and self.viewer.set_minimap_size("large"))
+        self.act_minimap_size_large.triggered.connect(lambda checked: checked and self.apply_minimap_size("large"))
         minimap_size_group.addAction(self.act_minimap_size_large)
         minimap_menu.addAction(self.act_minimap_size_large)
 
         self.act_minimap_size_small = QAction(tr_ui("minimap_size_small"), self, checkable=True)
-        self.act_minimap_size_small.triggered.connect(lambda checked: checked and self.viewer.set_minimap_size("small"))
+        self.act_minimap_size_small.triggered.connect(lambda checked: checked and self.apply_minimap_size("small"))
         minimap_size_group.addAction(self.act_minimap_size_small)
         minimap_menu.addAction(self.act_minimap_size_small)
 
