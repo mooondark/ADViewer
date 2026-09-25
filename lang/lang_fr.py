@@ -60,6 +60,8 @@ MSG_UI = {
     "systems_empty": "Chargez un modèle pour afficher les systèmes.",
     "systems_select": "Sélectionner",
     "systems_isolate": "Isoler",
+    "systems_expand_all": "Déplier tout",
+    "systems_collapse_all": "Replier tout",
     "status": "Statut",
     "status_empty": "Chargez un modèle pour afficher son statut.",
     "status_unavailable": "Statut indisponible.",
@@ -642,6 +644,7 @@ MSG_LOG = {
     "log_fem_mesh_no_data": "Maillage FEM : aucune donnée reçue de l'API.",
     "log_reset_before_load_failed": "Impossible de réinitialiser l'API avant le chargement du nouveau modèle.",
     "update_available": "Nouvelle version disponible : {version}",
+    "update_up_to_date": "Vérification terminée. Vous utilisez la dernière version.",
     "update_check_failed": "Vérification de mise à jour impossible (pas d'accès réseau ?).",
 }
 

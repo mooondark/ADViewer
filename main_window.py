@@ -3139,15 +3139,38 @@ class MainWindow(QMainWindow):
         for root_eid in roots:
             add_node(None, root_eid)
 
+    @staticmethod
+    def _set_branch_expanded(item, expanded: bool):
+        item.setExpanded(expanded)
+        for i in range(item.childCount()):
+            MainWindow._set_branch_expanded(item.child(i), expanded)
+
     def _on_systems_tree_context_menu(self, pos):
         items = self.systems_tree.selectedItems()
-        if not items or self.viewer is None:
+        if not items:
             return
         menu = QMenu(self)
-        action_select = menu.addAction(tr_ui("systems_select"))
-        action_isolate = menu.addAction(tr_ui("systems_isolate"))
+        action_select = None
+        action_isolate = None
+        if self.viewer is not None:
+            action_select = menu.addAction(tr_ui("systems_select"))
+            action_isolate = menu.addAction(tr_ui("systems_isolate"))
+            menu.addSeparator()
+        action_expand_all = menu.addAction(tr_ui("systems_expand_all"))
+        action_collapse_all = menu.addAction(tr_ui("systems_collapse_all"))
         chosen = menu.exec(self.systems_tree.viewport().mapToGlobal(pos))
         if chosen is None:
+            return
+
+        if chosen is action_expand_all:
+            for it in items:
+                self._set_branch_expanded(it, True)
+            return
+        if chosen is action_collapse_all:
+            for it in items:
+                self._set_branch_expanded(it, False)
+            return
+        if not items or self.viewer is None:
             return
 
         root_eids = [it.data(0, Qt.UserRole) for it in items]
@@ -3384,7 +3407,7 @@ class MainWindow(QMainWindow):
         return loads_tab
 
     def _build_side_tabs(self, right_splitter):
-        # Deux lignes d'onglets (SYSTÈMES sous JOURNAL) : un QTabWidget ne
+        # Deux lignes d'onglets (STATUT/SYSTÈMES sous JOURNAL) : un QTabWidget ne
         # gère qu'une seule ligne, on assemble donc 2 QTabBar autonomes
         # partageant un même QStackedWidget de contenu.
         row1 = QTabBar()
@@ -3407,16 +3430,16 @@ class MainWindow(QMainWindow):
 
         row1.addTab(tr_ui("journal"))
         row1.addTab(tr_ui("properties"))
-        row1.addTab(tr_ui("takeoff"))
         row1.addTab(tr_ui("results"))
         row1.addTab(tr_ui("loads_panel_title"))
-        row2.addTab(tr_ui("systems"))
+        row1.addTab(tr_ui("takeoff"))
         row2.addTab(tr_ui("status"))
+        row2.addTab(tr_ui("systems"))
 
         content_stack = QStackedWidget()
-        for tab_widget in (log_tab, properties_tab, results_tab, analysis_results_tab, loads_tab, systems_tab, status_tab):
+        for tab_widget in (log_tab, properties_tab, analysis_results_tab, loads_tab, results_tab, status_tab, systems_tab):
             content_stack.addWidget(tab_widget)
-        row2_first_index = content_stack.count() - 2  # index du contenu Systèmes (Statut = +1)
+        row2_first_index = content_stack.count() - 2  # index du contenu Statut (Systèmes = +1)
 
         self.side_tabs = row1
         self.side_tabs_row2 = row2
@@ -3425,7 +3448,7 @@ class MainWindow(QMainWindow):
 
         row1.tabBarClicked.connect(self._activate_side_tab)
         row2.tabBarClicked.connect(self._activate_side_row2_tab)
-        self._activate_side_tab(0)  # etat initial : Journal actif, Systemes inactif
+        self._activate_side_tab(0)  # etat initial : Journal actif, Statut/Systemes inactifs
 
         row1_line = QHBoxLayout()
         row1_line.setContentsMargins(0, 0, 0, 0)
@@ -3531,8 +3554,10 @@ class MainWindow(QMainWindow):
             box.setTextInteractionFlags(Qt.TextBrowserInteraction)
             box.setText(tr_ui("update_available_body", version=latest_version, url=f'<a href="{safe_url}">{safe_url}</a>'))
             box.exec()
-        elif manual:
-            QMessageBox.information(self, tr_ui("update_check_title"), tr_ui("update_up_to_date"))
+        else:
+            self.log(tr_log("update_up_to_date"), "info")
+            if manual:
+                QMessageBox.information(self, tr_ui("update_check_title"), tr_ui("update_up_to_date"))
 
     def _on_update_check_failed(self, manual: bool):
         self.log(tr_log("update_check_failed"), "info")

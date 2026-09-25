@@ -60,6 +60,8 @@ MSG_UI = {
     "systems_empty": "Load a model to display the systems.",
     "systems_select": "Select",
     "systems_isolate": "Isolate",
+    "systems_expand_all": "Expand all",
+    "systems_collapse_all": "Collapse all",
     "status": "Status",
     "status_empty": "Load a model to display its status.",
     "status_unavailable": "Status unavailable.",
@@ -642,6 +644,7 @@ MSG_LOG = {
     "log_fem_mesh_no_data": "FEM mesh: no data received from the API.",
     "log_reset_before_load_failed": "Could not reset the API before loading the new model.",
     "update_available": "New version available: {version}",
+    "update_up_to_date": "Check complete. You are using the latest version.",
     "update_check_failed": "Update check failed (no network access?).",
 }
 

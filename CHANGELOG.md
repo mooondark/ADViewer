@@ -9,12 +9,18 @@
 - Modes d'affichage « Profilés + … » : nouvelle case « Épaisseur des surfaciques » (sous « Couleurs par section »), cochée par défaut, grisée hors des modes Profilés. Affiche les dalles/voiles sous forme de solide épaissi (épaisseur du panneau, décalé de son excentrement le long de la normale locale) au lieu d'une face plane sans épaisseur.
 - Correction : avec l'épaisseur des surfaciques activée, sélectionner un élément surfacique en mode « Profilés + Rendu plein » ne changeait pas sa couleur (surbrillance de sélection enterrée à l'intérieur du solide opaque, car construite sans l'épaisseur).
 - Correction : la surbrillance de sélection des surfaciques n'apparaissait pas de façon fiable sur les éléments quasi perpendiculaires à la caméra (ex : une toiture vue de dessus), à cause d'un scintillement de profondeur (z-fighting) avec la face de base coïncidente.
+- Vérification de mise à jour au démarrage : un message est désormais ajouté au journal lorsque la vérification indique que la version installée est déjà la dernière disponible.
+- Onglet Systèmes : clic droit sur une branche de l'arborescence → nouvelles entrées « Déplier tout » / « Replier tout », appliquées uniquement à la ou aux branches sélectionnées.
+- Réorganisation des onglets du panneau latéral : 1ère ligne Journal / Propriétés / Résultats / Charges / Métré, 2ème ligne Statut / Systèmes.
 
 ### EN
 - Fix: in orthogonal projection, the minimap's orientation cone could look like a plain right triangle instead of a direction fan — coincidence between the fixed angle (45°) and the 45° direction of the default isometric view. Angle reduced to 25°.
 - "Profiles + …" display modes: new "Planar elements thickness" checkbox (under "Color by section"), checked by default, greyed out outside Profiles modes. Renders slabs/walls as a thickened solid (panel thickness, offset by its eccentricity along the local normal) instead of a flat, thickness-less face.
 - Fix: with planar thickness enabled, selecting a planar element in "Profiles + Full render" mode did not change its color (selection highlight buried inside the opaque solid, built without the thickness).
 - Fix: the planar selection highlight did not reliably appear on elements nearly perpendicular to the camera (e.g. a roof viewed from above), due to z-fighting with the coincident base face.
+- Startup update check: a log message is now added when the check finds that the installed version is already the latest available.
+- Systems tab: right-clicking a tree branch now offers "Expand all" / "Collapse all" entries, applied only to the selected branch(es).
+- Reordered the side panel tabs: 1st row Log / Properties / Results / Loads / Takeoff, 2nd row Status / Systems.
 
 ## 2.12
 
