@@ -1693,6 +1693,14 @@ class VTKViewerWidget(QFrame):
                     face_poly = self._build_faces_polydata([item])
                 face_actor = self._make_surface_actor(face_poly, self.selection_color, max(0.18, 0.30 * self._transparency_factor()))
                 if face_actor:
+                    # Le recouvrement est geometriquement coincident avec la
+                    # face de base (plate, ou solide epaissi) : sans decalage,
+                    # le z-fighting le fait perdre a la face de base et le
+                    # recouvrement devient invisible - surtout marque quand la
+                    # surface est quasi perpendiculaire a la camera (ex: une
+                    # toiture vue de dessus, contrairement a un mur vu de biais).
+                    face_actor.GetMapper().SetResolveCoincidentTopologyToPolygonOffset()
+                    face_actor.GetMapper().SetRelativeCoincidentTopologyPolygonOffsetParameters(-4, -4)
                     overlays.append(face_actor)
 
         elif role == "load_areas":
