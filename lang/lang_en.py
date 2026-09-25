@@ -43,6 +43,7 @@ MSG_UI = {
     "show_mesh": "Show mesh",
     "show_punctual_loads": "Show point loads",
     "color_by_section": "Color by section",
+    "planar_thickness": "Planar elements thickness",
 
     "view3d": "3D view",
     "journal": "Log",

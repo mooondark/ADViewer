@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## À paraître
+
+### FR
+- Modes d'affichage « Profilés + … » : nouvelle case « Épaisseur des surfaciques » (sous « Couleurs par section »), cochée par défaut, grisée hors des modes Profilés. Affiche les dalles/voiles sous forme de solide épaissi (épaisseur du panneau, décalé de son excentrement le long de la normale locale) au lieu d'une face plane sans épaisseur.
+
+### EN
+- "Profiles + …" display modes: new "Planar elements thickness" checkbox (under "Color by section"), checked by default, greyed out outside Profiles modes. Renders slabs/walls as a thickened solid (panel thickness, offset by its eccentricity along the local normal) instead of a flat, thickness-less face.
+
 ## 2.12
 
 ### FR

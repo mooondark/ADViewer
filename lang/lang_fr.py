@@ -43,6 +43,7 @@ MSG_UI = {
     "show_mesh": "Afficher le maillage",
     "show_punctual_loads": "Afficher charges ponctuelles",
     "color_by_section": "Couleur par section",
+    "planar_thickness": "Épaisseur des surfaciques",
 
     "view3d": "Vue 3D",
     "journal": "Journal",

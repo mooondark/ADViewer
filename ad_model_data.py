@@ -904,6 +904,23 @@ def extract_planar_element_properties(el: dict, material_by_eid: dict):
     }
 
 
+def extract_planar_thickness_eccentricity(el: dict):
+    """Epaisseur et excentrement bruts (metres, valeur du modele), pour la
+    construction du solide epaissi en mode Profiles - distinct des versions
+    formatees (texte, cm) utilisees dans le panneau Proprietes."""
+    if not isinstance(el, dict):
+        return 0.0, 0.0
+    try:
+        thickness = float(_dict_get_ci(el, "thicknessIn1stVertex", "thickness") or 0.0)
+    except (TypeError, ValueError):
+        thickness = 0.0
+    try:
+        eccentricity = float(_dict_get_ci(el, "eccentricity") or 0.0)
+    except (TypeError, ValueError):
+        eccentricity = 0.0
+    return thickness, eccentricity
+
+
 def extract_planar_geometry(el: dict):
     pts = el.get("geomPtsList") or []
     outer = []
@@ -2493,6 +2510,8 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
     planars = []
     planar_eids = []
     planar_properties = []
+    planar_thicknesses = []
+    planar_eccentricities = []
     load_areas = []
     load_area_properties = []
     punctual_supports = []
@@ -2535,6 +2554,9 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
         planars.append(geom)
         planar_eids.append(int(planar_eid) if planar_eid is not None else None)
         planar_properties.append(extract_planar_element_properties(el, planar_material_by_eid))
+        thickness, eccentricity = extract_planar_thickness_eccentricity(el)
+        planar_thicknesses.append(thickness)
+        planar_eccentricities.append(eccentricity)
         planar_system_ids.append(_extract_system_ids(el))
 
     for el in load_area_elements:
@@ -2598,6 +2620,8 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
         "planars": planars,
         "planar_eids": planar_eids,
         "planar_properties": planar_properties,
+        "planar_thicknesses": planar_thicknesses,
+        "planar_eccentricities": planar_eccentricities,
         "load_areas": load_areas,
         "load_area_properties": load_area_properties,
         "linear_takeoff": linear_takeoff,

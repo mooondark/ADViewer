@@ -2879,6 +2879,12 @@ class MainWindow(QMainWindow):
         self.chk_color_by_section.toggled.connect(self.on_toggle_color_by_section)
         action_card.layout.addWidget(self.chk_color_by_section)
 
+        self.chk_planar_thickness = QCheckBox(tr_ui("planar_thickness"))
+        self.chk_planar_thickness.setChecked(True)
+        self.chk_planar_thickness.setEnabled(False)
+        self.chk_planar_thickness.toggled.connect(self.on_toggle_planar_thickness)
+        action_card.layout.addWidget(self.chk_planar_thickness)
+
         self.help_label = QLabel(tr_ui("help_controls"))
         self.help_label.setToolTip(tr_ui("help_controls_tooltip"))
         self.help_label.setStyleSheet(f"color:{FG_DIM};")
@@ -5685,6 +5691,10 @@ class MainWindow(QMainWindow):
             color = FG_DIM if profiles_enabled else BORDER
             self.profiles_transparency_value_label.setStyleSheet(f"color:{color}; min-width:48px;")
 
+        # "Épaisseur des surfaciques" : actif uniquement en mode Profilés (+ ...)
+        if self.chk_planar_thickness is not None:
+            self.chk_planar_thickness.setEnabled(mode in _PROFILE_MODES)
+
     def _update_api_button_state(self):
         running = bool(self.api_server_process and self.api_server_process.poll() is None)
         if not running:
@@ -6339,6 +6349,10 @@ class MainWindow(QMainWindow):
             "info",
         )
 
+    def on_toggle_planar_thickness(self, checked: bool):
+        if self.viewer:
+            self.viewer.set_planar_thickness_enabled(checked)
+
     def on_display_mode_changed(self, index: int):
         mode = self.cmb_display_mode.currentData()
         if self.viewer is None:
@@ -6393,6 +6407,7 @@ class MainWindow(QMainWindow):
         if self.viewer is not None and mode is not None:
             self.viewer._display_mode = mode
             self.viewer._apply_profiles_build_result(base_pd)
+            self.viewer._rebuild_planar_faces_actor()
             self.viewer._apply_visibility_state()
             self.viewer.render_window.Render()
         if self.load_progress_container is not None:
@@ -6554,7 +6569,7 @@ class MainWindow(QMainWindow):
             self.api_on_btn, self.api_off_btn, self.api_restart_btn,
             self.chk_lines, self.chk_planars, self.chk_load_areas,
             self.chk_support_punctual, self.chk_support_linear, self.chk_support_planar,
-            self.chk_marker, self.chk_color_by_section, self.cmb_display_mode, self.clear_log_btn
+            self.chk_marker, self.chk_color_by_section, self.chk_planar_thickness, self.cmb_display_mode, self.clear_log_btn
         ]
         for w in widgets:
             if w is not None:
@@ -6685,9 +6700,14 @@ class MainWindow(QMainWindow):
             self.chk_color_by_section.blockSignals(True)
             self.chk_color_by_section.setChecked(True)
             self.chk_color_by_section.blockSignals(False)
+        if self.chk_planar_thickness is not None:
+            self.chk_planar_thickness.blockSignals(True)
+            self.chk_planar_thickness.setChecked(True)
+            self.chk_planar_thickness.blockSignals(False)
         self._set_load_progress(100, tr_ui("progress_render_done"))
         self.viewer.load_model(model_data)
         self.viewer.set_color_by_section(True)
+        self.viewer.set_planar_thickness_enabled(True)
         self.viewer.set_linear_result_scale_factor(self.analysis_results_scale_spin.value() if self.analysis_results_scale_spin is not None else 10.0)
         self.viewer.set_isolated_selection(None)
         self._apply_isolate_button_icon(False)

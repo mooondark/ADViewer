@@ -430,6 +430,7 @@ class VTKViewerWidget(QFrame):
         self._show_linear_loads = False
         self._show_planar_loads = False
         self._color_by_section = False
+        self._planar_thickness_enabled = False
         self._section_color_map = {}
         self._display_mode = "wire_hidden"
 
@@ -699,6 +700,13 @@ class VTKViewerWidget(QFrame):
             self._section_color_map = {}
         self._rebuild_filtered_structural_actors()
 
+    def set_planar_thickness_enabled(self, enabled: bool):
+        self._planar_thickness_enabled = bool(enabled)
+        self._rebuild_planar_faces_actor()
+        self._apply_visibility_state()
+        if self.render_window is not None:
+            self.render_window.Render()
+
 
     def _base_face_color_opacity(self, role: str):
         if role == "planars":
@@ -801,6 +809,45 @@ class VTKViewerWidget(QFrame):
             return None
         return (x / length, y / length, z / length)
 
+    def _polygon_local_frame(self, outer):
+        """Repere local (normale, u, v) d'un polygone 3D : normale via le
+        premier triangle non degenere du contour, u le long du premier
+        segment non degenere, v = normal x u. Fallbacks identiques si le
+        contour est trop degenere pour en tirer un axe (polygone a 2 points
+        distincts, etc.)."""
+        normal = None
+        for i in range(1, len(outer) - 1):
+            ax, ay, az = outer[0]
+            bx, by, bz = outer[i]
+            cx, cy, cz = outer[i + 1]
+            ux, uy, uz = bx - ax, by - ay, bz - az
+            vx, vy, vz = cx - ax, cy - ay, cz - az
+            normal = self._normalize_vector3((uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx))
+            if normal is not None:
+                break
+        if normal is None:
+            normal = (0.0, 0.0, 1.0)
+
+        u_vec = None
+        for i in range(len(outer)):
+            p1 = outer[i]
+            p2 = outer[(i + 1) % len(outer)]
+            u_vec = self._normalize_vector3((p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]))
+            if u_vec is not None:
+                break
+        if u_vec is None:
+            fallback = (1.0, 0.0, 0.0) if abs(normal[0]) < 0.9 else (0.0, 1.0, 0.0)
+            proj = fallback[0] * normal[0] + fallback[1] * normal[1] + fallback[2] * normal[2]
+            u_vec = self._normalize_vector3((fallback[0] - proj * normal[0], fallback[1] - proj * normal[1], fallback[2] - proj * normal[2])) or (1.0, 0.0, 0.0)
+
+        v_vec = self._normalize_vector3((
+            normal[1] * u_vec[2] - normal[2] * u_vec[1],
+            normal[2] * u_vec[0] - normal[0] * u_vec[2],
+            normal[0] * u_vec[1] - normal[1] * u_vec[0],
+        )) or (0.0, 1.0, 0.0)
+
+        return normal, u_vec, v_vec
+
     def _compute_planar_support_centroid_info(self, item: dict):
         if not isinstance(item, dict):
             return None
@@ -850,36 +897,7 @@ class VTKViewerWidget(QFrame):
             count = float(len(outer))
             center = (sx / count, sy / count, sz / count)
 
-        normal = None
-        for i in range(1, len(outer) - 1):
-            ax, ay, az = outer[0]
-            bx, by, bz = outer[i]
-            cx2, cy2, cz2 = outer[i + 1]
-            ux, uy, uz = bx - ax, by - ay, bz - az
-            vx, vy, vz = cx2 - ax, cy2 - ay, cz2 - az
-            normal = self._normalize_vector3((uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx))
-            if normal is not None:
-                break
-        if normal is None:
-            normal = (0.0, 0.0, 1.0)
-
-        u_vec = None
-        for i in range(len(outer)):
-            p1 = outer[i]
-            p2 = outer[(i + 1) % len(outer)]
-            u_vec = self._normalize_vector3((p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]))
-            if u_vec is not None:
-                break
-        if u_vec is None:
-            fallback = (1.0, 0.0, 0.0) if abs(normal[0]) < 0.9 else (0.0, 1.0, 0.0)
-            proj = fallback[0] * normal[0] + fallback[1] * normal[1] + fallback[2] * normal[2]
-            u_vec = self._normalize_vector3((fallback[0] - proj * normal[0], fallback[1] - proj * normal[1], fallback[2] - proj * normal[2])) or (1.0, 0.0, 0.0)
-
-        v_vec = self._normalize_vector3((
-            normal[1] * u_vec[2] - normal[2] * u_vec[1],
-            normal[2] * u_vec[0] - normal[0] * u_vec[2],
-            normal[0] * u_vec[1] - normal[1] * u_vec[0],
-        )) or (0.0, 1.0, 0.0)
+        _normal, u_vec, v_vec = self._polygon_local_frame(outer)
 
         size = max(0.10, float(self.support_punctual_size))
 
@@ -1170,6 +1188,67 @@ class VTKViewerWidget(QFrame):
         out = vtk.vtkPolyData()
         out.ShallowCopy(normals.GetOutput())
         return out
+
+    def _build_planar_thickness_polydata(self, items, thicknesses=None, eccentricities=None, element_indexes=None):
+        """Comme _build_faces_polydata, mais chaque panneau devient un solide
+        epaissi (loft entre le plan -epaisseur/2 et +epaisseur/2 autour du
+        plan de reference, decale de l'excentrement le long de la normale
+        locale) au lieu d'une face plane sans epaisseur. Reutilise le loft
+        deja utilise pour les solides de profils filaires (_loft_solid_polydata),
+        qui gere deja les trous (openings) et les parois."""
+        append = vtk.vtkAppendPolyData()
+        appended = False
+        mapped_indexes = list(element_indexes or [])
+        thick_list = list(thicknesses or [])
+        ecc_list = list(eccentricities or [])
+
+        for idx, item in enumerate(items or []):
+            outer = list((item or {}).get("outer") or [])
+            if len(outer) < 3:
+                continue
+            openings = [list(h) for h in ((item or {}).get("openings") or []) if len(h) >= 3]
+            thickness = float(thick_list[idx]) if idx < len(thick_list) else 0.0
+            eccentricity = float(ecc_list[idx]) if idx < len(ecc_list) else 0.0
+            source_idx = mapped_indexes[idx] if idx < len(mapped_indexes) else idx
+
+            normal, u_vec, v_vec = self._polygon_local_frame(outer)
+            origin = outer[0]
+
+            def _project(pt, _origin=origin, _u=u_vec, _v=v_vec):
+                dx, dy, dz = pt[0] - _origin[0], pt[1] - _origin[1], pt[2] - _origin[2]
+                return (dx * _u[0] + dy * _u[1] + dz * _u[2],
+                        dx * _v[0] + dy * _v[1] + dz * _v[2])
+
+            loops2d = [[_project(p) for p in outer]]
+            for hole in openings:
+                loops2d.append([_project(p) for p in hole])
+
+            half = thickness / 2.0
+
+            def _mk_to3d(offset, _origin=origin, _u=u_vec, _v=v_vec, _n=normal):
+                def to3d(p2):
+                    w, d = p2
+                    return (_origin[0] + w * _u[0] + d * _v[0] + offset * _n[0],
+                            _origin[1] + w * _u[1] + d * _v[1] + offset * _n[1],
+                            _origin[2] + w * _u[2] + d * _v[2] + offset * _n[2])
+                return to3d
+
+            pd = self._loft_solid_polydata(
+                loops2d, _mk_to3d(eccentricity - half),
+                loops2d, _mk_to3d(eccentricity + half),
+                int(source_idx),
+            )
+            if pd is not None and pd.GetNumberOfCells() > 0:
+                append.AddInputData(pd)
+                appended = True
+
+        if not appended:
+            return None
+
+        append.Update()
+        out = vtk.vtkPolyData()
+        out.ShallowCopy(append.GetOutput())
+        return out if out.GetNumberOfCells() > 0 else None
 
     def _tag_cells(self, polydata, source_idx: int):
         elem_ids = self._make_int_array()
@@ -5129,6 +5208,8 @@ class VTKViewerWidget(QFrame):
             "planars": list(model_data.get("planars", [])),
             "planar_eids": list(model_data.get("planar_eids", [])),
             "planar_properties": list(model_data.get("planar_properties", [])),
+            "planar_thicknesses": list(model_data.get("planar_thicknesses", []) or []),
+            "planar_eccentricities": list(model_data.get("planar_eccentricities", []) or []),
             "load_areas": list(model_data.get("load_areas", [])),
             "punctual_supports": list(model_data.get("punctual_supports", [])),
             "punctual_support_eids": list(model_data.get("punctual_support_eids", [])),
@@ -5254,6 +5335,30 @@ class VTKViewerWidget(QFrame):
     def _select_items_by_indexes(self, items, indexes):
         source = list(items or [])
         return [source[int(idx)] for idx in indexes if 0 <= int(idx) < len(source)]
+
+    def _rebuild_planar_faces_actor(self):
+        """Reconstruit uniquement l'acteur des faces surfaciques (plat, ou
+        epaissi si _planar_thickness_enabled et mode Profiles), sans toucher
+        aux autres acteurs. Separee de _rebuild_filtered_structural_actors
+        pour pouvoir etre appelee seule depuis main_window._on_profiles_build_ready
+        (fin du worker de construction des profils filaires) sans re-declencher
+        ce dernier, qui a son propre pipeline pour _profiles_actor/_profiles_base_pd."""
+        planar_indexes = self._filtered_planar_indexes()
+        filtered_planars = self._select_items_by_indexes(self._model_data.get("planars", []), planar_indexes)
+        if self._planar_thickness_enabled and self._display_mode in _PROFILE_MODES:
+            filtered_thicknesses = self._select_items_by_indexes(self._model_data.get("planar_thicknesses", []) or [], planar_indexes)
+            filtered_eccentricities = self._select_items_by_indexes(self._model_data.get("planar_eccentricities", []) or [], planar_indexes)
+            planar_faces_pd = self._build_planar_thickness_polydata(
+                filtered_planars, filtered_thicknesses, filtered_eccentricities, element_indexes=planar_indexes,
+            )
+        else:
+            planar_faces_pd = self._build_faces_polydata(filtered_planars, element_indexes=planar_indexes)
+        self._replace_actor(
+            "_planar_faces_actor",
+            self._make_surface_actor(planar_faces_pd, self.planar_color, self.planar_faces_base_opacity),
+            role="planars",
+            pickable=True,
+        )
 
     def _rebuild_profiles_actor(self, line_indexes=None, filtered_lines=None, filtered_line_sections=None, synchronous=True):
         """Reconstruit le solide des profils (couteux : tous les elements). La
@@ -5523,12 +5628,7 @@ class VTKViewerWidget(QFrame):
             role="planars",
             pickable=True,
         )
-        self._replace_actor(
-            "_planar_faces_actor",
-            self._make_surface_actor(self._build_faces_polydata(filtered_planars, element_indexes=planar_indexes), self.planar_color, self.planar_faces_base_opacity),
-            role="planars",
-            pickable=True,
-        )
+        self._rebuild_planar_faces_actor()
         self._replace_actor(
             "_openings_actor",
             self._make_wire_actor(self._build_loops_wire_polydata(filtered_planars, openings=True, element_indexes=planar_indexes), self.opening_color, self.opening_line_width),
