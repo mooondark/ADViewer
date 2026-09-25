@@ -80,9 +80,9 @@ def test_horizontal_half_fov_deg_wide_aspect_widens_fov():
     assert result > 30.0
 
 
-def test_horizontal_half_fov_deg_parallel_projection_is_fixed_45():
+def test_horizontal_half_fov_deg_parallel_projection_is_fixed_25():
     result = minimap.horizontal_half_fov_deg(60.0, 2.0, is_parallel=True)
-    assert result == 45.0
+    assert result == 25.0
 
 
 if __name__ == "__main__":

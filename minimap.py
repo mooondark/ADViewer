@@ -58,9 +58,12 @@ def horizontal_half_fov_deg(camera_view_angle_deg: float, aspect_ratio: float, i
     """Demi-angle de champ de vision horizontal reel. VTK expose l'angle
     vertical (camera.GetViewAngle()) ; conversion via l'aspect ratio du
     viewport. En projection orthogonale (is_parallel=True), pas de FOV
-    angulaire reel : angle fixe de 45 degres (decision de design)."""
+    angulaire reel : angle fixe de 25 degres (decision de design - une valeur
+    de 45 degres coincide exactement avec les axes X/Y a la vue isometrique
+    par defaut, direction a 45 degres en XY, rendant le cone indiscernable
+    d'un simple triangle rectangle)."""
     if is_parallel:
-        return 45.0
+        return 25.0
     half_vertical_rad = math.radians(float(camera_view_angle_deg)) / 2.0
     half_horizontal_rad = math.atan(math.tan(half_vertical_rad) * float(aspect_ratio))
     return math.degrees(half_horizontal_rad)
