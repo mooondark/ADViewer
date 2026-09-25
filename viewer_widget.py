@@ -1679,7 +1679,18 @@ class VTKViewerWidget(QFrame):
                 opening_actor = self._make_wire_actor(opening_poly, self.selection_color, line_width)
                 if opening_actor:
                     overlays.append(opening_actor)
-                face_poly = self._build_faces_polydata([item])
+                if self._planar_thickness_enabled and self._display_mode in _PROFILE_MODES:
+                    # Le recouvrement de selection doit suivre la meme geometrie
+                    # (solide epaissi) que _planar_faces_actor, sinon une face
+                    # plate au plan de reference se retrouve enterree a
+                    # l'interieur du solide opaque et devient invisible.
+                    thicknesses = self._model_data.get("planar_thicknesses", []) or []
+                    eccentricities = self._model_data.get("planar_eccentricities", []) or []
+                    thickness = float(thicknesses[index]) if index < len(thicknesses) else 0.0
+                    eccentricity = float(eccentricities[index]) if index < len(eccentricities) else 0.0
+                    face_poly = self._build_planar_thickness_polydata([item], [thickness], [eccentricity])
+                else:
+                    face_poly = self._build_faces_polydata([item])
                 face_actor = self._make_surface_actor(face_poly, self.selection_color, max(0.18, 0.30 * self._transparency_factor()))
                 if face_actor:
                     overlays.append(face_actor)

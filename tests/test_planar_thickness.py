@@ -99,6 +99,65 @@ def test_build_planar_thickness_polydata_with_opening_still_builds_solid():
     assert pd.GetNumberOfCells() > 0
 
 
+def _widget_with_selection_state(thickness_enabled, display_mode):
+    w = _widget()
+    w.linear_color = (0.5, 0.5, 0.5)
+    w.linear_line_width = 1.0
+    w.planar_color = (0.5, 0.5, 0.5)
+    w.planar_line_width = 1.0
+    w.load_area_color = (0.5, 0.5, 0.5)
+    w.load_area_line_width = 1.0
+    w.support_punctual_color = (0.5, 0.5, 0.5)
+    w.support_punctual_line_width = 1.0
+    w.support_linear_color = (0.5, 0.5, 0.5)
+    w.support_linear_line_width = 1.0
+    w.support_planar_color = (0.5, 0.5, 0.5)
+    w.support_planar_line_width = 1.0
+    w.punctual_load_color = (0.5, 0.5, 0.5)
+    w.linear_load_color = (0.5, 0.5, 0.5)
+    w.planar_load_color = (0.5, 0.5, 0.5)
+    w.selection_color = (1.0, 0.0, 0.0)
+    w.selection_line_width = 3.5
+    w._transparency_percent = 0
+    w._display_mode = display_mode
+    w._planar_thickness_enabled = thickness_enabled
+    w._model_data = {
+        "planars": [{"outer": _SQUARE_XY, "openings": []}],
+        "planar_thicknesses": [0.3],
+        "planar_eccentricities": [0.0],
+    }
+    return w
+
+
+def test_selection_overlay_planar_face_matches_flat_base_outside_profile_mode():
+    w = _widget_with_selection_state(thickness_enabled=True, display_mode="wire_hidden")
+    overlays = w._make_selection_overlay_actors("planars", 0)
+    face_overlay = overlays[-1]  # wire, openings-wire, puis face (cf. _make_selection_overlay_actors)
+    zmin, zmax = face_overlay.GetMapper().GetInput().GetBounds()[4:6]
+    assert abs(zmin) < 1e-9 and abs(zmax) < 1e-9  # face plate hors mode Profiles
+
+
+def test_selection_overlay_planar_face_matches_thick_base_in_profile_mode():
+    """Regression : le recouvrement de selection doit suivre l'epaisseur du
+    solide de base en mode Profiles, sinon il se retrouve enterre a
+    l'interieur du solide opaque et devient invisible (bug rapporte apres
+    l'ajout de l'option Epaisseur des surfaciques)."""
+    w = _widget_with_selection_state(thickness_enabled=True, display_mode="profiles_full")
+    overlays = w._make_selection_overlay_actors("planars", 0)
+    face_overlay = overlays[-1]
+    zmin, zmax = face_overlay.GetMapper().GetInput().GetBounds()[4:6]
+    assert abs(zmin - (-0.15)) < 1e-6
+    assert abs(zmax - 0.15) < 1e-6
+
+
+def test_selection_overlay_planar_face_stays_flat_in_profile_mode_when_thickness_disabled():
+    w = _widget_with_selection_state(thickness_enabled=False, display_mode="profiles_full")
+    overlays = w._make_selection_overlay_actors("planars", 0)
+    face_overlay = overlays[-1]
+    zmin, zmax = face_overlay.GetMapper().GetInput().GetBounds()[4:6]
+    assert abs(zmin) < 1e-9 and abs(zmax) < 1e-9
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

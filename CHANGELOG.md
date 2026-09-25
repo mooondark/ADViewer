@@ -7,10 +7,12 @@
 ### FR
 - Correction : en projection orthogonale, le cône d'orientation de la minicarte pouvait apparaître comme un simple triangle rectangle au lieu d'un éventail de direction — coïncidence entre l'angle fixe (45°) et la direction à 45° de la vue isométrique par défaut. Angle réduit à 25°.
 - Modes d'affichage « Profilés + … » : nouvelle case « Épaisseur des surfaciques » (sous « Couleurs par section »), cochée par défaut, grisée hors des modes Profilés. Affiche les dalles/voiles sous forme de solide épaissi (épaisseur du panneau, décalé de son excentrement le long de la normale locale) au lieu d'une face plane sans épaisseur.
+- Correction : avec l'épaisseur des surfaciques activée, sélectionner un élément surfacique en mode « Profilés + Rendu plein » ne changeait pas sa couleur (surbrillance de sélection enterrée à l'intérieur du solide opaque, car construite sans l'épaisseur).
 
 ### EN
 - Fix: in orthogonal projection, the minimap's orientation cone could look like a plain right triangle instead of a direction fan — coincidence between the fixed angle (45°) and the 45° direction of the default isometric view. Angle reduced to 25°.
 - "Profiles + …" display modes: new "Planar elements thickness" checkbox (under "Color by section"), checked by default, greyed out outside Profiles modes. Renders slabs/walls as a thickened solid (panel thickness, offset by its eccentricity along the local normal) instead of a flat, thickness-less face.
+- Fix: with planar thickness enabled, selecting a planar element in "Profiles + Full render" mode did not change its color (selection highlight buried inside the opaque solid, built without the thickness).
 
 ## 2.12
 
