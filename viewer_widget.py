@@ -2553,6 +2553,9 @@ class VTKViewerWidget(QFrame):
     def set_minimap_corner(self, corner: str):
         self._minimap.set_corner(corner)
 
+    def set_minimap_size(self, size: str):
+        self._minimap.set_size(size)
+
     def get_display_counts(self):
         return {
             "lines": self.lines_count,

@@ -2475,6 +2475,22 @@ class MainWindow(QMainWindow):
         minimap_group.addAction(self.act_minimap_bottom_right)
         minimap_menu.addAction(self.act_minimap_bottom_right)
 
+        minimap_menu.addSeparator()
+
+        minimap_size_group = QActionGroup(self)
+        minimap_size_group.setExclusive(True)
+
+        self.act_minimap_size_large = QAction(tr_ui("minimap_size_large"), self, checkable=True)
+        self.act_minimap_size_large.setChecked(True)
+        self.act_minimap_size_large.triggered.connect(lambda checked: checked and self.viewer.set_minimap_size("large"))
+        minimap_size_group.addAction(self.act_minimap_size_large)
+        minimap_menu.addAction(self.act_minimap_size_large)
+
+        self.act_minimap_size_small = QAction(tr_ui("minimap_size_small"), self, checkable=True)
+        self.act_minimap_size_small.triggered.connect(lambda checked: checked and self.viewer.set_minimap_size("small"))
+        minimap_size_group.addAction(self.act_minimap_size_small)
+        minimap_menu.addAction(self.act_minimap_size_small)
+
         # Sous-menu Configuration
         configuration_menu = QMenu(tr_ui("menu_configuration"), self)
         settings_menu.addMenu(configuration_menu)

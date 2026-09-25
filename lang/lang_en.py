@@ -364,6 +364,8 @@ MSG_UI = {
     "menu_minimap": "Minimap",
     "minimap_position_bottom_left": "Bottom left",
     "minimap_position_bottom_right": "Bottom right",
+    "minimap_size_large": "Large size",
+    "minimap_size_small": "Small size",
     "scene_light_dialog_title": "Scene lighting",
     "scene_light_intensity": "Intensity",
     "scene_light_azimuth": "Azimuth",

@@ -364,6 +364,8 @@ MSG_UI = {
     "menu_minimap": "Minicarte",
     "minimap_position_bottom_left": "En bas à gauche",
     "minimap_position_bottom_right": "En bas à droite",
+    "minimap_size_large": "Grande taille",
+    "minimap_size_small": "Petite taille",
     "scene_light_dialog_title": "Éclairage de la scène",
     "scene_light_intensity": "Intensité",
     "scene_light_azimuth": "Azimut",

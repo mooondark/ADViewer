@@ -85,6 +85,7 @@ class MinimapController:
         self.renderer = None
         self.frame_actor = None
         self.corner = None
+        self.size = None
         self.visible = False
         self.lines_actor = None
         self.planar_actor = None
@@ -104,6 +105,7 @@ class MinimapController:
         import viewer_config as _cfg
 
         self.corner = _cfg.MINIMAP_DEFAULT_CORNER
+        self.size = _cfg.MINIMAP_DEFAULT_SIZE
 
         renderer = vtk.vtkRenderer()
         renderer.InteractiveOff()
@@ -213,6 +215,10 @@ class MinimapController:
         self.update_viewport()
         self.host._sync_orientation_widget_corner()
 
+    def set_size(self, size: str):
+        self.size = size if size in ("large", "small") else "large"
+        self.update_viewport()
+
     def update_viewport(self):
         import viewer_config as _cfg
 
@@ -220,7 +226,8 @@ class MinimapController:
             return
         w = max(1, self.host.width())
         h = max(1, self.host.height())
-        rect = viewport_rect(self.corner, float(w), float(h), size_px=_cfg.MINIMAP_SIZE_PX)
+        size_px = _cfg.MINIMAP_SIZE_SMALL_PX if self.size == "small" else _cfg.MINIMAP_SIZE_LARGE_PX
+        rect = viewport_rect(self.corner, float(w), float(h), size_px=size_px)
         self.renderer.SetViewport(*rect)
 
         margin_x = self.FRAME_MARGIN_PX / float(w)

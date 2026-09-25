@@ -353,9 +353,11 @@ MINIMAP_CAMERA_COLOR = (0xce / 255.0, 0xe0 / 255.0, 0xf5 / 255.0)
 # et avec le filaire quel que soit le theme.
 MINIMAP_CAMERA_OUTLINE_COLOR = (1.0, 0.42, 0.13)
 MINIMAP_CAMERA_CONE_OPACITY = 0.75
-MINIMAP_SIZE_PX = 300.0
+MINIMAP_SIZE_LARGE_PX = 300.0
+MINIMAP_SIZE_SMALL_PX = 200.0
 MINIMAP_SYNC_INTERVAL_MS = 200
 MINIMAP_DEFAULT_CORNER = "bottom_left"
+MINIMAP_DEFAULT_SIZE = "large"
 
 
 def _lookup(dict_name: str, key: str) -> str:
