@@ -528,31 +528,37 @@ class SceneLightDialog(QDialog):
 
         layout = QVBoxLayout(self)
 
+        grid = QGridLayout()
+        grid.setColumnStretch(1, 1)
+        layout.addLayout(grid)
+
         def row(label_key, spin_min, spin_max, spin_decimals, spin_suffix, slider_min, slider_max):
-            box = QHBoxLayout()
-            box.addWidget(QLabel(tr_ui(label_key)))
+            r = grid.rowCount()
             slider = QSlider(Qt.Horizontal)
             slider.setRange(slider_min, slider_max)
             spin = QDoubleSpinBox()
             spin.setRange(spin_min, spin_max)
             spin.setDecimals(spin_decimals)
             spin.setSuffix(spin_suffix)
-            box.addWidget(slider, 1)
-            box.addWidget(spin)
-            layout.addLayout(box)
+            spin.setFixedWidth(90)
+            grid.addWidget(QLabel(tr_ui(label_key)), r, 0)
+            grid.addWidget(slider, r, 1)
+            grid.addWidget(spin, r, 2)
             return slider, spin
 
         self._intensity_slider, self._intensity_spin = row(
             "scene_light_intensity", 0.0, 2.0, 2, "", 0, 200)
         self._azimuth_slider, self._azimuth_spin = row(
-            "scene_light_azimuth", -180.0, 180.0, 0, " °", -180, 180)
+            "scene_light_azimuth", -180.0, 180.0, 1, " °", -360, 360)
         self._elevation_slider, self._elevation_spin = row(
-            "scene_light_elevation", -90.0, 90.0, 0, " °", -90, 90)
+            "scene_light_elevation", -90.0, 90.0, 1, " °", -180, 180)
+        self._azimuth_spin.setSingleStep(0.5)
+        self._elevation_spin.setSingleStep(0.5)
 
         for slider, spin, scale in (
             (self._intensity_slider, self._intensity_spin, self._INTENSITY_STEPS),
-            (self._azimuth_slider, self._azimuth_spin, 1),
-            (self._elevation_slider, self._elevation_spin, 1),
+            (self._azimuth_slider, self._azimuth_spin, 2),
+            (self._elevation_slider, self._elevation_spin, 2),
         ):
             slider.valueChanged.connect(lambda v, s=spin, sc=scale: s.setValue(v / sc))
             spin.valueChanged.connect(lambda v, sl=slider, sc=scale: sl.setValue(round(v * sc)))
@@ -610,6 +616,58 @@ class SceneLightDialog(QDialog):
         if self.viewer is not None:
             self.viewer.hide_scene_light_gizmo()
         super().closeEvent(event)
+
+
+class ControlsDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(tr_ui("controls_dialog_title"))
+        self.setModal(True)
+        self.resize(640, 560)
+
+        general_keys = (
+            "wheel", "left_drag", "left_click", "right_click", "middle_drag", "middle_double",
+            "escape", "zoom_window", "window_select", "view_front_back", "view_left_right",
+            "view_top_bottom", "view_iso", "open", "quit",
+        )
+        kb = {action: key.upper() for action, key in get_flight_key_bindings().items()}
+        nav_rows = [
+            tr_ui("controls_nav_forward_back", forward=kb["forward"], backward=kb["backward"]),
+            tr_ui("controls_nav_left_right", left=kb["left"], right=kb["right"]),
+            tr_ui("controls_nav_up_down", up=kb["up"], down=kb["down"]),
+            tr_ui("controls_nav_look"),
+            tr_ui("controls_nav_fast"),
+            tr_ui("controls_nav_slow"),
+            tr_ui("controls_nav_home"),
+            tr_ui("controls_nav_exit"),
+        ]
+
+        def section(title, rows, intro=""):
+            items = "".join(f"<li>{row}</li>" for row in rows)
+            intro_html = f"<p><i>{intro}</i></p>" if intro else ""
+            return f"<h3 style='color:{ACCENT};'>{title}</h3>{intro_html}<ul>{items}</ul>"
+
+        html = (
+            section(tr_ui("controls_section_general"), [tr_ui(f"controls_general_{k}") for k in general_keys])
+            + section(tr_ui("controls_section_navigation"), nav_rows, tr_ui("controls_nav_intro"))
+        )
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 10, 12, 10)
+        content = QLabel(html)
+        content.setTextFormat(Qt.RichText)
+        content.setWordWrap(True)
+        content.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        content.setStyleSheet(f"color:{FG};")
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setWidget(content)
+        layout.addWidget(scroll, 1)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
 
 
 class AboutDialog(QDialog):
@@ -1305,7 +1363,6 @@ class MainWindow(QMainWindow):
         self.side_tabs_row2 = None
         self.side_content_stack = None
 
-        self.help_label = None
         self.title_bar = None
         self._suspend_config_save = False
         self.current_model_data: Optional[ModelDataDict] = None
@@ -2400,14 +2457,6 @@ class MainWindow(QMainWindow):
         act_export_ifc.triggered.connect(self.export_ifc_from_viewer)
         file_menu.addAction(act_export_ifc)
 
-        act_about = QAction(tr_ui("menu_about"), self)
-        act_about.triggered.connect(self.open_about_dialog)
-        file_menu.addAction(act_about)
-
-        act_check_update = QAction(tr_ui("menu_check_update"), self)
-        act_check_update.triggered.connect(self.check_for_update_manual)
-        file_menu.addAction(act_check_update)
-
         file_menu.addSeparator()
 
         act_quit = QAction(tr_ui("menu_quit"), self)
@@ -2532,6 +2581,21 @@ class MainWindow(QMainWindow):
         act_api_url = QAction(tr_ui("menu_api_url"), self)
         act_api_url.triggered.connect(self.open_api_url_dialog)
         configuration_menu.addAction(act_api_url)
+
+        # ── Menu Aide ──
+        help_menu = menu_bar.addMenu(tr_ui("menu_help"))
+
+        act_controls = QAction(tr_ui("menu_controls"), self)
+        act_controls.triggered.connect(self.open_controls_dialog)
+        help_menu.addAction(act_controls)
+
+        act_check_update = QAction(tr_ui("menu_check_update"), self)
+        act_check_update.triggered.connect(self.check_for_update_manual)
+        help_menu.addAction(act_check_update)
+
+        act_about = QAction(tr_ui("menu_about"), self)
+        act_about.triggered.connect(self.open_about_dialog)
+        help_menu.addAction(act_about)
 
         self.apply_view_projection(self.view_projection_mode, save=False)
 
@@ -2884,11 +2948,6 @@ class MainWindow(QMainWindow):
         self.chk_planar_thickness.setEnabled(False)
         self.chk_planar_thickness.toggled.connect(self.on_toggle_planar_thickness)
         action_card.layout.addWidget(self.chk_planar_thickness)
-
-        self.help_label = QLabel(tr_ui("help_controls"))
-        self.help_label.setToolTip(tr_ui("help_controls_tooltip"))
-        self.help_label.setStyleSheet(f"color:{FG_DIM};")
-        action_card.layout.addWidget(self.help_label)
 
         left_layout.addWidget(action_card)
         left_layout.addStretch(1)
@@ -5774,8 +5833,6 @@ class MainWindow(QMainWindow):
             self.transparency_value_label.setStyleSheet(f"color:{FG_DIM}; min-width:48px;")
         if self.load_progress_label is not None:
             self.load_progress_label.setStyleSheet(f"color:{FG_DIM};")
-        if self.help_label is not None:
-            self.help_label.setStyleSheet(f"color:{FG_DIM};")
 
         for card in self.findChildren(Card):
             card.apply_theme()
@@ -5985,6 +6042,9 @@ class MainWindow(QMainWindow):
                 self.fto_edit.setText(reload_fto)
             self._pending_expect_results = True
             self.load_model()
+
+    def open_controls_dialog(self):
+        ControlsDialog(self).exec()
 
     def open_about_dialog(self):
         dlg = AboutDialog(self)

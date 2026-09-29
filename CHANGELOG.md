@@ -2,6 +2,18 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.14
+
+### FR
+- Nouveau menu « Aide » (en dernier, après « Paramètres ») : « Contrôles et raccourcis », « Vérifier les mises à jour » et « À propos » (ces deux derniers déplacés depuis le menu Fichier).
+- Nouvelle boîte de dialogue « Contrôles et raccourcis » listant tous les raccourcis clavier et souris, avec une section dédiée au mode Navigation. Elle remplace le libellé « Contrôles 🛈 » du panneau de gauche, supprimé.
+- Éclairage de la scène : les sliders d'azimut et d'élévation avancent par pas de 0,5° (au lieu de 1°) ; alignement des sliders et taille uniforme des champs numériques.
+
+### EN
+- New "Help" menu (last, after "Settings"): "Controls and shortcuts", "Check for updates" and "About" (the latter two moved from the File menu).
+- New "Controls and shortcuts" dialog listing all keyboard and mouse shortcuts, with a dedicated Navigation mode section. It replaces the "Controls 🛈" label in the left panel, which is removed.
+- Scene lighting: azimuth and elevation sliders now step by 0.5° (instead of 1°); sliders are aligned and numeric fields share a uniform size.
+
 ## 2.13
 
 ### FR

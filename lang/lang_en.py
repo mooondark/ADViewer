@@ -416,6 +416,7 @@ MSG_UI = {
     "menu_iso": "Isometric view",
     "menu_quit": "Quit",
     "menu_settings": "Settings",
+    "menu_help": "Help",
     "menu_styles": "Styles and thicknesses",
     "menu_configuration": "Configuration",
     "menu_png_export": "Export PNG",
@@ -472,12 +473,34 @@ MSG_UI = {
     "export_ifc_scope_full": "IFC export of the full model.",
     "export_ifc_failed": "IFC export failed: {details}",
 
-    "help_controls": "Controls \U0001f6c8",
-    "help_controls_tooltip": (
-        "Wheel = zoom, left click = Z-constrained orbit, "
-        "right click = selection cycle, middle click = pan, "
-        "F or middle double-click = zoom to fit, Ctrl+I = isometric view."
-    ),
+    "menu_controls": "Controls and shortcuts",
+    "controls_dialog_title": "Controls and shortcuts",
+    "controls_section_general": "3D view, selection and file",
+    "controls_section_navigation": "Navigation mode (free camera)",
+    "controls_general_wheel": "<b>Wheel</b>: zoom",
+    "controls_general_left_drag": "<b>Left click + drag</b>: orbit (constrained around the Z axis)",
+    "controls_general_left_click": "<b>Left click</b> on an element: select (<b>Ctrl+click</b>: add/remove from selection); on an empty area: deselect",
+    "controls_general_right_click": "<b>Right click</b> on an element: cycle to the next element under the cursor (<b>Ctrl+right click</b>: add to selection)",
+    "controls_general_middle_drag": "<b>Middle click + drag</b>: pan",
+    "controls_general_middle_double": "<b>Middle double-click</b>: zoom to fit",
+    "controls_general_escape": "<b>Esc</b>: cancel the current mode (window select/zoom) or clear the selection",
+    "controls_general_zoom_window": "<b>Alt+W</b>: zoom window (left click for the 2 corners; right click or Esc to cancel)",
+    "controls_general_window_select": "<b>Alt+S</b>: window selection (2 clicks; left→right: fully enclosed elements, right→left: enclosed or intersected; <b>Ctrl</b>: add to selection)",
+    "controls_general_view_front_back": "<b>Alt+&amp;</b>: front / back view",
+    "controls_general_view_left_right": "<b>Alt+é</b>: left / right view",
+    "controls_general_view_top_bottom": "<b>Alt+\"</b>: top / bottom view",
+    "controls_general_view_iso": "<b>Alt+'</b>: isometric view",
+    "controls_general_open": "<b>Ctrl+O</b>: open a file",
+    "controls_general_quit": "<b>Ctrl+Q</b>: quit",
+    "controls_nav_intro": "Enabled with the \"Navigation mode\" button. Left-click selection remains available.",
+    "controls_nav_forward_back": "<b>{forward} / {backward}</b>: move forward / backward (follows the look direction)",
+    "controls_nav_left_right": "<b>{left} / {right}</b>: strafe left / right",
+    "controls_nav_up_down": "<b>{up} / {down}</b>: move up / down",
+    "controls_nav_look": "<b>Hold right click + mouse</b>: look around",
+    "controls_nav_fast": "<b>Shift</b> (held): speed boost",
+    "controls_nav_slow": "<b>Ctrl</b> (held): slow-down",
+    "controls_nav_home": "<b>Home</b>: reset to the full view",
+    "controls_nav_exit": "<b>Esc</b>: exit the mode (the selection is kept)",
 
     # Generic element and property labels
     "app_title": "Advance Design Model Viewer",

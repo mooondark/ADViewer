@@ -416,6 +416,7 @@ MSG_UI = {
     "menu_iso": "Vue isométrique",
     "menu_quit": "Quitter",
     "menu_settings": "Paramètres",
+    "menu_help": "Aide",
     "menu_styles": "Styles et épaisseurs",
     "menu_configuration": "Configuration",
     "menu_png_export": "Export PNG",
@@ -472,12 +473,34 @@ MSG_UI = {
     "export_ifc_scope_full": "Export IFC du modèle complet.",
     "export_ifc_failed": "Échec de l'export IFC : {details}",
 
-    "help_controls": "Contrôles 🛈",
-    "help_controls_tooltip": (
-        "Molette = zoom, clic gauche = orbite contrainte Z, "
-        "clic droit = cycle de sélection, clic milieu = panoramique, "
-        "F ou double-clic milieu = zoom étendu, Ctrl+I = vue isométrique."
-    ),
+    "menu_controls": "Contrôles et raccourcis",
+    "controls_dialog_title": "Contrôles et raccourcis",
+    "controls_section_general": "Vue 3D, sélection et fichier",
+    "controls_section_navigation": "Mode Navigation (caméra libre)",
+    "controls_general_wheel": "<b>Molette</b> : zoom",
+    "controls_general_left_drag": "<b>Clic gauche + glisser</b> : orbite (contrainte autour de l'axe Z)",
+    "controls_general_left_click": "<b>Clic gauche</b> sur un élément : sélectionner (<b>Ctrl+clic</b> : ajouter/retirer de la sélection) ; sur une zone vide : désélectionner",
+    "controls_general_right_click": "<b>Clic droit</b> sur un élément : passer à l'élément suivant sous le curseur (<b>Ctrl+clic droit</b> : ajouter à la sélection)",
+    "controls_general_middle_drag": "<b>Clic milieu + glisser</b> : panoramique",
+    "controls_general_middle_double": "<b>Double clic milieu</b> : zoom étendu",
+    "controls_general_escape": "<b>Échap</b> : annuler le mode en cours (sélection/zoom fenêtre) ou effacer la sélection",
+    "controls_general_zoom_window": "<b>Alt+W</b> : zoom fenêtre (clic gauche pour les 2 coins ; clic droit ou Échap pour annuler)",
+    "controls_general_window_select": "<b>Alt+S</b> : sélection par fenêtre (2 clics ; gauche→droite : éléments entièrement compris, droite→gauche : compris ou intersectés ; <b>Ctrl</b> : ajouter à la sélection)",
+    "controls_general_view_front_back": "<b>Alt+&amp;</b> : vue de face / derrière",
+    "controls_general_view_left_right": "<b>Alt+é</b> : vue de gauche / droite",
+    "controls_general_view_top_bottom": "<b>Alt+\"</b> : vue de dessus / dessous",
+    "controls_general_view_iso": "<b>Alt+'</b> : vue isométrique",
+    "controls_general_open": "<b>Ctrl+O</b> : ouvrir un fichier",
+    "controls_general_quit": "<b>Ctrl+Q</b> : quitter",
+    "controls_nav_intro": "Activé par le bouton « Mode Navigation ». La sélection au clic gauche reste disponible.",
+    "controls_nav_forward_back": "<b>{forward} / {backward}</b> : avancer / reculer (suit la direction de visée)",
+    "controls_nav_left_right": "<b>{left} / {right}</b> : déplacement latéral gauche / droite",
+    "controls_nav_up_down": "<b>{up} / {down}</b> : monter / descendre",
+    "controls_nav_look": "<b>Clic droit maintenu + souris</b> : regarder autour de soi",
+    "controls_nav_fast": "<b>Maj</b> (maintenu) : accélération",
+    "controls_nav_slow": "<b>Ctrl</b> (maintenu) : ralenti",
+    "controls_nav_home": "<b>Home</b> : retour à la vue étendue",
+    "controls_nav_exit": "<b>Échap</b> : quitter le mode (la sélection est conservée)",
 
     # Libellés génériques d'éléments et de propriétés
     "app_title": "Advance Design Model Viewer",
