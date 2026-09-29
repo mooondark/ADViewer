@@ -69,6 +69,47 @@ def horizontal_half_fov_deg(camera_view_angle_deg: float, aspect_ratio: float, i
     return math.degrees(half_horizontal_rad)
 
 
+def point_in_rect(point_xy, center_xy, half_w: float, half_h: float) -> bool:
+    """Vrai si `point_xy` est dans le rectangle centre sur `center_xy`
+    (demi-largeur `half_w`, demi-hauteur `half_h`), bords inclus."""
+    return (abs(point_xy[0] - center_xy[0]) <= half_w
+            and abs(point_xy[1] - center_xy[1]) <= half_h)
+
+
+def clamp_to_rect_edge(center_xy, point_xy, half_w: float, half_h: float, inset: float):
+    """Point du bord du rectangle (rentre de `inset`) situe sur la droite
+    centre -> `point_xy`. Point confondu avec le centre -> centre."""
+    dx = point_xy[0] - center_xy[0]
+    dy = point_xy[1] - center_xy[1]
+    if abs(dx) < 1e-12 and abs(dy) < 1e-12:
+        return (center_xy[0], center_xy[1])
+    limit_w = max(half_w - inset, 0.0)
+    limit_h = max(half_h - inset, 0.0)
+    scale = min(
+        limit_w / abs(dx) if abs(dx) > 1e-12 else float("inf"),
+        limit_h / abs(dy) if abs(dy) > 1e-12 else float("inf"),
+    )
+    return (center_xy[0] + dx * scale, center_xy[1] + dy * scale)
+
+
+def arrow_polygon(position_xy, direction_xy, size: float):
+    """Fleche 2D (pointe, gauche, encoche, droite) centree sur `position_xy`,
+    orientee selon `direction_xy`. Direction degeneree -> replie sur (0, 1)."""
+    dx, dy = float(direction_xy[0]), float(direction_xy[1])
+    dlen = math.sqrt(dx * dx + dy * dy)
+    if dlen < 1e-9:
+        dx, dy = 0.0, 1.0
+    else:
+        dx, dy = dx / dlen, dy / dlen
+    px, py = float(position_xy[0]), float(position_xy[1])
+    perp_x, perp_y = -dy, dx
+    tip = (px + dx * size, py + dy * size)
+    left = (px - dx * 0.6 * size + perp_x * 0.6 * size, py - dy * 0.6 * size + perp_y * 0.6 * size)
+    notch = (px - dx * 0.2 * size, py - dy * 0.2 * size)
+    right = (px - dx * 0.6 * size - perp_x * 0.6 * size, py - dy * 0.6 * size - perp_y * 0.6 * size)
+    return [tip, left, notch, right]
+
+
 import vtk
 from PySide6.QtCore import QTimer
 
@@ -82,6 +123,7 @@ class MinimapController:
     _build_punctual_supports_polydata, _make_wire_actor)."""
 
     FRAME_MARGIN_PX = 2.0
+    ARROW_SIZE_RATIO = 0.14  # taille de la fleche / demi-hauteur visible
 
     def __init__(self, host):
         self.host = host
@@ -99,6 +141,7 @@ class MinimapController:
         self.support_planar_faces_actor = None
         self.marker_actor = None
         self.cone_actor = None
+        self.arrow_actor = None
         self.timer = None
         self.model_diagonal = 0.0
         self.model_zmax = 0.0
@@ -193,6 +236,32 @@ class MinimapController:
         self.cone_actor = cone_actor
         self.renderer.AddActor(cone_actor)
 
+        arrow_points = vtk.vtkPoints()
+        for _ in range(4):
+            arrow_points.InsertNextPoint(0.0, 0.0, 0.0)
+        arrow_cells = vtk.vtkCellArray()
+        for ids in ((0, 1, 2), (0, 2, 3)):
+            tri = vtk.vtkTriangle()
+            for k, pid in enumerate(ids):
+                tri.GetPointIds().SetId(k, pid)
+            arrow_cells.InsertNextCell(tri)
+        arrow_poly = vtk.vtkPolyData()
+        arrow_poly.SetPoints(arrow_points)
+        arrow_poly.SetPolys(arrow_cells)
+        arrow_mapper = vtk.vtkPolyDataMapper()
+        arrow_mapper.SetInputData(arrow_poly)
+        arrow_actor = vtk.vtkActor()
+        arrow_actor.SetMapper(arrow_mapper)
+        arrow_actor.PickableOff()
+        arrow_actor.GetProperty().LightingOff()
+        arrow_actor.GetProperty().SetColor(*_cfg.MINIMAP_CAMERA_COLOR)
+        arrow_actor.GetProperty().EdgeVisibilityOn()
+        arrow_actor.GetProperty().SetEdgeColor(*_cfg.MINIMAP_CAMERA_OUTLINE_COLOR)
+        arrow_actor.GetProperty().SetLineWidth(2.0)
+        arrow_actor.SetVisibility(False)
+        self.arrow_actor = arrow_actor
+        self.renderer.AddActor(arrow_actor)
+
         self.timer = QTimer(self.host)
         self.timer.setInterval(_cfg.MINIMAP_SYNC_INTERVAL_MS)
         self.timer.timeout.connect(self.sync_tick)
@@ -250,6 +319,7 @@ class MinimapController:
 
         if self.visible:
             self._fit_camera_to_model()
+            self._last_camera_mtime = -1
             if self.host.render_window is not None:
                 self.host.render_window.Render()
 
@@ -331,34 +401,23 @@ class MinimapController:
         if self.support_planar_faces_actor is not None:
             self.support_planar_faces_actor.SetVisibility(1 if show_support_planar else 0)
 
-    def _fit_camera_to_model(self, extra_point=None):
-        """Cadre la camera minicarte sur les bornes du modele (acteurs de
-        geometrie uniquement - marqueur/cone caches pendant le calcul, cf.
-        _fit_camera_to_model). `extra_point`, si fourni (x, y, z), est un
-        point supplementaire a inclure dans le cadrage (position de la
-        camera principale) : necessaire car cette derniere se trouve
-        typiquement hors des bornes du modele (vue isometrique, zoom
-        arriere...), sinon le marqueur/cone tombe hors du champ visible de
-        la minicarte des que l'utilisateur n'est pas exactement a la
-        verticale du modele. `self.model_diagonal`/`self.model_zmax`
-        restent calcules sur la geometrie seule (taille de l'indicateur
-        stable, independante du cadrage elargi)."""
+    def _fit_camera_to_model(self):
+        """Cadre la camera minicarte sur les bornes du modele seul (acteurs de
+        geometrie ; marqueur/cone/fleche caches pendant le calcul), pour que la
+        taille du modele dans son viewport ne depende jamais de la camera
+        principale. Met aussi a jour `model_diagonal`/`model_zmax`."""
         if self.renderer is None:
             return
-        marker_prev_vis = self.marker_actor.GetVisibility() if self.marker_actor is not None else None
-        cone_prev_vis = self.cone_actor.GetVisibility() if self.cone_actor is not None else None
-        if self.marker_actor is not None:
-            self.marker_actor.SetVisibility(0)
-        if self.cone_actor is not None:
-            self.cone_actor.SetVisibility(0)
+        indicators = [a for a in (self.marker_actor, self.cone_actor, self.arrow_actor) if a is not None]
+        previous = [a.GetVisibility() for a in indicators]
+        for a in indicators:
+            a.SetVisibility(0)
         try:
             bounds = [0.0, -1.0, 0.0, -1.0, 0.0, -1.0]
             self.renderer.ComputeVisiblePropBounds(bounds)
         finally:
-            if self.marker_actor is not None:
-                self.marker_actor.SetVisibility(marker_prev_vis)
-            if self.cone_actor is not None:
-                self.cone_actor.SetVisibility(cone_prev_vis)
+            for a, vis in zip(indicators, previous):
+                a.SetVisibility(vis)
         if bounds[1] < bounds[0]:
             # Aucun acteur/bornes degenerees (modele vide) : rien a cadrer.
             self.model_diagonal = 0.0
@@ -368,25 +427,37 @@ class MinimapController:
         self.model_diagonal = (dx * dx + dy * dy + dz * dz) ** 0.5
         self.model_zmax = zmax
 
-        frame_bounds = list(bounds)
-        if extra_point is not None:
-            ex, ey, ez = extra_point
-            frame_bounds[0] = min(frame_bounds[0], ex)
-            frame_bounds[1] = max(frame_bounds[1], ex)
-            frame_bounds[2] = min(frame_bounds[2], ey)
-            frame_bounds[3] = max(frame_bounds[3], ey)
-            frame_bounds[4] = min(frame_bounds[4], ez)
-            frame_bounds[5] = max(frame_bounds[5], ez)
-
-        cx = (frame_bounds[0] + frame_bounds[1]) / 2.0
-        cy = (frame_bounds[2] + frame_bounds[3]) / 2.0
+        cx = (xmin + xmax) / 2.0
+        cy = (ymin + ymax) / 2.0
         camera = self.renderer.GetActiveCamera()
         camera.SetFocalPoint(cx, cy, 0.0)
         camera.SetPosition(cx, cy, 1.0)
         camera.SetViewUp(0.0, 1.0, 0.0)
-        self.renderer.ResetCamera(frame_bounds)
+        self.renderer.ResetCamera(bounds)
+        # Marge sur tous les cotes : la fleche hors-zone (bande de ~2 *
+        # ARROW_SIZE_RATIO depuis le bord) doit rester a l'exterieur du modele.
+        vp = self.renderer.GetViewport()
+        aspect = max(1e-3, (self.host.width() * (vp[2] - vp[0])) / max(1.0, self.host.height() * (vp[3] - vp[1])))
+        band = 2.1 * self.ARROW_SIZE_RATIO
+        camera.SetParallelScale(max(
+            (dy / 2.0) / (1.0 - band),
+            (dx / 2.0) / max(aspect - band, 1e-3),
+            1e-6,
+        ))
         near, far = camera.GetClippingRange()
         camera.SetClippingRange(near, far + max(self.model_diagonal, 1.0))
+
+    def _visible_half_extent(self):
+        """Demi-largeur/hauteur (monde) de la zone visible de la minicarte et
+        son centre, deduits du ParallelScale et de l'aspect du viewport."""
+        camera = self.renderer.GetActiveCamera()
+        vp = self.renderer.GetViewport()
+        w_px = max(1.0, self.host.width() * (vp[2] - vp[0]))
+        h_px = max(1.0, self.host.height() * (vp[3] - vp[1]))
+        half_h = camera.GetParallelScale()
+        half_w = half_h * (w_px / h_px)
+        fx, fy, _fz = camera.GetFocalPoint()
+        return (fx, fy), half_w, half_h
 
     def sync_tick(self):
         if not self.visible or self.renderer is None:
@@ -406,23 +477,35 @@ class MinimapController:
         dx, dy = fx - px, fy - py
 
         marker_z = self.model_zmax + 0.001 * max(self.model_diagonal, 1.0)
-        self._fit_camera_to_model(extra_point=(px, py, marker_z))
-        self.marker_actor.SetPosition(px, py, marker_z)
-        radius = max(self.model_diagonal * 0.01, 1e-3)
-        self.marker_actor.SetScale(radius, radius, 1.0)
+        center, half_w, half_h = self._visible_half_extent()
+        inside = point_in_rect((px, py), center, half_w, half_h)
+        self.marker_actor.SetVisibility(1 if inside else 0)
+        self.cone_actor.SetVisibility(1 if inside else 0)
+        self.arrow_actor.SetVisibility(0 if inside else 1)
 
-        is_parallel = bool(main_camera.GetParallelProjection())
-        w, h = host.renderer.GetSize() if host.renderer is not None else (1, 1)
-        aspect = (w / h) if h else 1.0
-        half_fov = horizontal_half_fov_deg(main_camera.GetViewAngle(), aspect, is_parallel=is_parallel)
-        cone_size = max(self.model_diagonal * 0.15, 1e-3)
-        triangle = camera_fov_triangle((px, py), (dx, dy), half_fov, cone_size)
+        if inside:
+            self.marker_actor.SetPosition(px, py, marker_z)
+            radius = max(self.model_diagonal * 0.01, 1e-3)
+            self.marker_actor.SetScale(radius, radius, 1.0)
 
-        poly = self.cone_actor.GetMapper().GetInput()
-        pts = poly.GetPoints()
-        for i, (x, y) in enumerate(triangle):
-            pts.SetPoint(i, x, y, marker_z)
-        pts.Modified()
+            is_parallel = bool(main_camera.GetParallelProjection())
+            w, h = host.renderer.GetSize() if host.renderer is not None else (1, 1)
+            aspect = (w / h) if h else 1.0
+            half_fov = horizontal_half_fov_deg(main_camera.GetViewAngle(), aspect, is_parallel=is_parallel)
+            cone_size = max(self.model_diagonal * 0.15, 1e-3)
+            triangle = camera_fov_triangle((px, py), (dx, dy), half_fov, cone_size)
+            pts = self.cone_actor.GetMapper().GetInput().GetPoints()
+            for i, (x, y) in enumerate(triangle):
+                pts.SetPoint(i, x, y, marker_z)
+            pts.Modified()
+        else:
+            arrow_size = max(half_h * self.ARROW_SIZE_RATIO, 1e-3)
+            pos = clamp_to_rect_edge(center, (px, py), half_w, half_h, arrow_size)
+            polygon = arrow_polygon(pos, (dx, dy), arrow_size)
+            pts = self.arrow_actor.GetMapper().GetInput().GetPoints()
+            for i, (x, y) in enumerate(polygon):
+                pts.SetPoint(i, x, y, marker_z)
+            pts.Modified()
 
         if host.render_window is not None:
             host.render_window.Render()

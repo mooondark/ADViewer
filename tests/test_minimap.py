@@ -85,6 +85,37 @@ def test_horizontal_half_fov_deg_parallel_projection_is_fixed_25():
     assert result == 25.0
 
 
+def test_point_in_rect_inside_and_outside():
+    assert minimap.point_in_rect((1.0, 1.0), (0.0, 0.0), 2.0, 2.0)
+    assert minimap.point_in_rect((2.0, -2.0), (0.0, 0.0), 2.0, 2.0)  # bord inclus
+    assert not minimap.point_in_rect((2.1, 0.0), (0.0, 0.0), 2.0, 2.0)
+    assert not minimap.point_in_rect((0.0, -5.0), (0.0, 0.0), 2.0, 2.0)
+
+
+def test_clamp_to_rect_edge_lands_on_inset_border_along_ray():
+    x, y = minimap.clamp_to_rect_edge((0.0, 0.0), (10.0, 5.0), 4.0, 4.0, 1.0)
+    assert abs(x - 3.0) < 1e-9          # bord droit rentre de 1
+    assert abs(y - 1.5) < 1e-9          # meme droite : y = x / 2
+
+
+def test_clamp_to_rect_edge_uses_vertical_border_when_steeper():
+    x, y = minimap.clamp_to_rect_edge((1.0, 1.0), (1.0, -9.0), 4.0, 2.0, 0.5)
+    assert abs(x - 1.0) < 1e-9
+    assert abs(y - (1.0 - 1.5)) < 1e-9
+
+
+def test_clamp_to_rect_edge_point_at_center_returns_center():
+    assert minimap.clamp_to_rect_edge((2.0, 3.0), (2.0, 3.0), 4.0, 4.0, 1.0) == (2.0, 3.0)
+
+
+def test_arrow_polygon_tip_along_direction_and_no_nan():
+    tip, left, notch, right = minimap.arrow_polygon((0.0, 0.0), (0.0, 2.0), 1.0)
+    assert abs(tip[0]) < 1e-9 and abs(tip[1] - 1.0) < 1e-9
+    assert abs(left[0] + right[0]) < 1e-9  # symetrique autour de l'axe
+    degenerate = minimap.arrow_polygon((0.0, 0.0), (0.0, 0.0), 1.0)
+    assert all(not math.isnan(c) for pt in degenerate for c in pt)
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

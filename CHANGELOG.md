@@ -5,11 +5,13 @@
 ## 2.14
 
 ### FR
+- Minicarte : la taille du modèle dans son viewport ne change plus quand la caméra principale bouge ou s'éloigne (cadrage figé sur le modèle, avec une marge sur tous les côtés). Quand la caméra sort de la zone affichée, le cercle et le cône sont remplacés par une flèche collée au bord (hors du modèle), indiquant la position et la direction de visée ; ils reviennent dès que la caméra rentre dans la zone.
 - Nouveau menu « Aide » (en dernier, après « Paramètres ») : « Contrôles et raccourcis », « Vérifier les mises à jour » et « À propos » (ces deux derniers déplacés depuis le menu Fichier).
 - Nouvelle boîte de dialogue « Contrôles et raccourcis » listant tous les raccourcis clavier et souris, avec une section dédiée au mode Navigation. Elle remplace le libellé « Contrôles 🛈 » du panneau de gauche, supprimé.
 - Éclairage de la scène : les sliders d'azimut et d'élévation avancent par pas de 0,5° (au lieu de 1°) ; alignement des sliders et taille uniforme des champs numériques.
 
 ### EN
+- Minimap: the model's size in its viewport no longer changes when the main camera moves or zooms out (framing locked on the model, with a margin on all sides). When the camera leaves the displayed area, the circle and cone are replaced by an arrow at the edge (outside the model) showing position and look direction; they return as soon as the camera is back inside.
 - New "Help" menu (last, after "Settings"): "Controls and shortcuts", "Check for updates" and "About" (the latter two moved from the File menu).
 - New "Controls and shortcuts" dialog listing all keyboard and mouse shortcuts, with a dedicated Navigation mode section. It replaces the "Controls 🛈" label in the left panel, which is removed.
 - Scene lighting: azimuth and elevation sliders now step by 0.5° (instead of 1°); sliders are aligned and numeric fields share a uniform size.
