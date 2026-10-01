@@ -2,6 +2,26 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.16
+
+### FR
+- Boîte de coupe : l'épaisseur des arêtes de coupe est réglable dans « Styles et épaisseurs » (1,5 par défaut), et conservée dans config.ini.
+- Diagrammes de résultats : les étiquettes des valeurs min/max se placent désormais à l'extérieur du diagramme (et non plus dessus pour les valeurs du bas ou du côté), et restent bien placées quand on tourne la vue.
+- Nouvelle fonction **Inverser la sélection** (bouton à la place de « Enregistrer la vue en PNG », qui passe à droite de « Afficher la boîte ») : l'élément sélectionné est désélectionné et tous les autres éléments sélectionnables (visibles, hors partie coupée par la boîte de coupe) deviennent sélectionnés. Sans sélection, le bouton ne fait rien.
+- Boîte de coupe : l'affichage du cadre n'est plus conservé dans config.ini (le cadre est toujours affiché au lancement).
+- Boutons à bascule de la carte Actions (boîte de coupe, afficher la boîte, minicarte, sélection par fenêtre, zoom fenêtre, mode Navigation) : l'état actif est désormais visible (fond bleu). Même principe pour les boutons ON / OFF de l'API, dont l'état courant est affiché sur fond bleu.
+- Mode « Profilés + Rendu plein » : les arêtes des éléments surfaciques sont désormais tracées en noir (contour des dalles et voiles, comme pour les filaires).
+- Nouveau mode d'affichage **Filaire 3D** (en dernière position de la liste) : comme « Profilés + Rendu plein » mais avec les arêtes seules, sans faces et en transparence totale, en gris foncé uniforme. Les éléments restent sélectionnables au clic ; transparence et « Couleurs par section » sont grisées dans ce mode.
+
+### EN
+- Clip box: the cut-edge thickness can be set in "Styles and thicknesses" (1.5 by default) and is saved in config.ini.
+- Result diagrams: the min/max value labels are now placed outside the diagram (instead of on top of it for the lower or side values) and stay well placed when the view is rotated.
+- New **Invert selection** function (button in place of "Save view as PNG", which moves to the right of "Show box"): the selected element is deselected and every other selectable element (visible, outside the part cut by the clip box) becomes selected. With no selection, the button does nothing.
+- Clip box: the frame visibility is no longer saved in config.ini (the frame is always shown at startup).
+- Toggle buttons in the Actions card (clip box, show box, minimap, window selection, zoom window, Navigation mode): the active state is now visible (blue background). Same principle for the API ON / OFF buttons, whose current state is shown on a blue background.
+- "Profiles + Full render" mode: the edges of planar elements are now drawn in black (outline of slabs and walls, as for linear elements).
+- New **3D wireframe** display mode (last in the list): like "Profiles + Full render" but with edges only, no faces and fully see-through, in a uniform dark gray. Elements stay selectable by click; transparency and "Color by section" are greyed out in this mode.
+
 ## 2.15
 
 ### FR

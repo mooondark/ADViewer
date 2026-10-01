@@ -140,6 +140,7 @@ class SettingsDialog(QDialog):
         planar_load_color,
         clip_box_color,
         clip_edge_color,
+        clip_edge_width: float,
         parent=None
     ):
         super().__init__(parent)
@@ -189,6 +190,7 @@ class SettingsDialog(QDialog):
         self.spin_support_planar = self._make_width_spin(support_planar_line_width)
         self.spin_selection = self._make_width_spin(selection_line_width)
         self.spin_mesh = self._make_width_spin(mesh_width)
+        self.spin_clip_edge = self._make_width_spin(clip_edge_width)
 
         # Charge ponctuelle — épaisseur en mètres (rayon tige)
         self.spin_punctual_load_arrow_width = QDoubleSpinBox()
@@ -229,7 +231,7 @@ class SettingsDialog(QDialog):
         self._add_row(grid, 12, tr_ui("settings_label_planar_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_planar_load_arrow_width,     "planar_load_color",       self.planar_load_color)
 
         self._add_row(grid, 13, tr_ui("settings_label_clip_box"),   "", None, "clip_box_color",  self.clip_box_color)
-        self._add_row(grid, 14, tr_ui("settings_label_clip_edges"), "", None, "clip_edge_color", self.clip_edge_color)
+        self._add_row(grid, 14, tr_ui("settings_label_clip_edges"), tr_ui("settings_label_thickness"), self.spin_clip_edge, "clip_edge_color", self.clip_edge_color)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
@@ -342,6 +344,7 @@ class SettingsDialog(QDialog):
             "punctual_load_color": self.punctual_load_color,
             "linear_load_color": self.linear_load_color,
             "planar_load_color": self.planar_load_color,
+            "clip_edge_width": self.spin_clip_edge.value(),
             "clip_box_color": self.clip_box_color,
             "clip_edge_color": self.clip_edge_color,
         }
@@ -1283,9 +1286,10 @@ _DISPLAY_MODE_LOG_MAP = {
     "full": "mode_full",
     "profiles_hidden": "mode_profiles_hidden",
     "profiles_full": "mode_profiles_full",
+    "profiles_wire": "mode_profiles_wire",
 }
 
-_PROFILE_MODES = ("profiles_hidden", "profiles_full")
+_PROFILE_MODES = ("profiles_hidden", "profiles_full", "profiles_wire")
 
 
 _EXPORT_COMP_KIND = {
@@ -1317,6 +1321,7 @@ class MainWindow(QMainWindow):
         self.filter_btn = None
         self.clear_filter_btn = None
         self.camera_btn = None
+        self.invert_btn = None
         self.scene_light_btn = None
         self.window_select_btn = None
         self.minimap_btn = None
@@ -1509,7 +1514,6 @@ class MainWindow(QMainWindow):
             "minimap_size": "small" if (self.act_minimap_size_small is not None and self.act_minimap_size_small.isChecked()) else "large",
             "minimap_visible": "true" if (self.minimap_btn is not None and self.minimap_btn.isChecked()) else "false",
             "clip_box_margin_pct": str(self.viewer.get_clip_box_margin()),
-            "clip_box_show_frame": "true" if (self.frame_btn is not None and self.frame_btn.isChecked()) else "false",
         }
         cfg["styles"] = {
             "linear_width": str(self.viewer.linear_line_width),
@@ -1525,6 +1529,7 @@ class MainWindow(QMainWindow):
             "punctual_load_arrow_width": str(self.viewer.punctual_load_arrow_width),
             "linear_load_arrow_width": str(self.viewer.linear_load_arrow_width),
             "planar_load_arrow_width": str(self.viewer.planar_load_arrow_width),
+            "clip_edge_width": str(self.viewer.get_clip_box_edge_width()),
         }
         cfg["colors"] = {
             "linear_color": self._format_color(self.viewer.linear_color),
@@ -1662,13 +1667,12 @@ class MainWindow(QMainWindow):
             self.viewer.set_clip_box_style(
                 self._parse_color(colors.get("clip_box_color", self._format_color(box_color)), box_color),
                 self._parse_color(colors.get("clip_edge_color", self._format_color(edge_color)), edge_color),
+                float(styles.get("clip_edge_width", self.viewer.get_clip_box_edge_width())),
             )
             try:
                 self.viewer.set_clip_box_margin(float(general.get("clip_box_margin_pct", self.viewer.get_clip_box_margin())))
             except ValueError:
                 pass
-            if self.frame_btn is not None:
-                self.frame_btn.setChecked(general.get("clip_box_show_frame", "true").strip().lower() == "true")
             self.apply_theme(loaded_theme)
         finally:
             self._suspend_config_save = False
@@ -1912,6 +1916,20 @@ class MainWindow(QMainWindow):
     # Le rendu est effectue a la volee par QPixmap.loadFromData() avec adaptation de couleur
     # selon le theme actif (noir en theme clair, blanc en theme sombre).
     _SVG_VECTOR_DATA = {
+        "inverse": (
+            'PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmlld0JveD0iMCAwIDI0IDI0'
+            'IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmci'
+            'PgogIDxwYXRoIGQ9Ik03IDEwLjYyNWg3LjJxMCAwIDAgMHMyLjggMCAyLjggM0Mx'
+            'NyAxNyAxNC4yIDE3IDE0LjIgMTdoLS44IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9r'
+            'ZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5l'
+            'am9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNMTAuNSAxNCA3IDEwLjYyNSAxMC41'
+            'IDciIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1s'
+            'aW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRo'
+            'IGQ9Ik0xMiAyMmM1LjUyMyAwIDEwLTQuNDc3IDEwLTEwUzE3LjUyMyAyIDEyIDIg'
+            'MiA2LjQ3NyAyIDEyczQuNDc3IDEwIDEwIDEwIiBzdHJva2U9IiMwMDAwMDAiIHN0'
+            'cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1s'
+            'aW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+        ),
         "frame_tool": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
             'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
@@ -2313,6 +2331,7 @@ class MainWindow(QMainWindow):
             (self.clip_btn,        "coupe"),
             (self.frame_btn,       "frame_tool"),
             (self.camera_btn,      "camera"),
+            (self.invert_btn,      "inverse"),
             (self.scene_light_btn, "light_bulb"),
             (self.browse_fto_btn,  "parcourir"),
             (self.clear_log_btn,   "effacer"),
@@ -2452,10 +2471,14 @@ class MainWindow(QMainWindow):
                 min-height: 26px;
                 max-height: 26px;
             }}
-            QPushButton#iconBtn:hover {{
+            QPushButton#iconBtn:hover, QPushButton#iconBtn:checked, QPushButton#iconBtn[stateActive="true"] {{
                 background: {ACCENT};
                 border: 1px solid {ACCENT};
                 color: white;
+            }}
+            QPushButton#iconBtn:checked:disabled {{
+                background: transparent;
+                border: 1px solid {BORDER};
             }}
             """
         )
@@ -2825,6 +2848,11 @@ class MainWindow(QMainWindow):
         self._setup_view_button(self.camera_btn, "camera", tr_ui("tooltip_screenshot"))
         self.camera_btn.clicked.connect(self.save_vtk_screenshot)
 
+        self.invert_btn = QPushButton()
+        self.invert_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.invert_btn, "inverse", tr_ui("tooltip_invert_selection"))
+        self.invert_btn.clicked.connect(self.on_invert_selection)
+
         self.scene_light_btn = QPushButton()
         self.scene_light_btn.setProperty("iconOnly", True)
         self._setup_view_button(self.scene_light_btn, "light_bulb", tr_ui("tooltip_scene_light"))
@@ -2837,7 +2865,7 @@ class MainWindow(QMainWindow):
         filter_row.addWidget(self.filter_btn)
         filter_row.addWidget(self.clear_filter_btn)
         filter_row.addWidget(self.isolate_btn)
-        filter_row.addWidget(self.camera_btn)
+        filter_row.addWidget(self.invert_btn)
         filter_row.addWidget(self.scene_light_btn)
         filter_row.addStretch(1)
 
@@ -2891,6 +2919,7 @@ class MainWindow(QMainWindow):
         clip_row.addStretch(1)
         clip_row.addWidget(self.clip_btn)
         clip_row.addWidget(self.frame_btn)
+        clip_row.addWidget(self.camera_btn)
         clip_row.addStretch(1)
 
         fit_row = QHBoxLayout()
@@ -2970,6 +2999,7 @@ class MainWindow(QMainWindow):
         self.cmb_display_mode.addItem(tr_ui("display_full"), "full")
         self.cmb_display_mode.addItem(tr_ui("display_profiles_hidden"), "profiles_hidden")
         self.cmb_display_mode.addItem(tr_ui("display_profiles_full"), "profiles_full")
+        self.cmb_display_mode.addItem(tr_ui("display_profiles_wire"), "profiles_wire")
         self.cmb_display_mode.setCurrentIndex(self.cmb_display_mode.findData("wire_hidden"))
         self.cmb_display_mode.currentIndexChanged.connect(self.on_display_mode_changed)
         action_card.layout.addWidget(self.cmb_display_mode)
@@ -5663,8 +5693,6 @@ class MainWindow(QMainWindow):
     def on_clip_frame_toggled(self, checked: bool):
         if self.viewer is not None:
             self.viewer.set_clip_box_frame_visible(checked)
-        if not self._suspend_config_save:
-            self.save_config()
 
     def open_clip_margin_dialog(self):
         value, ok = QInputDialog.getDouble(
@@ -5709,6 +5737,13 @@ class MainWindow(QMainWindow):
         for line in body:
             self.log(line, "info")
         return True
+
+    def on_invert_selection(self):
+        if self.viewer is None:
+            return
+        items = self.viewer.invert_selection()
+        if items is not None:
+            self._log_selection_summary(items)
 
     def _log_selection_summary(self, items: list):
         if not self._log_items_summary("selection_summary_header", items):
@@ -5885,7 +5920,7 @@ class MainWindow(QMainWindow):
 
     def _update_transparency_controls_state(self):
         mode = self.cmb_display_mode.currentData() if self.cmb_display_mode else None
-        enabled = mode not in ("full", "profiles_full")
+        enabled = mode not in ("full", "profiles_full", "profiles_wire")
         if self.transparency_slider is not None:
             self.transparency_slider.setEnabled(enabled)
         if self.transparency_value_label is not None:
@@ -5899,6 +5934,10 @@ class MainWindow(QMainWindow):
         if self.profiles_transparency_value_label is not None:
             color = FG_DIM if profiles_enabled else BORDER
             self.profiles_transparency_value_label.setStyleSheet(f"color:{color}; min-width:48px;")
+
+        # "Couleurs par section" : sans effet en Filaire 3D (gris uniforme)
+        if self.chk_color_by_section is not None:
+            self.chk_color_by_section.setEnabled(mode != "profiles_wire")
 
         # "Épaisseur des surfaciques" : actif uniquement en mode Profilés (+ ...)
         if self.chk_planar_thickness is not None:
@@ -5915,6 +5954,10 @@ class MainWindow(QMainWindow):
         self.api_off_btn.setIcon(self._make_api_icon("api_off", dim=running))
         self.api_restart_btn.setIcon(self._make_api_icon("api_restart", dim=not running))
         self.api_restart_btn.setEnabled(running)
+        for btn, active in ((self.api_on_btn, running), (self.api_off_btn, not running)):
+            btn.setProperty("stateActive", active)
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
         self._update_load_btn_state()
 
     def apply_language(self, code: str) -> None:
@@ -6284,6 +6327,7 @@ class MainWindow(QMainWindow):
             self.viewer.planar_load_arrow_width,
             self.viewer.planar_load_color,
             *self.viewer.get_clip_box_style(),
+            self.viewer.get_clip_box_edge_width(),
             self
         )
         if dlg.exec() == QDialog.Accepted:
@@ -6330,7 +6374,7 @@ class MainWindow(QMainWindow):
                 values["planar_load_color"],
                 values["planar_load_arrow_width"],
             )
-            self.viewer.set_clip_box_style(values["clip_box_color"], values["clip_edge_color"])
+            self.viewer.set_clip_box_style(values["clip_box_color"], values["clip_edge_color"], values["clip_edge_width"])
             self._mark_loads_dirty("punctual", "linear", "planar")
 
             self.log(
@@ -6775,7 +6819,7 @@ class MainWindow(QMainWindow):
         widgets = [
             self.load_btn, self.calc_btn, self.fit_btn, self.zoom_window_btn,
             self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn,
-            self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn, self.scene_light_btn,
+            self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn, self.invert_btn, self.scene_light_btn,
             self.window_select_btn, self.flight_btn, self.minimap_btn, self.clip_btn, self.frame_btn,
             self.transparency_slider, self.profiles_transparency_slider,
             self.api_on_btn, self.api_off_btn, self.api_restart_btn,

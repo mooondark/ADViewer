@@ -32,6 +32,7 @@ MSG_UI = {
     "display_full": "Full render",
     "display_profiles_hidden": "Sections + hidden faces",
     "display_profiles_full": "Sections + full render",
+    "display_profiles_wire": "3D wireframe",
 
     "show_lines": "Show linear elements",
     "show_planars": "Show planar elements",
@@ -306,6 +307,7 @@ MSG_UI = {
     "tooltip_flight_mode": "Navigation mode",
     "tooltip_minimap": "Minimap",
     "tooltip_clip_box": "Clip box (Alt+C)",
+    "tooltip_invert_selection": "Invert selection",
     "tooltip_clip_frame": "Show clip box",
     "menu_clip_box": "Clip box",
     "clip_box_margin_title": "Clip box",
@@ -656,6 +658,7 @@ MSG_LOG = {
     "mode_full": "Display mode: full render",
     "mode_profiles_hidden": "Display mode: sections + hidden faces",
     "mode_profiles_full": "Display mode: sections + full render",
+    "mode_profiles_wire": "Display mode: 3D wireframe",
 
     "settings_applied": (
         "Settings applied: "

@@ -158,6 +158,37 @@ def test_selection_overlay_planar_face_stays_flat_in_profile_mode_when_thickness
     assert abs(zmin) < 1e-9 and abs(zmax) < 1e-9
 
 
+def test_planar_edges_flat_square_gives_only_the_outline_not_the_diagonal():
+    w = _widget()
+    faces = w._build_faces_polydata([{"outer": _SQUARE_XY, "openings": []}])
+    edges = w._build_planar_edges_polydata(faces)
+    assert edges is not None and edges.GetNumberOfCells() == 4
+
+
+def test_planar_edges_thick_square_gives_the_12_box_edges():
+    w = _widget()
+    solid = w._build_planar_thickness_polydata([{"outer": _SQUARE_XY, "openings": []}], [0.3], [0.0], element_indexes=[0])
+    edges = w._build_planar_edges_polydata(solid)
+    assert edges is not None and edges.GetNumberOfCells() == 12
+
+
+def test_planar_edges_two_adjacent_slabs_keep_their_shared_border_line():
+    w = _widget()
+    left = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (1.0, 1.0, 0.0), (0.0, 1.0, 0.0)]
+    right = [(1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (2.0, 1.0, 0.0), (1.0, 1.0, 0.0)]
+    solid = w._build_planar_thickness_polydata(
+        [{"outer": left, "openings": []}, {"outer": right, "openings": []}], [0.3, 0.3], [0.0, 0.0], element_indexes=[0, 1],
+    )
+    edges = w._build_planar_edges_polydata(solid)
+    xs = {round(edges.GetPoint(i)[0], 6) for i in range(edges.GetNumberOfPoints())}
+    assert 1.0 in xs
+
+
+def test_planar_edges_none_for_empty_input():
+    w = _widget()
+    assert w._build_planar_edges_polydata(None) is None
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

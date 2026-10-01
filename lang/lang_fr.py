@@ -32,6 +32,7 @@ MSG_UI = {
     "display_full": "Rendu plein",
     "display_profiles_hidden": "Profilés + Faces cachées",
     "display_profiles_full": "Profilés + Rendu plein",
+    "display_profiles_wire": "Filaire 3D",
 
     "show_lines": "Afficher filaires",
     "show_planars": "Afficher surfaciques",
@@ -306,6 +307,7 @@ MSG_UI = {
     "tooltip_flight_mode": "Mode Navigation",
     "tooltip_minimap": "Minicarte",
     "tooltip_clip_box": "Boîte de coupe (Alt+C)",
+    "tooltip_invert_selection": "Inverser la sélection",
     "tooltip_clip_frame": "Afficher la boîte de coupe",
     "menu_clip_box": "Boîte de coupe",
     "clip_box_margin_title": "Boîte de coupe",
@@ -656,6 +658,7 @@ MSG_LOG = {
     "mode_full": "Mode de visualisation : rendu plein",
     "mode_profiles_hidden": "Mode de visualisation : profilés + faces cachées",
     "mode_profiles_full": "Mode de visualisation : profilés + rendu plein",
+    "mode_profiles_wire": "Mode de visualisation : filaire 3D",
 
     "settings_applied": (
         "Paramètres appliqués : "

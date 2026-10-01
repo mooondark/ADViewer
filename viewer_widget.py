@@ -45,7 +45,9 @@ from viewer_config import (
 from ad_model_data import _build_ad_local_axes, _cross_vector3, _normalize_vector3, _rotate_vector_around_axis
 from section_geometry import profile_polygon, rotate_poly2, translate_polygon2
 
-_PROFILE_MODES = ("profiles_hidden", "profiles_full")
+_PROFILE_MODES = ("profiles_hidden", "profiles_full", "profiles_wire")
+_WIRE3D_COLOR = (0.25, 0.25, 0.25)
+_WIRE3D_FACE_OPACITY = 0.01  # > 0 : vtkCellPicker ignore les acteurs d'opacite nulle
 _ALL_DISPLAY_MODES = ("wireframe", "hidden_faces", "wire_hidden", "full") + _PROFILE_MODES
 
 
@@ -85,6 +87,11 @@ def _seg_intersects_rect(ax, ay, bx, by, xmin, ymin, xmax, ymax):
                 if t < u2:
                     u2 = t
     return u1 <= u2
+
+
+def _invert_selection_items(selected_items, universe_keys):
+    current = {(it["role"], int(it["index"])) for it in selected_items}
+    return [{"role": role, "index": index} for (role, index) in sorted(set(universe_keys) - current)]
 
 
 class ConstrainedOrbitStyle(vtk.vtkInteractorStyleUser):
@@ -382,6 +389,7 @@ class VTKViewerWidget(QFrame):
         self._profiles_base_colors = None
         self._planar_actor = None
         self._planar_faces_actor = None
+        self._planar_edges_actor = None
         self._openings_actor = None
         self._load_areas_actor = None
         self._load_areas_faces_actor = None
@@ -434,6 +442,7 @@ class VTKViewerWidget(QFrame):
         self._show_linear_loads = False
         self._show_planar_loads = False
         self._color_by_section = False
+        self._profiles_wire_applied = False
         self._planar_thickness_enabled = False
         self._section_color_map = {}
         self._display_mode = "wire_hidden"
@@ -493,6 +502,7 @@ class VTKViewerWidget(QFrame):
         self.vtk_widget.setFocusPolicy(Qt.StrongFocus)
 
         self._build_scene_base()
+        self.renderer.GetActiveCamera().AddObserver("ModifiedEvent", self._on_camera_orient_labels)
         self.set_projection_mode(self._projection_mode)
         self.set_isometric_view()
 
@@ -1611,7 +1621,7 @@ class VTKViewerWidget(QFrame):
             (6, 0), (-6, 0), (0, 6), (0, -6),
             (8, 0), (-8, 0), (0, 8), (0, -8),
         ]
-        peel = self._display_mode in ("hidden_faces", "wire_hidden", "profiles_hidden")
+        peel = self._display_mode in ("hidden_faces", "wire_hidden", "profiles_hidden", "profiles_wire")
         found = {}
         for dx, dy in offsets:
             if peel and dx == 0 and dy == 0:
@@ -1859,6 +1869,58 @@ class VTKViewerWidget(QFrame):
         if self._display_mode in _PROFILE_MODES:
             self._apply_profiles_selection_colors()
         self._apply_visibility_state()
+
+    def _orient_diagram_label(self, actor):
+        """Place le texte d'une etiquette de diagramme vers l'exterieur, cote
+        ecran : un vtkBillboardTextActor3D dessine son texte au-dessus de
+        l'ancre et centre, ce qui recouvre le diagramme quand l'etiquette est
+        en dessous ou sur le cote."""
+        outward = getattr(actor, "_diagram_outward", None)
+        if outward is None or self.renderer is None:
+            return
+
+        def to_display(point):
+            self.renderer.SetWorldPoint(point[0], point[1], point[2], 1.0)
+            self.renderer.WorldToDisplay()
+            d = self.renderer.GetDisplayPoint()
+            return d[0], d[1]
+
+        pos = actor.GetPosition()
+        x0, y0 = to_display(pos)
+        x1, y1 = to_display((pos[0] + outward[0], pos[1] + outward[1], pos[2] + outward[2]))
+        dx, dy = x1 - x0, y1 - y0
+        tangent = getattr(actor, "_diagram_tangent", None)
+        if tangent is not None:
+            # Au point extreme la courbe est tangente a l'axe de l'element : on
+            # ne garde de la direction "exterieure" que sa part perpendiculaire a
+            # cette tangente (a l'ecran), pour que le texte reste du bon cote.
+            tx, ty = to_display((pos[0] + tangent[0], pos[1] + tangent[1], pos[2] + tangent[2]))
+            tx, ty = tx - x0, ty - y0
+            tnorm = math.hypot(tx, ty)
+            if tnorm > 1e-6:
+                tx, ty = tx / tnorm, ty / tnorm
+                along = dx * tx + dy * ty
+                px, py = dx - along * tx, dy - along * ty
+                if math.hypot(px, py) > 1e-6 * max(1.0, math.hypot(dx, dy)):
+                    dx, dy = px, py
+        tp = actor.GetTextProperty()
+        if math.hypot(dx, dy) < 1e-6:
+            dx, dy = 0.0, 1.0
+        # Le texte est ancre par son coin le plus proche du diagramme : la boite
+        # reste entierement dans le quadrant "exterieur", meme quand la courbe
+        # est oblique a l'ecran.
+        if abs(dx) > 0.3 * abs(dy):
+            tp.SetJustificationToLeft() if dx > 0 else tp.SetJustificationToRight()
+        else:
+            tp.SetJustificationToCentered()
+        if abs(dy) > 0.3 * abs(dx):
+            tp.SetVerticalJustificationToBottom() if dy >= 0 else tp.SetVerticalJustificationToTop()
+        else:
+            tp.SetVerticalJustificationToCentered()
+
+    def _on_camera_orient_labels(self, obj, event):
+        for actor in self._diagram_label_actors:
+            self._orient_diagram_label(actor)
 
     def clear_result_diagram(self):
         for actor in list(self._diagram_overlay_actors):
@@ -2115,6 +2177,9 @@ class VTKViewerWidget(QFrame):
             applied_color = (1.0, 1.0, 1.0) if is_dark_theme else color
             text_prop.SetColor(*applied_color)
             actor._diagram_original_color = tuple(color)
+            actor._diagram_outward = (normal[0] * sign, normal[1] * sign, normal[2] * sign)
+            actor._diagram_tangent = u
+            self._orient_diagram_label(actor)
             actor.PickableOff()
             self.renderer.AddActor(actor)
             self._actors.append(actor)
@@ -2625,6 +2690,45 @@ class VTKViewerWidget(QFrame):
         self._refresh_selection_overlay()
         self.windowSelectionDone.emit(list(self._selected_items))
 
+    def _selectable_element_keys(self):
+        """Elements selectionnables : ceux des acteurs pickables visibles, hors
+        elements entierement coupes par la boite de coupe."""
+        keys = set()
+        clip_active = self._clip.active
+        for info in self._pickable_actors.values():
+            actor = info["actor"]
+            if actor is None or not actor.GetVisibility():
+                continue
+            pd = self._get_actor_polydata(actor)
+            if pd is None:
+                continue
+            arr = pd.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
+            pts = pd.GetPoints()
+            if arr is None or pts is None:
+                continue
+            role = info["role"]
+            for cid in range(pd.GetNumberOfCells()):
+                key = (role, int(arr.GetTuple1(cid)))
+                if key in keys:
+                    continue
+                if clip_active:
+                    cell = pd.GetCell(cid)
+                    world = [pts.GetPoint(cell.GetPointId(k)) for k in range(cell.GetNumberOfPoints())]
+                    if not self._clip.visible_part(world):
+                        continue
+                keys.add(key)
+        return keys
+
+    def invert_selection(self):
+        """Inverse la selection : sans selection ne fait rien (None) ; sinon
+        l'ancienne selection est retiree et tous les autres elements
+        selectionnables sont selectionnes. Retourne les nouveaux items."""
+        if not self._selected_items:
+            return None
+        items = _invert_selection_items(self._selected_items, self._selectable_element_keys())
+        self.set_selected_items(items)
+        return items
+
     def get_selected_items(self) -> list:
         """Retourne la liste des items actuellement sélectionnés : [{"role", "index"}, ...]."""
         return list(self._selected_items)
@@ -2733,8 +2837,11 @@ class VTKViewerWidget(QFrame):
     def set_clip_box_frame_visible(self, visible: bool):
         self._clip.set_frame_visible(visible)
 
-    def set_clip_box_style(self, box_color, edge_color):
-        self._clip.set_style(box_color, edge_color)
+    def set_clip_box_style(self, box_color, edge_color, edge_width=None):
+        self._clip.set_style(box_color, edge_color, edge_width)
+
+    def get_clip_box_edge_width(self) -> float:
+        return self._clip.edge_width
 
     def get_clip_box_style(self):
         return self._clip.box_color, self._clip.edge_color
@@ -2954,6 +3061,7 @@ class VTKViewerWidget(QFrame):
         self._profiles_base_colors = None
         self._planar_actor = None
         self._planar_faces_actor = None
+        self._planar_edges_actor = None
         self._openings_actor = None
         self._load_areas_actor = None
         self._load_areas_faces_actor = None
@@ -3138,7 +3246,13 @@ class VTKViewerWidget(QFrame):
         self.render_window.Render()
 
     def _apply_face_opacity_state(self):
-        if self._display_mode in ("full", "profiles_full"):
+        if self._display_mode == "profiles_wire":
+            # faces invisibles mais toujours dans la liste de picking (acteur visible)
+            planar_opacity = _WIRE3D_FACE_OPACITY
+            load_area_opacity = _WIRE3D_FACE_OPACITY
+            support_planar_opacity = _WIRE3D_FACE_OPACITY
+            selection_face_opacity = 0.40
+        elif self._display_mode in ("full", "profiles_full"):
             planar_opacity = 1.0
             load_area_opacity = 1.0
             support_planar_opacity = 1.0
@@ -3219,7 +3333,9 @@ class VTKViewerWidget(QFrame):
         show_faces = mode in ("hidden_faces", "wire_hidden", "full") or profile_mode
         show_planar_wire = mode in ("wireframe", "wire_hidden")
         show_openings = mode in ("wireframe", "hidden_faces", "wire_hidden")
-        self.renderer.SetUseHiddenLineRemoval(0 if mode == "profiles_full" else (1 if show_faces else 0))
+        wire3d = mode == "profiles_wire"
+        show_aux_wire = show_planar_wire or wire3d
+        self.renderer.SetUseHiddenLineRemoval(0 if mode in ("profiles_full", "profiles_wire") else (1 if show_faces else 0))
 
         if self._lines_actor:
             self._lines_actor.SetVisibility(1 if (self._show_lines and not profile_mode) else 0)
@@ -3227,14 +3343,28 @@ class VTKViewerWidget(QFrame):
             self._profiles_actor.SetVisibility(1 if (self._show_lines and profile_mode) else 0)
             # arretes visibles en rendu plein, pas en faces cachees
             self._profiles_actor.GetProperty().SetEdgeVisibility(1 if mode == "profiles_full" else 0)
+            prop = self._profiles_actor.GetProperty()
+            if wire3d:
+                prop.SetRepresentationToWireframe()
+                prop.LightingOff()
+            else:
+                prop.SetRepresentationToSurface()
+                prop.LightingOn()
+            prop.SetColor(*(_WIRE3D_COLOR if wire3d else self.linear_color))
+            if wire3d != self._profiles_wire_applied:
+                self._profiles_wire_applied = wire3d
+                self._apply_profiles_selection_colors()
         if self._planar_actor:
             self._planar_actor.SetVisibility(1 if (self._show_planars and show_planar_wire) else 0)
         if self._planar_faces_actor:
             self._planar_faces_actor.SetVisibility(1 if (self._show_planars and show_faces) else 0)
+        if self._planar_edges_actor:
+            self._planar_edges_actor.SetVisibility(1 if (self._show_planars and mode in ("profiles_full", "profiles_wire")) else 0)
+            self._planar_edges_actor.GetProperty().SetColor(*(_WIRE3D_COLOR if wire3d else (0.0, 0.0, 0.0)))
         if self._openings_actor:
             self._openings_actor.SetVisibility(1 if (self._show_planars and show_openings) else 0)
         if self._load_areas_actor:
-            self._load_areas_actor.SetVisibility(1 if (self._show_load_areas and show_planar_wire) else 0)
+            self._load_areas_actor.SetVisibility(1 if (self._show_load_areas and show_aux_wire) else 0)
         if self._load_areas_faces_actor:
             self._load_areas_faces_actor.SetVisibility(1 if (self._show_load_areas and show_faces) else 0)
         if self._support_punctual_actor:
@@ -3242,7 +3372,7 @@ class VTKViewerWidget(QFrame):
         if self._support_linear_actor:
             self._support_linear_actor.SetVisibility(1 if self._show_support_linear else 0)
         if self._support_planar_actor:
-            self._support_planar_actor.SetVisibility(1 if (self._show_support_planar and show_planar_wire) else 0)
+            self._support_planar_actor.SetVisibility(1 if (self._show_support_planar and show_aux_wire) else 0)
         if self._support_planar_faces_actor:
             self._support_planar_faces_actor.SetVisibility(1 if (self._show_support_planar and show_faces) else 0)
         if self._support_planar_centroid_actor:
@@ -5470,6 +5600,24 @@ class VTKViewerWidget(QFrame):
         source = list(items or [])
         return [source[int(idx)] for idx in indexes if 0 <= int(idx) < len(source)]
 
+    def _build_planar_edges_polydata(self, faces_pd):
+        if faces_pd is None or faces_pd.GetNumberOfCells() == 0:
+            return None
+        merge = vtk.vtkCleanPolyData()
+        merge.SetInputData(faces_pd)
+        merge.Update()
+        fe = vtk.vtkFeatureEdges()
+        fe.SetInputData(merge.GetOutput())
+        fe.BoundaryEdgesOn()
+        fe.FeatureEdgesOn()
+        fe.ManifoldEdgesOff()
+        fe.NonManifoldEdgesOn()
+        fe.SetFeatureAngle(10.0)
+        fe.Update()
+        out = vtk.vtkPolyData()
+        out.DeepCopy(fe.GetOutput())
+        return out if out.GetNumberOfCells() > 0 else None
+
     def _rebuild_planar_faces_actor(self):
         """Reconstruit uniquement l'acteur des faces surfaciques (plat, ou
         epaissi si _planar_thickness_enabled et mode Profiles), sans toucher
@@ -5492,6 +5640,10 @@ class VTKViewerWidget(QFrame):
             self._make_surface_actor(planar_faces_pd, self.planar_color, self.planar_faces_base_opacity),
             role="planars",
             pickable=True,
+        )
+        self._replace_actor(
+            "_planar_edges_actor",
+            self._make_wire_actor(self._build_planar_edges_polydata(planar_faces_pd), (0.0, 0.0, 0.0), 1.0),
         )
 
     def _rebuild_profiles_actor(self, line_indexes=None, filtered_lines=None, filtered_line_sections=None, synchronous=True):
@@ -5555,7 +5707,8 @@ class VTKViewerWidget(QFrame):
             return
         mapper = actor.GetMapper()
         selected = {int(it["index"]) for it in self._selected_items if it.get("role") == "lines"}
-        base = self._profiles_base_colors  # couleurs de section, ou None
+        wire3d = self._display_mode == "profiles_wire"
+        base = None if wire3d else self._profiles_base_colors  # couleurs de section, ou None (toujours None en Filaire 3D)
 
         if not selected:
             if base is not None:
@@ -5570,7 +5723,7 @@ class VTKViewerWidget(QFrame):
             return
 
         sel_rgb = tuple(float(round(c * 255.0)) for c in self.selection_color)
-        lin_rgb = tuple(float(round(c * 255.0)) for c in self.linear_color)
+        lin_rgb = tuple(float(round(c * 255.0)) for c in (_WIRE3D_COLOR if wire3d else self.linear_color))
         colors = vtk.vtkUnsignedCharArray()
         colors.SetName("section_colors")
         colors.SetNumberOfComponents(3)

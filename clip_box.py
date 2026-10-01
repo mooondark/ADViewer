@@ -282,6 +282,7 @@ class ClipBoxController:
         self.margin_pct = _cfg.CLIP_BOX_DEFAULT_MARGIN_PCT
         self.box_color = tuple(_cfg.CLIP_BOX_COLOR)
         self.edge_color = tuple(_cfg.CLIP_EDGE_COLOR)
+        self.edge_width = float(_cfg.CLIP_EDGE_WIDTH)
         self.box = None
         self.planes = []
         self.collection = None
@@ -385,6 +386,9 @@ class ClipBoxController:
             if isinstance(actor, vtkBillboardTextActor3D):
                 self._apply_label_visibility(actor)
 
+    def _point_size(self):
+        return self.edge_width * 8.0 / 3.0
+
     def _build_edges(self):
         for attr, is_points in (("_edge_actor", False), ("_edge_points_actor", True)):
             mapper = vtk.vtkPolyDataMapper()
@@ -394,10 +398,10 @@ class ClipBoxController:
             prop.SetColor(*self.edge_color)
             prop.LightingOff()
             if is_points:
-                prop.SetPointSize(8.0)
+                prop.SetPointSize(self._point_size())
                 prop.RenderPointsAsSpheresOn()
             else:
-                prop.SetLineWidth(3.0)
+                prop.SetLineWidth(self.edge_width)
             mapper.SetResolveCoincidentTopologyToPolygonOffset()
             mapper.SetRelativeCoincidentTopologyLineOffsetParameters(-1.0, -1.0)
             actor.SetVisibility(0)
@@ -448,14 +452,19 @@ class ClipBoxController:
         self._edge_signature = signature
         self._last_edge_ms = (time.perf_counter() - start) * 1000.0
 
-    def set_style(self, box_color, edge_color):
+    def set_style(self, box_color, edge_color, edge_width=None):
         self.box_color = tuple(box_color)
         self.edge_color = tuple(edge_color)
+        if edge_width is not None:
+            self.edge_width = max(0.1, float(edge_width))
         if self._frame_actor is not None:
             self._frame_actor.GetProperty().SetColor(*self.box_color)
         for actor in (self._edge_actor, self._edge_points_actor):
             if actor is not None:
                 actor.GetProperty().SetColor(*self.edge_color)
+        if self._edge_actor is not None:
+            self._edge_actor.GetProperty().SetLineWidth(self.edge_width)
+            self._edge_points_actor.GetProperty().SetPointSize(self._point_size())
         self._render()
 
     def accepts_point(self, point):

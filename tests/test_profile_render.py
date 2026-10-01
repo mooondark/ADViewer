@@ -280,6 +280,7 @@ def test_combined_cs3_stacked_in_depth_direction():
 def _profiles_widget_with_cache(color_by_section=False):
     w = VTKViewerWidget.__new__(VTKViewerWidget)
     w._color_by_section = color_by_section
+    w._display_mode = "profiles_full"
     w.selection_color = (1.0, 0.0, 0.0)
     w.linear_color = (0.4, 0.6, 1.0)
     w._selected_items = []

@@ -556,6 +556,32 @@ def test_axial_view_excludes_handles_aligned_with_view_so_center_wins():
     assert points["center"] is not None
 
 
+def test_edge_width_defaults_to_current_values():
+    host, ctrl = _controller()
+    ctrl.activate([2, 8, 2, 8, -1, 11])
+    assert ctrl.edge_width == 1.5
+    assert ctrl._edge_actor.GetProperty().GetLineWidth() == 1.5
+    assert ctrl._edge_points_actor.GetProperty().GetPointSize() == 4.0
+
+
+def test_set_style_edge_width_applies_to_lines_and_points():
+    host, ctrl = _controller()
+    ctrl.activate([2, 8, 2, 8, -1, 11])
+    ctrl.set_style(ctrl.box_color, ctrl.edge_color, 6.0)
+    assert ctrl.edge_width == 6.0
+    assert ctrl._edge_actor.GetProperty().GetLineWidth() == 6.0
+    assert ctrl._edge_points_actor.GetProperty().GetPointSize() == 16.0
+
+
+def test_edge_width_set_before_activation_is_used_and_default_style_call_keeps_it():
+    host, ctrl = _controller()
+    ctrl.set_style(ctrl.box_color, ctrl.edge_color, 5.0)
+    ctrl.set_style((0.1, 0.2, 0.3), (0.4, 0.5, 0.6))
+    assert ctrl.edge_width == 5.0
+    ctrl.activate([2, 8, 2, 8, -1, 11])
+    assert ctrl._edge_actor.GetProperty().GetLineWidth() == 5.0
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
