@@ -116,6 +116,12 @@ def test_arrow_polygon_tip_along_direction_and_no_nan():
     assert all(not math.isnan(c) for pt in degenerate for c in pt)
 
 
+def test_footprint_polyline_is_closed_rectangle_at_given_z():
+    pts = minimap.footprint_polyline([1.0, 4.0, 2.0, 6.0, -3.0, 9.0], 7.5)
+    assert pts[0] == pts[-1]
+    assert pts == [(1.0, 2.0, 7.5), (4.0, 2.0, 7.5), (4.0, 6.0, 7.5), (1.0, 6.0, 7.5), (1.0, 2.0, 7.5)]
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

@@ -138,6 +138,8 @@ class SettingsDialog(QDialog):
         linear_load_color,
         planar_load_arrow_width: float,
         planar_load_color,
+        clip_box_color,
+        clip_edge_color,
         parent=None
     ):
         super().__init__(parent)
@@ -157,6 +159,8 @@ class SettingsDialog(QDialog):
         self.punctual_load_color = punctual_load_color
         self.linear_load_color = linear_load_color
         self.planar_load_color = planar_load_color
+        self.clip_box_color = clip_box_color
+        self.clip_edge_color = clip_edge_color
 
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -223,6 +227,9 @@ class SettingsDialog(QDialog):
         self._add_row(grid, 10, tr_ui("settings_label_punctual_load_arrows"),  tr_ui("settings_label_thickness"), self.spin_punctual_load_arrow_width,   "punctual_load_color",     self.punctual_load_color)
         self._add_row(grid, 11, tr_ui("settings_label_linear_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_linear_load_arrow_width,     "linear_load_color",       self.linear_load_color)
         self._add_row(grid, 12, tr_ui("settings_label_planar_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_planar_load_arrow_width,     "planar_load_color",       self.planar_load_color)
+
+        self._add_row(grid, 13, tr_ui("settings_label_clip_box"),   "", None, "clip_box_color",  self.clip_box_color)
+        self._add_row(grid, 14, tr_ui("settings_label_clip_edges"), "", None, "clip_edge_color", self.clip_edge_color)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
@@ -301,7 +308,8 @@ class SettingsDialog(QDialog):
 
         grid.addWidget(name_lbl, row, 0, Qt.AlignVCenter)
         grid.addWidget(sub_lbl,  row, 1, Qt.AlignVCenter)
-        grid.addWidget(spinbox,  row, 2, Qt.AlignVCenter)
+        if spinbox is not None:
+            grid.addWidget(spinbox,  row, 2, Qt.AlignVCenter)
 
         if attr_name is not None and color is not None:
             color_controls = self._make_color_controls(attr_name, color)
@@ -334,6 +342,8 @@ class SettingsDialog(QDialog):
             "punctual_load_color": self.punctual_load_color,
             "linear_load_color": self.linear_load_color,
             "planar_load_color": self.planar_load_color,
+            "clip_box_color": self.clip_box_color,
+            "clip_edge_color": self.clip_edge_color,
         }
 
 
@@ -627,7 +637,7 @@ class ControlsDialog(QDialog):
 
         general_keys = (
             "wheel", "left_drag", "left_click", "right_click", "middle_drag", "middle_double",
-            "escape", "zoom_window", "window_select", "view_front_back", "view_left_right",
+            "escape", "zoom_window", "window_select", "clip", "clip_handles", "view_front_back", "view_left_right",
             "view_top_bottom", "view_iso", "open", "quit",
         )
         kb = {action: key.upper() for action, key in get_flight_key_bindings().items()}
@@ -1310,6 +1320,8 @@ class MainWindow(QMainWindow):
         self.scene_light_btn = None
         self.window_select_btn = None
         self.minimap_btn = None
+        self.clip_btn = None
+        self.frame_btn = None
         self.shortcut_window_select = None
         self.zoom_window_btn = None
         self.shortcut_zoom_window = None
@@ -1495,6 +1507,9 @@ class MainWindow(QMainWindow):
             "calc_ef_timeout": str(self.calc_ef_timeout),
             "minimap_corner": "bottom_right" if (self.act_minimap_bottom_right is not None and self.act_minimap_bottom_right.isChecked()) else "bottom_left",
             "minimap_size": "small" if (self.act_minimap_size_small is not None and self.act_minimap_size_small.isChecked()) else "large",
+            "minimap_visible": "true" if (self.minimap_btn is not None and self.minimap_btn.isChecked()) else "false",
+            "clip_box_margin_pct": str(self.viewer.get_clip_box_margin()),
+            "clip_box_show_frame": "true" if (self.frame_btn is not None and self.frame_btn.isChecked()) else "false",
         }
         cfg["styles"] = {
             "linear_width": str(self.viewer.linear_line_width),
@@ -1524,6 +1539,8 @@ class MainWindow(QMainWindow):
             "punctual_load_color": self._format_color(self.viewer.punctual_load_color),
             "linear_load_color": self._format_color(self.viewer.linear_load_color),
             "planar_load_color": self._format_color(self.viewer.planar_load_color),
+            "clip_box_color": self._format_color(self.viewer.get_clip_box_style()[0]),
+            "clip_edge_color": self._format_color(self.viewer.get_clip_box_style()[1]),
         }
         cfg["units"] = display_units.get_state_ini()
 
@@ -1639,6 +1656,19 @@ class MainWindow(QMainWindow):
             self.apply_view_projection(self.view_projection_mode, save=False)
             self.apply_minimap_corner(general.get("minimap_corner", "bottom_left"), save=False)
             self.apply_minimap_size(general.get("minimap_size", "large"), save=False)
+            if self.minimap_btn is not None:
+                self.minimap_btn.setChecked(general.get("minimap_visible", "false").strip().lower() == "true")
+            box_color, edge_color = self.viewer.get_clip_box_style()
+            self.viewer.set_clip_box_style(
+                self._parse_color(colors.get("clip_box_color", self._format_color(box_color)), box_color),
+                self._parse_color(colors.get("clip_edge_color", self._format_color(edge_color)), edge_color),
+            )
+            try:
+                self.viewer.set_clip_box_margin(float(general.get("clip_box_margin_pct", self.viewer.get_clip_box_margin())))
+            except ValueError:
+                pass
+            if self.frame_btn is not None:
+                self.frame_btn.setChecked(general.get("clip_box_show_frame", "true").strip().lower() == "true")
             self.apply_theme(loaded_theme)
         finally:
             self._suspend_config_save = False
@@ -1882,6 +1912,37 @@ class MainWindow(QMainWindow):
     # Le rendu est effectue a la volee par QPixmap.loadFromData() avec adaptation de couleur
     # selon le theme actif (noir en theme clair, blanc en theme sombre).
     _SVG_VECTOR_DATA = {
+        "frame_tool": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMiA3SDNNMiAx'
+            'N0gzTTIxIDdIMjJNMjEgMTdIMjJNMTcgM1YyTTcgM1YyTTE3IDIyVjIxTTcgMjJW'
+            'MjFNMTggNi42VjE3LjRDMTggMTcuNzMxNCAxNy43MzE0IDE4IDE3LjQgMThINi42'
+            'QzYuMjY4NjMgMTggNiAxNy43MzE0IDYgMTcuNFY2LjZDNiA2LjI2ODYzIDYuMjY4'
+            'NjMgNiA2LjYgNkgxNy40QzE3LjczMTQgNiAxOCA2LjI2ODYzIDE4IDYuNloiIHN0'
+            'cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2Fw'
+            'PSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
+        ),
+        "coupe": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMjAgMjBINFYx'
+            'NkgyMFYyMFoiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0'
+            'cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8'
+            'cGF0aCBkPSJNMiAxMkgyMiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9'
+            'IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJv'
+            'dW5kIi8+CjxwYXRoIGQ9Ik03IDRINFY3IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9r'
+            'ZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5l'
+            'am9pbj0icm91bmQiLz4KPHBhdGggZD0iTTExIDRIMTMiIHN0cm9rZT0iIzAwMDAw'
+            'MCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ry'
+            'b2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTcgNEgyMFY3IiBzdHJv'
+            'a2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0i'
+            'cm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+        ),
         "api_on": (
             'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
             'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
@@ -2249,6 +2310,8 @@ class MainWindow(QMainWindow):
             (self.clear_filter_btn,"filter_clear"),
             (self.window_select_btn, "window_select"),
             (self.minimap_btn,     "map"),
+            (self.clip_btn,        "coupe"),
+            (self.frame_btn,       "frame_tool"),
             (self.camera_btn,      "camera"),
             (self.scene_light_btn, "light_bulb"),
             (self.browse_fto_btn,  "parcourir"),
@@ -2536,6 +2599,10 @@ class MainWindow(QMainWindow):
         act_scene_light.triggered.connect(self.open_scene_light_dialog)
         view3d_menu.addAction(act_scene_light)
 
+        act_clip_margin = QAction(tr_ui("menu_clip_box"), self)
+        act_clip_margin.triggered.connect(self.open_clip_margin_dialog)
+        view3d_menu.addAction(act_clip_margin)
+
         # Sous-menu Minicarte
         minimap_menu = QMenu(tr_ui("menu_minimap"), self)
         settings_menu.addMenu(minimap_menu)
@@ -2799,6 +2866,33 @@ class MainWindow(QMainWindow):
         self._setup_view_button(self.minimap_btn, "map", tr_ui("tooltip_minimap"))
         self.minimap_btn.toggled.connect(self.on_minimap_toggled)
 
+        self.clip_btn = QPushButton()
+        self.clip_btn.setCheckable(True)
+        self.clip_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.clip_btn, "coupe", tr_ui("tooltip_clip_box"))
+        self.clip_btn.toggled.connect(self.on_clip_toggled)
+
+        self.frame_btn = QPushButton()
+        self.frame_btn.setCheckable(True)
+        self.frame_btn.setChecked(True)
+        self.frame_btn.setEnabled(False)
+        self.frame_btn.setProperty("iconOnly", True)
+        self._setup_view_button(self.frame_btn, "frame_tool", tr_ui("tooltip_clip_frame"))
+        self.frame_btn.toggled.connect(self.on_clip_frame_toggled)
+
+        sc_clip = QShortcut(QKeySequence("Alt+C"), self)
+        sc_clip.setContext(Qt.ApplicationShortcut)
+        sc_clip.activated.connect(self.clip_btn.toggle)
+        self.shortcut_clip_box = sc_clip
+
+        clip_row = QHBoxLayout()
+        clip_row.setContentsMargins(0, 0, 0, 0)
+        clip_row.setSpacing(3)
+        clip_row.addStretch(1)
+        clip_row.addWidget(self.clip_btn)
+        clip_row.addWidget(self.frame_btn)
+        clip_row.addStretch(1)
+
         fit_row = QHBoxLayout()
         fit_row.setContentsMargins(0, 0, 0, 0)
         fit_row.setSpacing(3)
@@ -2813,6 +2907,7 @@ class MainWindow(QMainWindow):
         action_card.layout.addLayout(fit_row)
         action_card.layout.addLayout(views_row)
         action_card.layout.addLayout(filter_row)
+        action_card.layout.addLayout(clip_row)
 
         transparency_title = QLabel(tr_ui("transparency"))
         transparency_title.setStyleSheet(f"color:{FG_DIM};")
@@ -2971,6 +3066,7 @@ class MainWindow(QMainWindow):
         self.viewer.zoomWindowModeChanged.connect(self._sync_zoom_window_button)
         self.viewer.flightModeChanged.connect(self._sync_flight_button)
         self.viewer.flightModeChanged.connect(self._on_flight_mode_shortcut_guard)
+        self.viewer.clipBoxChanged.connect(self._sync_clip_button)
         self._update_display_checkboxes()
         viewer_card.layout.addWidget(self.viewer, 1)
         right_splitter.addWidget(viewer_card)
@@ -5552,9 +5648,38 @@ class MainWindow(QMainWindow):
         if self.viewer is not None:
             self.viewer.set_flight_mode(bool(checked))
 
+    def on_clip_toggled(self, checked: bool):
+        if self.viewer is not None:
+            self.viewer.set_clip_box_active(checked)
+
+    def _sync_clip_button(self, active: bool):
+        if self.clip_btn is not None and self.clip_btn.isChecked() != active:
+            self.clip_btn.blockSignals(True)
+            self.clip_btn.setChecked(active)
+            self.clip_btn.blockSignals(False)
+        if self.frame_btn is not None:
+            self.frame_btn.setEnabled(active)
+
+    def on_clip_frame_toggled(self, checked: bool):
+        if self.viewer is not None:
+            self.viewer.set_clip_box_frame_visible(checked)
+        if not self._suspend_config_save:
+            self.save_config()
+
+    def open_clip_margin_dialog(self):
+        value, ok = QInputDialog.getDouble(
+            self, tr_ui("clip_box_margin_title"), tr_ui("clip_box_margin_label"),
+            self.viewer.get_clip_box_margin(), 0.0, 50.0, 1,
+        )
+        if ok:
+            self.viewer.set_clip_box_margin(value)
+            self.save_config()
+
     def on_minimap_toggled(self, checked: bool):
         if self.viewer is not None:
             self.viewer.set_minimap_visible(checked)
+        if not self._suspend_config_save:
+            self.save_config()
 
     _ROLE_COUNT_KEYS = {
         "lines": "selection_count_lines",
@@ -6158,6 +6283,7 @@ class MainWindow(QMainWindow):
             self.viewer.linear_load_color,
             self.viewer.planar_load_arrow_width,
             self.viewer.planar_load_color,
+            *self.viewer.get_clip_box_style(),
             self
         )
         if dlg.exec() == QDialog.Accepted:
@@ -6204,6 +6330,7 @@ class MainWindow(QMainWindow):
                 values["planar_load_color"],
                 values["planar_load_arrow_width"],
             )
+            self.viewer.set_clip_box_style(values["clip_box_color"], values["clip_edge_color"])
             self._mark_loads_dirty("punctual", "linear", "planar")
 
             self.log(
@@ -6649,7 +6776,7 @@ class MainWindow(QMainWindow):
             self.load_btn, self.calc_btn, self.fit_btn, self.zoom_window_btn,
             self.view_front_btn, self.view_left_btn, self.view_top_btn, self.view_iso_btn,
             self.filter_btn, self.clear_filter_btn, self.isolate_btn, self.camera_btn, self.scene_light_btn,
-            self.window_select_btn, self.flight_btn, self.minimap_btn,
+            self.window_select_btn, self.flight_btn, self.minimap_btn, self.clip_btn, self.frame_btn,
             self.transparency_slider, self.profiles_transparency_slider,
             self.api_on_btn, self.api_off_btn, self.api_restart_btn,
             self.chk_lines, self.chk_planars, self.chk_load_areas,
@@ -6661,6 +6788,7 @@ class MainWindow(QMainWindow):
                 w.setEnabled(not loading)
         if not loading:
             self._refresh_calc_button()
+            self._sync_clip_button(self.viewer.is_clip_box_active() if self.viewer is not None else False)
 
         # Au demarrage du chargement : decocher et annuler les modes actifs de la
         # carte Actions (selection par fenetre, zoom fenetre, isolation, navigation).

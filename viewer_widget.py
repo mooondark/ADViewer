@@ -23,6 +23,7 @@ import display_units as du
 import scene_light as _scene_light
 import flight_navigation as _flight_nav
 import minimap as _minimap
+import clip_box as _clip_box
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_ARROW_WIDTH,
     PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_ARROW_WIDTH,
@@ -324,6 +325,7 @@ class VTKViewerWidget(QFrame):
     zoomWindowModeChanged = Signal(bool)
     # Emis quand le mode "Navigation" (camera libre) est active/desactive.
     flightModeChanged = Signal(bool)
+    clipBoxChanged = Signal(bool)
     ELEMENT_INDEX_ARRAY = "element_index"
 
     def __init__(self, parent=None):
@@ -333,6 +335,8 @@ class VTKViewerWidget(QFrame):
         # (cf. bug corrige lors du refactor Navigation - l'ordre compte).
         self._flight = _flight_nav.FlightController(self)
         self._minimap = _minimap.MinimapController(self)
+        self._clip = _clip_box.ClipBoxController(self)
+        self._clip.on_box_changed = lambda box: self._minimap.set_clip_footprint(box, self._clip.box_color)
         self.apply_theme()
 
         layout = QVBoxLayout(self)
@@ -494,12 +498,14 @@ class VTKViewerWidget(QFrame):
 
         self.interactor.AddObserver("RightButtonPressEvent", self._on_right_button_press, 1.0)
         self.interactor.AddObserver("RightButtonReleaseEvent", self._on_right_button_release, 1.0)
-        self.interactor.AddObserver("LeftButtonPressEvent", self._on_left_button_press, 1.0)
+        self._left_press_tag = self.interactor.AddObserver("LeftButtonPressEvent", self._on_left_button_press, 1.0)
         self.interactor.AddObserver("LeftButtonReleaseEvent", self._on_left_button_release, 1.0)
         self.interactor.AddObserver("KeyPressEvent", self._on_key_press, 1.0)
         self.interactor.AddObserver("KeyReleaseEvent", self._on_key_release, 1.0)
         self.interactor.AddObserver("MouseMoveEvent", self._on_window_select_mouse_move, 0.5)
         self.interactor.AddObserver("MouseMoveEvent", self._on_flight_mouse_move, 0.5)
+        self.interactor.AddObserver("MouseMoveEvent", self._on_clip_mouse_move, 0.6)
+        self._clip_hover_cursor = False
         self.interactor.AddObserver("MouseMoveEvent", self._on_overlay_mouse_move, 0.0)
 
         # Position du dernier press gauche — pour distinguer clic de glisser
@@ -554,6 +560,10 @@ class VTKViewerWidget(QFrame):
             self._minimap.update_viewport()
 
     def save_screenshot(self, path: str, scale: int = 1, target_size=None):
+        with self._clip.gizmos_hidden():
+            self._save_screenshot_impl(path, scale=scale, target_size=target_size)
+
+    def _save_screenshot_impl(self, path: str, scale: int = 1, target_size=None):
         """Enregistre le rendu VTK courant dans un fichier PNG.
 
         target_size, si fourni (largeur, hauteur), impose une taille de
@@ -732,6 +742,7 @@ class VTKViewerWidget(QFrame):
             return None
         self.renderer.AddActor(actor)
         self._actors.append(actor)
+        self._clip.apply_to_actor(actor)
         if pickable and role:
             self._register_pickable_actor(actor, role)
         return actor
@@ -1562,6 +1573,8 @@ class VTKViewerWidget(QFrame):
 
         element_index = int(arr.GetTuple1(cell_id))
         pos = picker.GetPickPosition()
+        if not self._clip.accepts_point(pos):
+            return None
         cam = self.renderer.GetActiveCamera().GetPosition() if self.renderer.GetActiveCamera() else (0.0, 0.0, 0.0)
         depth = (pos[0] - cam[0]) ** 2 + (pos[1] - cam[1]) ** 2 + (pos[2] - cam[2]) ** 2
         return {
@@ -1840,6 +1853,7 @@ class VTKViewerWidget(QFrame):
             for actor in overlays:
                 self.renderer.AddActor(actor)
                 self._actors.append(actor)
+                self._clip.apply_to_actor(actor)
                 self._selection_overlay_actors.append(actor)
         # En mode profils : recolorer (echange de scalaires, sans reconstruction).
         if self._display_mode in _PROFILE_MODES:
@@ -2104,6 +2118,7 @@ class VTKViewerWidget(QFrame):
             actor.PickableOff()
             self.renderer.AddActor(actor)
             self._actors.append(actor)
+            self._clip.apply_to_actor(actor)
             new_label_actors.append(actor)
             return actor
 
@@ -2238,6 +2253,10 @@ class VTKViewerWidget(QFrame):
             self._flight.on_right_button_release()
 
     def _on_left_button_press(self, obj, event):
+        if self._clip.on_left_press(*self.interactor.GetEventPosition()):
+            self.vtk_widget.setFocus()
+            self.interactor.GetCommand(self._left_press_tag).SetAbortFlag(1)
+            return
         if self._window_select_mode:
             self.vtk_widget.setFocus()
             x, y = self.interactor.GetEventPosition()
@@ -2283,6 +2302,8 @@ class VTKViewerWidget(QFrame):
             self.interactor_style.OnLeftButtonDown()
 
     def _on_left_button_release(self, obj, event):
+        if self._clip.on_left_release():
+            return
         if self._window_select_mode or self._zoom_window_mode:
             return
         x, y = self.interactor.GetEventPosition()
@@ -2298,6 +2319,17 @@ class VTKViewerWidget(QFrame):
             candidates = self._pick_selection_candidates(x, y)
             if not candidates:
                 self.clear_selection()
+
+    def _on_clip_mouse_move(self, obj, event):
+        x, y = self.interactor.GetEventPosition()
+        self._clip.on_mouse_move(x, y)
+        hovering = self._clip.hover_key is not None
+        if hovering != self._clip_hover_cursor:
+            self._clip_hover_cursor = hovering
+            if hovering:
+                self.vtk_widget.setCursor(Qt.PointingHandCursor)
+            else:
+                self.vtk_widget.unsetCursor()
 
     def _on_key_press(self, obj, event):
         key = self.interactor.GetKeySym() if self.interactor is not None else ""
@@ -2545,10 +2577,14 @@ class VTKViewerWidget(QFrame):
                 npc = cell.GetNumberOfPoints()
                 if npc == 0:
                     continue
+                world = self._clip.visible_part([pts.GetPoint(cell.GetPointId(k)) for k in range(npc)])
+                npc = len(world)
+                if npc == 0:
+                    continue
                 scr = []
                 ok = True
                 for k in range(npc):
-                    sp = _proj(pts.GetPoint(cell.GetPointId(k)))
+                    sp = _proj(world[k])
                     if sp is None:
                         ok = False
                         break
@@ -2644,6 +2680,70 @@ class VTKViewerWidget(QFrame):
         else:
             self._flight.deactivate()
         self.flightModeChanged.emit(active)
+
+    def _clippable_actors(self):
+        actors = list(self._actors)
+        mesh = self._mesh_actor
+        if mesh is not None and mesh not in actors:
+            actors.append(mesh)
+        return actors
+
+    def _clip_edge_sources(self):
+        sources = []
+        candidates = []
+        if self._show_lines:
+            candidates.append(self._profiles_actor if self._display_mode in _PROFILE_MODES else self._lines_actor)
+        if self._show_planars:
+            candidates.append(self._planar_faces_actor)
+        if self._show_support_planar:
+            candidates.append(self._support_planar_faces_actor)
+        for actor in candidates:
+            pd = self._get_actor_polydata(actor)
+            if pd is not None:
+                sources.append(pd)
+        return sources
+
+    def _clip_activation_bounds(self):
+        if self._selected_items and self._selection_overlay_actors:
+            union = [math.inf, -math.inf, math.inf, -math.inf, math.inf, -math.inf]
+            for actor in self._selection_overlay_actors:
+                b = actor.GetBounds()
+                if b is None or b[0] > b[1]:
+                    continue
+                for i in range(3):
+                    union[2 * i] = min(union[2 * i], b[2 * i])
+                    union[2 * i + 1] = max(union[2 * i + 1], b[2 * i + 1])
+            if union[0] <= union[1]:
+                return union
+        return self._get_visible_bounds()
+
+    def set_clip_box_active(self, active: bool):
+        active = bool(active)
+        if active == self._clip.active:
+            return
+        if active:
+            self._clip.activate(self._clip_activation_bounds())
+        else:
+            self._clip.deactivate()
+        self.clipBoxChanged.emit(self._clip.active)
+
+    def is_clip_box_active(self) -> bool:
+        return self._clip.active
+
+    def set_clip_box_frame_visible(self, visible: bool):
+        self._clip.set_frame_visible(visible)
+
+    def set_clip_box_style(self, box_color, edge_color):
+        self._clip.set_style(box_color, edge_color)
+
+    def get_clip_box_style(self):
+        return self._clip.box_color, self._clip.edge_color
+
+    def set_clip_box_margin(self, pct: float):
+        self._clip.margin_pct = max(0.0, float(pct))
+
+    def get_clip_box_margin(self) -> float:
+        return self._clip.margin_pct
 
     def set_minimap_visible(self, visible: bool):
         self._minimap.set_visible(visible)
@@ -2823,6 +2923,9 @@ class VTKViewerWidget(QFrame):
             self.orientation_widget.SetViewport(*self._ORIENTATION_WIDGET_VIEWPORT_BOTTOM_LEFT)
 
     def clear_scene(self):
+        if self._clip.active:
+            self._clip.deactivate()
+            self.clipBoxChanged.emit(False)
         self._has_model = False
         self._update_view_overlay(render=False)
         self._minimap.clear_geometry()
@@ -2905,7 +3008,7 @@ class VTKViewerWidget(QFrame):
             else:
                 cam.SetViewUp(0.0, 0.0, 1.0)
         cam.OrthogonalizeViewUp()
-        self.renderer.ResetCamera()
+        self._reset_camera_to_framing()
         self.renderer.ResetCameraClippingRange()
         self.render_window.Render()
         self._update_view_overlay()
@@ -2918,6 +3021,16 @@ class VTKViewerWidget(QFrame):
         if not all(math.isfinite(v) for v in bounds):
             return None
         return bounds
+
+    def _framing_bounds(self):
+        return list(self._clip.box) if self._clip.active else self._get_visible_bounds()
+
+    def _reset_camera_to_framing(self):
+        bounds = self._framing_bounds()
+        if bounds is None:
+            self.renderer.ResetCamera()
+        else:
+            self.renderer.ResetCamera(*bounds)
 
     def set_projection_mode(self, mode: str):
         normalized = str(mode or DEFAULT_VIEW_PROJECTION).strip().lower()
@@ -2935,7 +3048,7 @@ class VTKViewerWidget(QFrame):
         return str(getattr(self, "_projection_mode", DEFAULT_VIEW_PROJECTION) or DEFAULT_VIEW_PROJECTION)
 
     def set_isometric_view(self):
-        bounds = self._get_visible_bounds()
+        bounds = self._framing_bounds()
         if bounds is None:
             cx, cy, cz = 0.0, 0.0, 0.0
             radius = 10.0
@@ -2955,13 +3068,13 @@ class VTKViewerWidget(QFrame):
         cam.SetPosition(cx + radius, cy - radius, cz + radius)
         cam.SetViewUp(0.0, 0.0, 1.0)
         cam.OrthogonalizeViewUp()
-        self.renderer.ResetCamera()
+        self._reset_camera_to_framing()
         self.renderer.ResetCameraClippingRange()
         self.render_window.Render()
         self._update_view_overlay()
 
     def _set_axis_view(self, direction, up=(0.0, 0.0, 1.0)):
-        bounds = self._get_visible_bounds()
+        bounds = self._framing_bounds()
         if bounds is None:
             cx, cy, cz = 0.0, 0.0, 0.0
             radius = 10.0
@@ -2985,7 +3098,7 @@ class VTKViewerWidget(QFrame):
         )
         cam.SetViewUp(*up)
         cam.OrthogonalizeViewUp()
-        self.renderer.ResetCamera()
+        self._reset_camera_to_framing()
         self.renderer.ResetCameraClippingRange()
         self.render_window.Render()
         self._update_view_overlay()
@@ -3140,6 +3253,7 @@ class VTKViewerWidget(QFrame):
             face_like = opacity < 1.0
             role = self._selected_item["role"] if self._selected_item else ""
             actor.SetVisibility(1 if self._selected_role_visible(role, face=face_like) else 0)
+        self._clip.refresh_edges()
 
         if self._mesh_actor:
             self._mesh_actor.SetVisibility(1 if self._show_mesh else 0)
@@ -3280,6 +3394,7 @@ class VTKViewerWidget(QFrame):
 
         self._mesh_actor = actor
         self.renderer.AddActor(actor)
+        self._clip.apply_to_actor(actor)
         self.render_window.Render()
 
     def reset_display_mode_default(self):

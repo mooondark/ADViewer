@@ -2,6 +2,20 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.15
+
+### FR
+- Minicarte : son état (affichée ou masquée) est désormais conservé dans `config.ini` et restauré au lancement.
+- Nouvelle **boîte de coupe** (bouton sous les filtres, raccourci `Alt+C`) : isole une zone du modèle avec une boîte alignée sur les axes. Tout ce qui est hors de la boîte est masqué et non sélectionnable (clic et sélection par fenêtre jugés sur la partie visible). Six poignées de face et une poignée centrale permettent de la déplacer en temps réel ; la trace de la coupe est dessinée en rouge sur les profilés, les surfaciques et les appuis surfaciques (points pour les filaires). Charges, diagrammes, maillage EF et surbrillances sont coupés comme le reste. La minicarte n'est pas coupée ; l'export PNG reproduit la coupe sans le cadre ni les poignées.
+- Boîte de coupe : bouton « Afficher la boîte » (masque le cadre et les poignées en gardant la coupe), marge d'ajustement réglable (Paramètres > Vue 3D > Boîte de coupe), couleurs de la boîte et des arêtes de coupe dans « Styles et épaisseurs », conservées dans config.ini avec la marge et l'affichage du cadre. Zoom étendu et vues standard cadrent sur la boîte quand la coupe est active.
+- Minicarte : l'emprise de la boîte de coupe y est affichée (rectangle de la couleur de la boîte) tant que la coupe est active.
+
+### EN
+- Minimap: its state (shown or hidden) is now saved in `config.ini` and restored at startup.
+- New **clip box** (button under the filters, `Alt+C` shortcut): isolates an area of the model with an axis-aligned box. Everything outside the box is hidden and not selectable (click and window selection are judged on the visible part). Six face handles and a center handle move it in real time; the cut trace is drawn in red on profiles, planar elements and planar supports (points for linear elements). Loads, result diagrams, FE mesh and selection highlights are clipped like the rest. The minimap is not clipped; PNG export reproduces the cut without the frame or handles.
+- Clip box: "Show box" button (hides the frame and handles while keeping the cut), adjustable fit margin (Settings > 3D view > Clip box), box and cut-edge colors in "Styles and thicknesses", saved in config.ini along with the margin and the frame visibility. Zoom to fit and the standard views frame the box while the cut is active.
+- Minimap: the clip box footprint is shown (rectangle in the box color) while the cut is active.
+
 ## 2.14
 
 ### FR

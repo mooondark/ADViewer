@@ -110,6 +110,11 @@ def arrow_polygon(position_xy, direction_xy, size: float):
     return [tip, left, notch, right]
 
 
+def footprint_polyline(box, z: float):
+    xmin, xmax, ymin, ymax = box[0], box[1], box[2], box[3]
+    return [(xmin, ymin, z), (xmax, ymin, z), (xmax, ymax, z), (xmin, ymax, z), (xmin, ymin, z)]
+
+
 import vtk
 from PySide6.QtCore import QTimer
 
@@ -123,6 +128,7 @@ class MinimapController:
     _build_punctual_supports_polydata, _make_wire_actor)."""
 
     FRAME_MARGIN_PX = 2.0
+    LAYER = 2  # au-dessus du calque 1 (cadre/poignees de la boite de coupe)
     ARROW_SIZE_RATIO = 0.14  # taille de la fleche / demi-hauteur visible
 
     def __init__(self, host):
@@ -142,6 +148,8 @@ class MinimapController:
         self.marker_actor = None
         self.cone_actor = None
         self.arrow_actor = None
+        self.clip_actor = None
+        self.backdrop_actor = None
         self.timer = None
         self.model_diagonal = 0.0
         self.model_zmax = 0.0
@@ -155,6 +163,7 @@ class MinimapController:
 
         renderer = vtk.vtkRenderer()
         renderer.InteractiveOff()
+        renderer.SetLayer(self.LAYER)
         camera = renderer.GetActiveCamera()
         camera.ParallelProjectionOn()
         camera.SetViewUp(0.0, 1.0, 0.0)
@@ -262,6 +271,53 @@ class MinimapController:
         self.arrow_actor = arrow_actor
         self.renderer.AddActor(arrow_actor)
 
+        clip_points = vtk.vtkPoints()
+        for _ in range(5):
+            clip_points.InsertNextPoint(0.0, 0.0, 0.0)
+        clip_line = vtk.vtkPolyLine()
+        clip_line.GetPointIds().SetNumberOfIds(5)
+        for i in range(5):
+            clip_line.GetPointIds().SetId(i, i)
+        clip_cells = vtk.vtkCellArray()
+        clip_cells.InsertNextCell(clip_line)
+        clip_poly = vtk.vtkPolyData()
+        clip_poly.SetPoints(clip_points)
+        clip_poly.SetLines(clip_cells)
+        clip_mapper = vtk.vtkPolyDataMapper()
+        clip_mapper.SetInputData(clip_poly)
+        clip_actor = vtk.vtkActor()
+        clip_actor.SetMapper(clip_mapper)
+        clip_actor.PickableOff()
+        clip_actor.GetProperty().LightingOff()
+        clip_actor.GetProperty().SetColor(*_cfg.CLIP_BOX_COLOR)
+        clip_actor.GetProperty().SetLineWidth(2.0)
+        clip_actor.SetVisibility(False)
+        self.clip_actor = clip_actor
+        self.renderer.AddActor(clip_actor)
+
+        backdrop_points = vtk.vtkPoints()
+        for _ in range(4):
+            backdrop_points.InsertNextPoint(0.0, 0.0, 0.0)
+        backdrop_cell = vtk.vtkPolygon()
+        backdrop_cell.GetPointIds().SetNumberOfIds(4)
+        for i in range(4):
+            backdrop_cell.GetPointIds().SetId(i, i)
+        backdrop_cells = vtk.vtkCellArray()
+        backdrop_cells.InsertNextCell(backdrop_cell)
+        backdrop_poly = vtk.vtkPolyData()
+        backdrop_poly.SetPoints(backdrop_points)
+        backdrop_poly.SetPolys(backdrop_cells)
+        backdrop_mapper = vtk.vtkPolyDataMapper()
+        backdrop_mapper.SetInputData(backdrop_poly)
+        backdrop_actor = vtk.vtkActor()
+        backdrop_actor.SetMapper(backdrop_mapper)
+        backdrop_actor.PickableOff()
+        backdrop_actor.GetProperty().LightingOff()
+        backdrop_actor.GetProperty().SetColor(*_cfg.VTK_BG)
+        backdrop_actor.SetVisibility(False)
+        self.backdrop_actor = backdrop_actor
+        self.renderer.AddActor(backdrop_actor)
+
         self.timer = QTimer(self.host)
         self.timer.setInterval(_cfg.MINIMAP_SYNC_INTERVAL_MS)
         self.timer.timeout.connect(self.sync_tick)
@@ -281,6 +337,8 @@ class MinimapController:
                 actor.GetProperty().SetColor(*color)
         if self.renderer is not None:
             self.renderer.SetBackground(*_cfg.VTK_BG)
+        if self.backdrop_actor is not None:
+            self.backdrop_actor.GetProperty().SetColor(*_cfg.VTK_BG)
 
     def set_corner(self, corner: str):
         self.corner = corner if corner in ("bottom_left", "bottom_right") else "bottom_left"
@@ -408,7 +466,7 @@ class MinimapController:
         principale. Met aussi a jour `model_diagonal`/`model_zmax`."""
         if self.renderer is None:
             return
-        indicators = [a for a in (self.marker_actor, self.cone_actor, self.arrow_actor) if a is not None]
+        indicators = [a for a in (self.marker_actor, self.cone_actor, self.arrow_actor, self.clip_actor, self.backdrop_actor) if a is not None]
         previous = [a.GetVisibility() for a in indicators]
         for a in indicators:
             a.SetVisibility(0)
@@ -429,6 +487,15 @@ class MinimapController:
 
         cx = (xmin + xmax) / 2.0
         cy = (ymin + ymax) / 2.0
+        # Le calque 2 n'efface pas le fond : un plan opaque sous le modele evite que
+        # la scene principale et le cadre de la boite de coupe transparaissent.
+        half = 10.0 * max(dx, dy, 1.0)
+        z_back = zmin - 0.05 * max(self.model_diagonal, 1.0)
+        back_pts = self.backdrop_actor.GetMapper().GetInput().GetPoints()
+        for i, (bx, by) in enumerate(((-half, -half), (half, -half), (half, half), (-half, half))):
+            back_pts.SetPoint(i, cx + bx, cy + by, z_back)
+        back_pts.Modified()
+        self.backdrop_actor.SetVisibility(True)
         camera = self.renderer.GetActiveCamera()
         camera.SetFocalPoint(cx, cy, 0.0)
         camera.SetPosition(cx, cy, 1.0)
@@ -510,6 +577,23 @@ class MinimapController:
         if host.render_window is not None:
             host.render_window.Render()
 
+    def set_clip_footprint(self, box, color=None):
+        if self.clip_actor is None:
+            return
+        if box is None:
+            self.clip_actor.SetVisibility(False)
+        else:
+            z = self.model_zmax + 0.002 * max(self.model_diagonal, 1.0)
+            pts = self.clip_actor.GetMapper().GetInput().GetPoints()
+            for i, point in enumerate(footprint_polyline(box, z)):
+                pts.SetPoint(i, *point)
+            pts.Modified()
+            if color is not None:
+                self.clip_actor.GetProperty().SetColor(*color)
+            self.clip_actor.SetVisibility(True)
+        if self.visible and self.host.render_window is not None:
+            self.host.render_window.Render()
+
     def set_visible(self, visible: bool):
         visible = bool(visible)
         if visible == self.visible:
@@ -518,6 +602,8 @@ class MinimapController:
         self.host._sync_orientation_widget_corner()
         if visible:
             if self.host.render_window is not None:
+                if self.host.render_window.GetNumberOfLayers() <= self.LAYER:
+                    self.host.render_window.SetNumberOfLayers(self.LAYER + 1)
                 self.host.render_window.AddRenderer(self.renderer)
             self.frame_actor.SetVisibility(True)
             self.update_viewport()

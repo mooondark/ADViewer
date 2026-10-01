@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "2.14"
+APP_VERSION = "2.15"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -358,6 +358,10 @@ MINIMAP_SIZE_SMALL_PX = 200.0
 MINIMAP_SYNC_INTERVAL_MS = 200
 MINIMAP_DEFAULT_CORNER = "bottom_left"
 MINIMAP_DEFAULT_SIZE = "large"
+CLIP_BOX_DEFAULT_MARGIN_PCT = 2.0
+CLIP_BOX_COLOR = (0.15, 0.55, 0.95)
+CLIP_EDGE_COLOR = (1.0, 0.1, 0.1)
+CLIP_EDGE_BUDGET_MS = 50.0
 
 
 def _lookup(dict_name: str, key: str) -> str:

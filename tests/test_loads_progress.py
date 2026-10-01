@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import vtk
 
 from viewer_widget import VTKViewerWidget
+from clip_box import ClipBoxController
 
 
 def _widget():
@@ -74,6 +75,7 @@ def _render_widget():
     w._selection_overlay_actors = []
     w._diagram_overlay_actors = []
     w._pickable_actors = {}
+    w._clip = ClipBoxController(w)
     w._punctual_load_actors = []
     w._linear_load_actors = []
     w._planar_load_actors = []
