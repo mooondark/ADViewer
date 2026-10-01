@@ -1109,10 +1109,15 @@ class VTKViewerWidget(QFrame):
             return None
 
         if not openings:
-            # Pas de trou : polygone simple, pas besoin de vtkContourTriangulator
-            # (evite un vtkContourTriangulator.Update() par capuchon, x2 par
-            # element x5800 sur un gros modele -> gain majeur en mode Profiles).
-            return self._single_polygon_polydata(outer)
+            # Pas de trou : pas besoin de vtkContourTriangulator (evite un
+            # Update() par capuchon, x2 par element x5800 sur un gros modele ->
+            # gain majeur en mode Profiles). Un contour convexe reste un polygone
+            # unique ; un contour concave (I, H, L, T...) doit etre decoupe, sinon
+            # l'affichage le triangule en eventail et l'extremite est deformee.
+            if self._polygon_is_convex(outer):
+                return self._single_polygon_polydata(outer)
+            triangulated = self._triangulated_polygon_polydata(outer)
+            return triangulated if triangulated is not None else self._single_polygon_polydata(outer)
 
         points = vtk.vtkPoints()
         lines = vtk.vtkCellArray()
@@ -1152,6 +1157,63 @@ class VTKViewerWidget(QFrame):
             return out
 
         return self._single_polygon_polydata(outer)
+
+    @staticmethod
+    def _polygon_is_convex(points, tol=1e-9):
+        n = len(points)
+        if n <= 3:
+            return True
+        nx = ny = nz = 0.0
+        for i in range(n):
+            x0, y0, z0 = points[i]
+            x1, y1, z1 = points[(i + 1) % n]
+            nx += (y0 - y1) * (z0 + z1)
+            ny += (z0 - z1) * (x0 + x1)
+            nz += (x0 - x1) * (y0 + y1)
+        nnorm = math.sqrt(nx * nx + ny * ny + nz * nz)
+        if nnorm < 1e-18:
+            return True
+        sign = 0
+        for i in range(n):
+            a, b, c = points[i], points[(i + 1) % n], points[(i + 2) % n]
+            ux, uy, uz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+            vx, vy, vz = c[0] - b[0], c[1] - b[1], c[2] - b[2]
+            d = (uy * vz - uz * vy) * nx + (uz * vx - ux * vz) * ny + (ux * vy - uy * vx) * nz
+            scale = math.sqrt(ux * ux + uy * uy + uz * uz) * math.sqrt(vx * vx + vy * vy + vz * vz) * nnorm
+            if abs(d) <= tol * scale:
+                continue  # sommets alignes
+            current = 1 if d > 0 else -1
+            if sign == 0:
+                sign = current
+            elif current != sign:
+                return False
+        return True
+
+    @staticmethod
+    def _triangulated_polygon_polydata(outer):
+        """Contour simple (sans trou), eventuellement concave, decoupe en
+        triangles par vtkPolygon.Triangulate ; None si le decoupage echoue."""
+        n = len(outer)
+        polygon = vtk.vtkPolygon()
+        polygon.GetPoints().SetNumberOfPoints(n)
+        polygon.GetPointIds().SetNumberOfIds(n)
+        points = vtk.vtkPoints()
+        for i, pt in enumerate(outer):
+            polygon.GetPoints().SetPoint(i, *pt)
+            polygon.GetPointIds().SetId(i, i)
+            points.InsertNextPoint(*pt)
+        ids = vtk.vtkIdList()
+        if not polygon.Triangulate(0, ids, vtk.vtkPoints()) or ids.GetNumberOfIds() < 3:
+            return None
+        cells = vtk.vtkCellArray()
+        for k in range(0, ids.GetNumberOfIds() - 2, 3):
+            cells.InsertNextCell(3)
+            for j in range(3):
+                cells.InsertCellPoint(ids.GetId(k + j))
+        out = vtk.vtkPolyData()
+        out.SetPoints(points)
+        out.SetPolys(cells)
+        return out
 
     @staticmethod
     def _single_polygon_polydata(outer):

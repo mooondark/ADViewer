@@ -5,6 +5,7 @@
 ## 2.16
 
 ### FR
+- Correction : en modes « Profilés + … », l'extrémité des profils concaves (I, H, L, T, U…) s'affichait déformée (triangles parasites sur l'âme). Les faces d'extrémité concaves sont maintenant correctement découpées ; le temps de construction des profils est inchangé.
 - Boîte de coupe : l'épaisseur des arêtes de coupe est réglable dans « Styles et épaisseurs » (1,5 par défaut), et conservée dans config.ini.
 - Diagrammes de résultats : les étiquettes des valeurs min/max se placent désormais à l'extérieur du diagramme (et non plus dessus pour les valeurs du bas ou du côté), et restent bien placées quand on tourne la vue.
 - Nouvelle fonction **Inverser la sélection** (bouton à la place de « Enregistrer la vue en PNG », qui passe à droite de « Afficher la boîte ») : l'élément sélectionné est désélectionné et tous les autres éléments sélectionnables (visibles, hors partie coupée par la boîte de coupe) deviennent sélectionnés. Sans sélection, le bouton ne fait rien.
@@ -14,6 +15,7 @@
 - Nouveau mode d'affichage **Filaire 3D** (en dernière position de la liste) : comme « Profilés + Rendu plein » mais avec les arêtes seules, sans faces et en transparence totale, en gris foncé uniforme. Les éléments restent sélectionnables au clic ; transparence et « Couleurs par section » sont grisées dans ce mode.
 
 ### EN
+- Fix: in "Profiles + …" modes, the end of concave profiles (I, H, L, T, U…) was drawn distorted (stray triangles on the web). Concave end faces are now triangulated correctly; profile build time is unchanged.
 - Clip box: the cut-edge thickness can be set in "Styles and thicknesses" (1.5 by default) and is saved in config.ini.
 - Result diagrams: the min/max value labels are now placed outside the diagram (instead of on top of it for the lower or side values) and stay well placed when the view is rotated.
 - New **Invert selection** function (button in place of "Save view as PNG", which moves to the right of "Show box"): the selected element is deselected and every other selectable element (visible, outside the part cut by the clip box) becomes selected. With no selection, the button does nothing.
