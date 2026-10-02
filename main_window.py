@@ -7216,6 +7216,23 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
 
+def install_qt_translators(app, language):
+    """Installe les catalogues Qt (boutons standards Oui / Non / Annuler / Fermer,
+    dialogue de couleur...) de la langue donnee. qtbase_<lang> porte ces textes ;
+    qt_<lang> n'est qu'un catalogue-meta. Cherche dans les traductions de PySide6
+    puis dans un dossier `translations` a cote de l'application."""
+    directories = [QLibraryInfo.path(QLibraryInfo.TranslationsPath), os.path.join(get_app_dir(), "translations")]
+    installed = []
+    for name in (f"qtbase_{language}", f"qt_{language}"):
+        for directory in directories:
+            translator = QTranslator(app)
+            if os.path.isdir(directory) and translator.load(name, directory):
+                app.installTranslator(translator)
+                installed.append(translator)
+                break
+    return installed
+
+
 def main():
     set_windows_app_user_model_id("graitec.viewer.desktop")
     app = QApplication(sys.argv)
@@ -7225,9 +7242,7 @@ def main():
 
     w = MainWindow(app=app)
 
-    qt_translator = QTranslator()
-    if qt_translator.load(f"qt_{get_language()}", QLibraryInfo.path(QLibraryInfo.TranslationsPath)):
-        app.installTranslator(qt_translator)
+    install_qt_translators(app, get_language())
 
     w.show()
     sys.exit(app.exec())

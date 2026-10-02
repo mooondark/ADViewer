@@ -349,19 +349,15 @@ class MinimapController:
         self.size = size if size in ("large", "small") else "large"
         self.update_viewport()
 
-    def update_viewport(self):
+    def _apply_viewport(self, w, h, scale=1.0):
         import viewer_config as _cfg
 
-        if self.renderer is None:
-            return
-        w = max(1, self.host.width())
-        h = max(1, self.host.height())
-        size_px = _cfg.MINIMAP_SIZE_SMALL_PX if self.size == "small" else _cfg.MINIMAP_SIZE_LARGE_PX
+        size_px = (_cfg.MINIMAP_SIZE_SMALL_PX if self.size == "small" else _cfg.MINIMAP_SIZE_LARGE_PX) * scale
         rect = viewport_rect(self.corner, float(w), float(h), size_px=size_px)
         self.renderer.SetViewport(*rect)
 
-        margin_x = self.FRAME_MARGIN_PX / float(w)
-        margin_y = self.FRAME_MARGIN_PX / float(h)
+        margin_x = self.FRAME_MARGIN_PX * scale / float(w)
+        margin_y = self.FRAME_MARGIN_PX * scale / float(h)
         xmin, ymin, xmax, ymax = rect
         xmin = max(0.0, xmin - margin_x)
         ymin = max(0.0, ymin - margin_y)
@@ -374,6 +370,18 @@ class MinimapController:
         pts.SetPoint(2, xmax, ymax, 0.0)
         pts.SetPoint(3, xmin, ymax, 0.0)
         pts.Modified()
+
+    def set_export_viewport(self, width, height, scale):
+        """Cadre la minicarte pour un rendu hors ecran de width x height pixels,
+        a la meme taille relative qu'a l'ecran (`scale` = rapport des hauteurs).
+        Le cadrage camera ne change pas (viewport toujours carre)."""
+        if self.renderer is not None:
+            self._apply_viewport(max(1, width), max(1, height), scale)
+
+    def update_viewport(self):
+        if self.renderer is None:
+            return
+        self._apply_viewport(max(1, self.host.width()), max(1, self.host.height()))
 
         if self.visible:
             self._fit_camera_to_model()

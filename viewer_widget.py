@@ -645,8 +645,15 @@ class VTKViewerWidget(QFrame):
         offscreen.SetOffScreenRendering(1)
         offscreen.SetSize(width, height)
 
+        minimap = self._minimap
+        with_minimap = minimap.visible and minimap.renderer is not None
         self.render_window.RemoveRenderer(self.renderer)
         offscreen.AddRenderer(self.renderer)
+        if with_minimap:
+            self.render_window.RemoveRenderer(minimap.renderer)
+            offscreen.SetNumberOfLayers(minimap.LAYER + 1)
+            offscreen.AddRenderer(minimap.renderer)
+            minimap.set_export_viewport(width, height, height / max(1, self.height()))
         try:
             offscreen.Render()
             w2i = vtk.vtkWindowToImageFilter()
@@ -662,6 +669,10 @@ class VTKViewerWidget(QFrame):
         finally:
             offscreen.RemoveRenderer(self.renderer)
             self.render_window.AddRenderer(self.renderer)
+            if with_minimap:
+                offscreen.RemoveRenderer(minimap.renderer)
+                self.render_window.AddRenderer(minimap.renderer)
+                minimap.update_viewport()
             self.render_window.Render()
 
     def _actor_key(self, actor):
