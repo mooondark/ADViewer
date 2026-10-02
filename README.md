@@ -8,8 +8,10 @@ Visualiseur 3D pour les modèles Advance Design.
 
 ## Fonctionnalités
 
-- Visualisation 3D : rendu filaire / profilé / plein
-- Sélection d'objets
+- Visualisation 3D : 7 modes d'affichage (filaire, faces cachées, plein, profilés avec faces cachées ou rendu plein, Filaire 3D), projection perspective ou orthogonale
+- Sélection d'objets (clic, sélection par fenêtre, inversion de la sélection)
+- Boîte de coupe : isole une zone du modèle avec une boîte déplaçable à la souris, trace de la coupe en couleur
+- Zoom fenêtre, vues standard (face, côté, dessus, isométrique)
 - Extraction des propriétés
 - Métré automatique
 - Métré par matériau
@@ -17,12 +19,14 @@ Visualiseur 3D pour les modèles Advance Design.
 - Export des résultats des filaires au format .xlsx
 - Export au format IFC
 - Filtrage / Isolation des élements
-- Enregistrement au format .PNG
+- Enregistrement au format .PNG (HD, Full HD, QHD, 4K ou multiplicateur de la taille de la vue)
 - Arborescence des systèmes structuraux, avec sélection/isolation par système
 - Statut du modèle (maillage, calcul éléments finis, expertise)
 - Réglage de l'éclairage de la scène 3D
 - Mode Navigation : caméra libre au clavier/souris
-- Minicarte : vue 2D en incrustation avec indicateur de position/orientation de la caméra
+- Minicarte : vue 2D en incrustation avec indicateur de position/orientation de la caméra (flèche en bord de carte quand la caméra en sort) et emprise de la boîte de coupe
+- Application en français et en anglais, thèmes clair et sombre
+- Aide intégrée (menu « Aide ») : liste des contrôles et raccourcis, vérification des mises à jour
 
 ## Documentation
 

@@ -8,8 +8,10 @@
 
 
 ## Features
-- 3D visualization: differents render modes : wire / section / full
-- Object selection
+- 3D visualization: 7 display modes (wireframe, hidden faces, full, sections with hidden faces or full render, 3D wireframe), thickness and eccentricity of planar elements, perspective or orthogonal projection
+- Object selection (click, window selection, selection inversion)
+- Clip box: isolates an area of the model with a box you can move with the mouse, cut trace in a dedicated color
+- Zoom window, standard views (front, side, top, isometric)
 - Property extraction
 - Automatic quantity takeoff
 - Quantity takeoff by material
@@ -17,12 +19,14 @@
 - Linear elements: export results in .xlsx format
 - IFC Export
 - Filter / Isolate elements,
-- Save viewport into PNG file
+- Save viewport into PNG file (HD, Full HD, QHD, 4K or a multiplier of the view size)
 - Structural system tree, with selection/isolation by system
 - Model status (mesh, finite element analysis, expertise)
 - 3D scene lighting control
 - Navigation mode: keyboard/mouse free-flight camera
-- Minimap: 2D picture-in-picture view with camera position/orientation indicator
+- Minimap: 2D picture-in-picture view with camera position/orientation indicator (arrow at the edge when the camera leaves the map) and clip box footprint
+- Application in French and English, light and dark themes
+- Built-in help ("Help" menu): list of controls and shortcuts, update check
 
 ## Documentation
 - [Version history](CHANGELOG.md)
