@@ -5,10 +5,12 @@
 ## 2.17
 
 ### FR
+- Cycle de sélection : la touche **Tabulation** remplace le clic droit pour passer à l'élément suivant sous le curseur (**Ctrl+Tabulation** : ajouter à la sélection). Aide mise à jour.
 - Onglet Statut : affichage de la version de l'API (« Version de l'API »), au-dessus de « État global ». Elle est aussi indiquée dans le journal au chargement, juste après « API accessible ».
 - Correction : boîte de coupe, les traces de coupe disparaissaient quand elles étaient plus longues que la boîte (ex. dalle coupée sur plusieurs côtés) ; elles sont maintenant rognées correctement à la boîte.
 
 ### EN
+- Selection cycling: the **Tab** key replaces right click to cycle to the next element under the cursor (**Ctrl+Tab**: add to selection). Help updated.
 - Status tab: the API version ("API version") is now shown above "Overall state". It is also written to the log when loading, right after "API accessible".
 - Fix: clip box, cut traces vanished when they were longer than the box (e.g. a slab cut on several sides); they are now clipped to the box correctly.
 

@@ -16,6 +16,7 @@ import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkRenderingCore import vtkBillboardTextActor3D
 from PySide6.QtCore import Qt, Signal, QSize, QTimer
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QFrame, QVBoxLayout
 
 import viewer_config as _cfg
@@ -506,6 +507,10 @@ class VTKViewerWidget(QFrame):
         self.set_projection_mode(self._projection_mode)
         self.set_isometric_view()
 
+        for seq, additive in (("Tab", False), ("Ctrl+Tab", True)):
+            sc = QShortcut(QKeySequence(seq), self.vtk_widget)
+            sc.setContext(Qt.WidgetShortcut)
+            sc.activated.connect(lambda a=additive: self._cycle_selection(a))
         self.interactor.AddObserver("RightButtonPressEvent", self._on_right_button_press, 1.0)
         self.interactor.AddObserver("RightButtonReleaseEvent", self._on_right_button_release, 1.0)
         self._left_press_tag = self.interactor.AddObserver("LeftButtonPressEvent", self._on_left_button_press, 1.0)
@@ -2359,6 +2364,24 @@ class VTKViewerWidget(QFrame):
         self._refresh_selection_overlay()
         return True
 
+    def _cycle_selection(self, additive: bool = False):
+        """Tab : passe a l'element suivant sous le curseur (Ctrl+Tab : ajoute a la selection)."""
+        if self._window_select_mode or self._zoom_window_mode:
+            return
+        x, y = self.interactor.GetEventPosition()
+        candidates = self._pick_selection_candidates(x, y)
+        if not candidates:
+            return
+        candidate_keys = [(c["role"], int(c["index"])) for c in candidates]
+        if not additive and candidate_keys == self._selection_candidate_keys:
+            self._selection_cycle_index = (self._selection_cycle_index + 1) % len(candidates)
+        else:
+            self._selection_candidates = candidates
+            self._selection_candidate_keys = candidate_keys
+            self._selection_cycle_index = 0
+        selected = candidates[self._selection_cycle_index]
+        self._select_item(selected["role"], selected["index"], additive=additive)
+
     def _on_right_button_press(self, obj, event):
         if self._flight.active:
             self._flight.on_right_button_press()
@@ -2370,20 +2393,6 @@ class VTKViewerWidget(QFrame):
             self.set_zoom_window_mode(False)     # clic droit = annuler
             return
         self.vtk_widget.setFocus()
-        x, y = self.interactor.GetEventPosition()
-        ctrl = bool(self.interactor.GetControlKey())
-        candidates = self._pick_selection_candidates(x, y)
-        if candidates:
-            candidate_keys = [(c["role"], int(c["index"])) for c in candidates]
-            if not ctrl and candidate_keys == self._selection_candidate_keys:
-                self._selection_cycle_index = (self._selection_cycle_index + 1) % len(candidates)
-            else:
-                self._selection_candidates = candidates
-                self._selection_candidate_keys = candidate_keys
-                self._selection_cycle_index = 0
-            selected = candidates[self._selection_cycle_index]
-            self._select_item(selected["role"], selected["index"], additive=ctrl)
-            return
         self.interactor_style.OnRightButtonDown()
 
     def _on_right_button_release(self, obj, event):

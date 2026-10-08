@@ -5789,6 +5789,12 @@ class MainWindow(QMainWindow):
         if event.type() == QEvent.ShortcutOverride and obj is self.viewer.vtk_widget:
             event.accept()
             return True
+        # Qt traite Tab comme navigation de focus avant keyPressEvent : on
+        # l'intercepte ici pour le cycle de selection (sinon le focus saute
+        # vers un champ texte).
+        if event.type() == QEvent.KeyPress and obj is self.viewer.vtk_widget and event.key() == Qt.Key_Tab:
+            self.viewer._cycle_selection(bool(event.modifiers() & Qt.ControlModifier))
+            return True
         return super().eventFilter(obj, event)
 
     def toggle_isolation(self):

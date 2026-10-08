@@ -490,7 +490,7 @@ MSG_UI = {
     "controls_general_wheel": "<b>Molette</b> : zoom",
     "controls_general_left_drag": "<b>Clic gauche + glisser</b> : orbite (contrainte autour de l'axe Z)",
     "controls_general_left_click": "<b>Clic gauche</b> sur un élément : sélectionner (<b>Ctrl+clic</b> : ajouter/retirer de la sélection) ; sur une zone vide : désélectionner",
-    "controls_general_right_click": "<b>Clic droit</b> sur un élément : passer à l'élément suivant sous le curseur (<b>Ctrl+clic droit</b> : ajouter à la sélection)",
+    "controls_general_right_click": "<b>Tabulation</b> sur un élément : passer à l'élément suivant sous le curseur (<b>Ctrl+Tabulation</b> : ajouter à la sélection)",
     "controls_general_middle_drag": "<b>Clic milieu + glisser</b> : panoramique",
     "controls_general_middle_double": "<b>Double clic milieu</b> : zoom étendu",
     "controls_general_escape": "<b>Échap</b> : annuler le mode en cours (sélection/zoom fenêtre) ou effacer la sélection",

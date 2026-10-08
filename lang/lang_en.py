@@ -490,7 +490,7 @@ MSG_UI = {
     "controls_general_wheel": "<b>Wheel</b>: zoom",
     "controls_general_left_drag": "<b>Left click + drag</b>: orbit (constrained around the Z axis)",
     "controls_general_left_click": "<b>Left click</b> on an element: select (<b>Ctrl+click</b>: add/remove from selection); on an empty area: deselect",
-    "controls_general_right_click": "<b>Right click</b> on an element: cycle to the next element under the cursor (<b>Ctrl+right click</b>: add to selection)",
+    "controls_general_right_click": "<b>Tab</b> on an element: cycle to the next element under the cursor (<b>Ctrl+Tab</b>: add to selection)",
     "controls_general_middle_drag": "<b>Middle click + drag</b>: pan",
     "controls_general_middle_double": "<b>Middle double-click</b>: zoom to fit",
     "controls_general_escape": "<b>Esc</b>: cancel the current mode (window select/zoom) or clear the selection",
