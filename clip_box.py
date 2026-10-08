@@ -216,8 +216,10 @@ def compute_cut_edges(polydata, box, eps=None):
         return None, None
     if eps is None:
         eps = 1e-4 * max(box[1] - box[0], box[3] - box[2], box[5] - box[4])
-    bounds_box = vtk.vtkBox()
-    bounds_box.SetBounds(box[0] - eps, box[1] + eps, box[2] - eps, box[3] + eps, box[4] - eps, box[5] + eps)
+    # Rognage par 6 plans (fonction lineaire) et non par vtkBox : le clip ne
+    # sait que l'evaluer aux extremites et perdrait une trace plus longue que la
+    # boite dont les deux bouts sont dehors.
+    bound_planes = make_planes([box[0] - eps, box[1] + eps, box[2] - eps, box[3] + eps, box[4] - eps, box[5] + eps])
     lines_app = vtk.vtkAppendPolyData()
     points_app = vtk.vtkAppendPolyData()
     n_lines = n_points = 0
@@ -231,14 +233,19 @@ def compute_cut_edges(polydata, box, eps=None):
             lines_only = vtk.vtkPolyData()
             lines_only.SetPoints(cut.GetPoints())
             lines_only.SetLines(cut.GetLines())
-            clipper = vtk.vtkClipPolyData()
-            clipper.SetInputData(lines_only)
-            clipper.SetClipFunction(bounds_box)
-            clipper.InsideOutOn()
-            clipper.Update()
-            if clipper.GetOutput().GetNumberOfCells() > 0:
+            clipped = lines_only
+            for bound_plane in bound_planes:
+                clipper = vtk.vtkClipPolyData()
+                clipper.SetInputData(clipped)
+                clipper.SetClipFunction(bound_plane)
+                clipper.Update()
+                clipped = vtk.vtkPolyData()
+                clipped.ShallowCopy(clipper.GetOutput())
+                if clipped.GetNumberOfCells() == 0:
+                    break
+            if clipped.GetNumberOfCells() > 0:
                 part = vtk.vtkPolyData()
-                part.DeepCopy(clipper.GetOutput())
+                part.DeepCopy(clipped)
                 lines_app.AddInputData(part)
                 n_lines += 1
         if cut.GetNumberOfVerts() > 0:

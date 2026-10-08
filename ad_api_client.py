@@ -293,6 +293,17 @@ class AdvanceDesignApiClient:
             raise ApiUnavailableError(tr_err("api_contact_failed", host=self.host)) from e
         return _check(resp, "GetAnalysisModelStatus").get("data") or {}
 
+    def get_version(self) -> str:
+        """Version du service API (GET /api/Service/GetVersion). La reponse est
+        une chaine JSON brute, sans enveloppe {data} : on ne passe pas par _check."""
+        try:
+            resp = requests.get(f"{self.host}/api/Service/GetVersion", timeout=10)
+            resp.raise_for_status()
+            value = resp.json()
+        except requests.exceptions.RequestException as e:
+            raise ApiUnavailableError(tr_err("api_contact_failed", host=self.host)) from e
+        return value.strip() if isinstance(value, str) else ""
+
     def get_results(self, result_type: str, analysis_case_id: int, element_ids: list) -> list:
         ids = [int(eid) for eid in (element_ids or []) if eid is not None]
         if not ids:
@@ -392,6 +403,10 @@ def get_informational_elements_objects(host: str, ids: list) -> list:
 
 def get_analysis_model_status(host: str) -> dict:
     return get_api_client(host).get_analysis_model_status()
+
+
+def get_api_version(host: str) -> str:
+    return get_api_client(host).get_version()
 
 
 def get_results(host: str, result_type: str, analysis_case_id: int, element_ids: list) -> list:

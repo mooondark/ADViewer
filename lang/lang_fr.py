@@ -66,6 +66,7 @@ MSG_UI = {
     "status": "Statut",
     "status_empty": "Chargez un modèle pour afficher son statut.",
     "status_unavailable": "Statut indisponible.",
+    "status_section_api_version": "Version de l'API",
     "status_section_global": "État global",
     "status_section_fem": "Calcul éléments finis",
     "status_section_expertise": "Expertise",

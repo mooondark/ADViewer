@@ -3191,6 +3191,7 @@ class MainWindow(QMainWindow):
             return title
 
         w = self.status_widgets
+        w["api_version"] = QLabel()
         w["overall"] = QLabel()
         w["overall"].setWordWrap(True)
         w["model"] = self._read_only_checkbox(tr_ui("status_analysis_model"))
@@ -3208,6 +3209,9 @@ class MainWindow(QMainWindow):
         content = QVBoxLayout(self.status_content)
         content.setContentsMargins(0, 0, 0, 0)
         content.setSpacing(4)
+        content.addWidget(section_title("status_section_api_version"))
+        content.addWidget(w["api_version"])
+        content.addSpacing(8)
         content.addWidget(section_title("status_section_global"))
         content.addWidget(w["overall"])
         content.addSpacing(8)
@@ -3249,6 +3253,7 @@ class MainWindow(QMainWindow):
             self.status_empty_label.setText(tr_ui("status_unavailable" if model_data else "status_empty"))
             return
         w = self.status_widgets
+        w["api_version"].setText(str((model_data or {}).get("api_version") or "?"))
         w["overall"].setText(self._status_text("status_overall", str(status.get("overallState", "?"))))
         w["model"].setChecked(bool(status.get("hasAnalysisModel")))
         w["mesh"].setText(tr_ui("status_mesh", state=self._status_text("status_mesh", str(status.get("meshState", "?")))))

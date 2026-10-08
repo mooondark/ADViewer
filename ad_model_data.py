@@ -17,7 +17,7 @@ from typing import Any, Optional, TypedDict
 from PySide6.QtCore import QThread, Signal
 
 from viewer_config import (
-    tr_ui, tr_log,
+    tr_ui, tr_log, get_language,
     ApiUnavailableError, ProjectAlreadyOpenError,
     normalize_windows_path,
     PUNCTUAL_SUPPORT_TYPES, LINEAR_SUPPORT_TYPES, PLANAR_SUPPORT_TYPES,
@@ -113,6 +113,7 @@ class ModelDataDict(TypedDict, total=False):
     planar_load_cases: list  # liste de dicts {eid, label} — cas de charge uniques
     systems_tree: dict    # {"roots": [eid,...], "nodes": {eid: {eid, user_id, user_name, is_level, level_number, level_top, level_bottom, is_wall_group, children}}}
     analysis_status: dict  # reponse GetAnalysisModelStatus, {} si indisponible
+    api_version: str  # reponse GetVersion (ex. "1.27.1"), "" si indisponible
     system_direct_items: dict  # {system_eid: [{"role","index"}, ...]} — membres directs (hors sous-systemes)
 
 
@@ -150,6 +151,7 @@ def build_model_data(payload: dict) -> ModelDataDict:
     data["fem_by_eid"] = dict(data.get("fem_by_eid") or {})
     data["system_direct_items"] = dict(data.get("system_direct_items") or {})
     data["analysis_status"] = dict(data.get("analysis_status") or {})
+    data["api_version"] = str(data.get("api_version") or "")
     systems_tree = data.get("systems_tree") or {}
     data["systems_tree"] = {
         "roots": list(systems_tree.get("roots") or []),
@@ -2747,7 +2749,7 @@ def read_fem_mesh(host: str, element_eids: list = None) -> tuple:
     return nodes, mesh_by_eid
 
 
-def extract_model_geometry(host: str, fto_path: str, progress_callback=None, session_manager=None, expect_results: bool = False) -> ModelDataDict:
+def extract_model_geometry(host: str, fto_path: str, progress_callback=None, session_manager=None, expect_results: bool = False, api_version=None) -> ModelDataDict:
     def progress(value: int, message: str = ""):
         if callable(progress_callback):
             progress_callback(value, message)
@@ -2780,6 +2782,11 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
             analysis_status = get_analysis_model_status(host)
         except Exception:
             analysis_status = {}
+        if api_version is None:  # None = non fournie par l'appelant (le worker la lit deja pour le journal)
+            try:
+                api_version = get_api_version(host)
+            except Exception:
+                api_version = ""
 
         progress(70, tr_ui("progress_wait_results" if expect_results else "progress_check_results"))
         has_analysis_results = _resolve_has_results(host, analysis_status, expect_results)
@@ -2827,6 +2834,7 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
             "fem_by_eid": fem_by_eid,
             "systems_tree": systems_tree,
             "analysis_status": analysis_status,
+            "api_version": api_version,
         })
         result.update(session.export_state())
         result = build_model_data(result)
@@ -2864,6 +2872,13 @@ class LoadModelWorker(QThread):
             check_port(self.host)
             self._emit_progress(6, tr_log("api_ok"))
             self.log.emit(tr_log("api_ok"), "ok")
+            try:
+                api_version = get_api_version(self.host)
+            except Exception:
+                api_version = ""
+            if api_version:
+                separator = ": " if get_language() == "en" else " : "
+                self.log.emit(f"{tr_ui('status_section_api_version')}{separator}{api_version}", "info")
             self.log.emit(tr_log("normalized_path", path=self.fto_path), "info")
             self.log.emit(tr_log("opening_project_reading"), "info")
 
@@ -2873,6 +2888,7 @@ class LoadModelWorker(QThread):
                 progress_callback=self._emit_progress,
                 session_manager=self.session_manager,
                 expect_results=self.expect_results,
+                api_version=api_version,
             )
 
             if model_data.get("project_kept_open"):

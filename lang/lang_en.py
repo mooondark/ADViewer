@@ -66,6 +66,7 @@ MSG_UI = {
     "status": "Status",
     "status_empty": "Load a model to display its status.",
     "status_unavailable": "Status unavailable.",
+    "status_section_api_version": "API version",
     "status_section_global": "Overall state",
     "status_section_fem": "Finite element analysis",
     "status_section_expertise": "Expertise",

@@ -2,6 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## 2.17
+
+### FR
+- Onglet Statut : affichage de la version de l'API (« Version de l'API »), au-dessus de « État global ». Elle est aussi indiquée dans le journal au chargement, juste après « API accessible ».
+- Correction : boîte de coupe, les traces de coupe disparaissaient quand elles étaient plus longues que la boîte (ex. dalle coupée sur plusieurs côtés) ; elles sont maintenant rognées correctement à la boîte.
+
+### EN
+- Status tab: the API version ("API version") is now shown above "Overall state". It is also written to the log when loading, right after "API accessible".
+- Fix: clip box, cut traces vanished when they were longer than the box (e.g. a slab cut on several sides); they are now clipped to the box correctly.
+
 ## 2.16
 
 ### FR

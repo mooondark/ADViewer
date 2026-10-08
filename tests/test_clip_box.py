@@ -194,6 +194,27 @@ def test_compute_cut_edges_line_crossing_two_faces_gives_two_points():
     assert xs == {2.0, 8.0}
 
 
+def _plate_pd(sx, sy, sz):
+    src = vtk.vtkCubeSource()
+    src.SetBounds(0, sx, 0, sy, 0, sz)
+    tri = vtk.vtkTriangleFilter()
+    tri.SetInputConnection(src.GetOutputPort())
+    tri.Update()
+    return tri.GetOutput()
+
+
+def test_compute_cut_edges_trace_longer_than_the_box_keeps_its_visible_part():
+    """Regression : une trace dont les DEUX extremites sont hors de la boite
+    mais qui la traverse ne doit pas etre perdue (cas d'une dalle coupee sur 4
+    cotes : vtkClipPolyData + vtkBox n'evalue que les extremites)."""
+    lines_pd, _ = clip_box.compute_cut_edges(_plate_pd(10, 10, 1), [4, 6, 3, 7, -1, 2])
+    assert lines_pd is not None and lines_pd.GetNumberOfCells() > 0
+    b = lines_pd.GetBounds()
+    assert b[0] >= 4 - 5e-3 and b[1] <= 6 + 5e-3
+    assert b[2] >= 3 - 5e-3 and b[3] <= 7 + 5e-3
+    assert abs(b[3] - b[2] - 4.0) < 1e-2   # la partie visible traverse toute la boite en y
+
+
 def test_compute_cut_edges_nothing_cut_returns_none_none():
     assert clip_box.compute_cut_edges(_cube_pd(), [100, 110, 100, 110, 100, 110]) == (None, None)
     assert clip_box.compute_cut_edges(None, BOX) == (None, None)
