@@ -5,11 +5,17 @@
 ## 2.17
 
 ### FR
+- Vue 3D : le clic droit ouvre un menu contextuel, différent sans sélection (vues, boîte de coupe, mode Navigation, sélection/zoom par fenêtre, export PNG) et avec sélection (isoler, inverser, effacer, zoomer sur la sélection, boîte de coupe sur la sélection). Il ne modifie jamais la sélection.
+- Menu contextuel sans sélection : entrée « Annuler l'isolation » quand une isolation est active.
+- Aide : raccourci **F1** pour ouvrir « Contrôles et raccourcis » ; la fenêtre est plus haute (plus de barre de défilement).
 - Cycle de sélection : la touche **Tabulation** remplace le clic droit pour passer à l'élément suivant sous le curseur (**Ctrl+Tabulation** : ajouter à la sélection). Aide mise à jour.
 - Onglet Statut : affichage de la version de l'API (« Version de l'API »), au-dessus de « État global ». Elle est aussi indiquée dans le journal au chargement, juste après « API accessible ».
 - Correction : boîte de coupe, les traces de coupe disparaissaient quand elles étaient plus longues que la boîte (ex. dalle coupée sur plusieurs côtés) ; elles sont maintenant rognées correctement à la boîte.
 
 ### EN
+- 3D view: right click opens a context menu, different without a selection (views, clip box, Navigation mode, window select/zoom, PNG export) and with a selection (isolate, invert, clear, zoom to selection, clip box on selection). It never changes the selection.
+- Context menu without a selection: "Cancel isolation" entry when an isolation is active.
+- Help: **F1** shortcut opens "Controls and shortcuts"; the window is taller (no more scrollbar).
 - Selection cycling: the **Tab** key replaces right click to cycle to the next element under the cursor (**Ctrl+Tab**: add to selection). Help updated.
 - Status tab: the API version ("API version") is now shown above "Overall state". It is also written to the log when loading, right after "API accessible".
 - Fix: clip box, cut traces vanished when they were longer than the box (e.g. a slab cut on several sides); they are now clipped to the box correctly.

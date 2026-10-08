@@ -334,6 +334,7 @@ class VTKViewerWidget(QFrame):
     # Emis quand le mode "Navigation" (camera libre) est active/desactive.
     flightModeChanged = Signal(bool)
     clipBoxChanged = Signal(bool)
+    contextMenuRequested = Signal()
     ELEMENT_INDEX_ARRAY = "element_index"
 
     def __init__(self, parent=None):
@@ -2393,7 +2394,7 @@ class VTKViewerWidget(QFrame):
             self.set_zoom_window_mode(False)     # clic droit = annuler
             return
         self.vtk_widget.setFocus()
-        self.interactor_style.OnRightButtonDown()
+        self.contextMenuRequested.emit()
 
     def _on_right_button_release(self, obj, event):
         if self._flight.active:
@@ -3179,6 +3180,22 @@ class VTKViewerWidget(QFrame):
         self._filter_material_names = None
         self._isolated_selection = []
         self._apply_visibility_state()
+
+    def zoom_to_selection(self):
+        union = [math.inf, -math.inf, math.inf, -math.inf, math.inf, -math.inf]
+        for actor in self._selection_overlay_actors:
+            b = actor.GetBounds()
+            if b is None or b[0] > b[1]:
+                continue
+            for i in range(3):
+                union[2 * i] = min(union[2 * i], b[2 * i])
+                union[2 * i + 1] = max(union[2 * i + 1], b[2 * i + 1])
+        if union[0] > union[1]:
+            return
+        self.renderer.ResetCamera(*union)
+        self.renderer.ResetCameraClippingRange()
+        self.render_window.Render()
+        self._update_view_overlay()
 
     def fit_view(self):
         cam = self.renderer.GetActiveCamera()

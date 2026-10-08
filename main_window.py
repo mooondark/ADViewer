@@ -32,7 +32,7 @@ except ImportError as e:
 
 try:
     from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF, QEvent
-    from PySide6.QtGui import QAction, QActionGroup, QTextCursor, QColor, QIcon, QPixmap, QPainter, QPen, QKeySequence, QShortcut, QPainterPath, QBrush, QPolygonF
+    from PySide6.QtGui import QAction, QActionGroup, QTextCursor, QColor, QIcon, QPixmap, QPainter, QPen, QKeySequence, QShortcut, QPainterPath, QBrush, QPolygonF, QCursor
     from PySide6.QtWidgets import (
         QApplication, QMainWindow, QWidget, QFileDialog, QFrame, QLabel, QGraphicsOpacityEffect,
         QPushButton, QLineEdit, QTextEdit, QVBoxLayout, QHBoxLayout,
@@ -639,7 +639,7 @@ class ControlsDialog(QDialog):
         self.resize(640, 680)
 
         general_keys = (
-            "wheel", "left_drag", "left_click", "right_click", "middle_drag", "middle_double",
+            "wheel", "left_drag", "left_click", "right_click", "context_menu", "middle_drag", "middle_double",
             "escape", "zoom_window", "window_select", "clip", "clip_handles", "view_front_back", "view_left_right",
             "view_top_bottom", "view_iso", "open", "quit", "help",
         )
@@ -3096,6 +3096,7 @@ class MainWindow(QMainWindow):
         self.viewer.windowSelectionDone.connect(self._log_selection_summary)
         self.viewer.zoomWindowModeChanged.connect(self._sync_zoom_window_button)
         self.viewer.flightModeChanged.connect(self._sync_flight_button)
+        self.viewer.contextMenuRequested.connect(self.show_viewer_context_menu)
         self.viewer.flightModeChanged.connect(self._on_flight_mode_shortcut_guard)
         self.viewer.clipBoxChanged.connect(self._sync_clip_button)
         self._update_display_checkboxes()
@@ -5493,6 +5494,38 @@ class MainWindow(QMainWindow):
         bind("shortcut_view_top_bottom", 'Alt+"', self.viewer_top_bottom_proxy)
         bind("shortcut_view_iso", "Alt+'", self.viewer_iso_proxy)
 
+    def show_viewer_context_menu(self):
+        if self.viewer is None or self.current_model_data is None:
+            return
+        menu = QMenu(self)
+        has_sel = bool(self.viewer.get_selected_items())
+
+        def add(text, btn_or_fn):
+            fn = btn_or_fn.click if hasattr(btn_or_fn, "click") else btn_or_fn
+            act = menu.addAction(text, fn)
+            if hasattr(btn_or_fn, "isEnabled"):
+                act.setEnabled(btn_or_fn.isEnabled())
+
+        clip_key = "ctx_clip_off" if self.viewer.is_clip_box_active() else "ctx_clip_on"
+        if has_sel:
+            iso_key = "ctx_unisolate" if self.viewer.has_isolated_selection() else "ctx_isolate"
+            add(tr_ui(iso_key), self.isolate_btn)
+            add(tr_ui("ctx_invert"), self.invert_btn)
+            add(tr_ui("ctx_clear_selection"), self.viewer.clear_selection)
+            add(tr_ui("ctx_zoom_selection"), self.viewer.zoom_to_selection)
+            add(tr_ui(clip_key + "_selection"), self.clip_btn)
+        else:
+            if self.viewer.has_isolated_selection():
+                add(tr_ui("ctx_unisolate"), self.cancel_isolation)
+            add(tr_ui("ctx_fit"), self.fit_btn)
+            add(tr_ui("ctx_iso"), self.view_iso_btn)
+            add(tr_ui(clip_key), self.clip_btn)
+            add(tr_ui("ctx_flight"), self.flight_btn)
+            add(tr_ui("ctx_window_select"), self.window_select_btn)
+            add(tr_ui("ctx_zoom_window"), self.zoom_window_btn)
+            add(tr_ui("ctx_png"), self.camera_btn)
+        menu.exec(QCursor.pos())
+
     def viewer_fit_proxy(self):
         if self.viewer:
             self.viewer.fit_view()
@@ -5797,6 +5830,14 @@ class MainWindow(QMainWindow):
             self.viewer._cycle_selection(bool(event.modifiers() & Qt.ControlModifier))
             return True
         return super().eventFilter(obj, event)
+
+    def cancel_isolation(self):
+        self.viewer.set_isolated_selection(None, rebuild_profiles=False)
+        self._apply_isolate_button_icon(False)
+        self.log(tr_ui("isolation_summary_cleared"), "info")
+        self._update_display_checkboxes()
+        self._refresh_mesh_display()
+        self._refresh_profiles_if_needed()
 
     def toggle_isolation(self):
         if self.current_model_data is None or self.viewer is None:
