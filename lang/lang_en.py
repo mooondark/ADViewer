@@ -504,6 +504,7 @@ MSG_UI = {
     "controls_general_view_iso": "<b>Alt+'</b>: isometric view",
     "controls_general_open": "<b>Ctrl+O</b>: open a file",
     "controls_general_quit": "<b>Ctrl+Q</b>: quit",
+    "controls_general_help": "<b>F1</b>: show this help",
     "controls_nav_intro": "Enabled with the \"Navigation mode\" button. Left-click selection remains available.",
     "controls_nav_forward_back": "<b>{forward} / {backward}</b>: move forward / backward (follows the look direction)",
     "controls_nav_left_right": "<b>{left} / {right}</b>: strafe left / right",

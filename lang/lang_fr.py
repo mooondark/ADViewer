@@ -504,6 +504,7 @@ MSG_UI = {
     "controls_general_view_iso": "<b>Alt+'</b> : vue isométrique",
     "controls_general_open": "<b>Ctrl+O</b> : ouvrir un fichier",
     "controls_general_quit": "<b>Ctrl+Q</b> : quitter",
+    "controls_general_help": "<b>F1</b> : afficher cette aide",
     "controls_nav_intro": "Activé par le bouton « Mode Navigation ». La sélection au clic gauche reste disponible.",
     "controls_nav_forward_back": "<b>{forward} / {backward}</b> : avancer / reculer (suit la direction de visée)",
     "controls_nav_left_right": "<b>{left} / {right}</b> : déplacement latéral gauche / droite",

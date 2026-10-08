@@ -636,12 +636,12 @@ class ControlsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(tr_ui("controls_dialog_title"))
         self.setModal(True)
-        self.resize(640, 560)
+        self.resize(640, 680)
 
         general_keys = (
             "wheel", "left_drag", "left_click", "right_click", "middle_drag", "middle_double",
             "escape", "zoom_window", "window_select", "clip", "clip_handles", "view_front_back", "view_left_right",
-            "view_top_bottom", "view_iso", "open", "quit",
+            "view_top_bottom", "view_iso", "open", "quit", "help",
         )
         kb = {action: key.upper() for action, key in get_flight_key_bindings().items()}
         nav_rows = [
@@ -2676,6 +2676,7 @@ class MainWindow(QMainWindow):
         help_menu = menu_bar.addMenu(tr_ui("menu_help"))
 
         act_controls = QAction(tr_ui("menu_controls"), self)
+        act_controls.setShortcut("F1")
         act_controls.triggered.connect(self.open_controls_dialog)
         help_menu.addAction(act_controls)
 
