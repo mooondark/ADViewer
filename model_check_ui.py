@@ -409,6 +409,7 @@ class ModelCheckController(QObject):
             return
         if self._report is None:
             self._report = AnomalyReportDialog(self, self.window)
+            self._report.setAttribute(Qt.WA_DeleteOnClose)
             self._report.finished.connect(lambda _=0: setattr(self, "_report", None))
         self._report.show()
         self._report.raise_()

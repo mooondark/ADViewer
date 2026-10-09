@@ -89,7 +89,7 @@ def test_thresholds_from_corrupted_section_falls_back_to_defaults():
     })
     assert th.connection_tol_mm == 5.0
     assert th.duplicate_angle_deg == 90.0
-    assert th.check_supports is False   # texte non reconnu = faux
+    assert th.check_supports is True    # booleen invalide = valeur par defaut
     assert th.symbol_transparency_pct == 40.0
     assert mc.Thresholds.from_section(None) == mc.Thresholds()
 
@@ -391,11 +391,9 @@ def test_supports_within_duplicate_tolerance_overlap_but_not_beyond():
     assert mc.detect(far) == []
 
 
-def test_overlapping_supports_report_can_be_disabled_and_advanced_never_overlap():
+def test_overlapping_supports_report_can_be_disabled():
     model = _model(lines=_BEAM, punctual=[(0, 0, 0), (0, 0, 0)], props=[_rigid(TX=True)] * 2)
     assert mc.detect(model, mc.Thresholds(report_overlapping_supports=False)) == []
-    adv = {"kind": "advanced"}
-    assert mc.detect(_model(lines=_BEAM, punctual=[(0, 0, 0), (0, 0, 0)], props=[adv, adv])) == []
 
 
 def test_elastic_supports_compare_their_stiffness():
@@ -478,3 +476,25 @@ def test_thresholds_from_configparser_with_percent_sign_does_not_raise():
     cfg.read_string("[model_check]\nconnection_tol_mm = 5%\ncheck_supports = true\n")
     th = mc.Thresholds.from_section(cfg[mc.SECTION])
     assert th.connection_tol_mm == 5.0 and th.check_supports is True
+
+
+# ---- evolutions demandees apres la relecture ---------------------------------
+
+def test_advanced_supports_on_the_same_node_overlap():
+    adv = {"kind": "advanced"}
+    out = mc.detect(_model(lines=_BEAM, punctual=[(0, 0, 0), (0, 0, 0)], props=[adv, adv]))
+    assert _kinds(out) == [mc.K_SUPPORT_OVERLAP]
+    mixed = mc.detect(_model(lines=_BEAM, punctual=[(0, 0, 0), (0, 0, 0)], props=[adv, _rigid(TX=True)]))
+    assert mixed == []
+
+
+def test_invalid_boolean_in_config_falls_back_to_default():
+    th = mc.Thresholds.from_section({"check_supports": "peut-etre", "include_info": "0", "report_overlapping_supports": "oui"})
+    assert th.check_supports is True            # defaut (invalide)
+    assert th.include_info is False             # "0" reconnu
+    assert th.report_overlapping_supports is True
+
+
+def test_nodes_closer_than_1e9_are_the_same_node_across_a_rounding_boundary():
+    model = _model(lines=[((0, 0, 0), (1.0000000005, 0, 0)), ((1.0000000004999, 0, 0), (1.0000000004999, 1, 0))])
+    assert mc.detect(model) == []

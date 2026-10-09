@@ -55,6 +55,7 @@ ROLE_SUPPORT = "support_punctual"
 
 SECTION = "model_check"
 EPS = 1e-12
+NODE_TOL = 1e-9   # m : deux points a moins de NODE_TOL sont le meme noeud
 ANGLE_SLACK = 1e-6   # deg : bruit d'arrondi de acos pour des axes quasi identiques
 
 BOUNDS = {
@@ -140,7 +141,12 @@ class Thresholds:
                 except ValueError:
                     continue
             else:
-                values[f.name] = str(raw).strip().lower() in ("1", "true", "yes", "on")
+                text = str(raw).strip().lower()
+                if text in ("1", "true", "yes", "on"):
+                    values[f.name] = True
+                elif text in ("0", "false", "no", "off"):
+                    values[f.name] = False
+                # autre texte : valeur par defaut
         return cls(**values).clamped()
 
 
@@ -205,11 +211,6 @@ def _lerp(a, b, t):
 def _unit(v):
     n = _norm(v)
     return None if n < 1e-12 else (v[0] / n, v[1] / n, v[2] / n)
-
-
-def _nk(p):
-    """Cle de noeud : coordonnees strictement identiques (arrondi 1e-9 m)."""
-    return (round(p[0], 9), round(p[1], 9), round(p[2], 9))
 
 
 def _angle_deg(u, v):
@@ -321,6 +322,26 @@ class _Ctx:
         self.short_set = set()
         self.segs = _build_segs(model)
         self._pairs = None
+        self._node_cells = {}
+        self._node_cache = {}
+
+    def nk(self, p):
+        """Cle de noeud : deux points a moins de NODE_TOL partagent la meme cle
+        (premier point rencontre), sans effet de frontiere d'arrondi."""
+        key = self._node_cache.get(p)
+        if key is not None:
+            return key
+        cx, cy, cz = (int(math.floor(c / NODE_TOL)) for c in p)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    for q in self._node_cells.get((cx + dx, cy + dy, cz + dz), ()):
+                        if _dist(p, q) <= NODE_TOL:
+                            self._node_cache[p] = q
+                            return q
+        self._node_cells.setdefault((cx, cy, cz), []).append(p)
+        self._node_cache[p] = p
+        return p
 
     @property
     def pairs(self):
@@ -451,11 +472,11 @@ def rule_short_elements(ctx):
 
 # ---- regles : connexions manquantes, quasi-colinearite -----------------------
 
-def _incident(segs):
+def _incident(ctx):
     nodes = {}
-    for s in segs:
+    for s in ctx.segs:
         for p in (s.a, s.b):
-            nodes.setdefault(_nk(p), set()).add(s.index)
+            nodes.setdefault(ctx.nk(p), set()).add(s.index)
     return nodes
 
 
@@ -466,7 +487,7 @@ def rule_connections(ctx):
         return
     skip = ctx.dup_pairs | ctx.overlap_pairs
     pairs = [(i, j) for i, j in ctx.pairs if (i, j) not in skip]
-    incident = _incident(ctx.segs)
+    incident = _incident(ctx)
     flagged_nodes = set()
     seen = set()
     sphere_r = tol
@@ -475,14 +496,14 @@ def rule_connections(ctx):
     # et celles d'un couple doublon / chevauchant sont deja couvertes par leur anomalie.
     for k in ctx.short_set:
         t = ctx.segs[k]
-        if _nk(t.a) != _nk(t.b):
-            seen.add(frozenset((_nk(t.a), _nk(t.b))))
+        if ctx.nk(t.a) != ctx.nk(t.b):
+            seen.add(frozenset((ctx.nk(t.a), ctx.nk(t.b))))
     for i, j in ctx.dup_pairs | ctx.overlap_pairs:
         s, t = ctx.segs[i], ctx.segs[j]
         for p in (s.a, s.b):
             for q in (t.a, t.b):
-                if _nk(p) != _nk(q):
-                    seen.add(frozenset((_nk(p), _nk(q))))
+                if ctx.nk(p) != ctx.nk(q):
+                    seen.add(frozenset((ctx.nk(p), ctx.nk(q))))
 
     def report(p, q, d, indexes):
         idx = sorted(indexes)
@@ -497,7 +518,7 @@ def rule_connections(ctx):
         s, t = ctx.segs[i], ctx.segs[j]
         for p in (s.a, s.b):
             for q in (t.a, t.b):
-                kp, kq = _nk(p), _nk(q)
+                kp, kq = ctx.nk(p), ctx.nk(q)
                 if kp == kq:
                     continue
                 d = _dist(p, q)
@@ -520,8 +541,8 @@ def rule_connections(ctx):
                 continue
             ab = _sub(other.b, other.a)
             for p in (owner.a, owner.b):
-                kp = _nk(p)
-                if kp in flagged_nodes or kp == _nk(other.a) or kp == _nk(other.b):
+                kp = ctx.nk(p)
+                if kp in flagged_nodes or kp == ctx.nk(other.a) or kp == ctx.nk(other.b):
                     continue
                 raw = _dot(_sub(p, other.a), ab) / (other.length ** 2)
                 if not (0.0 < raw < 1.0):
@@ -546,7 +567,7 @@ def rule_collinear(ctx):
         if s.index in ctx.short_set or s.u is None:
             continue
         for p, out in ((s.a, s.u), (s.b, _mul(s.u, -1.0))):
-            key = _nk(p)
+            key = ctx.nk(p)
             node_point.setdefault(key, p)
             at_node.setdefault(key, []).append((s.index, out))
     for key in sorted(at_node):
@@ -702,6 +723,8 @@ def _support_signature(props):
     if kind == "rigid":
         r = props.get("restraints") or {}
         return ("rigid",) + tuple(bool(r.get(k)) for k in _RESTRAINT_KEYS)
+    if kind == "advanced":
+        return ("advanced",)
     if kind in ("elastic", "tc"):
         st = props.get("stiffness") or {}
         return (kind, props.get("tc_behavior")) + tuple(st.get(k) for k in _STIFFNESS_KEYS)
