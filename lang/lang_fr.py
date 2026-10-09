@@ -448,6 +448,7 @@ MSG_UI = {
     "units_label_stress": "Contraintes",
     "units_label_angle": "Angles",
     "units_label_area": "Aires",
+    "units_label_tolerance": "Tolérances (contrôle modèle)",
     "calc_ef_dialog_title": "Calcul éléments finis",
     "calc_ef_dialog_label": "Délai maximum en secondes (0 = illimité) :",
     "calc_ef_button": "Lancer le calcul (EF)",

@@ -50,7 +50,7 @@ def coords_text(point):
 
 
 # unite du moteur -> (grandeur display_units, facteur vers l'unite API : m, rad, m2)
-_UNIT_KIND = {"mm": ("length", 1e-3), "deg": ("angle", math.pi / 180.0), "m2": ("area", 1.0)}
+_UNIT_KIND = {"mm": ("tolerance", 1e-3), "deg": ("angle", math.pi / 180.0), "m2": ("area", 1.0)}
 
 
 def measure_text(value, unit):

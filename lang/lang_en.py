@@ -448,6 +448,7 @@ MSG_UI = {
     "units_label_stress": "Stresses",
     "units_label_angle": "Angles",
     "units_label_area": "Areas",
+    "units_label_tolerance": "Tolerances (model check)",
     "calc_ef_dialog_title": "Finite element calculation",
     "calc_ef_dialog_label": "Maximum delay in seconds (0 = unlimited):",
     "calc_ef_button_not_needed": "Calculation not needed, results already available",

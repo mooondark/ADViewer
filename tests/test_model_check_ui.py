@@ -52,18 +52,20 @@ def test_text_helpers():
     du.reset()
     try:
         assert ui.measure_text(None, "mm") == ""
-        du.set_unit("length", "mm")
+        assert du.unit("tolerance") == "mm" and du.decimals("tolerance") == 2      # defauts de la grandeur Tolerance
         assert ui.measure_text(2.0, "mm") == "2.00 mm"
         assert ui.measure_text(5.0, "mm") == "5.00 mm"
         assert ui.measure_text(1.766e-06, "mm") == "1.77e-06 mm"      # sous la precision : notation scientifique
         assert ui.measure_text(0.0, "mm") == "0.00 mm"
-        du.set_decimals("length", 3)
+        du.set_unit("length", "m")                                    # la longueur d'affichage n'influence pas les tolerances
+        assert ui.measure_text(2.0, "mm") == "2.00 mm"
+        du.set_decimals("tolerance", 3)
         assert ui.measure_text(0.0004, "mm") == "4.00e-04 mm"
         assert ui.measure_text(0.5, "deg") == "0.50 " + du.unit("angle")
         assert ui.measure_text(0.0025, "m2") == "2.50e-03 " + du.unit("area")
         assert ui.measure_text(0.02, "m2") == "0.02 " + du.unit("area")
-        du.set_unit("length", "m")
-        assert ui.measure_text(2.0, "mm") == "0.002 m"
+        du.set_unit("tolerance", "cm")
+        assert ui.measure_text(20.0, "mm") == "2.000 cm"
     finally:
         du.reset()
     assert ui.elements_text(_a(mc.K_DUPLICATE, items=(("lines", 0), ("lines", 1)), eids=(5, None))) == "5, #1"

@@ -361,6 +361,7 @@ class UnitsDialog(QDialog):
         ("stress", "units_label_stress"),
         ("angle", "units_label_angle"),
         ("area", "units_label_area"),
+        ("tolerance", "units_label_tolerance"),
     ]
 
     def __init__(self, parent=None):
