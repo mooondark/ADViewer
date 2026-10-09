@@ -249,3 +249,37 @@ def test_unit_spin_uses_scientific_notation_below_the_precision():
         assert abs(area.valueFromText("2,5e-3") - 0.0025) < 1e-12
     finally:
         du.reset()
+
+
+def test_elements_text_shows_user_numbers_then_eids_then_index():
+    a = mc.Anomaly(mc.K_OVERLAP, mc.ERROR, (("lines", 0), ("lines", 1), ("lines", 2)), (5124, 5125, None),
+                   (0, 0, 0), numbers=(3, None, None))
+    assert ui.elements_text(a) == "3, 5125, #2"
+
+
+def test_report_table_wraps_elements_without_horizontal_scrollbar():
+    import pytest
+    pytest.importorskip("PySide6")
+    from PySide6.QtWidgets import QApplication
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    elif not isinstance(app, QApplication):
+        pytest.skip("une QCoreApplication existe deja dans ce processus")
+    many = tuple(range(1, 80))
+    a = mc.Anomaly(mc.K_MISSING, mc.ERROR, tuple(("lines", i) for i in many), many, (0, 0, 0), 1.0, 5.0, "mm")
+
+    class Ctl:
+        anomalies = [a]
+        thresholds = mc.Thresholds()
+    dlg = ui.AnomalyReportDialog(Ctl())
+    dlg.show()
+    app.processEvents()
+    t = dlg._table
+    assert t.horizontalScrollBar().maximum() == 0 and t.wordWrap()
+    assert t.rowHeight(0) > t.fontMetrics().height() * 2
+    short = mc.Anomaly(mc.K_SHORT, mc.WARNING, (("lines", 0),), (5,), (0, 0, 0), 1.0, 5.0, "mm")
+    Ctl.anomalies = [short]
+    dlg.refresh()
+    assert t.rowHeight(0) == t.verticalHeader().defaultSectionSize()
+    dlg.close()

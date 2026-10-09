@@ -529,3 +529,84 @@ def test_perfectly_aligned_elements_are_not_nearly_collinear():
     assert mc.detect(noisy) == []
     slight = _model(lines=[((5, 0, 5), (9, 0, 5)), ((9, 0, 5), (11, 0.01, 5))])        # ~0,29 deg : quasi colineaire
     assert _kinds(mc.detect(slight)) == [mc.K_COLLINEAR]
+
+
+def _xz(*pts):
+    return [(x, 0.0, z) for x, z in pts]
+
+
+def test_surface_nearly_collinear_vertex_is_a_warning():
+    s1 = _xz((5, 0), (10, 0), (10, 3), (6, 3), (6, 2), (6.01, 1))
+    out = mc.detect(_model(planars=[s1]))
+    assert _kinds(out) == [mc.K_SURF_COLLINEAR]
+    a = out[0]
+    assert a.severity == mc.WARNING and a.unit == "deg" and a.items == (("planars", 0),)
+    assert a.point == (6.0, 0.0, 2.0) and 0.5 < a.measured < 0.6
+
+
+def test_surface_corners_and_perfect_alignment_are_not_collinear():
+    assert mc.detect(_model(planars=[_square()])) == []
+    straight = _xz((0, 0), (1, 0), (2, 0), (2, 1), (0, 1))
+    assert mc.detect(_model(planars=[straight])) == []
+
+
+def test_overlapping_coplanar_surfaces_are_an_error():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    b = _xz((1, 1), (3, 1), (3, 3), (1, 3))
+    out = mc.detect(_model(planars=[a, b]))
+    assert _kinds(out) == [mc.K_SURF_OVERLAP]
+    assert abs(out[0].measured - 1.0) < 1e-9 and out[0].items == (("planars", 0), ("planars", 1))
+    assert out[0].eids == (100, 101)
+
+
+def test_overlap_of_concave_surface_counts_only_the_real_area():
+    l_shape = _xz((0, 0), (4, 0), (4, 1), (1, 1), (1, 4), (0, 4))
+    inside_notch = _xz((2, 2), (3, 2), (3, 3), (2, 3))
+    assert mc.detect(_model(planars=[l_shape, inside_notch])) == []
+    on_arm = _xz((2, 0), (3, 0), (3, 1), (2, 1))
+    out = mc.detect(_model(planars=[l_shape, on_arm]))
+    assert _kinds(out) == [mc.K_SURF_OVERLAP] and abs(out[0].measured - 1.0) < 1e-9
+
+
+def test_adjacent_or_distant_or_tilted_surfaces_do_not_overlap():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    assert mc.detect(_model(planars=[a, _xz((2, 0), (4, 0), (4, 2), (2, 2))])) == []
+    assert mc.detect(_model(planars=[a, [(x, 1.0, z) for x, _, z in a]])) == []
+    tilted = [(0, 0, 0), (2, 0, 0), (2, 2, 2), (0, 2, 2)]
+    assert mc.K_SURF_OVERLAP not in _kinds(mc.detect(_model(planars=[_square(), tilted])))
+
+
+def test_surfaces_with_almost_common_vertices_miss_a_connection():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    b = _xz((2.003, 0), (4, 0), (4, 2), (2.003, 2))
+    out = mc.detect(_model(planars=[a, b]))
+    assert _kinds(out) == [mc.K_SURF_MISSING]
+    assert out[0].severity == mc.ERROR and abs(out[0].measured - 3.0) < 1e-6 and out[0].threshold == 5.0
+    far = _xz((2.02, 0), (4, 0), (4, 2), (2.02, 2))
+    assert mc.detect(_model(planars=[a, far])) == []
+    assert mc.detect(_model(planars=[a, _xz((2, 0), (4, 0), (4, 2), (2, 2))])) == []
+
+
+def test_user_case_gap_between_surfaces_follows_connection_tolerance():
+    s1 = _xz((5, 0), (10, 0), (10, 3), (6, 3), (6, 2), (6.01, 1))
+    s2 = _xz((10.01, 0), (15, 0), (15, 3), (10, 3))
+    assert mc.K_SURF_MISSING not in _kinds(mc.detect(_model(planars=[s1, s2])))
+    out = mc.detect(_model(planars=[s1, s2]), mc.Thresholds(connection_tol_mm=10.0))
+    assert mc.K_SURF_MISSING in _kinds(out) and mc.K_SURF_OVERLAP not in _kinds(out)
+
+
+def test_anomalies_carry_the_user_numbers_of_their_elements():
+    m = _model(planars=[_xz((0, 0), (2, 0), (2, 2), (0, 2)), _xz((1, 1), (3, 1), (3, 3), (1, 3))])
+    m["planar_properties"] = [{"user_id": 7}, {"user_id": 12}]
+    out = mc.detect(m)
+    assert _kinds(out) == [mc.K_SURF_OVERLAP] and out[0].numbers == (7, 12) and out[0].eids == (100, 101)
+    assert mc.detect(_model(planars=[_square()]))[:] == []
+
+
+def test_overlap_and_missing_connection_are_both_reported_for_the_same_pair():
+    s1 = _xz((5, 0), (10, 0), (10, 3), (6, 3), (6, 2), (6.01, 1))
+    s2 = _xz((10.002, 0), (14, 0), (14, 3), (9.1564, 2.5258))
+    out = mc.detect(_model(planars=[s1, s2]))
+    assert mc.K_SURF_OVERLAP in _kinds(out) and mc.K_SURF_MISSING in _kinds(out)
+    miss = [a for a in out if a.kind == mc.K_SURF_MISSING][0]
+    assert abs(miss.measured - 2.0) < 1e-6

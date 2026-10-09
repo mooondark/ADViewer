@@ -30,6 +30,9 @@ K_SURF_AREA = "surface_area"
 K_SURF_VERTICES = "surface_vertices"
 K_SURF_CROSS = "surface_self_intersection"
 K_SURF_EDGE = "surface_short_edge"
+K_SURF_COLLINEAR = "surface_collinear"
+K_SURF_OVERLAP = "surface_overlap"
+K_SURF_MISSING = "surface_missing_connection"
 K_NO_SUPPORT = "no_support"
 K_SUPPORT_OVERLAP = "support_overlap"
 
@@ -41,9 +44,12 @@ SEVERITY_BY_KIND = {
     K_SURF_AREA: ERROR,
     K_SURF_VERTICES: ERROR,
     K_SURF_CROSS: ERROR,
+    K_SURF_OVERLAP: ERROR,
+    K_SURF_MISSING: ERROR,
     K_NO_SUPPORT: ERROR,
     K_SHORT: WARNING,
     K_SURF_EDGE: WARNING,
+    K_SURF_COLLINEAR: WARNING,
     K_SUPPORT_OVERLAP: WARNING,
     K_COLLINEAR: INFO,
 }
@@ -52,6 +58,8 @@ KINDS = tuple(SEVERITY_BY_KIND)
 ROLE_LINE = "lines"
 ROLE_PLANAR = "planars"
 ROLE_SUPPORT = "support_punctual"
+_PROPS_KEY = {ROLE_LINE: "line_properties", ROLE_PLANAR: "planar_properties",
+              ROLE_SUPPORT: "punctual_support_properties"}
 
 SECTION = "model_check"
 EPS = 1e-12
@@ -74,6 +82,7 @@ BOUNDS = {
     "coincident_vertex_tol_mm": (0.0, 1000.0),
     "symbol_transparency_pct": (40.0, 60.0),
     "symbol_min_size_mm": (1.0, 10000.0),
+    "symbol_max_size_mm": (1.0, 100000.0),
 }
 
 
@@ -96,6 +105,7 @@ class Thresholds:
     include_info: bool = True
     symbol_transparency_pct: float = 50.0
     symbol_min_size_mm: float = 50.0
+    symbol_max_size_mm: float = 100.0
 
     def clamped(self):
         values = {}
@@ -162,6 +172,7 @@ class Anomaly:
     threshold: object = None
     unit: str = ""     # "mm", "deg" ou "m2"
     shape: object = None   # donnees de symbole (cf. model_check_view)
+    numbers: tuple = ()    # numeros utilisateur (userID) alignes sur items ; None si absent
 
 
 class DetectionCancelled(Exception):
@@ -351,9 +362,15 @@ class _Ctx:
             self._pairs = _candidate_pairs(self.segs, margin, self.ctl)
         return self._pairs
 
+    def number(self, role, index):
+        props = self.model.get(_PROPS_KEY[role]) or []
+        p = props[index] if index < len(props) else None
+        return p.get("user_id") if isinstance(p, dict) else None
+
     def add(self, kind, items, eids, point, measured=None, threshold=None, unit="", shape=None):
+        numbers = tuple(self.number(role, index) for role, index in items)
         self.out.append(Anomaly(kind, SEVERITY_BY_KIND[kind], tuple(items), tuple(eids), tuple(point),
-                                measured, threshold, unit, shape))
+                                measured, threshold, unit, shape, numbers))
 
 
 _STAGES = []
@@ -733,6 +750,167 @@ def rule_surfaces(ctx):
                 center = _mid(a, b)
                 ctx.add(K_SURF_EDGE, item, eid, center, length * 1000.0, ctx.th.min_edge_len_mm, "mm",
                         shape(center, length))
+
+        # sommet quasi aligne avec ses deux voisins (arêtes trop courtes ignorees)
+        for k in range(n):
+            a, b, c = pts[k - 1], pts[k], pts[(k + 1) % n]
+            if _dist(a, b) <= vtol + EPS or _dist(b, c) <= vtol + EPS:
+                continue
+            u, v = _unit(_sub(b, a)), _unit(_sub(c, b))
+            deviation = math.degrees(math.acos(max(-1.0, min(1.0, _dot(u, v)))))
+            if COLLINEAR_MIN_DEV_DEG <= deviation <= ctx.th.collinear_angle_deg + ANGLE_SLACK:
+                ctx.add(K_SURF_COLLINEAR, item, eid, b, deviation, ctx.th.collinear_angle_deg, "deg",
+                        shape(b, ctx.m["symbol_min_size"]))
+
+
+# ---- regles : couples de surfaces ---------------------------------------------
+
+Surf = namedtuple("Surf", "index eid pts normal centroid lo hi")
+
+
+def _surfaces(ctx):
+    planars = ctx.model.get("planars") or []
+    eids = ctx.model.get("planar_eids") or []
+    out = []
+    for index, geom in enumerate(planars):
+        pts = [tuple(float(c) for c in p) for p in ((geom or {}).get("outer") or [])]
+        if len(pts) >= 2 and _dist(pts[0], pts[-1]) <= NODE_TOL:
+            pts = pts[:-1]
+        if len(pts) < 3:
+            continue
+        newell, _, centroid = _newell(pts)
+        normal = _plane_normal(pts, newell)
+        if normal is None:
+            continue
+        lo = tuple(min(p[c] for p in pts) for c in range(3))
+        hi = tuple(max(p[c] for p in pts) for c in range(3))
+        out.append(Surf(index, eids[index] if index < len(eids) else None, pts, normal, centroid, lo, hi))
+    return out
+
+
+def _cross2(o, a, b):
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+
+def _triangulate(p2):
+    """Triangles (indices) d'un polygone simple 2D par decoupe d'oreilles ;
+    None si le contour est degenere ou croise (pas de resultat fiable)."""
+    n = len(p2)
+    area2 = sum(p2[k][0] * p2[(k + 1) % n][1] - p2[(k + 1) % n][0] * p2[k][1] for k in range(n))
+    idx = list(range(n)) if area2 >= 0 else list(range(n - 1, -1, -1))
+    tris = []
+    while len(idx) > 3:
+        for k in range(len(idx)):
+            a, b, c = idx[k - 1], idx[k], idx[(k + 1) % len(idx)]
+            if _cross2(p2[a], p2[b], p2[c]) <= 1e-18:
+                continue
+            if any(o not in (a, b, c) and _cross2(p2[a], p2[b], p2[o]) >= 0
+                   and _cross2(p2[b], p2[c], p2[o]) >= 0 and _cross2(p2[c], p2[a], p2[o]) >= 0
+                   for o in idx):
+                continue
+            tris.append((p2[a], p2[b], p2[c]))
+            del idx[k]
+            break
+        else:
+            return None
+    tris.append(tuple(p2[k] for k in idx))
+    return tris
+
+
+def _clip_convex(subject, clip):
+    """Sutherland-Hodgman : `subject` decoupe par le polygone convexe `clip` (tous deux antihoraires)."""
+    out = list(subject)
+    for k in range(len(clip)):
+        a, b = clip[k], clip[(k + 1) % len(clip)]
+        inp, out = out, []
+        for m in range(len(inp)):
+            s, e = inp[m - 1], inp[m]
+            ins_s, ins_e = _cross2(a, b, s) >= 0, _cross2(a, b, e) >= 0
+            if ins_e != ins_s:
+                t = _cross2(a, b, s) / (_cross2(a, b, s) - _cross2(a, b, e))
+                out.append((s[0] + (e[0] - s[0]) * t, s[1] + (e[1] - s[1]) * t))
+            if ins_e:
+                out.append(e)
+        if not out:
+            break
+    return out
+
+
+def _poly_area_centroid(poly):
+    n = len(poly)
+    area2 = sum(poly[k][0] * poly[(k + 1) % n][1] - poly[(k + 1) % n][0] * poly[k][1] for k in range(n))
+    return abs(area2) / 2.0, (sum(p[0] for p in poly) / n, sum(p[1] for p in poly) / n)
+
+
+def _overlap_area(ctx, s, t):
+    """(aire, centre 3D) de l'intersection de deux surfaces coplanaires, ou None."""
+    ref = (0.0, 0.0, 1.0) if abs(s.normal[2]) < 0.9 else (1.0, 0.0, 0.0)
+    ex = _unit(_cross(s.normal, ref))
+    ey = _cross(s.normal, ex)
+
+    def flat(surf):
+        return [(_dot(_sub(p, s.centroid), ex), _dot(_sub(p, s.centroid), ey)) for p in surf.pts]
+
+    tri_s, tri_t = _triangulate(flat(s)), _triangulate(flat(t))
+    if tri_s is None or tri_t is None:
+        return None
+    total, cx, cy = 0.0, 0.0, 0.0
+    for a in tri_s:
+        for b in tri_t:
+            ctx.ctl.tick()
+            if _cross2(*a) < 0:    # triangles de fin de decoupe : forcer l'antihoraire
+                a = a[::-1]
+            if _cross2(*b) < 0:
+                b = b[::-1]
+            poly = _clip_convex(a, b)
+            if len(poly) < 3:
+                continue
+            area, c = _poly_area_centroid(poly)
+            total += area
+            cx += c[0] * area
+            cy += c[1] * area
+    if total <= 0:
+        return None
+    return total, _add(s.centroid, _add(_mul(ex, cx / total), _mul(ey, cy / total)))
+
+
+@_stage
+def rule_surface_pairs(ctx):
+    surfs = _surfaces(ctx)
+    d_max = ctx.m["overlap_dist"]
+    tol = ctx.m["connection_tol"]
+    margin = max(d_max, tol)
+    min_area = ctx.th.min_surface_area_m2
+    for x in range(len(surfs)):
+        s = surfs[x]
+        for y in range(x + 1, len(surfs)):
+            ctx.ctl.tick()
+            t = surfs[y]
+            if any(s.lo[c] > t.hi[c] + margin or t.lo[c] > s.hi[c] + margin for c in range(3)):
+                continue
+            items = ((ROLE_PLANAR, s.index), (ROLE_PLANAR, t.index))
+            eids = (s.eid, t.eid)
+            if (_angle_deg(s.normal, t.normal) <= ctx.th.overlap_angle_deg + ANGLE_SLACK
+                    and max(abs(_dot(_sub(p, s.centroid), s.normal)) for p in t.pts) <= d_max + EPS):
+                found = _overlap_area(ctx, s, t)
+                if found is not None and found[0] > min_area + 1e-15:
+                    area, center = found
+                    ctx.add(K_SURF_OVERLAP, items, eids, center, area, min_area, "m2",
+                            {"type": "sphere", "center": center, "radius": max(math.sqrt(area), ctx.m["symbol_min_size"])})
+            if tol <= 0:
+                continue
+            links = []
+            for p in s.pts:
+                for q in t.pts:
+                    d = _dist(p, q)
+                    if NODE_TOL < d <= tol + EPS:
+                        links.append((p, q, d))
+            if links:
+                points = [p for p, _, _ in links] + [q for _, q, _ in links]
+                widest = max(d for _, _, d in links)
+                center = tuple(sum(p[c] for p in points) / len(points) for c in range(3))
+                ctx.add(K_SURF_MISSING, items, eids, center, widest * 1000.0, ctx.th.connection_tol_mm, "mm",
+                        {"type": "sphere", "center": center, "radius": max(tol, widest / 2.0)})
 
 
 # ---- regles : appuis ---------------------------------------------------------

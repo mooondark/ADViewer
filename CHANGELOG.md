@@ -11,6 +11,9 @@
 - Paramètres de détection (menu Contrôle modèle) : seuils réglables mémorisés dans la configuration, champs selon Unité et précision (notation scientifique sous la précision). Nouvelle grandeur « Tolérances » dans Paramètres > Unité et précision (mm et 2 décimales par défaut), utilisée pour les mesures et seuils du rapport.
 - Deux extrémités à moins de 0,1 mm sont considérées comme le même nœud ; des éléments parfaitement alignés ne sont pas signalés comme quasi colinéaires.
 - Les tests de widgets ne sont plus sautés (`test_qt_translation` crée une `QApplication`).
+- Contrôle des surfaciques entre eux : chevauchement de deux surfaciques coplanaires (erreur), connexion manquante entre sommets de surfaciques différents (erreur, seuil de tolérance de connexion) et sommets quasi alignés dans un contour (avertissement). Les deux premiers peuvent être signalés ensemble pour un même couple.
+- Paramètres de détection : nouvelle option « Taille maximale des symboles » (100 mm par défaut) qui plafonne les symboles sphériques ; la taille minimale reste prioritaire.
+- Rapport des anomalies : la colonne « Éléments » affiche le numéro de l'élément (et non son identifiant interne) et passe à la ligne, sans ascenseur horizontal ni bouton « Voir » rogné.
 
 ### EN
 - New **Model check** menu: detects model anomalies before analysis, never modifying the model. Seven families: missing connections, duplicate elements, overlaps, nearly collinear or too short elements, degenerate surfaces (area, coincident vertices, self-intersection, short edges), missing or overlapping supports. Severity per type (error, warning, information).
@@ -19,6 +22,9 @@
 - Detection settings (Model check menu): adjustable thresholds saved in the configuration, fields following Units and precision (scientific notation below the precision). New "Tolerances" quantity in Settings > Units and precision (mm and 2 decimals by default), used for the report measures and thresholds.
 - Two ends closer than 0.1 mm are treated as the same node; perfectly aligned elements are not reported as nearly collinear.
 - Widget tests are no longer skipped (`test_qt_translation` creates a `QApplication`).
+- Surface-to-surface checks: overlap of two coplanar surfaces (error), missing connection between vertices of different surfaces (error, connection tolerance threshold) and nearly collinear vertices in an outline (warning). The first two can be reported together for the same pair.
+- Detection settings: new "Maximum symbol size" option (100 mm by default) capping spherical symbols; the minimum size still takes precedence.
+- Anomaly report: the "Elements" column shows the element number (not its internal identifier) and wraps, with no horizontal scrollbar and no clipped "View" button.
 
 ## 2.17
 

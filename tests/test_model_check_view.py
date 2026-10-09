@@ -35,7 +35,21 @@ def test_sphere_radius_has_a_floor_of_half_the_minimum_size():
     assert kind == mcv.SOLID
     assert abs((b[1] - b[0]) / 2 - 0.025) < 1e-3 and abs((b[0] + b[1]) / 2 - 1.0) < 1e-6
     big = _anomaly({"type": "sphere", "center": (0, 0, 0), "radius": 0.5})
-    assert abs(_bounds(mcv.symbol_parts(big, TH)[0][0])[1] - 0.5) < 1e-2
+    assert abs(_bounds(mcv.symbol_parts(big, TH)[0][0])[1] - 0.05) < 1e-3     # plafond : 100 mm de diametre
+    wide = mc.Thresholds(symbol_max_size_mm=2000.0)
+    assert abs(_bounds(mcv.symbol_parts(big, wide)[0][0])[1] - 0.5) < 1e-2
+
+
+def test_sphere_max_size_never_goes_below_the_minimum_size():
+    big = _anomaly({"type": "sphere", "center": (0, 0, 0), "radius": 0.5})
+    th = mc.Thresholds(symbol_min_size_mm=80.0, symbol_max_size_mm=20.0)
+    assert abs(_bounds(mcv.symbol_parts(big, th)[0][0])[1] - 0.04) < 1e-3
+
+
+def test_surface_symbol_sphere_is_capped():
+    shape = {"type": "surface", "outline": ((0, 0, 0), (1, 0, 0), (1, 1, 0)), "center": (0, 0, 0), "radius": 0.5}
+    parts = mcv.symbol_parts(_anomaly(shape, mc.K_SURF_CROSS), TH)
+    assert abs(_bounds(parts[1][0])[1] - 0.05) < 1e-3
 
 
 def test_cube_symbol_uses_the_minimum_size():

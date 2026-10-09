@@ -129,8 +129,13 @@ def symbol_parts(anomaly, thresholds):
     s = anomaly.shape or {}
     t = s.get("type")
     half_min = thresholds.symbol_min_size_mm * 1e-3 / 2.0
+    half_max = thresholds.symbol_max_size_mm * 1e-3 / 2.0
+
+    def ball(r):    # le plancher l'emporte si max < min
+        return max(min(r, half_max), half_min)
+
     if t == "sphere":
-        return [(sphere_polydata(s["center"], max(s["radius"], half_min)), SOLID)]
+        return [(sphere_polydata(s["center"], ball(s["radius"])), SOLID)]
     if t == "cube":
         return [(box_polydata(s["center"], (1, 0, 0), (0, 1, 0), (0, 0, 1), (half_min,) * 3), SOLID)]
     if t == "prism":
@@ -143,7 +148,7 @@ def symbol_parts(anomaly, thresholds):
         return [(frame_polydata(s["bounds"]), LINE)]
     if t == "surface":
         return [(outline_polydata(s["outline"]), LINE),
-                (sphere_polydata(s["center"], max(s["radius"], half_min)), SOLID)]
+                (sphere_polydata(s["center"], ball(s["radius"])), SOLID)]
     return []
 
 

@@ -10,7 +10,7 @@ from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QValidator
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QListView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
+    QHeaderView, QListView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
     QGroupBox, QHBoxLayout, QLabel, QProgressDialog, QPushButton, QScrollArea, QTableWidget,
     QTableWidgetItem, QVBoxLayout, QWidget,
 )
@@ -20,7 +20,7 @@ import model_check as mc
 from viewer_config import tr_ui
 
 ENGINE_KEYS = (
-    "lines", "line_eids", "planars", "planar_eids",
+    "lines", "line_eids", "line_properties", "planars", "planar_eids", "planar_properties",
     "punctual_supports", "punctual_support_eids", "punctual_support_properties",
     "linear_supports", "planar_supports",
 )
@@ -42,8 +42,10 @@ def kind_label(kind):
 
 def elements_text(a):
     parts = []
-    for (_role, index), eid in zip(a.items, a.eids):
-        parts.append(str(eid) if eid is not None else f"#{index}")
+    numbers = tuple(a.numbers) + (None,) * len(a.items)
+    for (_role, index), eid, number in zip(a.items, a.eids, numbers):
+        value = number if number not in (None, "") else eid
+        parts.append(str(value) if value is not None else f"#{index}")
     return ", ".join(parts)
 
 
@@ -186,7 +188,7 @@ _GROUPS = (
                            ("coincident_vertex_tol_mm", "mm"))),
     ("mc_group_supports", (("check_supports", "bool"), ("report_overlapping_supports", "bool"))),
     ("mc_group_report", (("include_info", "bool"),)),
-    ("mc_group_display", (("symbol_transparency_pct", "pct"), ("symbol_min_size_mm", "mm"))),
+    ("mc_group_display", (("symbol_transparency_pct", "pct"), ("symbol_min_size_mm", "mm"), ("symbol_max_size_mm", "mm"))),
 )
 
 
@@ -381,6 +383,14 @@ class AnomalyReportDialog(QDialog):
         self._table.setEditTriggers(QTableWidget.NoEditTriggers)
         self._table.setSelectionBehavior(QTableWidget.SelectRows)
         self._table.verticalHeader().setVisible(False)
+        # "Elements" absorbe la largeur restante et passe a la ligne : pas d'ascenseur horizontal
+        self._table.setWordWrap(True)
+        self._table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        header = self._table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
+        header.setSectionResizeMode(6, QHeaderView.Fixed)
+        header.sectionResized.connect(lambda *_: self._fit_rows())
         layout.addWidget(self._table, 1)
         bottom = QHBoxLayout()
         export = QPushButton(tr_ui("mc_export"))
@@ -394,6 +404,28 @@ class AnomalyReportDialog(QDialog):
         self._severity.currentIndexChanged.connect(self.refresh)
         self._kind.currentIndexChanged.connect(self.refresh)
         self.refresh()
+
+    def _fit_rows(self):
+        """Hauteur de ligne selon le seul texte des elements (le bouton "Voir" ne l'agrandit pas)."""
+        table = self._table
+        # largeur de la colonne etiree = zone visible moins les autres colonnes (Qt n'emet pas sectionResized)
+        others = sum(table.columnWidth(c) for c in range(table.columnCount()) if c != 2)
+        width = max(table.viewport().width() - others, table.columnWidth(2)) - 12
+        base = table.verticalHeader().defaultSectionSize()
+        fm = table.fontMetrics()
+        for r in range(table.rowCount()):
+            item = table.item(r, 2)
+            text = item.text() if item is not None else ""
+            lines_h = fm.boundingRect(0, 0, max(width, 1), 100000, Qt.TextWordWrap, text).height()
+            table.setRowHeight(r, max(base, lines_h + 10))
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        QTimer.singleShot(0, self._fit_rows)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        QTimer.singleShot(0, self._fit_rows)
 
     def _rows(self):
         return filter_rows(self._controller.anomalies, self._severity.currentData(), self._kind.currentData())
@@ -414,10 +446,10 @@ class AnomalyReportDialog(QDialog):
             button = QPushButton(tr_ui("mc_view"))
             button.clicked.connect(lambda _=False, idx=index: self._controller.view(idx))
             self._table.setCellWidget(r, 6, button)
-        self._table.resizeColumnsToContents()
         if rows:
             width = self._table.cellWidget(0, 6).sizeHint().width() + 16
             self._table.setColumnWidth(6, max(width, 90))
+        self._fit_rows()
 
     def _export(self):
         fto_edit = getattr(self._controller.window, "fto_edit", None)
@@ -580,7 +612,8 @@ class ModelCheckController(QObject):
         if not self._ran:
             return
         detection_changed = any(getattr(old, f) != getattr(new, f) for f in new.__dataclass_fields__
-                                if f not in ("include_info", "symbol_transparency_pct", "symbol_min_size_mm"))
+                                if f not in ("include_info", "symbol_transparency_pct", "symbol_min_size_mm",
+                                                "symbol_max_size_mm"))
         self._publish()
         if detection_changed:
             self.window.statusBar().showMessage(tr_ui("mc_status_rerun"))
