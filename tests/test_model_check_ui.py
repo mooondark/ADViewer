@@ -188,3 +188,37 @@ def test_export_markdown_table_with_escaped_pipes(tmp_path):
     assert header[1].replace("|", "").replace("-", "").replace(" ", "") == ""
     assert tr_ui("mc_kind_duplicate") in header[2] and header[2].count("|") == header[0].count("|")
     assert ui.md_cell("a|b") == "a\|b"
+
+
+def test_settings_dialog_follows_units_and_precision_and_keeps_untouched_values():
+    import pytest
+    from PySide6.QtWidgets import QApplication
+    import display_units as du
+
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    elif not isinstance(app, QApplication):
+        pytest.skip("une QCoreApplication existe deja dans ce processus")
+    du.reset()
+    try:
+        du.set_unit("tolerance", "cm")
+        du.set_decimals("tolerance", 2)
+        base = mc.Thresholds(connection_tol_mm=5.123, symbol_transparency_pct=55.5)
+        dlg = ui.ModelCheckSettingsDialog(base)
+        spin = dlg._widgets["connection_tol_mm"]
+        assert spin.suffix() == " cm" and spin.decimals() == 2 and abs(spin.value() - 0.51) < 1e-9
+        pct = dlg._widgets["symbol_transparency_pct"]
+        assert pct.decimals() == 0 and pct.suffix() == " %"
+        assert dlg._widgets["duplicate_angle_deg"].suffix() == " " + du.unit("angle")
+        assert dlg._widgets["min_surface_area_m2"].suffix() == " " + du.unit("area")
+        assert dlg.values() == base                      # rien de modifie : valeurs exactes conservees
+        spin.setValue(1.0)                               # 1,0 cm
+        pct.setValue(45.0)
+        out = dlg.values()
+        assert abs(out.connection_tol_mm - 10.0) < 1e-9 and out.symbol_transparency_pct == 45.0
+        assert out.duplicate_tol_mm == base.duplicate_tol_mm
+        dlg.restore_defaults()
+        assert dlg.values() == mc.Thresholds()
+    finally:
+        du.reset()

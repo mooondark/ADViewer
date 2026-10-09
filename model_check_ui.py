@@ -5,7 +5,7 @@ import csv
 import math
 import os
 
-from PySide6.QtCore import QObject, Qt, QThread, Signal
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QListView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
@@ -186,7 +186,33 @@ _GROUPS = (
     ("mc_group_report", (("include_info", "bool"),)),
     ("mc_group_display", (("symbol_transparency_pct", "pct"), ("symbol_min_size_mm", "mm"))),
 )
-_SUFFIX = {"mm": " mm", "deg": " deg", "m2": " m2", "pct": " %"}
+
+
+class _SpinBox(QDoubleSpinBox):
+    """Champ numerique : tout le texte est selectionne a la prise de focus (la
+    saisie remplace la valeur) et la molette n'agit que champ actif (sinon elle
+    modifie des valeurs en faisant defiler la fenetre)."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setKeyboardTracking(False)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        QTimer.singleShot(0, self.selectAll)
+
+    def wheelEvent(self, event):
+        if self.hasFocus():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
+
+
+def _display_factor(kind):
+    """Facteur stockage (mm, deg, m2) -> valeur affichee, selon Unite et precision."""
+    grandeur, to_api = _UNIT_KIND[kind]
+    return to_api * du.scale(grandeur)
 
 
 class ModelCheckSettingsDialog(QDialog):
@@ -196,6 +222,9 @@ class ModelCheckSettingsDialog(QDialog):
         self.setModal(True)
         self.resize(520, 640)
         self._widgets = {}
+        self._kinds = {}
+        self._base = mc.Thresholds()
+        self._shown = {}
         layout = QVBoxLayout(self)
         body = QWidget()
         body_layout = QVBoxLayout(body)
@@ -206,12 +235,19 @@ class ModelCheckSettingsDialog(QDialog):
                 if kind == "bool":
                     widget = QCheckBox()
                 else:
-                    widget = QDoubleSpinBox()
+                    widget = _SpinBox()
                     lo, hi = mc.BOUNDS[name]
-                    widget.setRange(lo, hi)
-                    widget.setDecimals(4 if kind == "m2" else 3)
-                    widget.setSuffix(_SUFFIX[kind])
+                    if kind == "pct":
+                        widget.setRange(lo, hi)
+                        widget.setDecimals(0)
+                        widget.setSuffix(" %")
+                    else:
+                        factor = _display_factor(kind)
+                        widget.setRange(lo * factor, hi * factor)
+                        widget.setDecimals(du.decimals(_UNIT_KIND[kind][0]))
+                        widget.setSuffix(" " + du.unit(_UNIT_KIND[kind][0]))
                 self._widgets[name] = widget
+                self._kinds[name] = kind
                 form.addRow(tr_ui("mc_param_" + name), widget)
             body_layout.addWidget(box)
         body_layout.addStretch(1)
@@ -232,21 +268,33 @@ class ModelCheckSettingsDialog(QDialog):
         self._widgets["report_overlapping_supports"].setEnabled(self._widgets["check_supports"].isChecked())
 
     def set_values(self, th):
+        self._base = th
+        self._shown = {}
         for name, widget in self._widgets.items():
             value = getattr(th, name)
             if isinstance(widget, QCheckBox):
                 widget.setChecked(bool(value))
-            else:
-                widget.setValue(float(value))
+                continue
+            kind = self._kinds[name]
+            widget.setValue(float(value) * (1.0 if kind == "pct" else _display_factor(kind)))
+            self._shown[name] = widget.value()
         self._sync_enabled()
 
     def restore_defaults(self):
         self.set_values(mc.Thresholds())
 
     def values(self):
+        """Thresholds saisis. Un champ non modifie garde sa valeur exacte (l'affichage
+        arrondi a la precision ne doit pas alterer un seuil que l'utilisateur n'a pas touche)."""
         out = {}
         for name, widget in self._widgets.items():
-            out[name] = widget.isChecked() if isinstance(widget, QCheckBox) else widget.value()
+            if isinstance(widget, QCheckBox):
+                out[name] = widget.isChecked()
+            elif abs(widget.value() - self._shown.get(name, widget.value())) < 1e-12:
+                out[name] = getattr(self._base, name)
+            else:
+                kind = self._kinds[name]
+                out[name] = widget.value() / (1.0 if kind == "pct" else _display_factor(kind))
         return mc.Thresholds(**out).clamped()
 
 
