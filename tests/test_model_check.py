@@ -406,3 +406,29 @@ def test_elastic_supports_compare_their_stiffness():
     assert _kinds(mc.detect(same)) == [mc.K_SUPPORT_OVERLAP]
     diff = _model(lines=_BEAM, punctual=[(0, 0, 0), (0, 0, 0)], props=[p1, p2])
     assert mc.detect(diff) == []
+
+
+def _grid_model(n=71, defects=True):
+    lines = []
+    for ix in range(n):
+        for iy in range(n):
+            if ix + 1 < n:
+                lines.append(((ix, iy, 0.0), (ix + 1, iy, 0.0)))
+            if iy + 1 < n:
+                lines.append(((ix, iy, 0.0), (ix, iy + 1, 0.0)))
+    if defects:
+        lines[10] = ((lines[10][0][0], lines[10][0][1], 0.0), (lines[10][1][0] + 0.002, lines[10][1][1], 0.0))
+        lines.append(lines[500])   # doublon exact
+    return _model(lines=lines, punctual=[(0, 0, 0)], props=[_rigid(TX=True)])
+
+
+def test_ten_thousand_elements_run_in_reasonable_time():
+    model = _grid_model()
+    assert len(model["lines"]) >= 9900
+    start = time.time()
+    out = mc.detect(model)
+    elapsed = time.time() - start
+    print(f"detect(10k elements) = {elapsed:.2f} s, {len(out)} anomalies")
+    assert elapsed < 30.0
+    kinds = _kinds(out)
+    assert mc.K_DUPLICATE in kinds and mc.K_MISSING in kinds
