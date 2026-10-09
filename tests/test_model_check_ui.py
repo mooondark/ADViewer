@@ -167,10 +167,24 @@ def test_units_change_redisplays_the_active_anomaly_card_and_refreshes_the_repor
     assert ctl.on_units_changed() is False
 
 
-def test_export_start_dir_is_the_folder_of_the_fto_file(tmp_path):
+def test_export_start_path_is_folder_of_the_fto_plus_default_name(tmp_path):
     fto = tmp_path / "modele.fto"
     fto.write_text("x")
-    assert ui.export_start_dir(str(fto)) == str(tmp_path)
-    assert ui.export_start_dir("  " + str(fto) + " ") == str(tmp_path)
-    assert ui.export_start_dir(str(tmp_path / "absent" / "m.fto")) == ""     # dossier inexistant : defaut Qt
-    assert ui.export_start_dir("") == "" and ui.export_start_dir(None) == ""
+    expected = os.path.join(str(tmp_path), "modele_controle.csv")
+    assert ui.export_start_path(str(fto)) == expected
+    assert ui.export_start_path("  " + str(fto) + " ") == expected
+    assert ui.export_start_path(str(tmp_path / "absent" / "m.fto")) == "m_controle.csv"   # dossier inexistant : nom seul
+    assert ui.export_start_path("") == "" and ui.export_start_path(None) == ""
+
+
+def test_export_markdown_table_with_escaped_pipes(tmp_path):
+    a = _a(mc.K_DUPLICATE, items=(("lines", 0),), eids=(5,))
+    path = tmp_path / "r.md"
+    ui.export_rows([(0, a)], str(path))
+    lines = open(path, encoding="utf-8").read().splitlines()
+    assert lines[0].startswith("# ") and tr_ui("mc_report_title") in lines[0]
+    header = [l for l in lines if l.startswith("|")]
+    assert len(header) == 3                                   # en-tete, separateur, 1 ligne
+    assert header[1].replace("|", "").replace("-", "").replace(" ", "") == ""
+    assert tr_ui("mc_kind_duplicate") in header[2] and header[2].count("|") == header[0].count("|")
+    assert ui.md_cell("a|b") == "a\|b"

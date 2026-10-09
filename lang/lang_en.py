@@ -543,7 +543,7 @@ MSG_UI = {
     "mc_export": "Export report",
     "mc_close": "Close",
     "mc_export_title": "Export report",
-    "mc_export_filter": "CSV (*.csv);;Text (*.txt)",
+    "mc_export_filter": "CSV (*.csv);;Markdown (*.md)",
     "mc_kind_missing_connection": "Missing connection",
     "mc_kind_duplicate": "Duplicate element",
     "mc_kind_overlap": "Overlap",

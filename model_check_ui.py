@@ -94,12 +94,19 @@ def _headers():
             tr_ui("mc_col_coords", unit=du.unit("length")), tr_ui("mc_col_measure"), tr_ui("mc_col_threshold")]
 
 
-def export_start_dir(fto_path):
-    """Dossier du fichier .fto (dossier de depart de la fenetre d'export) ; vide
-    si le chemin est inconnu ou le dossier inexistant (Qt choisit alors)."""
+def export_start_path(fto_path):
+    """Chemin propose a l'export : <dossier du .fto>/<nom du .fto>_controle.csv.
+    Dossier inexistant : nom seul (Qt choisit le dossier) ; chemin vide : vide."""
     text = str(fto_path or "").strip()
-    folder = os.path.dirname(text) if text else ""
-    return folder if folder and os.path.isdir(folder) else ""
+    if not text:
+        return ""
+    name = os.path.splitext(os.path.basename(text))[0] + "_controle.csv"
+    folder = os.path.dirname(text)
+    return os.path.join(folder, name) if folder and os.path.isdir(folder) else name
+
+
+def md_cell(text):
+    return str(text).replace("|", "\\|")
 
 
 def export_rows(rows, path):
@@ -110,6 +117,15 @@ def export_rows(rows, path):
             writer = csv.writer(f, delimiter=";")
             writer.writerow(_headers())
             writer.writerows(cells)
+        return
+    if str(path).lower().endswith(".md"):
+        header = [md_cell(h) for h in _headers()]
+        lines = [f"# {tr_ui('mc_report_title')}", "",
+                 "| " + " | ".join(header) + " |",
+                 "|" + "|".join(" --- " for _ in header) + "|"]
+        lines += ["| " + " | ".join(md_cell(c) for c in row) + " |" for row in cells]
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            f.write("\n".join(lines) + "\n")
         return
     with open(path, "w", encoding="utf-8") as f:
         f.write("\t".join(_headers()) + "\n")
@@ -316,7 +332,7 @@ class AnomalyReportDialog(QDialog):
 
     def _export(self):
         fto_edit = getattr(self._controller.window, "fto_edit", None)
-        start = export_start_dir(fto_edit.text() if fto_edit is not None else "")
+        start = export_start_path(fto_edit.text() if fto_edit is not None else "")
         path, _ = QFileDialog.getSaveFileName(self, tr_ui("mc_export_title"), start, tr_ui("mc_export_filter"))
         if path:
             export_rows(self._rows(), path)
