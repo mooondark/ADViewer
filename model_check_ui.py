@@ -3,6 +3,7 @@
 
 import csv
 import math
+import os
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal
 from PySide6.QtGui import QAction
@@ -91,6 +92,14 @@ def row_cells(a):
 def _headers():
     return [tr_ui("mc_col_severity"), tr_ui("mc_col_type"), tr_ui("mc_col_elements"),
             tr_ui("mc_col_coords", unit=du.unit("length")), tr_ui("mc_col_measure"), tr_ui("mc_col_threshold")]
+
+
+def export_start_dir(fto_path):
+    """Dossier du fichier .fto (dossier de depart de la fenetre d'export) ; vide
+    si le chemin est inconnu ou le dossier inexistant (Qt choisit alors)."""
+    text = str(fto_path or "").strip()
+    folder = os.path.dirname(text) if text else ""
+    return folder if folder and os.path.isdir(folder) else ""
 
 
 def export_rows(rows, path):
@@ -306,7 +315,9 @@ class AnomalyReportDialog(QDialog):
             self._table.setColumnWidth(6, max(width, 90))
 
     def _export(self):
-        path, _ = QFileDialog.getSaveFileName(self, tr_ui("mc_export_title"), "", tr_ui("mc_export_filter"))
+        fto_edit = getattr(self._controller.window, "fto_edit", None)
+        start = export_start_dir(fto_edit.text() if fto_edit is not None else "")
+        path, _ = QFileDialog.getSaveFileName(self, tr_ui("mc_export_title"), start, tr_ui("mc_export_filter"))
         if path:
             export_rows(self._rows(), path)
 

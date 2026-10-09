@@ -165,3 +165,12 @@ def test_units_change_redisplays_the_active_anomaly_card_and_refreshes_the_repor
     assert shown and tr_ui("mc_kind_duplicate") in shown[0] and refreshed == [True]
     ctl.window.viewer = types.SimpleNamespace(active_anomaly_index=lambda: None)
     assert ctl.on_units_changed() is False
+
+
+def test_export_start_dir_is_the_folder_of_the_fto_file(tmp_path):
+    fto = tmp_path / "modele.fto"
+    fto.write_text("x")
+    assert ui.export_start_dir(str(fto)) == str(tmp_path)
+    assert ui.export_start_dir("  " + str(fto) + " ") == str(tmp_path)
+    assert ui.export_start_dir(str(tmp_path / "absent" / "m.fto")) == ""     # dossier inexistant : defaut Qt
+    assert ui.export_start_dir("") == "" and ui.export_start_dir(None) == ""
