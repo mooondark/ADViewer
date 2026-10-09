@@ -126,7 +126,12 @@ class Thresholds:
     def from_section(cls, section):
         values = {}
         for f in fields(cls):
-            raw = section.get(f.name) if section is not None else None
+            if section is None:
+                continue
+            try:
+                raw = section.get(f.name, raw=True)    # SectionProxy : pas d'interpolation ('%' tolere)
+            except TypeError:
+                raw = section.get(f.name)              # dict simple
             if raw is None:
                 continue
             if f.name in BOUNDS:
@@ -279,13 +284,21 @@ def _candidate_pairs(segs, margin, ctl):
     partagent au moins une cellule de la grille. Triee, donc deterministe."""
     cell = _cell_size(segs)
     grid = {}
+    reach = margin + cell * 0.25   # echantillons espaces de cell/2 : tout point du segment est a cell/4 d'un echantillon
     for s in segs:
-        lo = [math.floor((min(s.a[k], s.b[k]) - margin) / cell) for k in range(3)]
-        hi = [math.floor((max(s.a[k], s.b[k]) + margin) / cell) for k in range(3)]
-        for cx in range(int(lo[0]), int(hi[0]) + 1):
-            for cy in range(int(lo[1]), int(hi[1]) + 1):
-                for cz in range(int(lo[2]), int(hi[2]) + 1):
-                    grid.setdefault((cx, cy, cz), []).append(s.index)
+        ctl.tick()
+        steps = max(1, int(math.ceil(s.length / (cell * 0.5))))
+        cells = set()
+        for k in range(steps + 1):
+            p = _lerp(s.a, s.b, k / steps)
+            lo = [int(math.floor((p[i] - reach) / cell)) for i in range(3)]
+            hi = [int(math.floor((p[i] + reach) / cell)) for i in range(3)]
+            for cx in range(lo[0], hi[0] + 1):
+                for cy in range(lo[1], hi[1] + 1):
+                    for cz in range(lo[2], hi[2] + 1):
+                        cells.add((cx, cy, cz))
+        for c in cells:
+            grid.setdefault(c, []).append(s.index)
     pairs = set()
     for members in grid.values():
         ctl.tick()
@@ -457,6 +470,19 @@ def rule_connections(ctx):
     flagged_nodes = set()
     seen = set()
     sphere_r = tol
+
+    # Un defaut = une anomalie : les extremites d'un element court (ou quasi nul)
+    # et celles d'un couple doublon / chevauchant sont deja couvertes par leur anomalie.
+    for k in ctx.short_set:
+        t = ctx.segs[k]
+        if _nk(t.a) != _nk(t.b):
+            seen.add(frozenset((_nk(t.a), _nk(t.b))))
+    for i, j in ctx.dup_pairs | ctx.overlap_pairs:
+        s, t = ctx.segs[i], ctx.segs[j]
+        for p in (s.a, s.b):
+            for q in (t.a, t.b):
+                if _nk(p) != _nk(q):
+                    seen.add(frozenset((_nk(p), _nk(q))))
 
     def report(p, q, d, indexes):
         idx = sorted(indexes)

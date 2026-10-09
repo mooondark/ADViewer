@@ -299,6 +299,7 @@ class ModelCheckController(QObject):
         self._worker = None
         self._progress = None
         self._report = None
+        self._gen = 0    # incremente par clear() : les resultats d'une detection perimee sont ignores
         self.act_run = self.act_report = self.act_toggle = self.act_clear = self.act_settings = None
 
     # --- menu ---
@@ -344,9 +345,10 @@ class ModelCheckController(QObject):
         dialog.setAutoReset(False)
         dialog.canceled.connect(worker.request_cancel)
         worker.progress.connect(lambda d, t: (dialog.setMaximum(t), dialog.setValue(d)))
-        worker.done.connect(self._on_done)
-        worker.cancelled.connect(self._on_cancelled)
-        worker.failed.connect(self._on_failed)
+        gen = self._gen
+        worker.done.connect(lambda result, g=gen: self._on_done(result, g))
+        worker.cancelled.connect(lambda g=gen: self._on_cancelled(g))
+        worker.failed.connect(lambda message, g=gen: self._on_failed(message, g))
         self._worker, self._progress = worker, dialog
         self.update_actions()
         dialog.show()
@@ -368,18 +370,24 @@ class ModelCheckController(QObject):
         self.window.statusBar().showMessage(text)
         self.window.log(text, "info")
 
-    def _on_done(self, result):
+    def _on_done(self, result, gen=None):
         self._finish()
+        if gen is not None and gen != self._gen:
+            return
         self._all = list(result)
         self._ran = True
         self._publish()
 
-    def _on_cancelled(self):
+    def _on_cancelled(self, gen=None):
         self._finish()
+        if gen is not None and gen != self._gen:
+            return
         self._status(tr_ui("mc_status_cancelled"))
 
-    def _on_failed(self, message):
+    def _on_failed(self, message, gen=None):
         self._finish()
+        if gen is not None and gen != self._gen:
+            return
         self._status(tr_ui("mc_status_failed", message=message))
 
     def _publish(self):
@@ -410,6 +418,9 @@ class ModelCheckController(QObject):
             self.window.viewer.set_anomalies_visible(bool(visible))
 
     def clear(self):
+        self._gen += 1
+        if self._worker is not None:
+            self._worker.request_cancel()
         self._all, self.anomalies, self._ran = [], [], False
         viewer = self.window.viewer
         if viewer is not None:

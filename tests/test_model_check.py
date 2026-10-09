@@ -432,3 +432,49 @@ def test_ten_thousand_elements_run_in_reasonable_time():
     assert elapsed < 30.0
     kinds = _kinds(out)
     assert mc.K_DUPLICATE in kinds and mc.K_MISSING in kinds
+
+
+# ---- correctifs de la relecture finale -------------------------------------
+
+def test_short_element_between_neighbours_gives_no_missing_connection():
+    model = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1, 0, 0), (1.003, 0, 0)), ((1.003, 0, 0), (2, 0, 0))])
+    kinds = _kinds(mc.detect(model))
+    assert mc.K_SHORT in kinds and mc.K_MISSING not in kinds
+    null = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1, 0, 0), (1.0005, 0, 0)), ((1.0005, 0, 0), (2, 0, 0))])
+    kinds = _kinds(mc.detect(null))
+    assert mc.K_NULL in kinds and mc.K_MISSING not in kinds
+
+
+def test_duplicate_with_neighbours_gives_no_missing_connection():
+    model = _model(lines=[
+        ((0, 0, 0), (5, 0, 0)), ((0, 0.0005, 0), (5, 0.0005, 0)),
+        ((0, 0, 0), (0, 0, -3)), ((5, 0, 0), (5, 0, -3)),
+    ])
+    kinds = _kinds(mc.detect(model))
+    assert kinds.count(mc.K_DUPLICATE) == 1 and mc.K_MISSING not in kinds
+
+
+def test_overlap_with_neighbours_gives_no_missing_connection():
+    model = _model(lines=[
+        ((0, 0, 0), (5, 0, 0)), ((0, 0.003, 0), (5, 0.003, 0)),
+        ((0, 0, 0), (0, 0, -3)),
+    ])
+    kinds = _kinds(mc.detect(model))
+    assert mc.K_OVERLAP in kinds and mc.K_MISSING not in kinds
+
+
+def test_long_3d_diagonal_does_not_explode_the_spatial_index():
+    lines = [((i * 0.25, 0.0, 0.0), (i * 0.25 + 0.25, 0.0, 0.0)) for i in range(200)]
+    lines.append(((0.0, 0.0, 0.0), (60.0, 60.0, 60.0)))
+    start = time.time()
+    mc.detect(_model(lines=lines))
+    assert time.time() - start < 3.0
+
+
+def test_thresholds_from_configparser_with_percent_sign_does_not_raise():
+    import configparser
+
+    cfg = configparser.ConfigParser()
+    cfg.read_string("[model_check]\nconnection_tol_mm = 5%\ncheck_supports = true\n")
+    th = mc.Thresholds.from_section(cfg[mc.SECTION])
+    assert th.connection_tol_mm == 5.0 and th.check_supports is True

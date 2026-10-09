@@ -118,3 +118,15 @@ def test_save_and_load_config_roundtrip_through_a_temporary_file(tmp_path):
     back = configparser.ConfigParser()
     back.read(path, encoding="utf-8")
     assert mc.Thresholds.from_section(back[mc.SECTION]) == th
+
+
+def test_results_of_a_cleared_run_are_not_published():
+    from PySide6.QtCore import QObject
+    import types
+
+    ctl = ui.ModelCheckController(QObject())
+    ctl.window = types.SimpleNamespace(viewer=None, current_model_data=None)
+    gen = ctl._gen
+    ctl.clear()
+    ctl._on_done([_a(mc.K_DUPLICATE)], gen)
+    assert ctl.anomalies == [] and ctl._ran is False
