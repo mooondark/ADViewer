@@ -518,3 +518,12 @@ def test_coordinate_noise_below_one_micron_is_not_a_missing_connection():
     assert mc.detect(model) == []
     real_gap = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.00001, 0, 0), (1.00001, 1, 0))])   # 0,01 mm : vrai defaut
     assert _kinds(mc.detect(real_gap)) == [mc.K_MISSING]
+
+
+def test_perfectly_aligned_elements_are_not_nearly_collinear():
+    model = _model(lines=[((5, 0, 5), (9, 0, 5)), ((9, 0, 5), (11, 0, 5))])
+    assert mc.detect(model) == []
+    noisy = _model(lines=[((5, 0, 5), (9, 0, 5)), ((9, 0, 5), (11, 0.000000003, 5))])   # bruit de coordonnees
+    assert mc.detect(noisy) == []
+    slight = _model(lines=[((5, 0, 5), (9, 0, 5)), ((9, 0, 5), (11, 0.01, 5))])        # ~0,29 deg : quasi colineaire
+    assert _kinds(mc.detect(slight)) == [mc.K_COLLINEAR]
