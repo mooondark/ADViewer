@@ -10,6 +10,7 @@
 ## Features
 - 3D visualization: 7 display modes (wireframe, hidden faces, full, sections with hidden faces or full render, 3D wireframe), thickness and eccentricity of planar elements, perspective or orthogonal projection
 - Object selection (click, window selection, selection inversion)
+- Model check: anomaly detection (connections, duplicates, overlaps, surfaces, supports), exportable report, 3D symbols by severity
 - Clip box: isolates an area of the model with a box you can move with the mouse, cut trace in a dedicated color
 - Zoom window, standard views (front, side, top, isometric)
 - Property extraction

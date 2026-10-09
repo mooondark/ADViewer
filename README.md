@@ -10,6 +10,7 @@ Visualiseur 3D pour les modèles Advance Design.
 
 - Visualisation 3D : 7 modes d'affichage (filaire, faces cachées, plein, profilés avec faces cachées ou rendu plein, Filaire 3D), projection perspective ou orthogonale
 - Sélection d'objets (clic, sélection par fenêtre, inversion de la sélection)
+- Contrôle modèle : détection des anomalies (connexions, doublons, chevauchements, surfaces, appuis), rapport exportable, symboles 3D par gravité
 - Boîte de coupe : isole une zone du modèle avec une boîte déplaçable à la souris, trace de la coupe en couleur
 - Zoom fenêtre, vues standard (face, côté, dessus, isométrique)
 - Extraction des propriétés

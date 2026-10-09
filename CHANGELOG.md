@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## À paraître
+
+### FR
+- Nouveau menu **Contrôle modèle** : détection des anomalies du modèle (connexions manquantes, éléments dupliqués, chevauchements, éléments quasi colinéaires ou trop courts, surfaces dégénérées, appuis manquants ou superposés). Rapport filtrable et exportable (CSV ou texte), symboles 3D semi-transparents (couleur selon la gravité), sélection d'une anomalie depuis le rapport ou la vue 3D (Tab), seuils réglables mémorisés dans la configuration.
+
+### EN
+- New **Model check** menu: detects model anomalies (missing connections, duplicate elements, overlaps, nearly collinear or too short elements, degenerate surfaces, missing or overlapping supports). Filterable and exportable report (CSV or text), semi-transparent 3D symbols (color by severity), anomaly selection from the report or the 3D view (Tab), adjustable thresholds saved in the configuration.
+
 ## 2.17
 
 ### FR
