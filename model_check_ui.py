@@ -2,6 +2,7 @@
 """Controle du modele 3D : worker, controleur, fenetres de rapport et de parametres."""
 
 import csv
+import math
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal
 from PySide6.QtGui import QAction
@@ -48,13 +49,19 @@ def coords_text(point):
     return " ; ".join(f"{du.conv(c, 'length'):.{dec}f}" for c in point)
 
 
-_UNIT_TEXT = {"mm": "mm", "deg": "deg", "m2": "m2"}
+# unite du moteur -> (grandeur display_units, facteur vers l'unite API : m, rad, m2)
+_UNIT_KIND = {"mm": ("length", 1e-3), "deg": ("angle", math.pi / 180.0), "m2": ("area", 1.0)}
 
 
 def measure_text(value, unit):
+    """Mesure ou seuil dans l'unite et la precision de Parametres > Unite et
+    precision ; notation scientifique sous la precision (evite un 0 trompeur)."""
     if value is None:
         return ""
-    return f"{value:.4g} {_UNIT_TEXT.get(unit, unit)}".strip()
+    if unit not in _UNIT_KIND:
+        return f"{value:.4g} {unit}".strip()
+    kind, factor = _UNIT_KIND[unit]
+    return du.fmt(value * factor, kind)
 
 
 def counts(anomalies):
