@@ -8,10 +8,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from PySide6.QtCore import QCoreApplication
+from PySide6.QtWidgets import QApplication
 
 import main_window
 
-app = QCoreApplication.instance() or QCoreApplication(sys.argv)
+# QApplication (et non QCoreApplication) : d'autres tests creent des widgets, et il ne peut
+# y avoir qu'une application Qt par processus.
+app = QApplication.instance() or QApplication(sys.argv)
 
 
 def _tr(text):
