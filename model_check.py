@@ -55,7 +55,7 @@ ROLE_SUPPORT = "support_punctual"
 
 SECTION = "model_check"
 EPS = 1e-12
-NODE_TOL = 1e-3   # m (1 mm) : deux points a moins de NODE_TOL sont le meme noeud
+NODE_TOL = 1e-4   # m (0,1 mm) : deux points a moins de NODE_TOL sont le meme noeud
 COLLINEAR_MIN_DEV_DEG = 1e-3   # en dessous : parfaitement alignes (bruit des coordonnees), pas "quasi" colineaires
 ANGLE_SLACK = 1e-6   # deg : bruit d'arrondi de acos pour des axes quasi identiques
 

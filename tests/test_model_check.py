@@ -516,9 +516,9 @@ def test_gaps_within_node_tolerance_are_not_a_missing_connection():
     assert mc.detect(model) == []
     model = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1, 0.000000004, 0), (1, 1, 0))])   # idem extremite-corps
     assert mc.detect(model) == []
-    same = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.0009, 0, 0), (1.0009, 1, 0))])   # 0,9 mm : meme noeud (tolerance 1 mm)
+    same = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.00009, 0, 0), (1.00009, 1, 0))])   # 0,09 mm : meme noeud (tolerance 0,1 mm)
     assert mc.detect(same) == []
-    real_gap = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.0011, 0, 0), (1.0011, 1, 0))])   # 1,1 mm : vrai defaut
+    real_gap = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.00011, 0, 0), (1.00011, 1, 0))])   # 0,11 mm : vrai defaut
     assert _kinds(mc.detect(real_gap)) == [mc.K_MISSING]
 
 
