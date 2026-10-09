@@ -2482,6 +2482,16 @@ def resolve_system_selection_items(system_direct_items: dict, system_eids) -> li
     return items
 
 
+def _aligned_line_eids(linear_ids, linear_elements):
+    """Identifiants alignes sur `lines` : un element sans geomPtStart/geomPtEnd
+    n'ajoute pas de ligne, son identifiant ne doit donc pas decaler les suivants."""
+    return [
+        int(eid) if eid is not None else None
+        for eid, el in zip(linear_ids, linear_elements)
+        if el.get("geomPtStart") and el.get("geomPtEnd")
+    ]
+
+
 def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict) -> dict:
     linear_elements = list(objects_data.get("linear_elements", []) or [])
     planar_elements = list(objects_data.get("planar_elements", []) or [])
@@ -2602,7 +2612,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
 
     openings_count = sum(len(p["openings"]) for p in planars)
 
-    line_eids = [int(eid) if eid is not None else None for eid in linear_ids]
+    line_eids = _aligned_line_eids(linear_ids, linear_elements)
     line_system_ids = [_extract_system_ids(el) for el in linear_elements]
     system_direct_items = _build_system_direct_items([
         ("lines", line_system_ids),

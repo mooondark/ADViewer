@@ -339,6 +339,10 @@ def _viewer_stub():
     w._show_lines = w._show_planars = w._show_support_planar = True
     w._lines_actor = w._profiles_actor = None
     w._planar_faces_actor = w._support_planar_faces_actor = None
+    import model_check_view
+    w._anomaly_overlay = model_check_view.AnomalyOverlay(w.renderer)
+    w._active_anomaly = None
+    w._anomaly_emit = False
     w._clip = clip_box.ClipBoxController(w)
     return w
 

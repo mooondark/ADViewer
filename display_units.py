@@ -21,6 +21,7 @@ _REGISTRY = {
     "stress":         {"units": {"Pa": 1.0, "kPa": 1.0e-3, "MPa": 1.0e-6},    "default_unit": "MPa",  "default_decimals": 2},
     "angle":          {"units": {"deg": _DEG_PER_RAD, "rad": 1.0},            "default_unit": "deg",  "default_decimals": 2},
     "area":           {"units": {"cm2": 1.0e4, "m2": 1.0},                    "default_unit": "m2",   "default_decimals": 2},
+    "tolerance":      {"units": {"mm": 1000.0, "cm": 100.0, "m": 1.0},        "default_unit": "mm",   "default_decimals": 2},
 }
 
 _DISPLAY_LABEL = {"cm2": "cm²", "m2": "m²", "deg": "°"}
