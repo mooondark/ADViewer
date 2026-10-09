@@ -510,13 +510,15 @@ def test_three_close_nodes_are_one_missing_connection():
     assert abs(out[0].point[0] - 1.002) < 1e-9
 
 
-def test_coordinate_noise_below_one_micron_is_not_a_missing_connection():
+def test_gaps_within_node_tolerance_are_not_a_missing_connection():
     # ecarts de ~3e-9 m observes sur des modeles reels (bruit des coordonnees de l'API)
     model = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.000000003, 0, 0), (1.000000003, 1, 0))])
     assert mc.detect(model) == []
     model = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1, 0.000000004, 0), (1, 1, 0))])   # idem extremite-corps
     assert mc.detect(model) == []
-    real_gap = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.00001, 0, 0), (1.00001, 1, 0))])   # 0,01 mm : vrai defaut
+    same = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.0009, 0, 0), (1.0009, 1, 0))])   # 0,9 mm : meme noeud (tolerance 1 mm)
+    assert mc.detect(same) == []
+    real_gap = _model(lines=[((0, 0, 0), (1, 0, 0)), ((1.0011, 0, 0), (1.0011, 1, 0))])   # 1,1 mm : vrai defaut
     assert _kinds(mc.detect(real_gap)) == [mc.K_MISSING]
 
 
