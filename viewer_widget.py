@@ -25,6 +25,7 @@ import scene_light as _scene_light
 import flight_navigation as _flight_nav
 import minimap as _minimap
 import clip_box as _clip_box
+import model_check_view as _mcv
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_ARROW_WIDTH,
     PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_ARROW_WIDTH,
@@ -356,6 +357,9 @@ class VTKViewerWidget(QFrame):
         layout.addWidget(self.vtk_widget)
 
         self.renderer = vtk.vtkRenderer()
+        self._anomaly_overlay = _mcv.AnomalyOverlay(self.renderer)
+        self._active_anomaly = None
+        self._anomaly_emit = False
         self.renderer.SetBackground(*_cfg.VTK_BG)
 
         self.render_window = self.vtk_widget.GetRenderWindow()
@@ -1722,6 +1726,8 @@ class VTKViewerWidget(QFrame):
             results.sort(key=lambda item: (item["distance2"], item["depth"], item["role"], item["index"]))
         else:
             results.sort(key=lambda item: (item["distance2"], item["role"], item["index"]))
+        for index in self._anomaly_overlay.pick(x, y):
+            results.append({"role": "anomaly", "index": int(index), "depth": 0.0, "distance2": 0})
         return results
 
     def _clear_selection_overlay(self):
@@ -2348,6 +2354,8 @@ class VTKViewerWidget(QFrame):
 
     def _select_item(self, role: str, index: int, additive: bool = False):
         """Sélectionne un élément. Si additive=True (Ctrl), ajoute/retire de la sélection."""
+        if role == "anomaly":
+            return self.select_anomaly(int(index))
         new_item = {"role": role, "index": int(index)}
         key = (role, int(index))
         if additive:
@@ -3181,6 +3189,14 @@ class VTKViewerWidget(QFrame):
         self._isolated_selection = []
         self._apply_visibility_state()
 
+    def focus_bounds(self, bounds):
+        """Cadre la camera sur une boite (xmin, xmax, ymin, ymax, zmin, zmax)
+        sans changer sa direction de visee."""
+        self.renderer.ResetCamera(*bounds)
+        self.renderer.ResetCameraClippingRange()
+        self.render_window.Render()
+        self._update_view_overlay()
+
     def zoom_to_selection(self):
         union = [math.inf, -math.inf, math.inf, -math.inf, math.inf, -math.inf]
         for actor in self._selection_overlay_actors:
@@ -3192,10 +3208,61 @@ class VTKViewerWidget(QFrame):
                 union[2 * i + 1] = max(union[2 * i + 1], b[2 * i + 1])
         if union[0] > union[1]:
             return
-        self.renderer.ResetCamera(*union)
-        self.renderer.ResetCameraClippingRange()
+        self.focus_bounds(union)
+
+    # --- Controle modele : anomalies ---
+    def set_anomalies(self, anomalies, thresholds):
+        self._anomaly_overlay.set_anomalies(anomalies, thresholds)
+        self._active_anomaly = None
         self.render_window.Render()
-        self._update_view_overlay()
+
+    def clear_anomalies(self):
+        self._anomaly_overlay.clear()
+        self._active_anomaly = None
+        self.render_window.Render()
+
+    def set_anomalies_visible(self, visible: bool):
+        self._anomaly_overlay.set_visible(visible)
+        self.render_window.Render()
+
+    def anomalies_visible(self) -> bool:
+        return self._anomaly_overlay.is_visible()
+
+    def select_anomaly(self, index: int):
+        """Selectionne une anomalie : ses elements entrent dans la selection
+        ordinaire et son symbole est renforce."""
+        anomaly = self._anomaly_overlay.anomaly(index)
+        if anomaly is None:
+            return False
+        items = [{"role": role, "index": int(i)} for role, i in anomaly.items]
+        self._active_anomaly = index
+        self._anomaly_overlay.set_active(index)
+        self._selected_items = items
+        self._selected_item = items[0] if items else None
+        self._anomaly_emit = True
+        try:
+            self.selectionChanged.emit(list(items))
+        finally:
+            self._anomaly_emit = False
+        self._refresh_selection_overlay()
+        return True
+
+    def consume_anomaly_selection(self):
+        """A appeler en tete du gestionnaire selectionChanged. Renvoie l'index
+        de l'anomalie si l'evenement vient de select_anomaly ; sinon oublie
+        l'anomalie active (symbole remis a l'etat normal) et renvoie None."""
+        if self._anomaly_emit:
+            return self._active_anomaly
+        if self._active_anomaly is not None:
+            self._active_anomaly = None
+            self._anomaly_overlay.set_active(None)
+            self.render_window.Render()
+        return None
+
+    def focus_anomaly(self, index: int):
+        bounds = self._anomaly_overlay.bounds(index)
+        if bounds is not None:
+            self.focus_bounds(bounds)
 
     def fit_view(self):
         cam = self.renderer.GetActiveCamera()
@@ -3222,7 +3289,8 @@ class VTKViewerWidget(QFrame):
 
     def _get_visible_bounds(self):
         bounds = [0.0] * 6
-        self.renderer.ComputeVisiblePropBounds(bounds)
+        with self._anomaly_overlay.suspended():
+            self.renderer.ComputeVisiblePropBounds(bounds)
         if bounds[0] > bounds[1] or bounds[2] > bounds[3] or bounds[4] > bounds[5]:
             return None
         if not all(math.isfinite(v) for v in bounds):
