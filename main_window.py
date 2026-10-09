@@ -641,7 +641,7 @@ class ControlsDialog(QDialog):
         general_keys = (
             "wheel", "left_drag", "left_click", "right_click", "context_menu", "middle_drag", "middle_double",
             "escape", "zoom_window", "window_select", "clip", "clip_handles", "view_front_back", "view_left_right",
-            "view_top_bottom", "view_iso", "open", "quit", "help",
+            "view_top_bottom", "view_iso", "open", "quit", "help", "model_check",
         )
         kb = {action: key.upper() for action, key in get_flight_key_bindings().items()}
         nav_rows = [
