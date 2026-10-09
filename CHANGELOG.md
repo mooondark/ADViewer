@@ -2,13 +2,23 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
-## À paraître
+## 2.18
 
 ### FR
-- Nouveau menu **Contrôle modèle** : détection des anomalies du modèle (connexions manquantes, éléments dupliqués, chevauchements, éléments quasi colinéaires ou trop courts, surfaces dégénérées, appuis manquants ou superposés). Rapport filtrable et exportable (CSV ou texte), symboles 3D semi-transparents (couleur selon la gravité), sélection d'une anomalie depuis le rapport ou la vue 3D (Tab), seuils réglables mémorisés dans la configuration. Nouvelle grandeur « Tolérances » dans Paramètres > Unité et précision (mm et 2 décimales par défaut), utilisée pour les mesures et seuils du rapport (notation scientifique sous la précision).
+- Nouveau menu **Contrôle modèle** : détection des anomalies du modèle avant calcul, sans jamais le modifier. Sept familles : connexions manquantes, éléments dupliqués, chevauchements, éléments quasi colinéaires ou trop courts, surfaces dégénérées (aire, sommets confondus, auto-intersection, arêtes courtes), appuis manquants ou superposés. Gravité par type (erreur, avertissement, information).
+- Rapport des anomalies filtrable par gravité et par type, avec un bouton « Voir » qui sélectionne et cadre l'anomalie, et export CSV ou Markdown (dossier et nom proposés d'après le fichier .fto).
+- Symboles 3D semi-transparents (couleur selon la gravité, forme selon le type), sélection d'une anomalie depuis le rapport ou la vue 3D (Tab), fiche de l'anomalie dans le panneau Propriétés.
+- Paramètres de détection (menu Contrôle modèle) : seuils réglables mémorisés dans la configuration, champs selon Unité et précision (notation scientifique sous la précision). Nouvelle grandeur « Tolérances » dans Paramètres > Unité et précision (mm et 2 décimales par défaut), utilisée pour les mesures et seuils du rapport.
+- Deux extrémités à moins de 0,1 mm sont considérées comme le même nœud ; des éléments parfaitement alignés ne sont pas signalés comme quasi colinéaires.
+- Les tests de widgets ne sont plus sautés (`test_qt_translation` crée une `QApplication`).
 
 ### EN
-- New **Model check** menu: detects model anomalies (missing connections, duplicate elements, overlaps, nearly collinear or too short elements, degenerate surfaces, missing or overlapping supports). Filterable and exportable report (CSV or text), semi-transparent 3D symbols (color by severity), anomaly selection from the report or the 3D view (Tab), adjustable thresholds saved in the configuration. New "Tolerances" quantity in Settings > Units and precision (mm and 2 decimals by default), used for the report measures and thresholds (scientific notation below the precision).
+- New **Model check** menu: detects model anomalies before analysis, never modifying the model. Seven families: missing connections, duplicate elements, overlaps, nearly collinear or too short elements, degenerate surfaces (area, coincident vertices, self-intersection, short edges), missing or overlapping supports. Severity per type (error, warning, information).
+- Anomaly report filterable by severity and type, with a "View" button that selects and frames the anomaly, and CSV or Markdown export (folder and name suggested from the .fto file).
+- Semi-transparent 3D symbols (color by severity, shape by type), anomaly selection from the report or the 3D view (Tab), anomaly sheet in the Properties panel.
+- Detection settings (Model check menu): adjustable thresholds saved in the configuration, fields following Units and precision (scientific notation below the precision). New "Tolerances" quantity in Settings > Units and precision (mm and 2 decimals by default), used for the report measures and thresholds.
+- Two ends closer than 0.1 mm are treated as the same node; perfectly aligned elements are not reported as nearly collinear.
+- Widget tests are no longer skipped (`test_qt_translation` creates a `QApplication`).
 
 ## 2.17
 
