@@ -104,6 +104,8 @@ from ad_model_data import (
 from viewer_widget import *
 
 import display_units
+import model_check as mc
+from model_check_ui import ModelCheckController
 
 def _fmt_hms(seconds: float) -> str:
     s = int(seconds)
@@ -1452,6 +1454,7 @@ class MainWindow(QMainWindow):
             "load_area": True,
         }
 
+        self.model_check = ModelCheckController(self)
         self._build_ui()
         self._apply_style()
         self._build_menu()
@@ -1547,6 +1550,7 @@ class MainWindow(QMainWindow):
             "clip_box_color": self._format_color(self.viewer.get_clip_box_style()[0]),
             "clip_edge_color": self._format_color(self.viewer.get_clip_box_style()[1]),
         }
+        cfg[mc.SECTION] = self.model_check.thresholds.to_section()
         cfg["units"] = display_units.get_state_ini()
 
         with open(self._config_path(), "w", encoding="utf-8") as f:
@@ -1562,6 +1566,7 @@ class MainWindow(QMainWindow):
 
         cfg = configparser.ConfigParser()
         cfg.read(path, encoding="utf-8")
+        self.model_check.thresholds = mc.Thresholds.from_section(cfg[mc.SECTION] if cfg.has_section(mc.SECTION) else None)
         config_updated = False
 
         self._suspend_config_save = True
@@ -2671,6 +2676,8 @@ class MainWindow(QMainWindow):
         act_api_url = QAction(tr_ui("menu_api_url"), self)
         act_api_url.triggered.connect(self.open_api_url_dialog)
         configuration_menu.addAction(act_api_url)
+
+        self.model_check.build_menu(menu_bar)
 
         # ── Menu Aide ──
         help_menu = menu_bar.addMenu(tr_ui("menu_help"))
@@ -5348,6 +5355,9 @@ class MainWindow(QMainWindow):
         if self.viewer is not None and not self.viewer.has_isolated_selection():
             self._apply_isolate_button_icon(False)
 
+        if self.model_check.on_selection(selection_list):
+            return
+
         # --- Aucune sélection ---
         if not selection_list:
             self.current_analysis_selection = {}
@@ -6795,6 +6805,7 @@ class MainWindow(QMainWindow):
         self._close_project_session(tr_log("project_closed_by_user"))
 
         self.current_model_data = None
+        self.model_check.on_model_changed()
         self.current_sections = []
         self.current_thicknesses = []
         self.current_materials = []
@@ -6999,6 +7010,7 @@ class MainWindow(QMainWindow):
         self.worker.start()
 
     def on_model_loaded(self, model_data: ModelDataDict):
+        self.model_check.on_model_changed()
         self.current_model_data = model_data
         self._sync_project_session_state(model_data)
         (self.current_sections, self.current_thicknesses, self.current_materials,
@@ -7161,6 +7173,7 @@ class MainWindow(QMainWindow):
             ),
             "ok"
         )
+        self.model_check.update_actions()
 
     def on_model_error(self, error_text: str):
         self.project_session = None

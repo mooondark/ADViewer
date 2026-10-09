@@ -92,3 +92,29 @@ def test_settings_dialog_returns_defaults_and_edited_values():
     dlg.restore_defaults()
     assert dlg.values() == mc.Thresholds()
     assert app is not None
+
+
+def test_main_window_wires_the_controller_in_every_lifecycle_point():
+    import inspect
+    import main_window
+
+    src = inspect.getsource(main_window.MainWindow)
+    assert "self.model_check = ModelCheckController(self)" in src
+    assert "self.model_check.build_menu(menu_bar)" in src
+    assert "self.model_check.on_selection(selection_list)" in src
+    assert src.count("self.model_check.on_model_changed()") >= 2     # chargement + fermeture du projet
+    assert "mc.SECTION" in src and "mc.Thresholds.from_section" in src
+
+
+def test_save_and_load_config_roundtrip_through_a_temporary_file(tmp_path):
+    import configparser
+
+    th = mc.Thresholds(connection_tol_mm=9.0, include_info=False)
+    cfg = configparser.ConfigParser()
+    cfg[mc.SECTION] = th.to_section()
+    path = tmp_path / "config.ini"
+    with open(path, "w", encoding="utf-8") as f:
+        cfg.write(f)
+    back = configparser.ConfigParser()
+    back.read(path, encoding="utf-8")
+    assert mc.Thresholds.from_section(back[mc.SECTION]) == th
