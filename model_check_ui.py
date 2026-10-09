@@ -6,7 +6,7 @@ import csv
 from PySide6.QtCore import QObject, Qt, QThread, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
+    QListView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
     QGroupBox, QHBoxLayout, QLabel, QProgressDialog, QPushButton, QScrollArea, QTableWidget,
     QTableWidgetItem, QVBoxLayout, QWidget,
 )
@@ -218,6 +218,16 @@ class ModelCheckSettingsDialog(QDialog):
         return mc.Thresholds(**out).clamped()
 
 
+def _fit_popup(combo):
+    """Liste deroulante au rendu de l'application : vue QListView (sinon le style
+    decale la liste) et largeur de liste au moins egale au texte le plus long."""
+    combo.setView(QListView())
+    fm = combo.fontMetrics()
+    widest = max(fm.horizontalAdvance(combo.itemText(i)) for i in range(combo.count()))
+    combo.view().setMinimumWidth(widest + 48)
+    combo.setMinimumWidth(widest + 48)
+
+
 class AnomalyReportDialog(QDialog):
     def __init__(self, controller, parent=None):
         super().__init__(parent)
@@ -240,6 +250,8 @@ class AnomalyReportDialog(QDialog):
         self._kind.addItem(tr_ui("mc_filter_all_types"), None)
         for kind in mc.KINDS:
             self._kind.addItem(kind_label(kind), kind)
+        for combo in (self._severity, self._kind):
+            _fit_popup(combo)
         filters.addWidget(self._kind)
         filters.addStretch(1)
         layout.addLayout(filters)
@@ -282,6 +294,9 @@ class AnomalyReportDialog(QDialog):
             button.clicked.connect(lambda _=False, idx=index: self._controller.view(idx))
             self._table.setCellWidget(r, 6, button)
         self._table.resizeColumnsToContents()
+        if rows:
+            width = self._table.cellWidget(0, 6).sizeHint().width() + 16
+            self._table.setColumnWidth(6, max(width, 90))
 
     def _export(self):
         path, _ = QFileDialog.getSaveFileName(self, tr_ui("mc_export_title"), "", tr_ui("mc_export_filter"))

@@ -55,7 +55,7 @@ ROLE_SUPPORT = "support_punctual"
 
 SECTION = "model_check"
 EPS = 1e-12
-NODE_TOL = 1e-9   # m : deux points a moins de NODE_TOL sont le meme noeud
+NODE_TOL = 1e-6   # m (1 micron) : deux points a moins de NODE_TOL sont le meme noeud (bruit des coordonnees de l'API, ~1e-9 m)
 ANGLE_SLACK = 1e-6   # deg : bruit d'arrondi de acos pour des axes quasi identiques
 
 BOUNDS = {
@@ -573,7 +573,7 @@ def rule_connections(ctx):
                     continue
                 q = _lerp(other.a, other.b, raw)
                 d = _dist(p, q)
-                if d <= 1e-9 or d > tol + EPS:
+                if d <= NODE_TOL or d > tol + EPS:
                     continue
                 key = (kp, other.index)
                 if key in seen_body:
@@ -689,7 +689,7 @@ def rule_surfaces(ctx):
     for index, geom in enumerate(planars):
         ctx.ctl.tick()
         pts = [tuple(float(c) for c in p) for p in ((geom or {}).get("outer") or [])]
-        if len(pts) >= 2 and _dist(pts[0], pts[-1]) <= 1e-9:
+        if len(pts) >= 2 and _dist(pts[0], pts[-1]) <= NODE_TOL:
             pts = pts[:-1]
         n = len(pts)
         if n < 3:
