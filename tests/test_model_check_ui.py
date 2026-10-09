@@ -207,7 +207,7 @@ def test_settings_dialog_follows_units_and_precision_and_keeps_untouched_values(
         base = mc.Thresholds(connection_tol_mm=5.123, symbol_transparency_pct=55.5)
         dlg = ui.ModelCheckSettingsDialog(base)
         spin = dlg._widgets["connection_tol_mm"]
-        assert spin.suffix() == " cm" and spin.decimals() == 2 and abs(spin.value() - 0.51) < 1e-9
+        assert spin.suffix() == " cm" and spin.precision() == 2 and abs(spin.value() - 0.5123) < 1e-9 and spin.text().startswith("0.51")
         pct = dlg._widgets["symbol_transparency_pct"]
         assert pct.decimals() == 0 and pct.suffix() == " %"
         assert dlg._widgets["duplicate_angle_deg"].suffix() == " " + du.unit("angle")
@@ -220,5 +220,32 @@ def test_settings_dialog_follows_units_and_precision_and_keeps_untouched_values(
         assert out.duplicate_tol_mm == base.duplicate_tol_mm
         dlg.restore_defaults()
         assert dlg.values() == mc.Thresholds()
+    finally:
+        du.reset()
+
+
+def test_unit_spin_uses_scientific_notation_below_the_precision():
+    import pytest
+    from PySide6.QtWidgets import QApplication
+    import display_units as du
+
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    elif not isinstance(app, QApplication):
+        pytest.skip("une QCoreApplication existe deja dans ce processus")
+    du.reset()
+    try:
+        du.set_decimals("area", 1)
+        dlg = ui.ModelCheckSettingsDialog(mc.Thresholds())
+        area = dlg._widgets["min_surface_area_m2"]
+        assert area.text().startswith("1.00e-02")            # 0,01 m2 < 0,1 (precision 1 decimale)
+        assert dlg.values().min_surface_area_m2 == mc.Thresholds().min_surface_area_m2   # intact tant que non modifie
+        area.setValue(0.5)
+        assert area.text().startswith("0.5")
+        assert area.validate("2.5e-03 " + du.unit("area"), 0)[0].name == "Acceptable"
+        assert area.validate("2.5e", 0)[0].name == "Intermediate"
+        assert area.validate("abc", 0)[0].name == "Invalid"
+        assert abs(area.valueFromText("2,5e-3") - 0.0025) < 1e-12
     finally:
         du.reset()

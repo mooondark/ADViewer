@@ -4,8 +4,10 @@
 import csv
 import math
 import os
+import re
 
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
+from PySide6.QtGui import QValidator
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QListView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFormLayout,
@@ -209,6 +211,45 @@ class _SpinBox(QDoubleSpinBox):
             event.ignore()
 
 
+class _UnitSpinBox(_SpinBox):
+    """Champ dont l'affichage suit la precision de Unite et precision : une valeur
+    non nulle plus petite que la precision s'affiche en notation scientifique
+    (comme dans le tableau du rapport). Le nombre de decimales interne est eleve :
+    seul l'affichage est arrondi."""
+
+    def __init__(self, precision, parent=None):
+        super().__init__(parent)
+        self._precision = int(precision)
+        self.setDecimals(12)
+
+    def precision(self):
+        return self._precision
+
+    def textFromValue(self, value):
+        if value != 0.0 and abs(value) < 10.0 ** (-self._precision):
+            return f"{value:.2e}"
+        return f"{value:.{self._precision}f}"
+
+    def _number(self, text):
+        return float(text.replace(self.suffix(), "").strip().replace(",", "."))
+
+    def valueFromText(self, text):
+        try:
+            return self._number(text)
+        except ValueError:
+            return self.value()
+
+    def validate(self, text, pos):
+        try:
+            value = self._number(text)
+        except ValueError:
+            body = text.replace(self.suffix(), "").strip().replace(",", ".")
+            partial = re.fullmatch(r"[+-]?\d*\.?\d*(e[+-]?\d*)?", body, re.IGNORECASE)
+            return (QValidator.Intermediate if partial else QValidator.Invalid), text, pos
+        ok = self.minimum() <= value <= self.maximum()
+        return (QValidator.Acceptable if ok else QValidator.Intermediate), text, pos
+
+
 def _display_factor(kind):
     """Facteur stockage (mm, deg, m2) -> valeur affichee, selon Unite et precision."""
     grandeur, to_api = _UNIT_KIND[kind]
@@ -235,16 +276,16 @@ class ModelCheckSettingsDialog(QDialog):
                 if kind == "bool":
                     widget = QCheckBox()
                 else:
-                    widget = _SpinBox()
                     lo, hi = mc.BOUNDS[name]
                     if kind == "pct":
+                        widget = _SpinBox()
                         widget.setRange(lo, hi)
                         widget.setDecimals(0)
                         widget.setSuffix(" %")
                     else:
                         factor = _display_factor(kind)
+                        widget = _UnitSpinBox(du.decimals(_UNIT_KIND[kind][0]))
                         widget.setRange(lo * factor, hi * factor)
-                        widget.setDecimals(du.decimals(_UNIT_KIND[kind][0]))
                         widget.setSuffix(" " + du.unit(_UNIT_KIND[kind][0]))
                 self._widgets[name] = widget
                 self._kinds[name] = kind
