@@ -6137,7 +6137,7 @@ class MainWindow(QMainWindow):
         # les surfaciques (aucune correspondance ancien/nouveau libelle) sans
         # possibilite de les reactiver.
         self._render_results(md)
-        if self.viewer is not None:
+        if self.viewer is not None and not self.model_check.on_units_changed():
             selection = self.viewer.get_selected_items()
             if selection:
                 self.on_viewer_selection_changed(selection)

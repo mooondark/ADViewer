@@ -130,3 +130,21 @@ def test_results_of_a_cleared_run_are_not_published():
     ctl.clear()
     ctl._on_done([_a(mc.K_DUPLICATE)], gen)
     assert ctl.anomalies == [] and ctl._ran is False
+
+
+def test_units_change_redisplays_the_active_anomaly_card_and_refreshes_the_report():
+    from PySide6.QtCore import QObject
+    import types
+
+    shown, refreshed = [], []
+    ctl = ui.ModelCheckController(QObject())
+    ctl.window = types.SimpleNamespace(
+        viewer=types.SimpleNamespace(active_anomaly_index=lambda: 0),
+        _set_properties_message=lambda html: shown.append(html),
+    )
+    ctl.anomalies = [_a(mc.K_DUPLICATE)]
+    ctl._report = types.SimpleNamespace(refresh=lambda: refreshed.append(True))
+    assert ctl.on_units_changed() is True
+    assert shown and tr_ui("mc_kind_duplicate") in shown[0] and refreshed == [True]
+    ctl.window.viewer = types.SimpleNamespace(active_anomaly_index=lambda: None)
+    assert ctl.on_units_changed() is False

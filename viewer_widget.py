@@ -3247,6 +3247,9 @@ class VTKViewerWidget(QFrame):
         self._refresh_selection_overlay()
         return True
 
+    def active_anomaly_index(self):
+        return self._active_anomaly
+
     def consume_anomaly_selection(self):
         """A appeler en tete du gestionnaire selectionChanged. Renvoie l'index
         de l'anomalie si l'evenement vient de select_anomaly ; sinon oublie

@@ -505,14 +505,16 @@ def rule_connections(ctx):
                 if ctx.nk(p) != ctx.nk(q):
                     seen.add(frozenset((ctx.nk(p), ctx.nk(q))))
 
-    def report(p, q, d, indexes):
+    def report(points, widest, indexes):
         idx = sorted(indexes)
-        center = _mid(p, q)
+        center = tuple(sum(p[c] for p in points) / len(points) for c in range(3))
         ctx.add(K_MISSING, tuple((ROLE_LINE, k) for k in idx), tuple(ctx.segs[k].eid for k in idx), center,
-                d * 1000.0, ctx.th.connection_tol_mm, "mm",
-                {"type": "sphere", "center": center, "radius": sphere_r})
+                widest * 1000.0, ctx.th.connection_tol_mm, "mm",
+                {"type": "sphere", "center": center, "radius": max(sphere_r, widest / 2.0)})
 
-    # extremite - extremite : un seul defaut par couple de noeuds distincts
+    # extremite - extremite : les noeuds distincts a moins de la tolerance forment
+    # un groupe (fermeture transitive) = une seule anomalie
+    links = {}
     for i, j in pairs:
         ctx.ctl.tick()
         s, t = ctx.segs[i], ctx.segs[j]
@@ -525,11 +527,33 @@ def rule_connections(ctx):
                 if d > tol + EPS:
                     continue
                 key = frozenset((kp, kq))
-                if key in seen:
+                if key in seen or key in links:
                     continue
-                seen.add(key)
-                flagged_nodes.update(key)
-                report(p, q, d, incident[kp] | incident[kq])
+                links[key] = d
+    parent = {}
+
+    def find(x):
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for key in links:
+        a, b = tuple(key)
+        parent[find(a)] = find(b)
+    groups = {}
+    for key, d in links.items():
+        a, _ = tuple(key)
+        groups.setdefault(find(a), []).append((key, d))
+    for root in sorted(groups, key=lambda r: min(min(k) for k, _ in groups[r])):
+        members = groups[root]
+        nodes = sorted({n for key, _ in members for n in key})
+        flagged_nodes.update(nodes)
+        indexes = set()
+        for n in nodes:
+            indexes |= incident[n]
+        report(nodes, max(d for _, d in members), indexes)
 
     # extremite - corps (jonction en T), hors noeuds deja signales
     seen_body = set()
@@ -555,7 +579,7 @@ def rule_connections(ctx):
                 if key in seen_body:
                     continue
                 seen_body.add(key)
-                report(p, q, d, incident[kp] | {other.index})
+                report([p, q], d, incident[kp] | {other.index})
 
 
 @_stage

@@ -273,6 +273,7 @@ class AnomalyReportDialog(QDialog):
             text += f"    {tr_ui('mc_count_infos', n=i)}"
         self._counts.setText(text)
         rows = self._rows()
+        self._table.setHorizontalHeaderLabels(_headers() + [""])
         self._table.setRowCount(len(rows))
         for r, (index, a) in enumerate(rows):
             for c, cell in enumerate(row_cells(a)):
@@ -452,6 +453,18 @@ class ModelCheckController(QObject):
             return
         viewer.select_anomaly(index)
         viewer.focus_anomaly(index)
+
+    def on_units_changed(self):
+        """Apres un changement d'unite : rapport et fiche de l'anomalie active
+        reaffiches dans la nouvelle unite. Renvoie True si la fiche l'a ete."""
+        if self._report is not None:
+            self._report.refresh()
+        viewer = self.window.viewer
+        index = viewer.active_anomaly_index() if viewer is not None else None
+        if index is None or not (0 <= index < len(self.anomalies)):
+            return False
+        self.window._set_properties_message(anomaly_card_html(self.anomalies[index]))
+        return True
 
     def on_model_changed(self):
         self.clear()

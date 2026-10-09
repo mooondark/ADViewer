@@ -498,3 +498,13 @@ def test_invalid_boolean_in_config_falls_back_to_default():
 def test_nodes_closer_than_1e9_are_the_same_node_across_a_rounding_boundary():
     model = _model(lines=[((0, 0, 0), (1.0000000005, 0, 0)), ((1.0000000004999, 0, 0), (1.0000000004999, 1, 0))])
     assert mc.detect(model) == []
+
+
+def test_three_close_nodes_are_one_missing_connection():
+    model = _model(lines=[
+        ((0, 0, 0), (1, 0, 0)), ((1.002, 0, 0), (1.002, 1, 0)), ((1.004, 0, 0), (2, 0, 0)),
+    ])
+    out = _only(mc.detect(model), mc.K_MISSING)
+    assert len(out) == 1 and len(out[0].items) == 3
+    assert abs(out[0].measured - 4.0) < 1e-6
+    assert abs(out[0].point[0] - 1.002) < 1e-9
