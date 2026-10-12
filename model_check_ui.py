@@ -24,6 +24,7 @@ ENGINE_KEYS = (
     "punctual_supports", "punctual_support_eids", "punctual_support_properties",
     "linear_supports", "planar_supports", "planar_support_eids", "planar_support_properties",
     "load_areas", "load_area_eids", "load_area_properties",
+    "linear_support_eids", "linear_support_properties",
 )
 
 
@@ -84,9 +85,28 @@ def summary_text(anomalies):
     return tr_ui("mc_status_summary", errors=e, warnings=w, infos=i)
 
 
-def filter_rows(anomalies, severity=None, kind=None):
+# type d'element -> role du moteur ; une anomalie sans element ("aucun appui") n'a pas de type
+ELEMENT_TYPES = (
+    ("line", mc.ROLE_LINE),
+    ("planar", mc.ROLE_PLANAR),
+    ("support_punctual", mc.ROLE_SUPPORT),
+    ("support_linear", mc.ROLE_LINEAR_SUPPORT),
+    ("support_planar", mc.ROLE_PLANAR_SUPPORT),
+    ("load_area", mc.ROLE_LOAD_AREA),
+)
+
+
+def element_type(a):
+    for key, role in ELEMENT_TYPES:
+        if any(r == role for r, _ in a.items):
+            return key
+    return None
+
+
+def filter_rows(anomalies, severity=None, kind=None, etype=None):
     return [(i, a) for i, a in enumerate(anomalies)
-            if (severity is None or a.severity == severity) and (kind is None or a.kind == kind)]
+            if (severity is None or a.severity == severity) and (kind is None or a.kind == kind)
+            and (etype is None or element_type(a) == etype)]
 
 
 def row_cells(a):
@@ -374,9 +394,15 @@ class AnomalyReportDialog(QDialog):
         self._kind.addItem(tr_ui("mc_filter_all_types"), None)
         for kind in mc.KINDS:
             self._kind.addItem(kind_label(kind), kind)
-        for combo in (self._severity, self._kind):
-            _fit_popup(combo)
         filters.addWidget(self._kind)
+        filters.addWidget(QLabel(tr_ui("mc_filter_element_type")))
+        self._etype = QComboBox()
+        self._etype.addItem(tr_ui("mc_filter_all_elements"), None)
+        for key, _role in ELEMENT_TYPES:
+            self._etype.addItem(tr_ui("mc_etype_" + key), key)
+        for combo in (self._severity, self._kind, self._etype):
+            _fit_popup(combo)
+        filters.addWidget(self._etype)
         filters.addStretch(1)
         layout.addLayout(filters)
         self._table = QTableWidget(0, 7)
@@ -404,6 +430,7 @@ class AnomalyReportDialog(QDialog):
         layout.addLayout(bottom)
         self._severity.currentIndexChanged.connect(self.refresh)
         self._kind.currentIndexChanged.connect(self.refresh)
+        self._etype.currentIndexChanged.connect(self.refresh)
         self.refresh()
 
     def _fit_rows(self):
@@ -429,7 +456,8 @@ class AnomalyReportDialog(QDialog):
         QTimer.singleShot(0, self._fit_rows)
 
     def _rows(self):
-        return filter_rows(self._controller.anomalies, self._severity.currentData(), self._kind.currentData())
+        return filter_rows(self._controller.anomalies, self._severity.currentData(), self._kind.currentData(),
+                           self._etype.currentData())
 
     def refresh(self):
         anomalies = self._controller.anomalies

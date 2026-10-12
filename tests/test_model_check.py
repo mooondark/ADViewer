@@ -709,3 +709,51 @@ def test_build_geometry_payload_aligns_load_area_eids_with_valid_geometries():
     out = ad_model_data._build_geometry_payload({"load_area_ids": [11, 12, 13]},
                                                 {"load_area_elements": [bad, good, good]}, {})
     assert out["load_area_eids"] == [12, 13] and len(out["load_areas"]) == 2
+
+
+def _ls(segments, props=None):
+    m = _model()
+    m["linear_supports"] = [[tuple(a), tuple(b)] for a, b in segments]
+    m["linear_support_eids"] = [500 + i for i in range(len(segments))]
+    m["linear_support_properties"] = props or [{"kind": "rigid", "restraints": {"TX": True}} for _ in segments]
+    return m
+
+
+def test_superposed_linear_supports_of_same_type_are_a_warning():
+    segs = [((0, 0, 0), (4, 0, 0)), ((0, 0.0005, 0), (4, 0.0005, 0))]
+    out = mc.detect(_ls(segs, [{"kind": "rigid", "user_id": 3, "restraints": {"TX": True}},
+                               {"kind": "rigid", "user_id": 8, "restraints": {"TX": True}}]))
+    assert _kinds(out) == [mc.K_LS_SUPERPOSED] and out[0].severity == mc.WARNING
+    assert out[0].items == (("support_linear", 0), ("support_linear", 1)) and out[0].numbers == ("R3", "R8")
+    assert out[0].eids == (500, 501)
+
+
+def test_linear_supports_of_different_types_are_not_superposed_but_overlap():
+    segs = [((0, 0, 0), (4, 0, 0)), ((0, 0, 0), (4, 0, 0))]
+    out = mc.detect(_ls(segs, [{"kind": "rigid", "restraints": {"TX": True}},
+                               {"kind": "elastic", "stiffness": {"KTX": 5.0}}]))
+    assert _kinds(out) == [mc.K_LS_OVERLAP] and out[0].severity == mc.WARNING
+
+
+def test_partially_overlapping_linear_supports_are_a_warning():
+    out = mc.detect(_ls([((0, 0, 0), (4, 0, 0)), ((2, 0, 0), (6, 0, 0))]))
+    assert _kinds(out) == [mc.K_LS_OVERLAP] and abs(out[0].measured) < 1e-9
+
+
+def test_linear_supports_with_almost_common_ends_miss_a_connection_error():
+    out = mc.detect(_ls([((0, 0, 0), (4, 0, 0)), ((4.003, 0, 0), (8, 0, 0))]))
+    assert _kinds(out) == [mc.K_LS_MISSING] and out[0].severity == mc.ERROR
+    assert out[0].items == (("support_linear", 0), ("support_linear", 1))
+    assert mc.detect(_ls([((0, 0, 0), (4, 0, 0)), ((4, 0, 0), (8, 0, 0))])) == []
+
+
+def test_nearly_collinear_linear_supports_are_a_warning():
+    out = mc.detect(_ls([((0, 0, 0), (4, 0, 0)), ((4, 0, 0), (8, 0.05, 0))]))
+    assert _kinds(out) == [mc.K_LS_COLLINEAR] and out[0].severity == mc.WARNING and out[0].unit == "deg"
+
+
+def test_linear_supports_are_not_compared_with_line_elements():
+    m = _ls([((0, 0, 0), (4, 0, 0))])
+    m["lines"] = [[(0, 0, 0), (4, 0, 0)]]
+    m["line_eids"] = [1]
+    assert mc.detect(m) == []

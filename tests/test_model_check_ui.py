@@ -283,3 +283,18 @@ def test_report_table_wraps_elements_without_horizontal_scrollbar():
     dlg.refresh()
     assert t.rowHeight(0) == t.verticalHeader().defaultSectionSize()
     dlg.close()
+
+
+def test_element_type_and_filter_by_element_type():
+    def an(kind, role):
+        return mc.Anomaly(kind, mc.SEVERITY_BY_KIND[kind], ((role, 0),), (1,), (0, 0, 0))
+
+    items = [an(mc.K_DUPLICATE, "lines"), an(mc.K_SURF_OVERLAP, "planars"), an(mc.K_SUPPORT_OVERLAP, "support_punctual"),
+             an(mc.K_SUP_OVERLAP, "support_planar"), an(mc.K_LA_OVERLAP, "load_areas"),
+             mc.Anomaly(mc.K_NO_SUPPORT, mc.ERROR, (), (), (0, 0, 0))]
+    assert [ui.element_type(a) for a in items] == ["line", "planar", "support_punctual", "support_planar", "load_area", None]
+    assert [i for i, _ in ui.filter_rows(items, None, None, "support_planar")] == [3]
+    assert [i for i, _ in ui.filter_rows(items, mc.ERROR, None, "support_punctual")] == []
+    assert [i for i, _ in ui.filter_rows(items)] == [0, 1, 2, 3, 4, 5]
+    for key, _role in ui.ELEMENT_TYPES:
+        assert tr_ui("mc_etype_" + key) != "mc_etype_" + key

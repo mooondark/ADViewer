@@ -14,6 +14,8 @@
 - Contrôle des surfaciques entre eux : chevauchement de deux surfaciques coplanaires (erreur), connexion manquante entre sommets de surfaciques différents (erreur, seuil de tolérance de connexion) et sommets quasi alignés dans un contour (avertissement). Les deux premiers peuvent être signalés ensemble pour un même couple.
 - Contrôle des appuis surfaciques (tous types : rigide, élastique, butée, avancé), entre eux : chevauchement (avertissement), connexion manquante (erreur) et sommets quasi alignés (avertissement).
 - Contrôle des parois, entre elles : chevauchement (avertissement), connexion manquante (erreur) et sommets quasi alignés (avertissement).
+- Contrôle des appuis linéaires, entre eux : chevauchement (avertissement), connexion manquante (erreur), quasi colinéaires (avertissement) et appuis superposés de même type (avertissement).
+- Rapport des anomalies : nouveau filtre « Type d'élément » (filaire, surfacique, appui ponctuel, appui linéaire, appui surfacique, paroi).
 - Paramètres de détection : nouvelle option « Taille maximale des symboles » (100 mm par défaut) qui plafonne les symboles sphériques ; la taille minimale reste prioritaire.
 - Rapport des anomalies : la colonne « Éléments » affiche le numéro de l'élément (et non son identifiant interne) et passe à la ligne, sans ascenseur horizontal ni bouton « Voir » rogné.
 
@@ -27,6 +29,8 @@
 - Surface-to-surface checks: overlap of two coplanar surfaces (error), missing connection between vertices of different surfaces (error, connection tolerance threshold) and nearly collinear vertices in an outline (warning). The first two can be reported together for the same pair.
 - Planar support checks (all types: rigid, elastic, compression/tension only, advanced), between supports: overlap (warning), missing connection (error) and nearly collinear vertices (warning).
 - Load area (wall) checks, between load areas: overlap (warning), missing connection (error) and nearly collinear vertices (warning).
+- Linear support checks, between supports: overlap (warning), missing connection (error), nearly collinear (warning) and superposed supports of the same type (warning).
+- Anomaly report: new "Element type" filter (linear, surface, punctual support, linear support, surface support, load area).
 - Detection settings: new "Maximum symbol size" option (100 mm by default) capping spherical symbols; the minimum size still takes precedence.
 - Anomaly report: the "Elements" column shows the element number (not its internal identifier) and wraps, with no horizontal scrollbar and no clipped "View" button.
 

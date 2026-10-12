@@ -39,6 +39,10 @@ K_SUP_COLLINEAR = "support_surface_collinear"
 K_LA_OVERLAP = "load_area_overlap"
 K_LA_MISSING = "load_area_missing_connection"
 K_LA_COLLINEAR = "load_area_collinear"
+K_LS_OVERLAP = "linear_support_overlap"
+K_LS_MISSING = "linear_support_missing_connection"
+K_LS_COLLINEAR = "linear_support_collinear"
+K_LS_SUPERPOSED = "linear_support_superposed"
 K_NO_SUPPORT = "no_support"
 K_SUPPORT_OVERLAP = "support_overlap"
 
@@ -54,6 +58,7 @@ SEVERITY_BY_KIND = {
     K_SURF_MISSING: ERROR,
     K_SUP_MISSING: ERROR,
     K_LA_MISSING: ERROR,
+    K_LS_MISSING: ERROR,
     K_NO_SUPPORT: ERROR,
     K_SHORT: WARNING,
     K_SURF_EDGE: WARNING,
@@ -62,6 +67,9 @@ SEVERITY_BY_KIND = {
     K_SUP_COLLINEAR: WARNING,
     K_LA_OVERLAP: WARNING,
     K_LA_COLLINEAR: WARNING,
+    K_LS_OVERLAP: WARNING,
+    K_LS_COLLINEAR: WARNING,
+    K_LS_SUPERPOSED: WARNING,
     K_SUPPORT_OVERLAP: WARNING,
     K_COLLINEAR: INFO,
 }
@@ -72,9 +80,11 @@ ROLE_PLANAR = "planars"
 ROLE_SUPPORT = "support_punctual"
 ROLE_PLANAR_SUPPORT = "support_planar"
 ROLE_LOAD_AREA = "load_areas"
+ROLE_LINEAR_SUPPORT = "support_linear"
 _PROPS_KEY = {ROLE_LINE: "line_properties", ROLE_PLANAR: "planar_properties",
               ROLE_SUPPORT: "punctual_support_properties", ROLE_PLANAR_SUPPORT: "planar_support_properties",
-              ROLE_LOAD_AREA: "load_area_properties"}
+              ROLE_LOAD_AREA: "load_area_properties",
+              ROLE_LINEAR_SUPPORT: "linear_support_properties"}
 _SUPPORT_TYPE_LETTER = {"rigid": "R", "elastic": "E", "tc": "B", "advanced": "A"}
 # role -> (cle des contours, cle des identifiants) dans le modele
 _PLANAR_DATA = {ROLE_PLANAR: ("planars", "planar_eids"), ROLE_PLANAR_SUPPORT: ("planar_supports", "planar_support_eids"),
@@ -342,8 +352,11 @@ def _candidate_pairs(segs, margin, ctl):
 
 
 class _Ctx:
-    def __init__(self, model, th, ctl):
+    def __init__(self, model, th, ctl, role=ROLE_LINE, kind_map=None, pair_ok=None):
         self.model = model
+        self.role = role           # famille des segments (les regles filaires emettent ROLE_LINE)
+        self.kind_map = kind_map or {}
+        self.pair_ok = pair_ok     # (i, j) -> bool : filtre des couples pour la regle des superposes
         self.th = th
         self.ctl = ctl
         self.m = {f.name[:-3]: getattr(th, f.name) * 1e-3 for f in fields(th) if f.name.endswith("_mm")}
@@ -385,12 +398,14 @@ class _Ctx:
         props = self.model.get(_PROPS_KEY[role]) or []
         p = props[index] if index < len(props) else None
         number = p.get("user_id") if isinstance(p, dict) else None
-        if role == ROLE_PLANAR_SUPPORT and number not in (None, ""):
+        if role in (ROLE_PLANAR_SUPPORT, ROLE_LINEAR_SUPPORT) and number not in (None, ""):
             # numeros non uniques entre types d'appuis : prefixe R, E, B (butee) ou A (avance)
             return _SUPPORT_TYPE_LETTER.get(p.get("kind"), "") + str(number)
         return number
 
     def add(self, kind, items, eids, point, measured=None, threshold=None, unit="", shape=None):
+        kind = self.kind_map.get(kind, kind)
+        items = tuple((self.role if role == ROLE_LINE else role, index) for role, index in items)
         numbers = tuple(self.number(role, index) for role, index in items)
         self.out.append(Anomaly(kind, SEVERITY_BY_KIND[kind], tuple(items), tuple(eids), tuple(point),
                                 measured, threshold, unit, shape, numbers))
@@ -434,6 +449,8 @@ def rule_duplicates(ctx):
     tol = ctx.m["duplicate_tol"]
     for i, j in ctx.pairs:
         ctx.ctl.tick()
+        if ctx.pair_ok is not None and not ctx.pair_ok(i, j):
+            continue
         s, t = ctx.segs[i], ctx.segs[j]
         if s.u is None or t.u is None:
             continue
@@ -970,6 +987,30 @@ def rule_planar_support_geometry(ctx):
 @_stage
 def rule_load_area_geometry(ctx):
     _check_family(ctx, ROLE_LOAD_AREA, K_LA_OVERLAP, K_LA_MISSING, K_LA_COLLINEAR)
+
+
+@_stage
+def rule_linear_supports(ctx):
+    """Regles filaires (superposes, chevauchements, connexions, colinearite) appliquees aux appuis
+    lineaires entre eux ; "superposes" ne compare que des appuis de meme signature."""
+    model = ctx.model
+    props = model.get("linear_support_properties") or []
+
+    def signature(i):
+        return _support_signature(props[i] if i < len(props) else None)
+
+    def same_signature(i, j):
+        sig = signature(i)
+        return sig is not None and sig == signature(j)
+
+    sub_model = {"lines": model.get("linear_supports") or [], "line_eids": model.get("linear_support_eids") or [],
+                 "linear_support_properties": props}
+    kinds = {K_DUPLICATE: K_LS_SUPERPOSED, K_OVERLAP: K_LS_OVERLAP, K_MISSING: K_LS_MISSING,
+             K_COLLINEAR: K_LS_COLLINEAR}
+    sub_ctx = _Ctx(sub_model, ctx.th, ctx.ctl, ROLE_LINEAR_SUPPORT, kinds, same_signature)
+    for rule in (rule_duplicates, rule_overlaps, rule_connections, rule_collinear):
+        rule(sub_ctx)
+    ctx.out.extend(sub_ctx.out)
 
 
 # ---- regles : appuis ---------------------------------------------------------
