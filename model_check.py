@@ -33,6 +33,12 @@ K_SURF_EDGE = "surface_short_edge"
 K_SURF_COLLINEAR = "surface_collinear"
 K_SURF_OVERLAP = "surface_overlap"
 K_SURF_MISSING = "surface_missing_connection"
+K_SUP_OVERLAP = "support_surface_overlap"
+K_SUP_MISSING = "support_surface_missing_connection"
+K_SUP_COLLINEAR = "support_surface_collinear"
+K_LA_OVERLAP = "load_area_overlap"
+K_LA_MISSING = "load_area_missing_connection"
+K_LA_COLLINEAR = "load_area_collinear"
 K_NO_SUPPORT = "no_support"
 K_SUPPORT_OVERLAP = "support_overlap"
 
@@ -46,10 +52,16 @@ SEVERITY_BY_KIND = {
     K_SURF_CROSS: ERROR,
     K_SURF_OVERLAP: ERROR,
     K_SURF_MISSING: ERROR,
+    K_SUP_MISSING: ERROR,
+    K_LA_MISSING: ERROR,
     K_NO_SUPPORT: ERROR,
     K_SHORT: WARNING,
     K_SURF_EDGE: WARNING,
     K_SURF_COLLINEAR: WARNING,
+    K_SUP_OVERLAP: WARNING,
+    K_SUP_COLLINEAR: WARNING,
+    K_LA_OVERLAP: WARNING,
+    K_LA_COLLINEAR: WARNING,
     K_SUPPORT_OVERLAP: WARNING,
     K_COLLINEAR: INFO,
 }
@@ -58,8 +70,15 @@ KINDS = tuple(SEVERITY_BY_KIND)
 ROLE_LINE = "lines"
 ROLE_PLANAR = "planars"
 ROLE_SUPPORT = "support_punctual"
+ROLE_PLANAR_SUPPORT = "support_planar"
+ROLE_LOAD_AREA = "load_areas"
 _PROPS_KEY = {ROLE_LINE: "line_properties", ROLE_PLANAR: "planar_properties",
-              ROLE_SUPPORT: "punctual_support_properties"}
+              ROLE_SUPPORT: "punctual_support_properties", ROLE_PLANAR_SUPPORT: "planar_support_properties",
+              ROLE_LOAD_AREA: "load_area_properties"}
+_SUPPORT_TYPE_LETTER = {"rigid": "R", "elastic": "E", "tc": "B", "advanced": "A"}
+# role -> (cle des contours, cle des identifiants) dans le modele
+_PLANAR_DATA = {ROLE_PLANAR: ("planars", "planar_eids"), ROLE_PLANAR_SUPPORT: ("planar_supports", "planar_support_eids"),
+                ROLE_LOAD_AREA: ("load_areas", "load_area_eids")}
 
 SECTION = "model_check"
 EPS = 1e-12
@@ -365,7 +384,11 @@ class _Ctx:
     def number(self, role, index):
         props = self.model.get(_PROPS_KEY[role]) or []
         p = props[index] if index < len(props) else None
-        return p.get("user_id") if isinstance(p, dict) else None
+        number = p.get("user_id") if isinstance(p, dict) else None
+        if role == ROLE_PLANAR_SUPPORT and number not in (None, ""):
+            # numeros non uniques entre types d'appuis : prefixe R, E, B (butee) ou A (avance)
+            return _SUPPORT_TYPE_LETTER.get(p.get("kind"), "") + str(number)
+        return number
 
     def add(self, kind, items, eids, point, measured=None, threshold=None, unit="", shape=None):
         numbers = tuple(self.number(role, index) for role, index in items)
@@ -697,6 +720,23 @@ def _first_self_intersection(pts, normal, centroid):
     return None
 
 
+def _collinear_vertices(ctx, pts):
+    """[(indice, deviation en deg)] des sommets quasi alignes avec leurs deux voisins
+    (aretes plus courtes que la tolerance de sommets ignorees)."""
+    vtol = ctx.m["coincident_vertex_tol"]
+    n = len(pts)
+    out = []
+    for k in range(n):
+        a, b, c = pts[k - 1], pts[k], pts[(k + 1) % n]
+        if _dist(a, b) <= vtol + EPS or _dist(b, c) <= vtol + EPS:
+            continue
+        u, v = _unit(_sub(b, a)), _unit(_sub(c, b))
+        deviation = math.degrees(math.acos(max(-1.0, min(1.0, _dot(u, v)))))
+        if COLLINEAR_MIN_DEV_DEG <= deviation <= ctx.th.collinear_angle_deg + ANGLE_SLACK:
+            out.append((k, deviation))
+    return out
+
+
 @_stage
 def rule_surfaces(ctx):
     planars = ctx.model.get("planars") or []
@@ -751,16 +791,9 @@ def rule_surfaces(ctx):
                 ctx.add(K_SURF_EDGE, item, eid, center, length * 1000.0, ctx.th.min_edge_len_mm, "mm",
                         shape(center, length))
 
-        # sommet quasi aligne avec ses deux voisins (arêtes trop courtes ignorees)
-        for k in range(n):
-            a, b, c = pts[k - 1], pts[k], pts[(k + 1) % n]
-            if _dist(a, b) <= vtol + EPS or _dist(b, c) <= vtol + EPS:
-                continue
-            u, v = _unit(_sub(b, a)), _unit(_sub(c, b))
-            deviation = math.degrees(math.acos(max(-1.0, min(1.0, _dot(u, v)))))
-            if COLLINEAR_MIN_DEV_DEG <= deviation <= ctx.th.collinear_angle_deg + ANGLE_SLACK:
-                ctx.add(K_SURF_COLLINEAR, item, eid, b, deviation, ctx.th.collinear_angle_deg, "deg",
-                        shape(b, ctx.m["symbol_min_size"]))
+        for k, deviation in _collinear_vertices(ctx, pts):
+            ctx.add(K_SURF_COLLINEAR, item, eid, pts[k], deviation, ctx.th.collinear_angle_deg, "deg",
+                    shape(pts[k], ctx.m["symbol_min_size"]))
 
 
 # ---- regles : couples de surfaces ---------------------------------------------
@@ -768,9 +801,10 @@ def rule_surfaces(ctx):
 Surf = namedtuple("Surf", "index eid pts normal centroid lo hi")
 
 
-def _surfaces(ctx):
-    planars = ctx.model.get("planars") or []
-    eids = ctx.model.get("planar_eids") or []
+def _surfaces(ctx, role=ROLE_PLANAR):
+    geom_key, eid_key = _PLANAR_DATA[role]
+    planars = ctx.model.get(geom_key) or []
+    eids = ctx.model.get(eid_key) or []
     out = []
     for index, geom in enumerate(planars):
         pts = [tuple(float(c) for c in p) for p in ((geom or {}).get("outer") or [])]
@@ -874,9 +908,8 @@ def _overlap_area(ctx, s, t):
     return total, _add(s.centroid, _add(_mul(ex, cx / total), _mul(ey, cy / total)))
 
 
-@_stage
-def rule_surface_pairs(ctx):
-    surfs = _surfaces(ctx)
+def _check_pairs(ctx, role, k_overlap, k_missing):
+    surfs = _surfaces(ctx, role)
     d_max = ctx.m["overlap_dist"]
     tol = ctx.m["connection_tol"]
     margin = max(d_max, tol)
@@ -888,14 +921,14 @@ def rule_surface_pairs(ctx):
             t = surfs[y]
             if any(s.lo[c] > t.hi[c] + margin or t.lo[c] > s.hi[c] + margin for c in range(3)):
                 continue
-            items = ((ROLE_PLANAR, s.index), (ROLE_PLANAR, t.index))
+            items = ((role, s.index), (role, t.index))
             eids = (s.eid, t.eid)
             if (_angle_deg(s.normal, t.normal) <= ctx.th.overlap_angle_deg + ANGLE_SLACK
                     and max(abs(_dot(_sub(p, s.centroid), s.normal)) for p in t.pts) <= d_max + EPS):
                 found = _overlap_area(ctx, s, t)
                 if found is not None and found[0] > min_area + 1e-15:
                     area, center = found
-                    ctx.add(K_SURF_OVERLAP, items, eids, center, area, min_area, "m2",
+                    ctx.add(k_overlap, items, eids, center, area, min_area, "m2",
                             {"type": "sphere", "center": center, "radius": max(math.sqrt(area), ctx.m["symbol_min_size"])})
             if tol <= 0:
                 continue
@@ -909,8 +942,34 @@ def rule_surface_pairs(ctx):
                 points = [p for p, _, _ in links] + [q for _, q, _ in links]
                 widest = max(d for _, _, d in links)
                 center = tuple(sum(p[c] for p in points) / len(points) for c in range(3))
-                ctx.add(K_SURF_MISSING, items, eids, center, widest * 1000.0, ctx.th.connection_tol_mm, "mm",
+                ctx.add(k_missing, items, eids, center, widest * 1000.0, ctx.th.connection_tol_mm, "mm",
                         {"type": "sphere", "center": center, "radius": max(tol, widest / 2.0)})
+
+
+@_stage
+def rule_surface_pairs(ctx):
+    _check_pairs(ctx, ROLE_PLANAR, K_SURF_OVERLAP, K_SURF_MISSING)
+
+
+def _check_family(ctx, role, k_overlap, k_missing, k_collinear):
+    """Memes verifications que les surfaciques, pour une famille de contours comparee a elle-meme."""
+    _check_pairs(ctx, role, k_overlap, k_missing)
+    for surf in _surfaces(ctx, role):
+        for k, deviation in _collinear_vertices(ctx, surf.pts):
+            ctx.add(k_collinear, ((role, surf.index),), (surf.eid,), surf.pts[k], deviation,
+                    ctx.th.collinear_angle_deg, "deg",
+                    {"type": "surface", "outline": tuple(surf.pts), "center": surf.pts[k],
+                     "radius": ctx.m["symbol_min_size"]})
+
+
+@_stage
+def rule_planar_support_geometry(ctx):
+    _check_family(ctx, ROLE_PLANAR_SUPPORT, K_SUP_OVERLAP, K_SUP_MISSING, K_SUP_COLLINEAR)
+
+
+@_stage
+def rule_load_area_geometry(ctx):
+    _check_family(ctx, ROLE_LOAD_AREA, K_LA_OVERLAP, K_LA_MISSING, K_LA_COLLINEAR)
 
 
 # ---- regles : appuis ---------------------------------------------------------

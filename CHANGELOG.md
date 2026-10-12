@@ -12,6 +12,8 @@
 - Deux extrémités à moins de 0,1 mm sont considérées comme le même nœud ; des éléments parfaitement alignés ne sont pas signalés comme quasi colinéaires.
 - Les tests de widgets ne sont plus sautés (`test_qt_translation` crée une `QApplication`).
 - Contrôle des surfaciques entre eux : chevauchement de deux surfaciques coplanaires (erreur), connexion manquante entre sommets de surfaciques différents (erreur, seuil de tolérance de connexion) et sommets quasi alignés dans un contour (avertissement). Les deux premiers peuvent être signalés ensemble pour un même couple.
+- Contrôle des appuis surfaciques (tous types : rigide, élastique, butée, avancé), entre eux : chevauchement (avertissement), connexion manquante (erreur) et sommets quasi alignés (avertissement).
+- Contrôle des parois, entre elles : chevauchement (avertissement), connexion manquante (erreur) et sommets quasi alignés (avertissement).
 - Paramètres de détection : nouvelle option « Taille maximale des symboles » (100 mm par défaut) qui plafonne les symboles sphériques ; la taille minimale reste prioritaire.
 - Rapport des anomalies : la colonne « Éléments » affiche le numéro de l'élément (et non son identifiant interne) et passe à la ligne, sans ascenseur horizontal ni bouton « Voir » rogné.
 
@@ -23,6 +25,8 @@
 - Two ends closer than 0.1 mm are treated as the same node; perfectly aligned elements are not reported as nearly collinear.
 - Widget tests are no longer skipped (`test_qt_translation` creates a `QApplication`).
 - Surface-to-surface checks: overlap of two coplanar surfaces (error), missing connection between vertices of different surfaces (error, connection tolerance threshold) and nearly collinear vertices in an outline (warning). The first two can be reported together for the same pair.
+- Planar support checks (all types: rigid, elastic, compression/tension only, advanced), between supports: overlap (warning), missing connection (error) and nearly collinear vertices (warning).
+- Load area (wall) checks, between load areas: overlap (warning), missing connection (error) and nearly collinear vertices (warning).
 - Detection settings: new "Maximum symbol size" option (100 mm by default) capping spherical symbols; the minimum size still takes precedence.
 - Anomaly report: the "Elements" column shows the element number (not its internal identifier) and wraps, with no horizontal scrollbar and no clipped "View" button.
 

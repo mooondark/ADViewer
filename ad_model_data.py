@@ -66,6 +66,7 @@ class ModelDataDict(TypedDict, total=False):
     planar_eids: list
     planar_properties: list
     load_areas: list
+    load_area_eids: list
     linear_takeoff: list
     linear_material_takeoff: list
     planar_takeoff: list
@@ -130,7 +131,7 @@ def normalize_results_case_entry(kind: str, eid, label: str) -> ResultsCaseEntry
 def build_model_data(payload: dict) -> ModelDataDict:
     data = dict(payload or {})
     list_keys = [
-        "lines", "line_properties", "line_sections", "line_eids", "planars", "planar_eids", "planar_properties", "load_areas",
+        "lines", "line_properties", "line_sections", "line_eids", "planars", "planar_eids", "planar_properties", "load_areas", "load_area_eids",
         "linear_takeoff", "linear_material_takeoff", "planar_takeoff", "planar_material_takeoff",
         "punctual_supports", "punctual_support_eids", "punctual_support_properties",
         "linear_supports", "linear_support_eids", "linear_support_properties",
@@ -2525,6 +2526,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
     planar_thicknesses = []
     planar_eccentricities = []
     load_areas = []
+    load_area_eids = []
     load_area_properties = []
     punctual_supports = []
     punctual_support_eids = []
@@ -2571,11 +2573,12 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
         planar_eccentricities.append(eccentricity)
         planar_system_ids.append(_extract_system_ids(el))
 
-    for el in load_area_elements:
+    for load_area_eid, el in zip(load_area_ids, load_area_elements):
         geom = extract_load_area_geometry(el)
         if not geom:
             continue
         load_areas.append(geom)
+        load_area_eids.append(int(load_area_eid) if load_area_eid is not None else None)
         load_area_properties.append(extract_load_area_properties(el))
         load_area_system_ids.append(_extract_system_ids(el))
 
@@ -2635,6 +2638,7 @@ def _build_geometry_payload(ids_data: dict, objects_data: dict, refs_data: dict)
         "planar_thicknesses": planar_thicknesses,
         "planar_eccentricities": planar_eccentricities,
         "load_areas": load_areas,
+        "load_area_eids": load_area_eids,
         "load_area_properties": load_area_properties,
         "linear_takeoff": linear_takeoff,
         "linear_material_takeoff": linear_material_takeoff,

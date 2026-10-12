@@ -22,7 +22,8 @@ from viewer_config import tr_ui
 ENGINE_KEYS = (
     "lines", "line_eids", "line_properties", "planars", "planar_eids", "planar_properties",
     "punctual_supports", "punctual_support_eids", "punctual_support_properties",
-    "linear_supports", "planar_supports",
+    "linear_supports", "planar_supports", "planar_support_eids", "planar_support_properties",
+    "load_areas", "load_area_eids", "load_area_properties",
 )
 
 

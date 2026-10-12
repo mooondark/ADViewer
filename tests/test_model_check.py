@@ -610,3 +610,102 @@ def test_overlap_and_missing_connection_are_both_reported_for_the_same_pair():
     assert mc.K_SURF_OVERLAP in _kinds(out) and mc.K_SURF_MISSING in _kinds(out)
     miss = [a for a in out if a.kind == mc.K_SURF_MISSING][0]
     assert abs(miss.measured - 2.0) < 1e-6
+
+
+def _sup(planars, props=None):
+    m = _model()
+    m["planar_supports"] = [{"outer": [tuple(p) for p in poly], "openings": []} for poly in planars]
+    m["planar_support_eids"] = [300 + i for i in range(len(planars))]
+    m["planar_support_properties"] = props or [{} for _ in planars]
+    return m
+
+
+def test_overlapping_planar_supports_are_a_warning_whatever_their_type():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    b = _xz((1, 1), (3, 1), (3, 3), (1, 3))
+    props = [{"kind": "rigid", "user_id": 2}, {"kind": "tc", "user_id": 2}]
+    out = mc.detect(_sup([a, b], props))
+    assert _kinds(out) == [mc.K_SUP_OVERLAP]
+    o = out[0]
+    assert o.severity == mc.WARNING and abs(o.measured - 1.0) < 1e-9
+    assert o.items == (("support_planar", 0), ("support_planar", 1)) and o.eids == (300, 301) and o.numbers == ("R2", "B2")
+
+
+def test_planar_supports_with_almost_common_vertices_miss_a_connection_error():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    b = _xz((2.003, 0), (4, 0), (4, 2), (2.003, 2))
+    out = mc.detect(_sup([a, b]))
+    assert _kinds(out) == [mc.K_SUP_MISSING] and out[0].severity == mc.ERROR
+    assert abs(out[0].measured - 3.0) < 1e-6
+    assert mc.detect(_sup([a, _xz((2, 0), (4, 0), (4, 2), (2, 2))])) == []
+
+
+def test_planar_support_nearly_collinear_vertex_is_a_warning():
+    s = _xz((5, 0), (10, 0), (10, 3), (6, 3), (6, 2), (6.01, 1))
+    out = mc.detect(_sup([s]))
+    assert _kinds(out) == [mc.K_SUP_COLLINEAR] and out[0].severity == mc.WARNING
+    assert out[0].point == (6.0, 0.0, 2.0) and 0.5 < out[0].measured < 0.6
+
+
+def test_planar_supports_are_not_compared_with_planar_elements():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    m = _sup([a])
+    m["planars"] = [{"outer": [tuple(p) for p in a], "openings": []}]
+    m["planar_eids"] = [100]
+    assert mc.detect(m) == []
+
+
+def test_planar_support_numbers_are_prefixed_by_type_letter():
+    m = _sup([_xz((0, 0), (1, 0), (1, 1))] * 4,
+             [{"kind": k, "user_id": 7} for k in ("rigid", "elastic", "tc", "advanced")])
+    m["planar_supports"][3]["outer"] = [(5, 0, 0), (6, 0, 0), (6, 0, 1)]
+    ctx = mc._Ctx(m, mc.Thresholds(), mc._Ctl(None, None))
+    assert [ctx.number(mc.ROLE_PLANAR_SUPPORT, i) for i in range(4)] == ["R7", "E7", "B7", "A7"]
+    m["planar_support_properties"][0] = {"kind": "rigid"}
+    assert mc._Ctx(m, mc.Thresholds(), mc._Ctl(None, None)).number(mc.ROLE_PLANAR_SUPPORT, 0) is None
+
+
+def _la(planars, props=None):
+    m = _model()
+    m["load_areas"] = [{"outer": [tuple(p) for p in poly], "openings": []} for poly in planars]
+    m["load_area_eids"] = [400 + i for i in range(len(planars))]
+    m["load_area_properties"] = props or [{} for _ in planars]
+    return m
+
+
+def test_overlapping_load_areas_are_a_warning():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    b = _xz((1, 1), (3, 1), (3, 3), (1, 3))
+    out = mc.detect(_la([a, b], [{"user_id": 5}, {"user_id": 6}]))
+    assert _kinds(out) == [mc.K_LA_OVERLAP] and out[0].severity == mc.WARNING
+    assert out[0].items == (("load_areas", 0), ("load_areas", 1)) and out[0].numbers == (5, 6)
+    assert out[0].eids == (400, 401)
+
+
+def test_load_areas_with_almost_common_vertices_miss_a_connection_error():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    out = mc.detect(_la([a, _xz((2.003, 0), (4, 0), (4, 2), (2.003, 2))]))
+    assert _kinds(out) == [mc.K_LA_MISSING] and out[0].severity == mc.ERROR
+    assert mc.detect(_la([a, _xz((2, 0), (4, 0), (4, 2), (2, 2))])) == []
+
+
+def test_load_area_nearly_collinear_vertex_is_a_warning():
+    out = mc.detect(_la([_xz((5, 0), (10, 0), (10, 3), (6, 3), (6, 2), (6.01, 1))]))
+    assert _kinds(out) == [mc.K_LA_COLLINEAR] and out[0].severity == mc.WARNING
+
+
+def test_load_areas_are_not_compared_with_surfaces_or_supports():
+    a = _xz((0, 0), (2, 0), (2, 2), (0, 2))
+    m = _la([a])
+    m["planars"] = [{"outer": [tuple(p) for p in a], "openings": []}]
+    m["planar_eids"] = [100]
+    assert mc.detect(m) == []
+
+
+def test_build_geometry_payload_aligns_load_area_eids_with_valid_geometries():
+    import ad_model_data
+    good = {"geomPtsList": [{"x": 0, "y": 0, "z": 0}, {"x": 1, "y": 0, "z": 0}, {"x": 1, "y": 1, "z": 0}]}
+    bad = {"geomPtsList": []}
+    out = ad_model_data._build_geometry_payload({"load_area_ids": [11, 12, 13]},
+                                                {"load_area_elements": [bad, good, good]}, {})
+    assert out["load_area_eids"] == [12, 13] and len(out["load_areas"]) == 2
