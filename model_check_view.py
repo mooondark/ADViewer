@@ -178,8 +178,26 @@ class AnomalyOverlay:
         self.renderer = renderer
         self._entries = []     # [{"anomaly": a, "actors": [(actor, kind), ...]}]
         self._visible = True
+        self._isolated = None  # ensemble de (role, index) isoles dans la vue ; None = pas d'isolation
         self._active = None
         self._opacity = 0.5
+
+    def _entry_visible(self, entry):
+        """Visible si l'affichage est actif et, en isolation, si tous les elements de l'anomalie sont isoles."""
+        if not self._visible:
+            return False
+        if self._isolated is None:
+            return True
+        items = entry["anomaly"].items
+        return bool(items) and all(tuple(item) in self._isolated for item in items)
+
+    def set_isolation(self, items):
+        """items : [{"role", "index"}, ...] des elements isoles, ou vide/None pour annuler l'isolation."""
+        self._isolated = {(i["role"], i["index"]) for i in items} if items else None
+        for entry in self._entries:
+            vis = 1 if self._entry_visible(entry) else 0
+            for actor, _ in entry["actors"]:
+                actor.SetVisibility(vis)
 
     def count(self):
         return len(self._entries)
@@ -194,12 +212,13 @@ class AnomalyOverlay:
         self._opacity = opacity_from_transparency(thresholds.symbol_transparency_pct)
         for a in anomalies:
             actors = []
+            entry = {"anomaly": a, "actors": actors}
             for pd, kind in symbol_parts(a, thresholds):
                 actor = _make_actor(pd, a.severity, kind, self._opacity)
-                actor.SetVisibility(1 if self._visible else 0)
+                actor.SetVisibility(1 if self._entry_visible(entry) else 0)
                 self.renderer.AddActor(actor)
                 actors.append((actor, kind))
-            self._entries.append({"anomaly": a, "actors": actors})
+            self._entries.append(entry)
 
     def clear(self):
         for entry in self._entries:
@@ -211,8 +230,9 @@ class AnomalyOverlay:
     def set_visible(self, visible):
         self._visible = bool(visible)
         for entry in self._entries:
+            vis = 1 if self._entry_visible(entry) else 0
             for actor, _ in entry["actors"]:
-                actor.SetVisibility(1 if self._visible else 0)
+                actor.SetVisibility(vis)
 
     def is_visible(self):
         return self._visible
@@ -260,6 +280,8 @@ class AnomalyOverlay:
             return []
         owner = {}
         for index, entry in enumerate(self._entries):
+            if not self._entry_visible(entry):
+                continue
             for actor, _ in entry["actors"]:
                 owner[actor] = index
         left = list(owner)

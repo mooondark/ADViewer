@@ -170,10 +170,10 @@ def test_units_change_redisplays_the_active_anomaly_card_and_refreshes_the_repor
 def test_export_start_path_is_folder_of_the_fto_plus_default_name(tmp_path):
     fto = tmp_path / "modele.fto"
     fto.write_text("x")
-    expected = os.path.join(str(tmp_path), "modele_controle.csv")
+    expected = os.path.join(str(tmp_path), "modele_controle.md")
     assert ui.export_start_path(str(fto)) == expected
     assert ui.export_start_path("  " + str(fto) + " ") == expected
-    assert ui.export_start_path(str(tmp_path / "absent" / "m.fto")) == "m_controle.csv"   # dossier inexistant : nom seul
+    assert ui.export_start_path(str(tmp_path / "absent" / "m.fto")) == "m_controle.md"   # dossier inexistant : nom seul
     assert ui.export_start_path("") == "" and ui.export_start_path(None) == ""
 
 
@@ -298,3 +298,22 @@ def test_element_type_and_filter_by_element_type():
     assert [i for i, _ in ui.filter_rows(items)] == [0, 1, 2, 3, 4, 5]
     for key, _role in ui.ELEMENT_TYPES:
         assert tr_ui("mc_etype_" + key) != "mc_etype_" + key
+
+
+def test_export_html_table_escapes_cells(tmp_path):
+    a = _a(mc.K_DUPLICATE, items=(("lines", 0),), eids=("<b>&",))
+    path = tmp_path / "r.html"
+    ui.export_rows([(0, a)], str(path))
+    text = open(path, encoding="utf-8").read()
+    assert text.startswith("<!DOCTYPE html>") and "<table>" in text and "</html>" in text
+    assert text.count("<th>") == 6 and text.count("<tr>") == 2
+    assert tr_ui("mc_kind_duplicate") in text and "&lt;b&gt;&amp;" in text and "<b>&" not in text
+
+
+def test_export_filter_order_and_suffix_from_selected_filter():
+    flt = tr_ui("mc_export_filter")
+    assert flt.index("*.md") < flt.index("*.html") < flt.index("*.csv")
+    assert ui.export_path_with_suffix("C:/x/rapport", "HTML (*.html)") == "C:/x/rapport.html"
+    assert ui.export_path_with_suffix("C:/x/rapport", flt.split(";;")[0]) == "C:/x/rapport.md"
+    assert ui.export_path_with_suffix("C:/x/rapport.CSV", "Markdown (*.md)") == "C:/x/rapport.CSV"
+    assert ui.export_path_with_suffix("C:/x/rapport", "") == "C:/x/rapport"

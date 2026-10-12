@@ -142,3 +142,30 @@ def test_overlay_bounds_and_pick():
     except Exception:
         return   # pas de contexte OpenGL : le picking ne peut pas etre teste ici
     assert overlay.pick(100, 100) == [0] or overlay.pick(100, 100) == []
+
+
+def test_overlay_isolation_shows_only_anomalies_whose_elements_are_all_isolated():
+    renderer = vtk.vtkRenderer()
+    overlay = mcv.AnomalyOverlay(renderer)
+    sphere = {"type": "sphere", "center": (0, 0, 0), "radius": 0.1}
+    a_pair = _anomaly(sphere, items=(("lines", 0), ("lines", 1)))
+    a_single = _anomaly(sphere, items=(("planars", 2),), kind=mc.K_SURF_AREA)
+    a_none = _anomaly(sphere, items=(), kind=mc.K_NO_SUPPORT)
+    overlay.set_anomalies([a_pair, a_single, a_none], TH)
+
+    def visible():
+        return [all(a.GetVisibility() for a, _ in e["actors"]) for e in overlay._entries]
+
+    assert visible() == [True, True, True]
+    overlay.set_isolation([{"role": "lines", "index": 0}, {"role": "lines", "index": 1}])
+    assert visible() == [True, False, False]
+    overlay.set_isolation([{"role": "lines", "index": 0}])
+    assert visible() == [False, False, False]
+    overlay.set_isolation([{"role": "planars", "index": 2}])
+    assert visible() == [False, True, False]
+    assert set(overlay.pick(0, 0)) <= {1}    # une anomalie masquee n'est pas selectionnable au clic
+    overlay.set_visible(False)
+    overlay.set_visible(True)
+    assert visible() == [False, True, False]
+    overlay.set_isolation([])
+    assert visible() == [True, True, True]

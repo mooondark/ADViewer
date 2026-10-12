@@ -3187,6 +3187,7 @@ class VTKViewerWidget(QFrame):
         self._filter_thickness_names = None
         self._filter_material_names = None
         self._isolated_selection = []
+        self._anomaly_overlay.set_isolation(None)
         self._apply_visibility_state()
 
     def focus_bounds(self, bounds):
@@ -6172,6 +6173,7 @@ class VTKViewerWidget(QFrame):
             self._isolated_selection = valid
         else:
             self._isolated_selection = []
+        self._anomaly_overlay.set_isolation(self._isolated_selection)
         self._rebuild_filtered_structural_actors(rebuild_profiles=rebuild_profiles)
 
     def has_isolated_selection(self) -> bool:

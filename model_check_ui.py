@@ -2,6 +2,7 @@
 """Controle du modele 3D : worker, controleur, fenetres de rapport et de parametres."""
 
 import csv
+import html
 import math
 import os
 import re
@@ -119,13 +120,24 @@ def _headers():
             tr_ui("mc_col_coords", unit=du.unit("length")), tr_ui("mc_col_measure"), tr_ui("mc_col_threshold")]
 
 
+_EXPORT_SUFFIXES = (".md", ".html", ".htm", ".csv")
+
+
+def export_path_with_suffix(path, selected_filter):
+    """Ajoute l'extension du filtre choisi quand le nom saisi n'en porte aucune de connue."""
+    if str(path).lower().endswith(_EXPORT_SUFFIXES):
+        return path
+    found = re.search(r"\(\*(\.\w+)\)", str(selected_filter or ""))
+    return path + found.group(1) if found else path
+
+
 def export_start_path(fto_path):
     """Chemin propose a l'export : <dossier du .fto>/<nom du .fto>_controle.csv.
     Dossier inexistant : nom seul (Qt choisit le dossier) ; chemin vide : vide."""
     text = str(fto_path or "").strip()
     if not text:
         return ""
-    name = os.path.splitext(os.path.basename(text))[0] + "_controle.csv"
+    name = os.path.splitext(os.path.basename(text))[0] + "_controle.md"
     folder = os.path.dirname(text)
     return os.path.join(folder, name) if folder and os.path.isdir(folder) else name
 
@@ -134,9 +146,31 @@ def md_cell(text):
     return str(text).replace("|", "\\|")
 
 
+_HTML_STYLE = (
+    "body{font-family:Segoe UI,Arial,sans-serif;margin:24px}"
+    "table{border-collapse:collapse}"
+    "th,td{border:1px solid #bbb;padding:4px 10px;text-align:left}"
+    "th{background:#eee}"
+)
+
+
+def export_html(cells, path):
+    title = html.escape(tr_ui("mc_report_title"))
+    head = "".join(f"<th>{html.escape(h)}</th>" for h in _headers())
+    body = "\n".join("<tr>" + "".join(f"<td>{html.escape(c)}</td>" for c in row) + "</tr>" for row in cells)
+    page = (f"<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>{title}</title>"
+            f"<style>{_HTML_STYLE}</style></head><body>\n<h1>{title}</h1>\n"
+            f"<table>\n<tr>{head}</tr>\n{body}\n</table>\n</body></html>\n")
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(page)
+
+
 def export_rows(rows, path):
-    """Exporte les lignes (celles qui passent les filtres) en CSV (;) ou texte."""
+    """Exporte les lignes (celles qui passent les filtres) en Markdown, HTML, CSV (;) ou texte."""
     cells = [row_cells(a) for _i, a in rows]
+    if str(path).lower().endswith((".html", ".htm")):
+        export_html(cells, path)
+        return
     if str(path).lower().endswith(".csv"):
         with open(path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.writer(f, delimiter=";")
@@ -483,9 +517,9 @@ class AnomalyReportDialog(QDialog):
     def _export(self):
         fto_edit = getattr(self._controller.window, "fto_edit", None)
         start = export_start_path(fto_edit.text() if fto_edit is not None else "")
-        path, _ = QFileDialog.getSaveFileName(self, tr_ui("mc_export_title"), start, tr_ui("mc_export_filter"))
+        path, chosen = QFileDialog.getSaveFileName(self, tr_ui("mc_export_title"), start, tr_ui("mc_export_filter"))
         if path:
-            export_rows(self._rows(), path)
+            export_rows(self._rows(), export_path_with_suffix(path, chosen))
 
 
 class ModelCheckController(QObject):

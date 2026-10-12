@@ -8,12 +8,14 @@
 - Contrôle des appuis surfaciques (tous types : rigide, élastique, butée, avancé), entre eux : chevauchement (avertissement), connexion manquante (erreur) et sommets quasi alignés (avertissement).
 - Contrôle des parois, entre elles : chevauchement (avertissement), connexion manquante (erreur) et sommets quasi alignés (avertissement).
 - Contrôle des appuis linéaires, entre eux : chevauchement (avertissement), connexion manquante (erreur), quasi colinéaires (avertissement) et appuis superposés de même type (avertissement).
+- Export du rapport : format Markdown par défaut, nouvel export HTML du tableau ; ordre des formats : .md, .html, .csv.
 - Rapport des anomalies : nouveau filtre « Type d'élément » (filaire, surfacique, appui ponctuel, appui linéaire, appui surfacique, paroi).
 
 ### EN
 - Planar support checks (all types: rigid, elastic, compression/tension only, advanced), between supports: overlap (warning), missing connection (error) and nearly collinear vertices (warning).
 - Load area (wall) checks, between load areas: overlap (warning), missing connection (error) and nearly collinear vertices (warning).
 - Linear support checks, between supports: overlap (warning), missing connection (error), nearly collinear (warning) and superposed supports of the same type (warning).
+- Report export: Markdown is now the default format, new HTML export of the table; format order: .md, .html, .csv.
 - Anomaly report: new "Element type" filter (linear, surface, punctual support, linear support, surface support, load area).
 
 ## 2.18
