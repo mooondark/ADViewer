@@ -10,6 +10,7 @@
 - Contrôle modèle : recherche des paires de surfaciques (chevauchement, connexion) beaucoup plus rapide sur les gros modèles.
 - Adresse de l'API invalide ou non résolue : message d'erreur clair au lieu d'une erreur technique.
 - Vérification des mises à jour : numéros de version avec suffixe (ex. 1.70g) correctement lus.
+- Ajout de `requirements.txt` (dépendances figées) et `requirements-dev.txt` (tests et compilation PyInstaller).
 
 ### EN
 - IFC export now runs in the background: the window no longer freezes on large models.
@@ -17,6 +18,7 @@
 - Model check: surface pair search (overlap, connection) much faster on large models.
 - Invalid or unresolvable API address: clear error message instead of a technical error.
 - Update check: version numbers with a suffix (e.g. 1.70g) are now read correctly.
+- Added `requirements.txt` (pinned dependencies) and `requirements-dev.txt` (tests and PyInstaller build).
 
 ## 2.19
 
