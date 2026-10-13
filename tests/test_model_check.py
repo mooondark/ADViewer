@@ -757,3 +757,20 @@ def test_linear_supports_are_not_compared_with_line_elements():
     m["lines"] = [[(0, 0, 0), (4, 0, 0)]]
     m["line_eids"] = [1]
     assert mc.detect(m) == []
+
+
+def test_surface_pairs_match_brute_force():
+    import random
+    from types import SimpleNamespace
+    rng = random.Random(7)
+    surfs = []
+    for _ in range(60):
+        lo = tuple(rng.uniform(0, 20) for _ in range(3))
+        hi = tuple(c + rng.uniform(0.1, 4) for c in lo)
+        surfs.append(SimpleNamespace(lo=lo, hi=hi))
+    margin = 0.5
+    expected = [
+        (x, y) for x in range(len(surfs)) for y in range(x + 1, len(surfs))
+        if not any(surfs[x].lo[c] > surfs[y].hi[c] + margin or surfs[y].lo[c] > surfs[x].hi[c] + margin for c in range(3))
+    ]
+    assert mc._surface_pairs(surfs, margin, SimpleNamespace(tick=lambda: None)) == expected

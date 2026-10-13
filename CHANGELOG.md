@@ -2,6 +2,22 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## À paraître
+
+### FR
+- Export IFC exécuté en tâche de fond : la fenêtre ne se fige plus sur un gros modèle.
+- Fermeture de l'application pendant un calcul, un chargement ou un export : confirmation demandée, puis arrêt propre des tâches en cours.
+- Contrôle modèle : recherche des paires de surfaciques (chevauchement, connexion) beaucoup plus rapide sur les gros modèles.
+- Adresse de l'API invalide ou non résolue : message d'erreur clair au lieu d'une erreur technique.
+- Vérification des mises à jour : numéros de version avec suffixe (ex. 1.70g) correctement lus.
+
+### EN
+- IFC export now runs in the background: the window no longer freezes on large models.
+- Closing the application during a calculation, loading or export: confirmation is requested, then running tasks are stopped.
+- Model check: surface pair search (overlap, connection) much faster on large models.
+- Invalid or unresolvable API address: clear error message instead of a technical error.
+- Update check: version numbers with a suffix (e.g. 1.70g) are now read correctly.
+
 ## 2.19
 
 ### FR

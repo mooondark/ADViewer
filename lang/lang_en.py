@@ -483,6 +483,8 @@ MSG_UI = {
     "export_ifc_scope_selection": "IFC export limited to the selection ({count} element(s)).",
     "export_ifc_scope_full": "IFC export of the full model.",
     "export_ifc_failed": "IFC export failed: {details}",
+    "close_busy_title": "Operation in progress",
+    "close_busy_text": "An operation (calculation, loading or export) is still running. Quitting will interrupt it. Quit anyway?",
 
     "menu_controls": "Controls and shortcuts",
     "controls_dialog_title": "Controls and shortcuts",

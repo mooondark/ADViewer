@@ -132,12 +132,9 @@ class AdvanceDesignApiClient:
         if port is None:
             port = 443 if parsed.scheme == "https" else 80
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(3)
-        result = sock.connect_ex((hostname, port))
-        sock.close()
-
-        if result != 0:
+        try:
+            socket.create_connection((hostname, port), timeout=3).close()
+        except OSError:
             raise ApiUnavailableError(
                 tr_err("api_unreachable", hostname=hostname, port=port)
             )

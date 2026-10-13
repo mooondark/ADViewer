@@ -925,42 +925,59 @@ def _overlap_area(ctx, s, t):
     return total, _add(s.centroid, _add(_mul(ex, cx / total), _mul(ey, cy / total)))
 
 
+def _surface_pairs(surfs, margin, ctl):
+    """Couples (x, y), x < y, dont les boites englobantes dilatees de `margin`
+    se touchent. Balayage sur X : evite le O(n^2) du test de toutes les paires."""
+    order = sorted(range(len(surfs)), key=lambda k: surfs[k].lo[0])
+    pairs = []
+    for a in range(len(order)):
+        x = order[a]
+        s = surfs[x]
+        limit = s.hi[0] + margin
+        for b in range(a + 1, len(order)):
+            ctl.tick()
+            y = order[b]
+            t = surfs[y]
+            if t.lo[0] > limit:
+                break
+            if any(s.lo[c] > t.hi[c] + margin or t.lo[c] > s.hi[c] + margin for c in (1, 2)):
+                continue
+            pairs.append((min(x, y), max(x, y)))
+    pairs.sort()
+    return pairs
+
+
 def _check_pairs(ctx, role, k_overlap, k_missing):
     surfs = _surfaces(ctx, role)
     d_max = ctx.m["overlap_dist"]
     tol = ctx.m["connection_tol"]
     margin = max(d_max, tol)
     min_area = ctx.th.min_surface_area_m2
-    for x in range(len(surfs)):
-        s = surfs[x]
-        for y in range(x + 1, len(surfs)):
-            ctx.ctl.tick()
-            t = surfs[y]
-            if any(s.lo[c] > t.hi[c] + margin or t.lo[c] > s.hi[c] + margin for c in range(3)):
-                continue
-            items = ((role, s.index), (role, t.index))
-            eids = (s.eid, t.eid)
-            if (_angle_deg(s.normal, t.normal) <= ctx.th.overlap_angle_deg + ANGLE_SLACK
-                    and max(abs(_dot(_sub(p, s.centroid), s.normal)) for p in t.pts) <= d_max + EPS):
-                found = _overlap_area(ctx, s, t)
-                if found is not None and found[0] > min_area + 1e-15:
-                    area, center = found
-                    ctx.add(k_overlap, items, eids, center, area, min_area, "m2",
-                            {"type": "sphere", "center": center, "radius": max(math.sqrt(area), ctx.m["symbol_min_size"])})
-            if tol <= 0:
-                continue
-            links = []
-            for p in s.pts:
-                for q in t.pts:
-                    d = _dist(p, q)
-                    if NODE_TOL < d <= tol + EPS:
-                        links.append((p, q, d))
-            if links:
-                points = [p for p, _, _ in links] + [q for _, q, _ in links]
-                widest = max(d for _, _, d in links)
-                center = tuple(sum(p[c] for p in points) / len(points) for c in range(3))
-                ctx.add(k_missing, items, eids, center, widest * 1000.0, ctx.th.connection_tol_mm, "mm",
-                        {"type": "sphere", "center": center, "radius": max(tol, widest / 2.0)})
+    for x, y in _surface_pairs(surfs, margin, ctx.ctl):
+        s, t = surfs[x], surfs[y]
+        items = ((role, s.index), (role, t.index))
+        eids = (s.eid, t.eid)
+        if (_angle_deg(s.normal, t.normal) <= ctx.th.overlap_angle_deg + ANGLE_SLACK
+                and max(abs(_dot(_sub(p, s.centroid), s.normal)) for p in t.pts) <= d_max + EPS):
+            found = _overlap_area(ctx, s, t)
+            if found is not None and found[0] > min_area + 1e-15:
+                area, center = found
+                ctx.add(k_overlap, items, eids, center, area, min_area, "m2",
+                        {"type": "sphere", "center": center, "radius": max(math.sqrt(area), ctx.m["symbol_min_size"])})
+        if tol <= 0:
+            continue
+        links = []
+        for p in s.pts:
+            for q in t.pts:
+                d = _dist(p, q)
+                if NODE_TOL < d <= tol + EPS:
+                    links.append((p, q, d))
+        if links:
+            points = [p for p, _, _ in links] + [q for _, q, _ in links]
+            widest = max(d for _, _, d in links)
+            center = tuple(sum(p[c] for p in points) / len(points) for c in range(3))
+            ctx.add(k_missing, items, eids, center, widest * 1000.0, ctx.th.connection_tol_mm, "mm",
+                    {"type": "sphere", "center": center, "radius": max(tol, widest / 2.0)})
 
 
 @_stage

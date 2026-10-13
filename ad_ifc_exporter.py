@@ -66,13 +66,9 @@ def check_port(host: str) -> None:
         raise ApiUnavailableError(f"URL API invalide: {host}")
     if port is None:
         port = 443 if parsed.scheme == "https" else 80
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(3)
     try:
-        result = sock.connect_ex((hostname, port))
-    finally:
-        sock.close()
-    if result != 0:
+        socket.create_connection((hostname, port), timeout=3).close()
+    except OSError:
         raise ApiUnavailableError(f"API non joignable sur {hostname}:{port}. Vérifiez qu'Advance Design est lancé et que l'API REST est active.")
 
 

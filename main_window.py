@@ -10,6 +10,7 @@ import csv
 import sys
 import math
 import random
+import re
 import time
 import html
 import hashlib
@@ -1007,8 +1008,8 @@ class UpdateCheckWorker(QThread):
                 self.error.emit()
                 return
             latest = tags[0]["name"].lstrip("v")
-            latest_tuple = tuple(int(p) for p in latest.split("."))
-            current_tuple = tuple(int(p) for p in APP_VERSION.split("."))
+            latest_tuple = tuple(int(p) for p in re.findall(r"\d+", latest))
+            current_tuple = tuple(int(p) for p in re.findall(r"\d+", APP_VERSION))
             is_newer = latest_tuple > current_tuple
             url = f"https://github.com/mooondark/ADViewer/releases/tag/{tags[0]['name']}"
             self.success.emit(is_newer, latest, url)
@@ -1125,6 +1126,25 @@ class LaunchAnalysisWorker(QThread):
                     close_project(self.host)
                 except Exception:
                     pass
+
+
+class IfcExportWorker(QThread):
+    """Execute l'export IFC hors du thread de l'interface (appels HTTP bloquants)."""
+    log = Signal(str, str)
+    success = Signal()
+    error = Signal(str)
+
+    def __init__(self, export_fn, kwargs):
+        super().__init__()
+        self.export_fn = export_fn
+        self.kwargs = kwargs
+
+    def run(self):
+        try:
+            self.export_fn(logger=lambda message, level="info": self.log.emit(str(message), level), **self.kwargs)
+            self.success.emit()
+        except Exception as e:
+            self.error.emit(str(e))
 
 
 class BuildLoadsWorker(QThread):
@@ -1370,6 +1390,7 @@ class MainWindow(QMainWindow):
         self.calc_ef_timeout = DEFAULT_CALC_EF_TIMEOUT
         self.calc_btn = None
         self.calc_worker = None
+        self._ifc_worker = None
         self._calc_elapsed_timer = None
         self._calc_start_ts = 0.0
         self._calc_launch_fto = ""
@@ -5002,12 +5023,6 @@ class MainWindow(QMainWindow):
         except Exception:
             self.log(tr_log("results_export_write_error", path=xlsx_path), "error")
 
-    def _ifc_export_logger(self, message, level="info"):
-        try:
-            self.log(str(message), level)
-        except Exception:
-            pass
-
     def _viewer_selection_export_eids(self):
         if self.viewer is None:
             return []
@@ -5037,6 +5052,8 @@ class MainWindow(QMainWindow):
         return eids
 
     def export_ifc_from_viewer(self):
+        if self._ifc_worker is not None and self._ifc_worker.isRunning():
+            return
         if ad_ifc_exporter is None:
             msg = tr_ui("export_ifc_module_missing")
             self.log(msg, "error")
@@ -5085,37 +5102,43 @@ class MainWindow(QMainWindow):
         self.log(tr_log("ifc_export_started", path=out_path), "info")
         self._set_analysis_results_output_message(tr_ui("export_ifc_running"))
 
-        try:
-            if can_use_open_project:
-                ad_ifc_exporter.export_ifc_from_open_project(
-                    host=host,
-                    out_path=out_path,
-                    include_loads=False,
-                    project_name=os.path.basename(fto_path) if fto_path else "ViewerProject",
-                    logger=self._ifc_export_logger,
-                    check_api_first=True,
-                    element_ids=selection_eids or None,
-                )
-            else:
-                ad_ifc_exporter.export_ifc_from_fto(
-                    host=host,
-                    fto_path=fto_path,
-                    out_path=out_path,
-                    include_loads=False,
-                    logger=self._ifc_export_logger,
-                    check_api_first=True,
-                    close_project_on_exit=True,
-                    element_ids=selection_eids or None,
-                )
-            success_path = normalize_windows_path(out_path)
-            success_message = tr_ui("export_ifc_success", path=success_path)
-            self._set_analysis_results_output_message(success_message)
-            QMessageBox.information(self, tr_ui("export_ifc_title"), success_message)
-        except Exception as e:
-            details = str(e)
-            self.log(tr_log("ifc_export_failed", details=details), "error")
-            self._set_analysis_results_output_message(tr_ui("export_ifc_failed", details=details))
-            QMessageBox.critical(self, tr_ui("export_ifc_title"), tr_ui("export_ifc_failed", details=details))
+        if can_use_open_project:
+            export_fn = ad_ifc_exporter.export_ifc_from_open_project
+            kwargs = dict(
+                host=host,
+                out_path=out_path,
+                include_loads=False,
+                project_name=os.path.basename(fto_path) if fto_path else "ViewerProject",
+                check_api_first=True,
+                element_ids=selection_eids or None,
+            )
+        else:
+            export_fn = ad_ifc_exporter.export_ifc_from_fto
+            kwargs = dict(
+                host=host,
+                fto_path=fto_path,
+                out_path=out_path,
+                include_loads=False,
+                check_api_first=True,
+                close_project_on_exit=True,
+                element_ids=selection_eids or None,
+            )
+
+        self._ifc_worker = IfcExportWorker(export_fn, kwargs)
+        self._ifc_worker.log.connect(self.log)
+        self._ifc_worker.success.connect(lambda: self._on_ifc_export_success(out_path))
+        self._ifc_worker.error.connect(self._on_ifc_export_error)
+        self._ifc_worker.start()
+
+    def _on_ifc_export_success(self, out_path):
+        success_message = tr_ui("export_ifc_success", path=normalize_windows_path(out_path))
+        self._set_analysis_results_output_message(success_message)
+        QMessageBox.information(self, tr_ui("export_ifc_title"), success_message)
+
+    def _on_ifc_export_error(self, details):
+        self.log(tr_log("ifc_export_failed", details=details), "error")
+        self._set_analysis_results_output_message(tr_ui("export_ifc_failed", details=details))
+        QMessageBox.critical(self, tr_ui("export_ifc_title"), tr_ui("export_ifc_failed", details=details))
 
     def apply_analysis_results(self):
         self.current_linear_diagram_payload = None
@@ -7230,6 +7253,17 @@ class MainWindow(QMainWindow):
             self.log(line, "error")
 
     def closeEvent(self, event):
+        # quit() n'interrompt pas un run() bloque dans une requete HTTP : on
+        # demande confirmation, puis terminate() en dernier recours.
+        busy = [w for w in (self.worker, self.analysis_results_worker, self.calc_worker, self._ifc_worker)
+                if w is not None and w.isRunning()]
+        if busy and QMessageBox.question(
+            self, tr_ui("close_busy_title"), tr_ui("close_busy_text"),
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        ) != QMessageBox.Yes:
+            event.ignore()
+            return
+
         try:
             if self._loads_debounce_timer is not None:
                 self._loads_debounce_timer.stop()
@@ -7242,27 +7276,19 @@ class MainWindow(QMainWindow):
             pass
 
         try:
-            if self.worker and self.worker.isRunning():
-                self.worker.quit()
-                self.worker.wait(1000)
-        except RuntimeError:
-            pass
-
-        try:
-            if self.analysis_results_worker and self.analysis_results_worker.isRunning():
-                self.analysis_results_worker.quit()
-                self.analysis_results_worker.wait(1000)
-        except RuntimeError:
-            pass
-
-        try:
             if self._calc_elapsed_timer is not None:
                 self._calc_elapsed_timer.stop()
-            if self.calc_worker and self.calc_worker.isRunning():
-                self.calc_worker.quit()
-                self.calc_worker.wait(1000)
         except RuntimeError:
             pass
+
+        for w in busy:
+            try:
+                w.quit()
+                if not w.wait(1000):
+                    w.terminate()
+                    w.wait()
+            except RuntimeError:
+                pass
 
         try:
             self._close_project_session(tr_log("project_closed_on_exit"))
