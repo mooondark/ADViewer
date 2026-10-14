@@ -3877,7 +3877,7 @@ class VTKViewerWidget(QFrame):
         elif dot < 0:
             transform.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
 
-        tf_filter = vtk.vtkTransformPolyDataFilter()
+        tf_filter = vtk.vtkTransformFilter()
         tf_filter.SetInputConnection(arrow_src.GetOutputPort())
         tf_filter.SetTransform(transform)
         tf_filter.Update()
@@ -4093,7 +4093,7 @@ class VTKViewerWidget(QFrame):
                 t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
             elif dot < 0:
                 t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
-            tf = vtk.vtkTransformPolyDataFilter()
+            tf = vtk.vtkTransformFilter()
             tf.SetInputConnection(src.GetOutputPort())
             tf.SetTransform(t)
             tf.Update()
@@ -4423,7 +4423,7 @@ class VTKViewerWidget(QFrame):
                 t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
             elif dot < 0:
                 t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
-            tf = vtk.vtkTransformPolyDataFilter()
+            tf = vtk.vtkTransformFilter()
             tf.SetInputConnection(src.GetOutputPort())
             tf.SetTransform(t)
             tf.Update()
@@ -4728,7 +4728,7 @@ class VTKViewerWidget(QFrame):
                 t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
             elif dot < 0:
                 t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
-            tf = vtk.vtkTransformPolyDataFilter()
+            tf = vtk.vtkTransformFilter()
             tf.SetInputConnection(src.GetOutputPort())
             tf.SetTransform(t)
             tf.Update()
@@ -5058,7 +5058,7 @@ class VTKViewerWidget(QFrame):
                 t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
             elif dot < 0:
                 t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
-            tf = vtk.vtkTransformPolyDataFilter()
+            tf = vtk.vtkTransformFilter()
             tf.SetInputConnection(src.GetOutputPort())
             tf.SetTransform(t)
             tf.Update()
@@ -5369,7 +5369,7 @@ class VTKViewerWidget(QFrame):
                 t.RotateWXYZ(math.degrees(math.acos(dot)), ax/ax_norm, ay/ax_norm, az/ax_norm)
             elif dot < 0:
                 t.RotateWXYZ(180.0, 0.0, 0.0, 1.0)
-            tf = vtk.vtkTransformPolyDataFilter()
+            tf = vtk.vtkTransformFilter()
             tf.SetInputConnection(src.GetOutputPort())
             tf.SetTransform(t)
             tf.Update()

@@ -61,7 +61,7 @@ def box_polydata(center, u, v, w, half):
         m.SetElement(r, 3, center[r])
     t = vtk.vtkTransform()
     t.SetMatrix(m)
-    f = vtk.vtkTransformPolyDataFilter()
+    f = vtk.vtkTransformFilter()
     f.SetTransform(t)
     f.SetInputData(cube.GetOutput())
     f.Update()
