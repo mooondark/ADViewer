@@ -601,7 +601,6 @@ class ModelCheckController(QObject):
         self.update_actions()
 
     def _status(self, text):
-        self.window.statusBar().showMessage(text)
         self.window.log(text, "info")
 
     def _on_done(self, result, gen=None):
@@ -679,7 +678,7 @@ class ModelCheckController(QObject):
                                                 "symbol_max_size_mm"))
         self._publish()
         if detection_changed:
-            self.window.statusBar().showMessage(tr_ui("mc_status_rerun"))
+            self._status(tr_ui("mc_status_rerun"))
 
     def view(self, index):
         viewer = self.window.viewer

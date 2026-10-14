@@ -11,6 +11,7 @@
 - Adresse de l'API invalide ou non résolue : message d'erreur clair au lieu d'une erreur technique.
 - Vérification des mises à jour : numéros de version avec suffixe (ex. 1.70g) correctement lus.
 - Ajout de `requirements.txt` (dépendances figées) et `requirements-dev.txt` (tests et compilation PyInstaller).
+- Contrôle modèle : plus de message dans la barre d'état (le résultat reste dans le journal) ; la barre d'état n'est plus affichée.
 
 ### EN
 - IFC export now runs in the background: the window no longer freezes on large models.
@@ -19,6 +20,8 @@
 - Invalid or unresolvable API address: clear error message instead of a technical error.
 - Update check: version numbers with a suffix (e.g. 1.70g) are now read correctly.
 - Added `requirements.txt` (pinned dependencies) and `requirements-dev.txt` (tests and PyInstaller build).
+- Model check: no more status bar message (the result stays in the log); the status bar is no longer displayed.
+- English wording harmonized: "Planar" instead of "Surface" for planar elements and supports.
 
 ## 2.19
 
