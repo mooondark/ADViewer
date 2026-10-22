@@ -12,6 +12,7 @@
 - Vérification des mises à jour : numéros de version avec suffixe (ex. 1.70g) correctement lus.
 - Ajout de `requirements.txt` (dépendances figées) et `requirements-dev.txt` (tests et compilation PyInstaller).
 - Contrôle modèle : plus de message dans la barre d'état (le résultat reste dans le journal) ; la barre d'état n'est plus affichée.
+- Vérification de la licence Advance Design au lancement de l'API ("Licence détectée") et à l'ouverture d'un modèle ; message d'erreur dans le journal en cas de problème.
 
 ### EN
 - IFC export now runs in the background: the window no longer freezes on large models.
@@ -22,6 +23,7 @@
 - Added `requirements.txt` (pinned dependencies) and `requirements-dev.txt` (tests and PyInstaller build).
 - Model check: no more status bar message (the result stays in the log); the status bar is no longer displayed.
 - English wording harmonized: "Planar" instead of "Surface" for planar elements and supports.
+- Advance Design licence check when the API is started ("Licence detected") and when opening a model; error message in the log if there is a problem.
 
 ## 2.19
 

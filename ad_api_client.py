@@ -301,6 +301,22 @@ class AdvanceDesignApiClient:
             raise ApiUnavailableError(tr_err("api_contact_failed", host=self.host)) from e
         return value.strip() if isinstance(value, str) else ""
 
+    def get_status(self) -> dict | None:
+        """Statut du service (GET /api/Service/GetStatus, sans enveloppe {data}).
+        API injoignable ou ancienne version sans cet endpoint : None."""
+        try:
+            resp = requests.get(f"{self.host}/api/Service/GetStatus", timeout=35)
+            resp.raise_for_status()
+            status = resp.json()
+        except (requests.exceptions.RequestException, ValueError):
+            return None
+        return status if isinstance(status, dict) else None
+
+    def licence_problem(self) -> dict | None:
+        """Le statut si canRun est faux, None sinon (y compris statut inconnu : on ne bloque pas)."""
+        status = self.get_status()
+        return status if status and status.get("canRun") is False else None
+
     def get_results(self, result_type: str, analysis_case_id: int, element_ids: list) -> list:
         ids = [int(eid) for eid in (element_ids or []) if eid is not None]
         if not ids:
@@ -404,6 +420,14 @@ def get_analysis_model_status(host: str) -> dict:
 
 def get_api_version(host: str) -> str:
     return get_api_client(host).get_version()
+
+
+def get_status(host: str) -> dict | None:
+    return get_api_client(host).get_status()
+
+
+def licence_problem(host: str) -> dict | None:
+    return get_api_client(host).licence_problem()
 
 
 def get_results(host: str, result_type: str, analysis_case_id: int, element_ids: list) -> list:

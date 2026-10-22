@@ -3475,7 +3475,7 @@
           {
             "name": "filename",
             "in": "query",
-            "description": "The name of the project file to create with the extension .fto",
+            "description": "The name of the project file to create with the extension .fto. A relative\r\n            name is resolved against the working directory of the server (the /w startup option, else the\r\n            folder the server was started from); an absolute path is used as given. The folder that is to\r\n            contain the file must already exist.",
             "schema": {
               "type": "string"
             }
@@ -3550,7 +3550,7 @@
           {
             "name": "filename",
             "in": "query",
-            "description": "The path to the project file to open. Must have the .fto extension.",
+            "description": "The path to the project file to open. Must have the .fto extension. A\r\n            relative path is resolved against the working directory of the server (the /w startup option,\r\n            else the folder the server was started from); an absolute path is used as given.",
             "schema": {
               "type": "string"
             }
@@ -3646,11 +3646,116 @@
         }
       }
     },
+    "/api/Model/management/SaveProject": {
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "Saves the open project to its own file.",
+        "description": "`Data` is true and the diagnostics carry `PROJECT_SAVED` (information) when the project was saved.\r\n            Otherwise `Data` is false with, as error: `PROJECT_NOT_OPEN` when no project is open,\r\n            `PROJECT_SAVE_FAILED` when the engine could not save it (its own messages say why; the project stays open,\r\n            as it was), `PROJECT_SAVE_EXCEPTION` for an internal error.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Model/management/SaveProjectAs": {
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "Saves the open project to a new project file, which from then on is the session's project.",
+        "description": "The same Save As as Advance Design's (File > Save As): the model and the analysis model, the results, and the\r\ndocuments, design and selected templates folders of the project are written to the new project, so that it\r\nopens in Advance Design in the same state. The file opened before is left as it was at its last save. From this\r\ncall on the session works on the new file: `SaveProject` and `CloseProject` write to it.\r\n\r\n\r\n\r\nAs in Advance Design, the spaces around the name and before the extension are dropped, a name holding the\r\nextension twice is refused, and the path must stay 28 characters shorter than the Windows path limit (260).\r\n\r\n\r\n\r\nRefused, before anything is written: `PROJECT_NOT_OPEN` when no project is open,\r\n`PROJECT_INVALID_FILENAME` / `PROJECT_INVALID_EXTENSION` as for `NewProject` (and for the extension\r\ntwice),\r\n`PROJECT_FOLDER_NOT_FOUND` when the folder that is to contain the file does not exist (it is not created),\r\n`PROJECT_TARGET_EXISTS` when the file or its project folder (the file's path without `.fto`) already\r\nexists - saving there would first empty it -, and `PROJECT_TARGET_INVALID` when the new project folder and\r\nthe open project's folder would lie one inside the other.\r\n\r\n\r\n`Data` is true and the diagnostics carry `PROJECT_SAVED_AS` (information) when the project was saved to\r\nthe new file. Otherwise `Data` is false with `PROJECT_SAVE_AS_FAILED` (or `PROJECT_SAVE_AS_EXCEPTION`\r\nfor an internal error), whose message says which project the session is on:\r\n<list type=\"bullet\"><item>\"The session's project is still ...\" - nothing was written. It is so for the refusals the engine side makes\r\nbefore writing: a path longer than the limit above, a folder that cannot be written to. The open project is\r\nunchanged and can still be saved and closed as usual.</item><item>\"The session's project is now ...\" - the engine had begun: the session is on the new, possibly partial,\r\ncopy. Do NOT save it (no `SaveProject`, no `CloseProject`): close it with `CloseProjectWithoutSave`,\r\ncheck both folders, and open the original again.</item></list>",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "query",
+            "description": "The name of the new project file, with the extension .fto. A relative name is resolved\r\n            against the working directory of the server (the /w startup option, else the folder the server was started from);\r\n            an absolute path is used as given. The folder that is to contain the file must already exist.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Model/management/CloseProject": {
       "post": {
         "tags": [
           "Model"
         ],
+        "summary": "Saves the open project, then closes it.",
+        "description": "To close it without saving, call `CloseProjectWithoutSave`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Model/management/CloseProjectWithoutSave": {
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "Closes the open project WITHOUT saving it: what changed since its last save is discarded.",
+        "description": "\"Its last save\": `SaveProject`, `SaveProjectAs`, and the operations that save the project on their\r\nown - the calculations, the combinations generation, the model settings and the deletion of a structural system.\r\nTo save the project before closing it, call `CloseProject`.",
         "responses": {
           "200": {
             "description": "OK",
@@ -3681,8 +3786,40 @@
           "Model"
         ],
         "summary": "Close the current session and request the local API host to shut down.",
-        "description": "Use this endpoint when multiple automation sessions run in parallel and you want to release\r\nthe resources associated with the current one.",
+        "description": "Use this endpoint when multiple automation sessions run in parallel and you want to release\r\nthe resources associated with the current one.\r\n\r\n\r\n\r\nThe call returns at once; the shutdown follows in the background, about 5 seconds later. The\r\nserver then waits for an operation or analysis that is already running (or queued) to finish,\r\nsaves and closes the open project - there is no need to call `CloseProject` first -\r\nreleases the licence, and the process exits. How long that takes depends on the operation still\r\nrunning and on the size of the project. To close the open project without saving it, call\r\n`CloseSessionWithoutSave` instead.\r\n\r\n\r\n\r\nFrom this call on, every other `api/Model` request is refused at once with HTTP 503 and the\r\nerror code `SERVICE_STOPPING`, and `GET api/Service/GetStatus` answers `Stopping`\r\nuntil the process has exited. Calling `CloseSession` again is harmless: the first close requested decides how\r\nthe project is closed, and the `SESSION_CLOSING` message of a later call says it joined that close and\r\nwhat it does.",
         "operationId": "CloseSession",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Model/management/CloseSessionWithoutSave": {
+      "post": {
+        "tags": [
+          "Model"
+        ],
+        "summary": "Close the current session WITHOUT saving the open project, and request the local API host to shut down.",
+        "description": "The same as `CloseSession`, except that a project still open is closed without saving: what changed since\r\nits last save is discarded, as with `CloseProjectWithoutSave`.\r\n\r\n\r\n\r\nThe first close requested decides how the project is closed: a `CloseSession` or\r\n`CloseSessionWithoutSave` called afterwards - or a stop of the host (Ctrl+C) - joins the close already\r\nrequested and changes nothing. The `SESSION_CLOSING` message always says what the close in force does:\r\na call that joined an earlier `CloseSession` (or a stop of the host) reports that the project is saved.",
+        "operationId": "CloseSessionWithoutSave",
         "responses": {
           "200": {
             "description": "OK",
@@ -3721,6 +3858,27 @@
               "application/json": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Service/GetStatus": {
+      "get": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Returns whether the Advance Design API service can run model operations, and if not, why -\r\ntoday: whether it holds its licence, and what that licence allows.",
+        "description": "Needs no project and no model, and is not queued behind a running model operation or analysis: the licence part is a snapshot taken when the service started and refreshed now and then while the service is idle (`licence.checkedAt` says when).\r\n\r\n\r\n\r\nAlways HTTP 200 while the service answers: the verdict is in the body. Decide with `canRun`; `status` is a string that may take new values in later versions - treat any value other than `Ok` as \"not Ok\". While the service is still starting, the call waits up to 30 seconds and may answer `Starting`: ask again.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceStatus"
                 }
               }
             }
@@ -6008,6 +6166,31 @@
         "type": "string",
         "description": "A local principal axis of the cross-section<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - Y</b>: The local y-y axis. Native: Y_AXIS.</li>\r\n<li><b>1 - Z</b>: The local z-z axis. Native: Z_AXIS.</li>\r\n</ul>\r\n"
       },
+      "DesignCalculationLicence": {
+        "required": [
+          "isAvailable",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DesignCalculationType"
+              }
+            ],
+            "description": "Which design family this entry describes - the same enumeration\r\n`LaunchDesignCalculation` takes.\r\n\r\nDefault value: DesignCalculationType.Concrete",
+            "default": "Concrete"
+          },
+          "isAvailable": {
+            "type": "boolean",
+            "description": "True when the licence module(s) this family needs could be checked out when the licence was\r\nlast read (AD.API.LicenceStatus.CheckedAt). `Composite` needs both the concrete\r\nand the steelwork modules.\r\n\r\n\r\n\r\nAlways false when the mandatory licence of the server is not held\r\n(AD.API.LicenceStatus.IsAvailable false): nothing was asked of the licence component then.\r\n\r\n\r\n\r\nDefault value: false",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "description": "Whether the licence of ONE design family is available, as part of AD.API.LicenceStatus.\r\nThe server returns one entry for every `DesignCalculationType` it knows.\r\n\r\n\r\n\r\nThe answer comes from the SAME licence mapping `LaunchDesignCalculation` refuses on, so a\r\nfamily reported available here was not refused for licence reasons at the time of\r\nAD.API.LicenceStatus.CheckedAt. It is no promise about a later call:\r\n`LaunchDesignCalculation` does its own full checkout, and other gates (for example the\r\n2nd-generation EC3 gate) can still refuse it."
+      },
       "DesignCalculationType": {
         "enum": [
           "Concrete",
@@ -7522,10 +7705,11 @@
           "eq6_24",
           "eq6_25",
           "eq6_26",
-          "VERIF_NOT_NECCESSARY"
+          "VERIF_NOT_NECCESSARY",
+          "eq8_59"
         ],
         "type": "string",
-        "description": "The EN 1993-1-3 formula a cold-formed verification applied<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - noRef</b>: No formula recorded. Either the check did not run, or it is one of those whose clause offers a single expression and the engine leaves the field alone. Native: noRef.</li>\r\n<li><b>1 - eq6_1</b>: Equation (6.1) - design resistance to axial tension. Native: eq6_1.</li>\r\n<li><b>2 - eq6_2</b>: Equation (6.2) - resistance to axial compression on the EFFECTIVE area, used when that area is smaller than the gross one. Native: eq6_2.</li>\r\n<li><b>3 - eq6_3</b>: Equation (6.3) - resistance to axial compression on the gross area with the average yield strength, used when the effective area equals the gross one. Native: eq6_3.</li>\r\n<li><b>4 - eq6_4</b>: Equation (6.4) - design moment resistance, effective section. Native: eq6_4.</li>\r\n<li><b>5 - eq6_5</b>: Equation (6.5) - design moment resistance, partially plastic. Native: eq6_5.</li>\r\n<li><b>6 - eq6_6</b>: Equation (6.6) - design moment resistance, elastic-plastic. Native: eq6_6.</li>\r\n<li><b>7 - eq6_7</b>: Equation (6.7) - design moment resistance, elastic. Native: eq6_7.</li>\r\n<li><b>8 - eq6_8</b>: Equation (6.8) - reduced moment resistance for a stiffened web. Native: eq6_8.</li>\r\n<li><b>9 - eq6_11a</b>: Equation (6.11a) - shear buckling strength. Native: eq6_11a.</li>\r\n<li><b>10 - eq6_11b</b>: Equation (6.11b) - shear buckling strength. Native: eq6_11b.</li>\r\n<li><b>11 - eq6_11c</b>: Equation (6.11c) - shear buckling strength. Native: eq6_11c.</li>\r\n<li><b>12 - eq6_23</b>: Equation (6.23) - combined tension and bending. Native: eq6_23.</li>\r\n<li><b>13 - eq6_24</b>: Equation (6.24) - combined tension and bending. Native: eq6_24.</li>\r\n<li><b>14 - eq6_25</b>: Equation (6.25) - combined compression and bending. Native: eq6_25.</li>\r\n<li><b>15 - eq6_26</b>: Equation (6.26) - combined compression and bending. Native: eq6_26.</li>\r\n<li><b>16 - VERIF_NOT_NECCESSARY</b>: The verification was not necessary. Native: VERIF_NOT_NECCESSARY - the native spelling, kept as is.</li>\r\n</ul>\r\n"
+        "description": "The EN 1993-1-3 formula a cold-formed verification applied<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - noRef</b>: No formula recorded. Either the check did not run, or it is one of those whose clause offers a single expression and the engine leaves the field alone. Native: noRef.</li>\r\n<li><b>1 - eq6_1</b>: Equation (6.1) - design resistance to axial tension. Native: eq6_1.</li>\r\n<li><b>2 - eq6_2</b>: Equation (6.2) - resistance to axial compression on the EFFECTIVE area, used when that area is smaller than the gross one. Native: eq6_2.</li>\r\n<li><b>3 - eq6_3</b>: Equation (6.3) - resistance to axial compression on the gross area with the average yield strength, used when the effective area equals the gross one. Native: eq6_3.</li>\r\n<li><b>4 - eq6_4</b>: Equation (6.4) - design moment resistance, effective section. Native: eq6_4.</li>\r\n<li><b>5 - eq6_5</b>: Equation (6.5) - design moment resistance, partially plastic. Native: eq6_5.</li>\r\n<li><b>6 - eq6_6</b>: Equation (6.6) - design moment resistance, elastic-plastic. Native: eq6_6.</li>\r\n<li><b>7 - eq6_7</b>: Equation (6.7) - design moment resistance, elastic. Native: eq6_7.</li>\r\n<li><b>8 - eq6_8</b>: Equation (6.8) - reduced moment resistance for a stiffened web. Native: eq6_8.</li>\r\n<li><b>9 - eq6_11a</b>: Equation (6.11a) - shear buckling strength. Native: eq6_11a.</li>\r\n<li><b>10 - eq6_11b</b>: Equation (6.11b) - shear buckling strength. Native: eq6_11b.</li>\r\n<li><b>11 - eq6_11c</b>: Equation (6.11c) - shear buckling strength. Native: eq6_11c.</li>\r\n<li><b>12 - eq6_23</b>: Equation (6.23) - combined tension and bending. Native: eq6_23.</li>\r\n<li><b>13 - eq6_24</b>: Equation (6.24) - combined tension and bending. Native: eq6_24.</li>\r\n<li><b>14 - eq6_25</b>: Equation (6.25) - combined compression and bending. Native: eq6_25.</li>\r\n<li><b>15 - eq6_26</b>: Equation (6.26) - combined compression and bending. Native: eq6_26.</li>\r\n<li><b>16 - VERIF_NOT_NECCESSARY</b>: The verification was not necessary. Native: VERIF_NOT_NECCESSARY - the native spelling, kept as is.</li>\r\n<li><b>17 - eq8_59</b>: Equation (8.59) of EN 1993-1-3:2024 (2nd generation) - total shear stress checked against the shear buckling strength fbv instead of fya/sqrt(3). Native: eq8_59.</li>\r\n</ul>\r\n"
       },
       "Ec3CrossSectionClass": {
         "enum": [
@@ -13024,6 +13208,77 @@
         "type": "string",
         "description": "<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - eLanguageFrench</b>: </li>\r\n<li><b>1 - eLanguageEnglish</b>: </li>\r\n<li><b>2 - eLanguageRomanian</b>: </li>\r\n<li><b>3 - eLanguageGerman</b>: </li>\r\n<li><b>4 - eLanguagePolish</b>: </li>\r\n<li><b>5 - eLanguageCzech</b>: </li>\r\n<li><b>6 - eLanguageDutch</b>: </li>\r\n<li><b>7 - eLanguageRussian</b>: </li>\r\n<li><b>8 - eLanguageSpanish</b>: </li>\r\n<li><b>9 - eLanguageEnglishUK</b>: </li>\r\n<li><b>10 - eLanguageHungarian</b>: </li>\r\n<li><b>11 - eLanguageChinese</b>: </li>\r\n<li><b>12 - eLanguageTaiwan</b>: </li>\r\n<li><b>13 - eLanguageJapanese</b>: </li>\r\n<li><b>14 - eLanguageKorean</b>: </li>\r\n<li><b>15 - eLanguageBulgarian</b>: </li>\r\n<li><b>16 - eLanguageGreek</b>: </li>\r\n<li><b>17 - eLanguageTurkish</b>: </li>\r\n<li><b>18 - eLanguageQuebec</b>: </li>\r\n<li><b>19 - eLanguageItalian</b>: </li>\r\n<li><b>20 - eLanguagePortuguese</b>: </li>\r\n<li><b>21 - eLanguagePortugueseBrazilian</b>: </li>\r\n<li><b>22 - eLanguageSlovak</b>: </li>\r\n<li><b>23 - eLanguageEndMark</b>: </li>\r\n</ul>\r\n"
       },
+      "LicenceProtectionType": {
+        "enum": [
+          "NoLicence",
+          "Demo",
+          "Evaluation",
+          "Education",
+          "Commercial",
+          "Reseller",
+          "Internal",
+          "HomeUse",
+          "Unknown"
+        ],
+        "type": "string",
+        "description": "The kind of licence the server runs under - the licence component's own classification, value\r\nfor value.\r\n\r\n\r\n`Unknown` is the one value the licence component does not have: it stands for a number it\r\nreported that is none of the others, so a newer licence component can never make this enumeration\r\nlie by name.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - NoLicence</b>: No licence.</li>\r\n<li><b>1 - Demo</b>: Demonstration licence.</li>\r\n<li><b>2 - Evaluation</b>: Evaluation (trial) licence.</li>\r\n<li><b>3 - Education</b>: Education licence.</li>\r\n<li><b>4 - Commercial</b>: Commercial licence.</li>\r\n<li><b>5 - Reseller</b>: Reseller licence.</li>\r\n<li><b>6 - Internal</b>: Graitec internal licence.</li>\r\n<li><b>7 - HomeUse</b>: Home-use licence.</li>\r\n<li><b>-1 - Unknown</b>: The licence component reported a kind this server does not know.</li>\r\n</ul>\r\n"
+      },
+      "LicenceStatus": {
+        "required": [
+          "checkedAt",
+          "designCalculations",
+          "isAvailable",
+          "isPermanent",
+          "protectionType"
+        ],
+        "type": "object",
+        "properties": {
+          "checkedAt": {
+            "type": "string",
+            "description": "When the licence was read for this snapshot.\r\n\r\nDefault value: 0001-01-01T00:00:00+00:00",
+            "format": "date-time"
+          },
+          "isAvailable": {
+            "type": "boolean",
+            "description": "True when the server holds its MANDATORY licence - the base module and the user seat,\r\nchecked out together when the server started. Without it no model operation can be relied\r\nupon, and AD.API.LicenceStatus.ErrorMessage says why.\r\n\r\n\r\n\r\nThe mandatory licence is checked out once, at startup, and never checked out again\r\nafterwards: a network licence whose lease is lost later is NOT detected here.\r\n\r\nDefault value: false",
+            "default": false
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Why the mandatory licence is not held, in words a user can act on: the licence component's\r\nown message without its technical lines (licence server names, licence file paths, raw error\r\ncodes - those go to the server log only), or, when nothing is left of it, a description of\r\nwhat failed. Also set when the licence was released because the server is shutting down,\r\nand - with AD.API.LicenceStatus.IsAvailable true - when the licence is held but its details could\r\nnot be read. `null` when there is nothing to report.\r\n\r\nDefault value: null",
+            "nullable": true
+          },
+          "protectionType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LicenceProtectionType"
+              }
+            ],
+            "description": "The kind of licence the server runs under.\r\n\r\nDefault value: LicenceProtectionType.NoLicence<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - NoLicence</b>: No licence.</li>\r\n<li><b>1 - Demo</b>: Demonstration licence.</li>\r\n<li><b>2 - Evaluation</b>: Evaluation (trial) licence.</li>\r\n<li><b>3 - Education</b>: Education licence.</li>\r\n<li><b>4 - Commercial</b>: Commercial licence.</li>\r\n<li><b>5 - Reseller</b>: Reseller licence.</li>\r\n<li><b>6 - Internal</b>: Graitec internal licence.</li>\r\n<li><b>7 - HomeUse</b>: Home-use licence.</li>\r\n<li><b>-1 - Unknown</b>: The licence component reported a kind this server does not know.</li>\r\n</ul>\r\n",
+            "default": "NoLicence"
+          },
+          "isPermanent": {
+            "type": "boolean",
+            "description": "True when the base module's licence never expires. AD.API.LicenceStatus.DaysToExpiry is null then.\r\n\r\nDefault value: false",
+            "default": false
+          },
+          "daysToExpiry": {
+            "type": "integer",
+            "description": "Days left before the base module's licence expires, counted when the snapshot was taken.\r\n`null` when the licence is permanent, when none is held, or when the licence component\r\ncould not tell.\r\n\r\nDefault value: null",
+            "format": "int32",
+            "nullable": true
+          },
+          "designCalculations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DesignCalculationLicence"
+            },
+            "description": "Whether each design family's licence is available. The server always fills in every\r\n`DesignCalculationType` it knows, in the order of that enumeration.\r\n\r\nDefault value: empty (the server fills it)"
+          }
+        },
+        "additionalProperties": false,
+        "description": "The licence section of `GetStatus`: whether this server holds the licence it needs to\r\nrun, and what that licence allows.\r\n\r\n\r\n\r\nA SNAPSHOT, NOT A LIVE READ. The licence is read when the server starts, and again now and\r\nthen when the server is idle; AD.API.LicenceStatus.CheckedAt says when this one was taken. Reading it\r\nnever waits behind a running model operation.\r\n\r\n\r\nAD.API.LicenceStatus.IsAvailable is the one value that decides whether the server can work. Everything\r\nelse describes the licence it holds, and is at its default when it holds none - including once\r\nthe licence has been RELEASED because the server is shutting down: then only\r\nAD.API.LicenceStatus.CheckedAt and AD.API.LicenceStatus.ErrorMessage are set, and nothing of the released\r\nlicence is reported any more."
+      },
       "LinearDesignTemplate": {
         "allOf": [
           {
@@ -13242,6 +13497,12 @@
             ],
             "description": "Climatic Type - what type of structure is considered for 2D climatic calculations\r\n\r\nDefault value : Load_Area_Type.CG_LOADAREA_BUILDING",
             "default": "CG_LOADAREA_BUILDING"
+          },
+          "effectiveWindArea": {
+            "type": "number",
+            "description": "ASCE 7-22 Chapter 30 (components and cladding) effective wind area\r\n\r\nUnit: m2\r\n\r\nDefault value: 0.929 (10 ft2)",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -13473,6 +13734,12 @@
               "$ref": "#/components/schemas/FreeStandingWallShelterFactor"
             },
             "description": "Free standing wall options per wind direction(X+, X-, Y+ and Y-) : empty or with Wind_Directions_type::GRCG_WIND_DIRECTIONS_NO(=4) elements for each wind direction X+(position 0), X-(position 1), Y+(position 2) and Y-(position 3)",
+            "nullable": true
+          },
+          "effectiveWindArea": {
+            "type": "number",
+            "description": "ASCE 7-22 Chapter 30 (components and cladding) effective wind area \r\n\r\nUnit: m2\r\n\r\nDefault value : 0.929 (10 ft2)",
+            "format": "double",
             "nullable": true
           }
         },
@@ -27188,6 +27455,55 @@
         },
         "additionalProperties": false,
         "description": "Damping associated to each degree of freedom"
+      },
+      "ServiceStatus": {
+        "required": [
+          "canRun",
+          "schemaVersion",
+          "serviceVersion",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "description": "Version of the shape of this object; rises when a section or a status value is added. See\r\nthe remarks of AD.API.Srv.Models.ServiceStatus.\r\n\r\nDefault value: 1",
+            "format": "int32",
+            "default": 1
+          },
+          "serviceVersion": {
+            "minLength": 1,
+            "type": "string",
+            "description": "Version of the API service - the same string `GET api/Service/GetVersion` returns."
+          },
+          "status": {
+            "minLength": 1,
+            "type": "string",
+            "description": "The verdict, one of AD.API.Srv.Models.ServiceStatusCodes: `Ok`, `Starting`,\r\n`Licence_Unavailable`, `Initialization_Failed` or `Stopping` (after\r\n`CloseSession`, until the process exits) today.\r\n\r\n\r\n\r\nA STRING, NOT AN ENUMERATION, ON PURPOSE: more values may come. Treat an unknown one as\r\n\"not Ok\" and decide with AD.API.Srv.Models.ServiceStatus.CanRun.\r\n\r\nDefault value: \"Starting\"",
+            "default": "Starting"
+          },
+          "canRun": {
+            "type": "boolean",
+            "description": "True when model operations can be sent to this service now. The one value to decide on,\r\nwhatever AD.API.Srv.Models.ServiceStatus.Status says.\r\n\r\nDefault value: false",
+            "default": false
+          },
+          "message": {
+            "type": "string",
+            "description": "What a user should be told when AD.API.Srv.Models.ServiceStatus.Status is not `Ok`. `null` when it\r\nis.\r\n\r\nDefault value: null",
+            "nullable": true
+          },
+          "licence": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LicenceStatus"
+              }
+            ],
+            "description": "The licence this service holds. `null` while it is not known yet (status\r\n`Starting`) or when no licence state could be recorded. With `Stopping`, the last\r\nsnapshot taken - once the licence is released it reports nothing of it any more.\r\n\r\nDefault value: null",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "The state of the Advance Design API service: whether it can run model operations, and if not,\r\nwhy. Returned by `GET api/Service/GetStatus`."
       },
       "ShearBucklingVerificationType": {
         "enum": [

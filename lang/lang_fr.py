@@ -687,6 +687,7 @@ MSG_LOG = {
     "screenshot_failed": "Échec de l'enregistrement de la vue : {details}",
     "png_export_scale_set": "Échelle d'export PNG : {scale}",
     "png_export_mode_set": "Export PNG : {label}",
+    "licence_ok": "Licence détectée",
     "api_connection": "Connexion API : {host}",
     "api_url_loaded": "URL API chargée : {url}",
 
@@ -818,6 +819,8 @@ MSG_ERR = {
         "API non joignable sur {hostname}:{port}. "
         "Vérifiez qu'Advance Design et l'API sont démarrés."
     ),
+    "licence_open_failed": "Impossible d'ouvrir le fichier, un problème de licence a été détecté.",
+    "licence_startup_failed": "Un problème de licence a été détecté.",
     "api_contact_failed": "Impossible de contacter l'API Advance Design ({host}).",
 
     "http_error": "{label} HTTP {status}: {body}",

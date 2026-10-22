@@ -687,6 +687,7 @@ MSG_LOG = {
     "screenshot_failed": "Failed to save the view: {details}",
     "png_export_scale_set": "PNG export scale: {scale}",
     "png_export_mode_set": "PNG export: {label}",
+    "licence_ok": "Licence detected",
     "api_connection": "API connection: {host}",
     "api_url_loaded": "API URL loaded: {url}",
 
@@ -818,6 +819,8 @@ MSG_ERR = {
         "API not reachable at {hostname}:{port}. "
         "Check that Advance Design and the API are running."
     ),
+    "licence_open_failed": "Unable to open the file, a licence problem was detected.",
+    "licence_startup_failed": "A licence problem was detected.",
     "api_contact_failed": "Unable to contact the Advance Design API ({host}).",
 
     "http_error": "{label} HTTP {status}: {body}",

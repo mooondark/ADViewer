@@ -1017,6 +1017,23 @@ class UpdateCheckWorker(QThread):
             self.error.emit()
 
 
+class LicenceCheckWorker(QThread):
+    checked = Signal(bool, str)
+
+    def __init__(self, host: str):
+        super().__init__()
+        self.host = host
+
+    def run(self):
+        status = get_status(self.host)
+        if status is None:
+            return
+        if status.get("canRun") is False:
+            self.checked.emit(False, status.get("message") or status.get("status") or "")
+        elif status.get("canRun") is True:
+            self.checked.emit(True, "")
+
+
 class LoadAnalysisResultsWorker(QThread):
     success = Signal(object)
     error = Signal(str)
@@ -6322,6 +6339,7 @@ class MainWindow(QMainWindow):
             self.api_server_started_by_viewer = True
             self._update_api_button_state()
             self.log(tr_log("api_server_started"), "ok")
+            self.check_licence_after_api_start()
         except Exception as e:
             details = str(e).strip() or e.__class__.__name__
             self.log(tr_err("api_server_start_failed", details=details), "error")
@@ -7199,6 +7217,20 @@ class MainWindow(QMainWindow):
         )
         self.model_check.update_actions()
 
+    def check_licence_after_api_start(self):
+        host = self.host_edit.text().strip().rstrip("/")
+        self._licence_worker = LicenceCheckWorker(host)
+        self._licence_worker.checked.connect(self._on_licence_checked)
+        self._licence_worker.start()
+
+    def _on_licence_checked(self, ok: bool, detail: str):
+        if ok:
+            self.log(tr_log("licence_ok"), "ok")
+            return
+        self.log(tr_err("licence_startup_failed"), "error")
+        if detail:
+            self.log(detail, "error")
+
     def on_model_error(self, error_text: str):
         self.project_session = None
         self.current_model_has_analysis_results = False
@@ -7218,6 +7250,10 @@ class MainWindow(QMainWindow):
             self.viewer.load_mesh([], [])
         text = error_text.strip()
         low = text.lower()
+
+        if text == tr_err("licence_open_failed"):
+            self.log(text, "error")
+            return
 
         if (
             "api non joignable" in low

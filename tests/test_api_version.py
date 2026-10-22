@@ -160,3 +160,15 @@ if __name__ == "__main__":
         t()
         print(f"ok {t.__name__}()")
     print(f"OK {len(tests)} tests")
+
+
+def test_licence_problem_only_when_can_run_is_false():
+    bad = lambda url, timeout=None, **k: _Resp('{"canRun": false, "status": "Licence_Unavailable", "message": "No seat"}')
+    ok = lambda url, timeout=None, **k: _Resp('{"canRun": true, "status": "Ok"}')
+    assert _with_get(bad, lambda: _client().licence_problem())["message"] == "No seat"
+    assert _with_get(ok, lambda: _client().licence_problem()) is None
+
+    def down(url, timeout=None, **kwargs):
+        raise requests.exceptions.ConnectionError("down")
+
+    assert _with_get(down, lambda: _client().licence_problem()) is None

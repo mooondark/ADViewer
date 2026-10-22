@@ -2886,6 +2886,11 @@ class LoadModelWorker(QThread):
             check_port(self.host)
             self._emit_progress(6, tr_log("api_ok"))
             self.log.emit(tr_log("api_ok"), "ok")
+            status = licence_problem(self.host)
+            if status:
+                self.log.emit(status.get("message") or status.get("status") or "", "error")
+                self.error.emit(tr_err("licence_open_failed"))
+                return
             try:
                 api_version = get_api_version(self.host)
             except Exception:
