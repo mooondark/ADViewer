@@ -2919,6 +2919,7 @@ class MainWindow(QMainWindow):
         self.calc_btn = QPushButton()
         self.calc_btn.setProperty("iconOnly", True)
         self._calc_btn_opacity_effect = QGraphicsOpacityEffect(self.calc_btn)
+        self._calc_btn_opacity_effect.setEnabled(False)
         self.calc_btn.setGraphicsEffect(self._calc_btn_opacity_effect)
         self._calc_done = False
         self._setup_view_button(self.calc_btn, "calculer", tr_ui("calc_ef_button"))
@@ -6915,7 +6916,9 @@ class MainWindow(QMainWindow):
         done = bool(status.get("femIsCalculated")) and status.get("meshState") == "mesh_available"
         self._calc_done = done
         self.calc_btn.setEnabled(True)
-        self._calc_btn_opacity_effect.setOpacity(0.4 if done else 1.0)
+        # Effet desactive hors etat "calcule" : a opacite 1.0 Qt n'affiche plus le bouton.
+        self._calc_btn_opacity_effect.setEnabled(done)
+        self._calc_btn_opacity_effect.setOpacity(0.4)
         tooltip = tr_ui("calc_ef_button_not_needed") if done else tr_ui("calc_ef_button")
         if done:
             tooltip += "\n" + tr_ui("calc_ef_button_force_hint")
