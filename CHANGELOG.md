@@ -2,7 +2,7 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
-## À paraître
+## 2.20
 
 ### FR
 - Export IFC exécuté en tâche de fond : la fenêtre ne se fige plus sur un gros modèle.
