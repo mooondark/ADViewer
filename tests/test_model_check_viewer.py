@@ -112,3 +112,23 @@ def test_focus_bounds_keeps_view_direction_and_frames_the_box():
     assert all(abs(a - b) < 1e-9 for a, b in zip(before, after))
     fx, fy, fz = cam.GetFocalPoint()
     assert abs(fx - 5.0) < 1e-6
+
+
+def test_focus_bounds_on_small_box_of_large_model_keeps_near_plane_ahead_of_the_box():
+    w = _viewer([])
+    plane = vtk.vtkPlaneSource()
+    plane.SetOrigin(-200, -200, 0)
+    plane.SetPoint1(200, -200, 0)
+    plane.SetPoint2(-200, 200, 0)
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(plane.GetOutputPort())
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    w.renderer.AddActor(actor)
+    cam = w.renderer.GetActiveCamera()
+    cam.SetPosition(1, -1, 1)
+    cam.SetFocalPoint(0, 0, 0)
+    cam.SetViewUp(0, 0, 1)
+    w.focus_bounds((-0.05, 0.05, -0.05, 0.05, -0.05, 0.05))
+    near, _ = cam.GetClippingRange()
+    assert near < 0.2 * cam.GetDistance()

@@ -3193,6 +3193,12 @@ class VTKViewerWidget(QFrame):
     def focus_bounds(self, bounds):
         """Cadre la camera sur une boite (xmin, xmax, ymin, ymax, zmin, zmax)
         sans changer sa direction de visee."""
+        model = self._get_visible_bounds()
+        if model is not None:
+            # VTK place le plan proche a ~1 % du plan lointain (taille du modele) :
+            # une boite trop petite mettrait la camera en deca et couperait la vue.
+            diag = math.sqrt(sum((model[2 * i + 1] - model[2 * i]) ** 2 for i in range(3)))
+            bounds = _clip_box.expand_bounds(bounds, 0.0, min_size=0.06 * diag)
         self.renderer.ResetCamera(*bounds)
         self.renderer.ResetCameraClippingRange()
         self.render_window.Render()

@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## À paraître
+
+### FR
+- Correction : contrôle modèle, le bouton "Voir" ne coupe plus une partie du modèle 3D sur les gros modèles (idem pour le zoom sur la sélection).
+
+### EN
+- Fix: model check, the "View" button no longer clips part of the 3D model on large models (same for zoom to selection).
+
 ## 2.20
 
 ### FR
