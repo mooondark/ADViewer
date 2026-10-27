@@ -1187,7 +1187,7 @@ class BuildLoadsWorker(QThread):
     def _active_count(loads, build: bool, case_filter):
         if not build or not loads:
             return 0
-        return len([ld for ld in loads if case_filter is None or ld.get("load_case_eid") == case_filter])
+        return len([ld for ld in loads if case_filter is None or ld.get("load_case_eid") in case_filter])
 
     def run(self):
         try:
@@ -1499,7 +1499,6 @@ class MainWindow(QMainWindow):
         # Charges ponctuelles
         self._punctual_load_cases: list = []   # [{eid, label}, ...]
         self.chk_punctual_loads = None
-        self.cmb_punctual_load_case = None
         self.spin_punctual_load_scale = None
         self.chk_load_auto_scale = None
         # Charges linéaires
@@ -3391,28 +3390,83 @@ class MainWindow(QMainWindow):
         ]
         return "\n".join(lines)
 
+    # Type de noeud de la branche Chargement ("loads_root", "family", "case") ; None = systeme de structure
+    _LOAD_NODE_ROLE = Qt.UserRole + 1
+    _LOAD_TOOLTIP_ROLE_ORDER = ("punctual_load", "linear_load", "planar_load", "imposed_displacement")
+
+    def _load_tree_tooltip(self, model_data: dict, case_eids) -> str:
+        case_eids = set(case_eids)
+        counts = {
+            f"{kind}_load": sum(1 for ld in model_data.get(f"{kind}_loads") or [] if ld.get("load_case_eid") in case_eids)
+            for kind in ("punctual", "linear", "planar")
+        }
+        displacements = model_data.get("imposed_displacement_counts") or {}
+        counts["imposed_displacement"] = sum(displacements.get(eid, 0) for eid in case_eids)
+        return "\n".join(
+            tr_ui(self._ROLE_COUNT_KEYS[role], count=counts[role])
+            for role in self._LOAD_TOOLTIP_ROLE_ORDER
+            if counts[role]
+        )
+
+    def _load_selection_items(self, case_eids) -> list:
+        """Items {role, index} des charges des cas donnes (indices = listes de charges du modele)."""
+        model_data = self.current_model_data or {}
+        return [
+            {"role": f"{kind}_load", "index": index}
+            for kind in ("punctual", "linear", "planar")
+            for index, ld in enumerate(model_data.get(f"{kind}_loads") or [])
+            if ld.get("load_case_eid") in case_eids
+        ]
+
+    def _tree_selection_items(self, tree_items) -> list:
+        """Elements de structure des systemes et charges des cas/familles choisis dans l'arbre."""
+        model_data = self.current_model_data or {}
+        system_eids, case_eids = set(), set()
+        stack = list(tree_items)
+        while stack:
+            item = stack.pop()
+            # Systeme ou cas decoche : ses elements sont masques, donc ni selection ni isolation
+            if item.checkState(0) == Qt.Unchecked:
+                continue
+            kind = item.data(0, self._LOAD_NODE_ROLE)
+            if kind is None:
+                system_eids.add(item.data(0, Qt.UserRole))
+            elif kind == "case":
+                case_eids.add(item.data(0, Qt.UserRole))
+            stack.extend(item.child(i) for i in range(item.childCount()))
+        return (resolve_system_selection_items(model_data.get("system_direct_items") or {}, system_eids)
+                + self._load_selection_items(case_eids))
+
     def _populate_systems_tab(self, model_data: dict = None):
         if self.systems_tree is None:
             return
         self.systems_tree.clear()
-        systems_tree = (model_data or {}).get("systems_tree") or {}
+        self._systems_hidden_keys = set()
+        self._hidden_load_cases = set()
+        model_data = model_data or {}
+        systems_tree = model_data.get("systems_tree") or {}
         nodes = systems_tree.get("nodes") or {}
         roots = systems_tree.get("roots") or []
-        direct_items = (model_data or {}).get("system_direct_items") or {}
-        self.systems_empty_label.setVisible(not roots)
-        self.systems_tree.setVisible(bool(roots))
+        direct_items = model_data.get("system_direct_items") or {}
+        load_tree = model_data.get("load_tree") or []
+        self.systems_empty_label.setVisible(not roots and not load_tree)
+        self.systems_tree.setVisible(bool(roots or load_tree))
+
+        def new_item(label, eid, tooltip, kind=None):
+            item = QTreeWidgetItem([label])
+            item.setData(0, Qt.UserRole, eid)
+            item.setData(0, self._LOAD_NODE_ROLE, kind)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsAutoTristate)
+            item.setCheckState(0, Qt.Checked)
+            if tooltip:
+                item.setToolTip(0, tooltip)
+            return item
 
         def add_node(parent_item, eid):
             node = nodes.get(eid)
             if node is None:
                 return
-            item = QTreeWidgetItem([self._system_tree_label(node)])
-            item.setData(0, Qt.UserRole, eid)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsAutoTristate)
-            item.setCheckState(0, Qt.Checked)
-            tooltip = self._system_tree_tooltip(direct_items, nodes, eid)
-            if tooltip:
-                item.setToolTip(0, tooltip)
+            item = new_item(self._system_tree_label(node), eid, self._system_tree_tooltip(direct_items, nodes, eid))
             if parent_item is None:
                 self.systems_tree.addTopLevelItem(item)
                 item.setExpanded(True)  # racine (ex. "Structure") toujours developpee au demarrage
@@ -3424,23 +3478,57 @@ class MainWindow(QMainWindow):
         for root_eid in roots:
             add_node(None, root_eid)
 
+        if load_tree:
+            all_cases = [case["eid"] for family in load_tree for case in family["cases"]]
+            loads_root = new_item(tr_ui("loads_tree_root"), None, self._load_tree_tooltip(model_data, all_cases), "loads_root")
+            self.systems_tree.addTopLevelItem(loads_root)
+            for family in load_tree:
+                case_eids = [case["eid"] for case in family["cases"]]
+                family_item = new_item(family["name"], family["eid"], self._load_tree_tooltip(model_data, case_eids), "family")
+                loads_root.addChild(family_item)
+                for case in family["cases"]:
+                    label = f"{case['user_id']} - {case['name']}" if case["user_id"] not in (None, "") else case["name"]
+                    family_item.addChild(new_item(label, case["eid"], self._load_tree_tooltip(model_data, [case["eid"]]), "case"))
+            loads_root.setExpanded(True)  # familles visibles, cas replies
+
     def _apply_systems_visibility(self):
         """Masque dans la vue 3D les elements des systemes decoches, sauf ceux
         qui appartiennent aussi a un systeme coche (ou partiellement coche)."""
         if self.viewer is None:
             return
-        shown, unchecked = set(), set()
+        shown, unchecked, hidden_cases = set(), set(), set()
         it = QTreeWidgetItemIterator(self.systems_tree)
         while it.value():
             item = it.value()
-            (unchecked if item.checkState(0) == Qt.Unchecked else shown).add(item.data(0, Qt.UserRole))
+            kind = item.data(0, self._LOAD_NODE_ROLE)
+            is_unchecked = item.checkState(0) == Qt.Unchecked
+            if kind is None:
+                (unchecked if is_unchecked else shown).add(item.data(0, Qt.UserRole))
+            elif kind == "case" and is_unchecked:
+                hidden_cases.add(item.data(0, Qt.UserRole))
             it += 1
-        direct_items = (self.current_model_data or {}).get("system_direct_items") or {}
+        model_data = self.current_model_data or {}
+        direct_items = model_data.get("system_direct_items") or {}
         visible = {(i["role"], i["index"]) for i in resolve_system_selection_items(direct_items, shown)}
         hidden = [i for i in resolve_system_selection_items(direct_items, unchecked) if (i["role"], i["index"]) not in visible]
-        self.viewer.set_hidden_items(hidden, rebuild_profiles=False)
-        self._refresh_mesh_display()
-        self._refresh_profiles_if_needed()
+        # Chaque reconstruction est couteuse : on ne reconstruit que la partie (structure / charges) modifiee
+        hidden_keys = {(i["role"], i["index"]) for i in hidden}
+        if hidden_keys != self._systems_hidden_keys:
+            self._systems_hidden_keys = hidden_keys
+            self.viewer.set_hidden_items(hidden, rebuild_profiles=False)
+            self._refresh_mesh_display()
+            self._refresh_profiles_if_needed()
+        if hidden_cases != self._hidden_load_cases:
+            self._hidden_load_cases = hidden_cases
+            all_cases = {
+                ld.get("load_case_eid")
+                for kind in ("punctual", "linear", "planar")
+                for ld in model_data.get(f"{kind}_loads") or []
+            }
+            visible_cases = (all_cases - hidden_cases) if hidden_cases else None
+            for kind in ("punctual", "linear", "planar"):
+                setattr(self.viewer, f"_{kind}_load_case_filter", visible_cases)
+            self._mark_loads_dirty("punctual", "linear", "planar")
 
     @staticmethod
     def _set_branch_expanded(item, expanded: bool):
@@ -3476,11 +3564,7 @@ class MainWindow(QMainWindow):
         if not items or self.viewer is None:
             return
 
-        root_eids = [it.data(0, Qt.UserRole) for it in items]
-        model_data = self.current_model_data or {}
-        nodes = (model_data.get("systems_tree") or {}).get("nodes") or {}
-        system_eids = collect_system_descendant_eids(nodes, root_eids)
-        selection_items = resolve_system_selection_items(model_data.get("system_direct_items") or {}, system_eids)
+        selection_items = self._tree_selection_items(items)
 
         if chosen is action_select:
             self.viewer.set_selected_items(selection_items)
@@ -3613,14 +3697,6 @@ class MainWindow(QMainWindow):
         title_general = QLabel(tr_ui("loads_general_title"))
         title_general.setObjectName("cardTitle")
         layout.addWidget(title_general)
-
-        # --- Filtre cas de charge (commun aux deux types) ---
-        lc_label = QLabel(tr_ui("loads_load_case_filter"))
-        layout.addWidget(lc_label)
-        self.cmb_punctual_load_case = QComboBox()
-        self.cmb_punctual_load_case.setEnabled(False)
-        self.cmb_punctual_load_case.currentIndexChanged.connect(self._on_punctual_load_case_changed)
-        layout.addWidget(self.cmb_punctual_load_case)
 
         # --- Echelle automatique (commune aux trois types) ---
         self.chk_load_auto_scale = QCheckBox(tr_ui("loads_auto_scale"))
@@ -5868,6 +5944,7 @@ class MainWindow(QMainWindow):
         "punctual_load": "selection_count_punctual_load",
         "linear_load": "selection_count_linear_load",
         "planar_load": "selection_count_planar_load",
+        "imposed_displacement": "selection_count_imposed_displacement",
     }
 
     def _log_items_summary(self, header_key: str, items: list) -> bool:
@@ -6726,42 +6803,6 @@ class MainWindow(QMainWindow):
         self.log(tr_log("show_planar_loads_on" if checked else "show_planar_loads_off"), "info")
         self._mark_loads_dirty("planar")
 
-    def _populate_punctual_load_case_combo(self, load_cases: list):
-        """Peuple le combo de filtre par cas de charge (union charges ponctuelles + linéaires + surfaciques)."""
-        if self.cmb_punctual_load_case is None:
-            return
-        # Fusionner les cas des trois types (dédoublonnage par EID)
-        all_cases_by_eid = {}
-        for lc in (load_cases or []):
-            eid = lc.get("eid")
-            if eid not in all_cases_by_eid:
-                all_cases_by_eid[eid] = str(lc.get("label") or str(eid))
-        for lc in (self._linear_load_cases or []):
-            eid = lc.get("eid")
-            if eid not in all_cases_by_eid:
-                all_cases_by_eid[eid] = str(lc.get("label") or str(eid))
-        for lc in (self._planar_load_cases or []):
-            eid = lc.get("eid")
-            if eid not in all_cases_by_eid:
-                all_cases_by_eid[eid] = str(lc.get("label") or str(eid))
-        self.cmb_punctual_load_case.blockSignals(True)
-        self.cmb_punctual_load_case.clear()
-        self.cmb_punctual_load_case.addItem(tr_ui("loads_load_case_all"), None)
-        for eid, label in all_cases_by_eid.items():
-            self.cmb_punctual_load_case.addItem(label, eid)
-        has_cases = bool(all_cases_by_eid)
-        self.cmb_punctual_load_case.setEnabled(has_cases)
-        self.cmb_punctual_load_case.blockSignals(False)
-
-    def _on_punctual_load_case_changed(self, index: int):
-        if self.viewer is None or self.cmb_punctual_load_case is None:
-            return
-        case_eid = self.cmb_punctual_load_case.currentData()
-        self.viewer._punctual_load_case_filter = int(case_eid) if case_eid is not None else None
-        self.viewer._linear_load_case_filter   = int(case_eid) if case_eid is not None else None
-        self.viewer._planar_load_case_filter   = int(case_eid) if case_eid is not None else None
-        self._mark_loads_dirty("punctual", "linear", "planar")
-
     def _on_load_auto_scale_toggled(self, checked: bool):
         if self.viewer is None:
             return
@@ -6974,7 +7015,6 @@ class MainWindow(QMainWindow):
             self.chk_mesh.blockSignals(True)
             self.chk_mesh.setChecked(False)
             self.chk_mesh.blockSignals(False)
-        self._populate_punctual_load_case_combo([])
         self._populate_results_case_combination_combo([])
         self._set_properties_message(tr_ui("properties_select_element"))
         self._set_analysis_results_status(False)
@@ -7066,8 +7106,6 @@ class MainWindow(QMainWindow):
                 self.chk_punctual_loads.blockSignals(True)
                 self.chk_punctual_loads.setChecked(False)
                 self.chk_punctual_loads.blockSignals(False)
-        if self.cmb_punctual_load_case is not None and loading:
-            self.cmb_punctual_load_case.setEnabled(False)
         if self.spin_punctual_load_scale is not None and loading:
             self.spin_punctual_load_scale.setEnabled(False)
         if self.chk_linear_loads is not None:
@@ -7203,7 +7241,6 @@ class MainWindow(QMainWindow):
         punctual_loads = list((model_data or {}).get("punctual_loads", []) or [])
         self.viewer._punctual_load_data = list(punctual_loads)
         self.viewer.punctual_load_count = len(punctual_loads)
-        self._populate_punctual_load_case_combo(self._punctual_load_cases)
         has_punctual = bool(punctual_loads)
         if self.chk_punctual_loads is not None:
             self.chk_punctual_loads.setEnabled(has_punctual)
@@ -7269,7 +7306,6 @@ class MainWindow(QMainWindow):
                 self._loads_planar_status_label.setText(tr_ui("loads_planar_empty"))
 
         # Re-peupler la combo maintenant que les trois listes de cas sont connues
-        self._populate_punctual_load_case_combo(self._punctual_load_cases)
 
         self._update_display_checkboxes()
         self.viewer.apply_display_state(

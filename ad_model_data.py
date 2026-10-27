@@ -116,6 +116,8 @@ class ModelDataDict(TypedDict, total=False):
     analysis_status: dict  # reponse GetAnalysisModelStatus, {} si indisponible
     api_version: str  # reponse GetVersion (ex. "1.27.1"), "" si indisponible
     system_direct_items: dict  # {system_eid: [{"role","index"}, ...]} — membres directs (hors sous-systemes)
+    load_tree: list  # [{eid, user_id, name, cases: [{eid, user_id, name}]}] — familles de cas de charge
+    imposed_displacement_counts: dict  # {load_case_eid: nombre de deplacements imposes}
 
 
 def normalize_results_case_entry(kind: str, eid, label: str) -> ResultsCaseEntry:
@@ -144,6 +146,7 @@ def build_model_data(payload: dict) -> ModelDataDict:
         "linear_load_cases",
         "planar_loads",
         "planar_load_cases",
+        "load_tree",
     ]
     for key in list_keys:
         value = data.get(key)
@@ -151,6 +154,7 @@ def build_model_data(payload: dict) -> ModelDataDict:
     data["all_material_by_eid"] = dict(data.get("all_material_by_eid") or {})
     data["fem_by_eid"] = dict(data.get("fem_by_eid") or {})
     data["system_direct_items"] = dict(data.get("system_direct_items") or {})
+    data["imposed_displacement_counts"] = dict(data.get("imposed_displacement_counts") or {})
     data["analysis_status"] = dict(data.get("analysis_status") or {})
     data["api_version"] = str(data.get("api_version") or "")
     systems_tree = data.get("systems_tree") or {}
@@ -2441,6 +2445,71 @@ def _build_systems_tree(system_ids: list, system_objects: list) -> dict:
     return {"roots": roots, "nodes": nodes}
 
 
+def _build_load_tree(family_ids: list, family_objects: list, case_ids: list, case_objects: list) -> list:
+    """Familles de cas de charge (ordre Advance Design = userID) et leurs cas.
+
+    Retourne [{eid, user_id, name, cases: [{eid, user_id, name}]}] ; les familles
+    sans cas sont omises.
+    """
+    families = {}
+    for eid, obj in zip(family_ids or [], family_objects or []):
+        if isinstance(obj, dict) and _eid_val(eid) is not None:
+            families[_eid_val(eid)] = {
+                "eid": _eid_val(eid),
+                "user_id": obj.get("userID"),
+                "name": _get_username(obj) or str(obj.get("name") or ""),
+                "cases": [],
+            }
+    for eid, obj in zip(case_ids or [], case_objects or []):
+        if not isinstance(obj, dict):
+            continue
+        family = families.get(_eid_val(obj.get("loadCaseFamilyID")))
+        if family is not None and _eid_val(eid) is not None:
+            family["cases"].append({
+                "eid": _eid_val(eid),
+                "user_id": obj.get("userID"),
+                "name": _get_username(obj) or str(obj.get("name") or ""),
+            })
+
+    def order(entry):
+        return (entry["user_id"] is None, entry["user_id"] or 0, entry["eid"])
+
+    tree = sorted((f for f in families.values() if f["cases"]), key=order)
+    for family in tree:
+        family["cases"].sort(key=order)
+    return tree
+
+
+def _count_by_load_case(objects: list) -> dict:
+    """{eid du cas: nombre d'objets} d'apres le champ loadCase de chaque objet."""
+    counts = {}
+    for obj in objects or []:
+        case_eid = _eid_val((obj or {}).get("loadCase")) if isinstance(obj, dict) else None
+        if case_eid is not None:
+            counts[case_eid] = counts.get(case_eid, 0) + 1
+    return counts
+
+
+def _read_load_tree_data(host: str) -> dict:
+    """Branche Chargement : familles/cas et deplacements imposes par cas.
+    Lecture facultative : une API qui ne les expose pas ne bloque pas le chargement."""
+    try:
+        family_ids = get_informational_ids(host, "LoadCaseFamily")
+        case_ids = get_informational_ids(host, "LoadCase")
+        load_tree = _build_load_tree(
+            family_ids, get_informational_elements_objects(host, family_ids),
+            case_ids, get_informational_elements_objects(host, case_ids),
+        )
+    except Exception:
+        load_tree = []
+    try:
+        displacement_ids = get_element_ids(host, "ElementImposedDisplacement")
+        imposed_displacement_counts = _count_by_load_case(get_elements_objects(host, displacement_ids))
+    except Exception:
+        imposed_displacement_counts = {}
+    return {"load_tree": load_tree, "imposed_displacement_counts": imposed_displacement_counts}
+
+
 def _build_system_direct_items(role_lists: list) -> dict:
     """Index inverse EID systeme -> items {role, index} des elements membres directs.
 
@@ -2835,6 +2904,7 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         system_ids = get_informational_ids(host, "StructuralSystem")
         system_objects = get_informational_elements_objects(host, system_ids)
         systems_tree = _build_systems_tree(system_ids, system_objects)
+        load_tree_data = _read_load_tree_data(host)
 
         progress(88, tr_ui("progress_prepare_results"))
         result = build_model_data({
@@ -2847,6 +2917,7 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
             "fem_nodes": fem_nodes,
             "fem_by_eid": fem_by_eid,
             "systems_tree": systems_tree,
+            **load_tree_data,
             "analysis_status": analysis_status,
             "api_version": api_version,
         })

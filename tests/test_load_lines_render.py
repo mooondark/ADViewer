@@ -36,7 +36,7 @@ def _linear(fz, eid, c1=1.0, c2=1.0):
 def test_linear_lines_only_and_global_index_under_case_filter():
     w = _widget()
     loads = [_linear(-1.0, 1), _linear(-2.0, 2)]
-    pd = w._build_linear_load_polydata_batch(loads, 1.0, case_filter=2, global_data=loads)["arrows"]
+    pd = w._build_linear_load_polydata_batch(loads, 1.0, case_filter={2}, global_data=loads)["arrows"]
     assert pd.GetNumberOfPolys() == 0
     assert pd.GetNumberOfLines() == pd.GetNumberOfCells() > 0
     assert _ids(pd) == {1}

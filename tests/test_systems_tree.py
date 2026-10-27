@@ -93,6 +93,8 @@ def _host():
         _system_tree_tooltip = mw.MainWindow._system_tree_tooltip
         _ROLE_COUNT_KEYS = mw.MainWindow._ROLE_COUNT_KEYS
         _SYSTEMS_TOOLTIP_ROLE_ORDER = mw.MainWindow._SYSTEMS_TOOLTIP_ROLE_ORDER
+        _LOAD_NODE_ROLE = mw.MainWindow._LOAD_NODE_ROLE
+        _LOAD_TOOLTIP_ROLE_ORDER = mw.MainWindow._LOAD_TOOLTIP_ROLE_ORDER
         _populate_systems_tab = mw.MainWindow._populate_systems_tab
         _apply_systems_visibility = mw.MainWindow._apply_systems_visibility
 
@@ -205,3 +207,16 @@ if __name__ == "__main__":
     test_build_systems_tree_roots_and_children()
     test_build_system_direct_items_and_collect_descendants()
     print("ok")
+
+
+def test_select_ignores_the_elements_of_unchecked_systems():
+    from PySide6.QtCore import Qt
+    import main_window as mw
+
+    _qt_app()
+    host = _host()
+    host._load_selection_items = lambda case_eids: []
+    _item(host.systems_tree, 3).setCheckState(0, Qt.Unchecked)
+    items = mw.MainWindow._tree_selection_items(host, [_item(host.systems_tree, 1)])
+    # Etage 1 decoche : seuls les elements d'Etage 0 (lignes 0 et 2)
+    assert sorted((i["role"], i["index"]) for i in items) == [("lines", 0), ("lines", 2)]

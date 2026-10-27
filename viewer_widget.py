@@ -413,7 +413,7 @@ class VTKViewerWidget(QFrame):
         # Charges ponctuelles
         self._punctual_load_actors: list = []   # liste d'acteurs (un groupe par charge)
         self._punctual_load_data: list = []     # liste des dicts bruts (pos, fx, fy, fz, ...)
-        self._punctual_load_case_filter: int | None = None  # EID du cas filtré, ou None = tous
+        self._punctual_load_case_filter: set | None = None  # EID des cas visibles (arbre Systemes), None = tous
         self._show_punctual_loads = False
         self.punctual_load_scale = float(PUNCTUAL_LOAD_SCALE)
         self.punctual_load_color = tuple(PUNCTUAL_LOAD_COLOR)
@@ -424,7 +424,7 @@ class VTKViewerWidget(QFrame):
 
         self._linear_load_actors: list = []
         self._linear_load_data: list = []
-        self._linear_load_case_filter: int | None = None
+        self._linear_load_case_filter: set | None = None
         self._show_linear_loads = False
         self.linear_load_scale = float(LINEAR_LOAD_SCALE)
         self.linear_load_color = tuple(LINEAR_LOAD_COLOR)
@@ -433,7 +433,7 @@ class VTKViewerWidget(QFrame):
 
         self._planar_load_actors: list = []
         self._planar_load_data: list = []
-        self._planar_load_case_filter: int | None = None
+        self._planar_load_case_filter: set | None = None
         self._show_planar_loads = False
         self.planar_load_scale = float(PLANAR_LOAD_SCALE)
         self.planar_load_color = tuple(PLANAR_LOAD_COLOR)
@@ -1865,7 +1865,7 @@ class VTKViewerWidget(QFrame):
             loads = getattr(self, f"_{kind}_load_data")
             if 0 <= index < len(loads):
                 case = getattr(self, f"_{kind}_load_case_filter")
-                active = [ld for ld in loads if case is None or ld.get("load_case_eid") == case]
+                active = [ld for ld in loads if case is None or ld.get("load_case_eid") in case]
                 builder = getattr(self, f"_build_{kind}_load_actors")
                 extra = {} if kind == "punctual" else {"global_data": loads}
                 actor_pairs = builder(
@@ -3805,7 +3805,7 @@ class VTKViewerWidget(QFrame):
 
         F_max/M_max sont calcules sur norm_loads (defaut : charges actives).
         """
-        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") == case_filter]
+        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") in case_filter]
         if not active:
             return None
         index_of = {id(ld): i for i, ld in enumerate(self._punctual_load_data)}
@@ -3880,11 +3880,6 @@ class VTKViewerWidget(QFrame):
         self._show_punctual_loads = visible
         self._rebuild_punctual_load_actors()
 
-    def set_punctual_load_case_filter(self, case_eid):
-        """case_eid = None pour afficher tous les cas, ou un int EID pour filtrer."""
-        self._punctual_load_case_filter = int(case_eid) if case_eid is not None else None
-        self._rebuild_punctual_load_actors()
-
     def set_punctual_load_scale(self, scale: float):
         self.punctual_load_scale = max(0.1, float(scale))
         if self._show_punctual_loads and self._punctual_load_data:
@@ -3909,7 +3904,7 @@ class VTKViewerWidget(QFrame):
 
         F_max/M_max sont calcules sur norm_loads (defaut : charges actives).
         """
-        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") == case_filter]
+        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") in case_filter]
         if not active:
             return None
         ref = global_data if global_data is not None else self._linear_load_data
@@ -4013,10 +4008,6 @@ class VTKViewerWidget(QFrame):
         self._show_linear_loads = visible
         self._rebuild_linear_load_actors()
 
-    def set_linear_load_case_filter(self, case_eid):
-        self._linear_load_case_filter = int(case_eid) if case_eid is not None else None
-        self._rebuild_linear_load_actors()
-
     def set_linear_load_scale(self, scale: float):
         self.linear_load_scale = max(0.1, float(scale))
         if self._show_linear_loads and self._linear_load_data:
@@ -4037,7 +4028,7 @@ class VTKViewerWidget(QFrame):
 
         F_max est calcule sur norm_loads (defaut : charges actives).
         """
-        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") == case_filter]
+        active = [ld for ld in (loads or []) if case_filter is None or ld.get("load_case_eid") in case_filter]
         if not active:
             return None, None
         ref = global_data if global_data is not None else self._planar_load_data
@@ -4239,10 +4230,6 @@ class VTKViewerWidget(QFrame):
 
     def set_show_planar_loads(self, visible: bool):
         self._show_planar_loads = visible
-        self._rebuild_planar_load_actors()
-
-    def set_planar_load_case_filter(self, case_eid):
-        self._planar_load_case_filter = int(case_eid) if case_eid is not None else None
         self._rebuild_planar_load_actors()
 
     def set_planar_load_scale(self, scale: float):
@@ -4605,6 +4592,11 @@ class VTKViewerWidget(QFrame):
                     linear_load_idxs.append(idx)
                 elif role == "planar_load" and idx >= 0:
                     planar_load_idxs.append(idx)
+            for kind, idxs in (("punctual", punctual_load_idxs), ("linear", linear_load_idxs), ("planar", planar_load_idxs)):
+                visible_cases = getattr(self, f"_{kind}_load_case_filter")
+                data = getattr(self, f"_{kind}_load_data")
+                if visible_cases is not None:
+                    idxs[:] = [i for i in idxs if 0 <= i < len(data) and data[i].get("load_case_eid") in visible_cases]
             load_areas = self._select_items_by_indexes(load_areas, load_area_idxs)
             punctual_supports = self._select_items_by_indexes(punctual_supports, punctual_idxs)
             linear_supports = self._select_items_by_indexes(linear_supports, linear_sup_idxs)
