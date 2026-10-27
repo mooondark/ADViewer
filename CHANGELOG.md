@@ -8,11 +8,13 @@
 - Correction : contrôle modèle, le bouton "Voir" ne coupe plus une partie du modèle 3D sur les gros modèles (idem pour le zoom sur la sélection).
 - Interface plus douce : palette du thème alignée sur les couleurs de l'application, densité moins compacte, plus de texte en majuscules sur les boutons et onglets, coins arrondis.
 - Contrôle modèle : titres et cadres des sections des paramètres de détection en bleu (plus lisibles), texte du bouton "Voir" du rapport des anomalies entièrement visible.
+- Charges dessinées en lignes (style Advance Design) : affichage beaucoup plus rapide, pointes visibles sous tous les angles ; l'épaisseur des charges est désormais en pixels (réglage remis à 1.5 px).
 
 ### EN
 - Fix: model check, the "View" button no longer clips part of the 3D model on large models (same for zoom to selection).
 - Softer interface: theme palette aligned with the application colors, less compact density, no more uppercase text on buttons and tabs, rounded corners.
 - Model check: detection settings section titles and frames in blue (more readable), "View" button text in the anomaly report fully visible.
+- Loads drawn as lines (Advance Design style): much faster display, arrow tips visible from any angle; load thickness is now in pixels (setting reset to 1.5 px).
 
 ## 2.20
 

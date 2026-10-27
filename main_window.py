@@ -135,11 +135,11 @@ class SettingsDialog(QDialog):
         selection_color,
         mesh_width: float,
         mesh_color,
-        punctual_load_arrow_width: float,
+        punctual_load_line_width: float,
         punctual_load_color,
-        linear_load_arrow_width: float,
+        linear_load_line_width: float,
         linear_load_color,
-        planar_load_arrow_width: float,
+        planar_load_line_width: float,
         planar_load_color,
         clip_box_color,
         clip_edge_color,
@@ -195,29 +195,9 @@ class SettingsDialog(QDialog):
         self.spin_mesh = self._make_width_spin(mesh_width)
         self.spin_clip_edge = self._make_width_spin(clip_edge_width)
 
-        # Charge ponctuelle — épaisseur en mètres (rayon tige)
-        self.spin_punctual_load_arrow_width = QDoubleSpinBox()
-        self.spin_punctual_load_arrow_width.setRange(0.005, 2.0)
-        self.spin_punctual_load_arrow_width.setDecimals(3)
-        self.spin_punctual_load_arrow_width.setSingleStep(0.005)
-        self.spin_punctual_load_arrow_width.setValue(punctual_load_arrow_width)
-        self.spin_punctual_load_arrow_width.setFixedWidth(110)
-
-        # Charge linéaire — épaisseur en mètres (rayon tige)
-        self.spin_linear_load_arrow_width = QDoubleSpinBox()
-        self.spin_linear_load_arrow_width.setRange(0.005, 2.0)
-        self.spin_linear_load_arrow_width.setDecimals(3)
-        self.spin_linear_load_arrow_width.setSingleStep(0.005)
-        self.spin_linear_load_arrow_width.setValue(linear_load_arrow_width)
-        self.spin_linear_load_arrow_width.setFixedWidth(110)
-
-        # Charge surfacique — épaisseur en mètres (rayon tige)
-        self.spin_planar_load_arrow_width = QDoubleSpinBox()
-        self.spin_planar_load_arrow_width.setRange(0.005, 2.0)
-        self.spin_planar_load_arrow_width.setDecimals(3)
-        self.spin_planar_load_arrow_width.setSingleStep(0.005)
-        self.spin_planar_load_arrow_width.setValue(planar_load_arrow_width)
-        self.spin_planar_load_arrow_width.setFixedWidth(110)
+        self.spin_punctual_load_line_width = self._make_width_spin(punctual_load_line_width)
+        self.spin_linear_load_line_width = self._make_width_spin(linear_load_line_width)
+        self.spin_planar_load_line_width = self._make_width_spin(planar_load_line_width)
 
         self._add_row(grid,  0, tr_ui("settings_label_linear"),                tr_ui("settings_label_thickness"), self.spin_linear,                      "linear_color",            self.linear_color)
         self._add_row(grid,  1, tr_ui("settings_label_planar"),                tr_ui("settings_label_thickness"), self.spin_planar,                      "planar_color",            self.planar_color)
@@ -229,9 +209,9 @@ class SettingsDialog(QDialog):
         self._add_row(grid,  7, tr_ui("settings_label_support_planar"),        tr_ui("settings_label_thickness"), self.spin_support_planar,              "support_planar_color",    self.support_planar_color)
         self._add_row(grid,  8, tr_ui("settings_selection"),                   tr_ui("settings_label_thickness"), self.spin_selection,                   "selection_color",         self.selection_color)
         self._add_row(grid,  9, tr_ui("settings_label_mesh"),                  tr_ui("settings_label_thickness"), self.spin_mesh,                        "mesh_color",              self.mesh_color)
-        self._add_row(grid, 10, tr_ui("settings_label_punctual_load_arrows"),  tr_ui("settings_label_thickness"), self.spin_punctual_load_arrow_width,   "punctual_load_color",     self.punctual_load_color)
-        self._add_row(grid, 11, tr_ui("settings_label_linear_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_linear_load_arrow_width,     "linear_load_color",       self.linear_load_color)
-        self._add_row(grid, 12, tr_ui("settings_label_planar_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_planar_load_arrow_width,     "planar_load_color",       self.planar_load_color)
+        self._add_row(grid, 10, tr_ui("settings_label_punctual_load_arrows"),  tr_ui("settings_label_thickness"), self.spin_punctual_load_line_width,   "punctual_load_color",     self.punctual_load_color)
+        self._add_row(grid, 11, tr_ui("settings_label_linear_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_linear_load_line_width,     "linear_load_color",       self.linear_load_color)
+        self._add_row(grid, 12, tr_ui("settings_label_planar_load_arrows"),    tr_ui("settings_label_thickness"), self.spin_planar_load_line_width,     "planar_load_color",       self.planar_load_color)
 
         self._add_row(grid, 13, tr_ui("settings_label_clip_box"),   "", None, "clip_box_color",  self.clip_box_color)
         self._add_row(grid, 14, tr_ui("settings_label_clip_edges"), tr_ui("settings_label_thickness"), self.spin_clip_edge, "clip_edge_color", self.clip_edge_color)
@@ -332,9 +312,9 @@ class SettingsDialog(QDialog):
             "support_planar_line_width": self.spin_support_planar.value(),
             "selection_line_width": self.spin_selection.value(),
             "mesh_width": self.spin_mesh.value(),
-            "punctual_load_arrow_width": self.spin_punctual_load_arrow_width.value(),
-            "linear_load_arrow_width": self.spin_linear_load_arrow_width.value(),
-            "planar_load_arrow_width": self.spin_planar_load_arrow_width.value(),
+            "punctual_load_line_width": self.spin_punctual_load_line_width.value(),
+            "linear_load_line_width": self.spin_linear_load_line_width.value(),
+            "planar_load_line_width": self.spin_planar_load_line_width.value(),
             "linear_color": self.linear_color,
             "planar_color": self.planar_color,
             "opening_color": self.opening_color,
@@ -1228,7 +1208,6 @@ class BuildLoadsWorker(QThread):
                     v._punctual_load_data,
                     v.punctual_load_scale,
                     case_filter=v._punctual_load_case_filter,
-                    arrow_width=v.punctual_load_arrow_width,
                     progress_cb=_progress_cb,
                 )
                 batch["punctual_color"] = v.punctual_load_color
@@ -1245,7 +1224,6 @@ class BuildLoadsWorker(QThread):
                     v._linear_load_data,
                     v.linear_load_scale,
                     case_filter=v._linear_load_case_filter,
-                    arrow_width=v.linear_load_arrow_width,
                     global_data=v._linear_load_data,
                     progress_cb=_progress_cb,
                 )
@@ -1263,7 +1241,6 @@ class BuildLoadsWorker(QThread):
                     v._planar_load_data,
                     v.planar_load_scale,
                     case_filter=v._planar_load_case_filter,
-                    arrow_width=v.planar_load_arrow_width,
                     global_data=v._planar_load_data,
                     progress_cb=_progress_cb,
                 )
@@ -1568,9 +1545,9 @@ class MainWindow(QMainWindow):
             "support_planar_line_width": str(self.viewer.support_planar_line_width),
             "selection_line_width": str(self.viewer.selection_line_width),
             "mesh_width": str(self.viewer.mesh_line_width),
-            "punctual_load_arrow_width": str(self.viewer.punctual_load_arrow_width),
-            "linear_load_arrow_width": str(self.viewer.linear_load_arrow_width),
-            "planar_load_arrow_width": str(self.viewer.planar_load_arrow_width),
+            "punctual_load_line_width": str(self.viewer.punctual_load_line_width),
+            "linear_load_line_width": str(self.viewer.linear_load_line_width),
+            "planar_load_line_width": str(self.viewer.planar_load_line_width),
             "clip_edge_width": str(self.viewer.get_clip_box_edge_width()),
         }
         cfg["colors"] = {
@@ -1692,15 +1669,15 @@ class MainWindow(QMainWindow):
             )
             self.viewer.set_punctual_load_style(
                 self._parse_color(colors.get("punctual_load_color", self._format_color(self.viewer.punctual_load_color)), self.viewer.punctual_load_color),
-                float(styles.get("punctual_load_arrow_width", self.viewer.punctual_load_arrow_width)),
+                float(styles.get("punctual_load_line_width", self.viewer.punctual_load_line_width)),
             )
             self.viewer.set_linear_load_style(
                 self._parse_color(colors.get("linear_load_color", self._format_color(self.viewer.linear_load_color)), self.viewer.linear_load_color),
-                float(styles.get("linear_load_arrow_width", self.viewer.linear_load_arrow_width)),
+                float(styles.get("linear_load_line_width", self.viewer.linear_load_line_width)),
             )
             self.viewer.set_planar_load_style(
                 self._parse_color(colors.get("planar_load_color", self._format_color(self.viewer.planar_load_color)), self.viewer.planar_load_color),
-                float(styles.get("planar_load_arrow_width", self.viewer.planar_load_arrow_width)),
+                float(styles.get("planar_load_line_width", self.viewer.planar_load_line_width)),
             )
             self.apply_view_projection(self.view_projection_mode, save=False)
             self.apply_minimap_corner(general.get("minimap_corner", "bottom_left"), save=False)
@@ -6441,11 +6418,11 @@ class MainWindow(QMainWindow):
             self.viewer.selection_color,
             self.viewer.mesh_line_width,
             self.viewer.mesh_color,
-            self.viewer.punctual_load_arrow_width,
+            self.viewer.punctual_load_line_width,
             self.viewer.punctual_load_color,
-            self.viewer.linear_load_arrow_width,
+            self.viewer.linear_load_line_width,
             self.viewer.linear_load_color,
-            self.viewer.planar_load_arrow_width,
+            self.viewer.planar_load_line_width,
             self.viewer.planar_load_color,
             *self.viewer.get_clip_box_style(),
             self.viewer.get_clip_box_edge_width(),
@@ -6485,15 +6462,15 @@ class MainWindow(QMainWindow):
             )
             self.viewer.set_punctual_load_style(
                 values["punctual_load_color"],
-                values["punctual_load_arrow_width"],
+                values["punctual_load_line_width"],
             )
             self.viewer.set_linear_load_style(
                 values["linear_load_color"],
-                values["linear_load_arrow_width"],
+                values["linear_load_line_width"],
             )
             self.viewer.set_planar_load_style(
                 values["planar_load_color"],
-                values["planar_load_arrow_width"],
+                values["planar_load_line_width"],
             )
             self.viewer.set_clip_box_style(values["clip_box_color"], values["clip_edge_color"], values["clip_edge_width"])
             self._mark_loads_dirty("punctual", "linear", "planar")
