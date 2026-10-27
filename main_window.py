@@ -2408,7 +2408,7 @@ class MainWindow(QMainWindow):
 
     def _apply_style(self):
         # qt-material handles the global stylesheet; we only add app-specific tweaks
-        systems_tree_bg = "#e6e6e6" if self.theme_name == "light" else PANEL
+        systems_tree_bg = QT_MATERIAL_EXTRA_COLORS["light"]["secondaryDarkColor"] if self.theme_name == "light" else PANEL
         self.setStyleSheet(
             f"""
             QFrame#titleBar {{
@@ -6081,7 +6081,8 @@ class MainWindow(QMainWindow):
         apply_stylesheet(self.app_ref, theme=theme_file, extra={
             'font_family': 'Segoe UI',
             'font_size': '13px',
-            'density_scale': '-2',
+            'density_scale': '-1',
+            **QT_MATERIAL_EXTRA_COLORS[self.theme_name],
         })
         # Surcharge compacte pour QMenu (extra['QMenu'] non fiable sur tous les OS)
         self.app_ref.setStyleSheet(
@@ -6094,6 +6095,20 @@ class MainWindow(QMainWindow):
             QMenu::separator {{
                 height: 1px;
                 margin: 2px 6px;
+            }}
+            QPushButton, QTabBar, QGroupBox, QDockWidget, QToolBox::tab, QHeaderView::section {{
+                text-transform: none;
+            }}
+            QPushButton {{
+                border-radius: 6px;
+            }}
+            QGroupBox {{
+                border: 2px solid {ACCENT};
+                border-radius: 6px;
+            }}
+            QGroupBox::title {{
+                color: {ACCENT};
+                font-weight: bold;
             }}
             """
         )

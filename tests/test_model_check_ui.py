@@ -282,7 +282,8 @@ def test_report_table_wraps_elements_without_horizontal_scrollbar():
     short = mc.Anomaly(mc.K_SHORT, mc.WARNING, (("lines", 0),), (5,), (0, 0, 0), 1.0, 5.0, "mm")
     Ctl.anomalies = [short]
     dlg.refresh()
-    assert t.rowHeight(0) == t.verticalHeader().defaultSectionSize()
+    button_h = t.cellWidget(0, 6).sizeHint().height()
+    assert t.rowHeight(0) == max(t.verticalHeader().defaultSectionSize(), button_h + 4)
     dlg.close()
 
 

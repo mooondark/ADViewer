@@ -468,12 +468,14 @@ class AnomalyReportDialog(QDialog):
         self.refresh()
 
     def _fit_rows(self):
-        """Hauteur de ligne selon le seul texte des elements (le bouton "Voir" ne l'agrandit pas)."""
+        """Hauteur de ligne selon le texte des elements, au minimum celle du bouton "Voir"."""
         table = self._table
         # largeur de la colonne etiree = zone visible moins les autres colonnes (Qt n'emet pas sectionResized)
         others = sum(table.columnWidth(c) for c in range(table.columnCount()) if c != 2)
         width = max(table.viewport().width() - others, table.columnWidth(2)) - 12
         base = table.verticalHeader().defaultSectionSize()
+        if table.rowCount():
+            base = max(base, table.cellWidget(0, 6).sizeHint().height() + 4)
         fm = table.fontMetrics()
         for r in range(table.rowCount()):
             item = table.item(r, 2)

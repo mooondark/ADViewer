@@ -158,6 +158,28 @@ _LIGHT_INPUT_FG = "#1F2937"
 _LIGHT_BTN_BG = "#2F6FDB"
 _LIGHT_VTK_BG = (0.9608, 0.9608, 0.9608)  # #f5f5f5
 
+# Surcharge des couleurs des thèmes qt-material pour les aligner sur la palette ci-dessus
+QT_MATERIAL_EXTRA_COLORS = {
+    "light": {
+        "primaryColor": _LIGHT_ACCENT,
+        "primaryLightColor": "#7FA6EA",
+        "secondaryColor": _LIGHT_BG,
+        "secondaryLightColor": _LIGHT_PANEL,
+        "secondaryDarkColor": "#DDE4EE",
+        "primaryTextColor": _LIGHT_FG,
+        "secondaryTextColor": _LIGHT_FG_DIM,
+    },
+    "dark": {
+        "primaryColor": _DARK_ACCENT,
+        "primaryLightColor": "#8AAEF0",
+        "secondaryColor": _DARK_BG,
+        "secondaryLightColor": _DARK_BTN_BG,
+        "secondaryDarkColor": _DARK_PANEL,
+        "primaryTextColor": _DARK_FG,
+        "secondaryTextColor": _DARK_FG,
+    },
+}
+
 
 def _set_fallback_colors(theme_name: str):
     global BG, PANEL, BORDER, ACCENT, ACCENT2, WARN, ERROR_COL, FG, FG_DIM, INPUT_BG, INPUT_FG, BTN_BG, VTK_BG
