@@ -7,10 +7,14 @@
 ### FR
 - Onglets du panneau latéral au style classique Windows : coins carrés légèrement arrondis, onglet actif surélevé, hauteur réduite.
 - Onglet Systèmes : arbre à branches classiques (traits pointillés, boîtes +/-) et case à cocher par système pour masquer ses éléments dans la vue 3D.
+- Cases à cocher plus compactes (16 px) dans toute l'application.
+- Correction : les boutons de l'onglet Résultats sont grisés tant que le modèle n'est pas calculé.
 
 ### EN
 - Side panel tabs in classic Windows style: square, slightly rounded corners, raised active tab, reduced height.
 - Systems tab: classic tree branches (dotted lines, +/- boxes) and a checkbox per system to hide its elements in the 3D view.
+- More compact checkboxes (16 px) throughout the application.
+- Fix: Results tab buttons are disabled until the model is calculated.
 
 ## 2.21
 

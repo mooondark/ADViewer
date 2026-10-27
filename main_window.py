@@ -4265,7 +4265,8 @@ class MainWindow(QMainWindow):
     def _update_analysis_results_apply_button(self):
         if self.analysis_results_apply_btn is None:
             return
-        if self.analysis_results_value_combo is None or self.analysis_results_component_combo is None:
+        if (self.analysis_results_value_combo is None or self.analysis_results_component_combo is None
+                or not self.current_model_has_analysis_results):
             self.analysis_results_apply_btn.setEnabled(False)
             if self.analysis_results_export_btn is not None:
                 self.analysis_results_export_btn.setEnabled(False)
@@ -6146,6 +6147,10 @@ class MainWindow(QMainWindow):
             }}
             QPushButton, QTabBar, QGroupBox, QDockWidget, QToolBox::tab, QHeaderView::section {{
                 text-transform: none;
+            }}
+            QCheckBox::indicator, QGroupBox::indicator, QListView::indicator, QTableView::indicator, QTreeView::indicator {{
+                width: 16px;
+                height: 16px;
             }}
             QPushButton {{
                 border-radius: 6px;
