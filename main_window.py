@@ -41,7 +41,7 @@ try:
         QDialogButtonBox, QDoubleSpinBox, QSpinBox, QSlider, QColorDialog, QProgressBar, QMessageBox,
         QTabWidget, QTabBar, QStackedWidget, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QGraphicsDropShadowEffect,
         QScrollArea, QToolButton, QGridLayout, QListView, QInputDialog,
-        QRadioButton, QButtonGroup, QTreeWidget, QTreeWidgetItem
+        QRadioButton, QButtonGroup, QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator
     )
 except ImportError as e:
     raise RuntimeError("Le module 'PySide6' est requis. Installez les dépendances de l'application avant l'exécution.") from e
@@ -1323,6 +1323,44 @@ _EXPORT_COMP_KIND = {
 }
 
 
+class SystemsTree(QTreeWidget):
+    """Arbre aux branches classiques (traits pointilles, boites +/-) : qt-material n'en dessine pas."""
+
+    def drawBranches(self, painter, rect, index):
+        indent = self.indentation()
+        half = 4
+        cy = rect.top() + rect.height() // 2
+        x0 = rect.right() + 1 - indent
+        cx = x0 + indent // 2
+        model = index.model()
+        has_children = model.hasChildren(index)
+
+        def has_next(idx):
+            return idx.row() < model.rowCount(idx.parent()) - 1
+
+        color = QColor(viewer_config.FG_DIM)
+        painter.save()
+        painter.setPen(QPen(color, 1, Qt.DotLine))
+        gap = half if has_children else 0
+        if index.parent().isValid() or index.row() > 0:
+            painter.drawLine(cx, rect.top(), cx, cy - gap)
+        if has_next(index):
+            painter.drawLine(cx, cy + gap, cx, rect.bottom())
+        painter.drawLine(cx + gap, cy, x0 + indent - 2, cy)
+        parent, px = index.parent(), cx - indent
+        while parent.isValid():
+            if has_next(parent):
+                painter.drawLine(px, rect.top(), px, rect.bottom())
+            parent, px = parent.parent(), px - indent
+        if has_children:
+            painter.setPen(QPen(color, 1))
+            painter.drawRect(cx - half, cy - half, 2 * half, 2 * half)
+            painter.drawLine(cx - 2, cy, cx + 2, cy)
+            if not self.isExpanded(index):
+                painter.drawLine(cx, cy - 2, cx, cy + 2)
+        painter.restore()
+
+
 class MainWindow(QMainWindow):
     def __init__(self, app=None):
         super().__init__()
@@ -2391,7 +2429,7 @@ class MainWindow(QMainWindow):
 
     def _apply_style(self):
         # qt-material handles the global stylesheet; we only add app-specific tweaks
-        systems_tree_bg = QT_MATERIAL_EXTRA_COLORS["light"]["secondaryDarkColor"] if self.theme_name == "light" else PANEL
+        app_bg = QT_MATERIAL_EXTRA_COLORS[self.theme_name]["secondaryDarkColor"]
         self.setStyleSheet(
             f"""
             QFrame#titleBar {{
@@ -2438,46 +2476,55 @@ class MainWindow(QMainWindow):
             QProgressBar::chunk {{
                 border-radius: 7px;
             }}
-            QTabWidget::pane {{
-                border-top: none;
-                top: 0px;
+            QTabWidget::pane, QStackedWidget#sideContent {{
+                border: 1px solid {BORDER};
+                top: -1px;
             }}
             QTabBar::tab {{
+                border: 1px solid {BORDER};
                 border-bottom: none;
-                border-top-left-radius: 10px;
-                border-top-right-radius: 10px;
-                padding: 7px 12px;
+                border-left: none;
+                border-radius: 0px;
+                border-top-right-radius: 4px;
+                padding: 2px 10px;
                 font-weight: bold;
                 color: {FG};
             }}
+            QTabBar::tab:first {{
+                border-left: 1px solid {BORDER};
+            }}
             QTabBar::tab:selected {{
-                color: white;
-                background: {ACCENT};
+                background: {PANEL};
+                padding-top: 4px;
             }}
             QTabBar::tab:!selected {{
-                margin-top: 4px;
-                color: {FG_DIM};
-                border: 1px solid {BORDER};
-                border-bottom: none;
+                margin-top: 2px;
+                background: {app_bg};
+            }}
+            QTabBar::tab:!selected:hover {{
+                background: {PANEL};
             }}
             /* Ligne d'onglets (Journal.../Systemes) marquee inactive via la
                propriete dynamique rowActive (cf _set_side_tab_row_active) :
                son onglet "current" doit paraitre comme les autres non-selectionnes. */
             QTabBar[rowActive="false"]::tab:selected {{
-                margin-top: 4px;
-                color: {FG_DIM};
-                background: transparent;
-                border: 1px solid {BORDER};
-                border-bottom: none;
+                margin-top: 2px;
+                padding-top: 2px;
+                background: {app_bg};
             }}
-            /* Fond plus fonce pour l'arbre SYSTEMES : les traits de connexion
-               (blancs, non stylables via QSS sur ::branch) restent invisibles
-               sur le fond clair par defaut. */
-            QTreeWidget#systemsTree {{
-                background: {systems_tree_bg};
+            /* qt-material ne style pas les cases des QTreeView (carre noir par defaut) */
+            QTreeWidget#systemsTree::indicator {{
+                width: 16px;
+                height: 16px;
             }}
-            QTreeWidget#systemsTree::branch {{
-                background: {systems_tree_bg};
+            QTreeWidget#systemsTree::indicator:checked {{
+                image: url(icon:/primary/checkbox_checked.svg);
+            }}
+            QTreeWidget#systemsTree::indicator:unchecked {{
+                image: url(icon:/primary/checkbox_unchecked.svg);
+            }}
+            QTreeWidget#systemsTree::indicator:indeterminate {{
+                image: url(icon:/primary/checkbox_indeterminate.svg);
             }}
             /* Boutons d'icône (vues, filtres) - bordure uniforme */
             QPushButton[iconOnly="true"] {{
@@ -3189,12 +3236,17 @@ class MainWindow(QMainWindow):
         systems_layout.setContentsMargins(6, 6, 6, 6)
         systems_layout.setSpacing(4)
 
-        self.systems_tree = QTreeWidget()
+        self.systems_tree = SystemsTree()
         self.systems_tree.setObjectName("systemsTree")
         self.systems_tree.setHeaderHidden(True)
         self.systems_tree.setSelectionMode(QTreeWidget.ExtendedSelection)
         self.systems_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.systems_tree.customContextMenuRequested.connect(self._on_systems_tree_context_menu)
+        # Une case cochee propage l'etat a tous les descendants : on regroupe les itemChanged
+        self._systems_visibility_timer = QTimer(self)
+        self._systems_visibility_timer.setSingleShot(True)
+        self._systems_visibility_timer.timeout.connect(self._apply_systems_visibility)
+        self.systems_tree.itemChanged.connect(lambda _item, column: column == 0 and self._systems_visibility_timer.start())
         systems_layout.addWidget(self.systems_tree, 1)
 
         self.systems_empty_label = QLabel(tr_ui("systems_empty"))
@@ -3347,6 +3399,8 @@ class MainWindow(QMainWindow):
                 return
             item = QTreeWidgetItem([self._system_tree_label(node)])
             item.setData(0, Qt.UserRole, eid)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsAutoTristate)
+            item.setCheckState(0, Qt.Checked)
             tooltip = self._system_tree_tooltip(direct_items, nodes, eid)
             if tooltip:
                 item.setToolTip(0, tooltip)
@@ -3360,6 +3414,24 @@ class MainWindow(QMainWindow):
 
         for root_eid in roots:
             add_node(None, root_eid)
+
+    def _apply_systems_visibility(self):
+        """Masque dans la vue 3D les elements des systemes decoches, sauf ceux
+        qui appartiennent aussi a un systeme coche (ou partiellement coche)."""
+        if self.viewer is None:
+            return
+        shown, unchecked = set(), set()
+        it = QTreeWidgetItemIterator(self.systems_tree)
+        while it.value():
+            item = it.value()
+            (unchecked if item.checkState(0) == Qt.Unchecked else shown).add(item.data(0, Qt.UserRole))
+            it += 1
+        direct_items = (self.current_model_data or {}).get("system_direct_items") or {}
+        visible = {(i["role"], i["index"]) for i in resolve_system_selection_items(direct_items, shown)}
+        hidden = [i for i in resolve_system_selection_items(direct_items, unchecked) if (i["role"], i["index"]) not in visible]
+        self.viewer.set_hidden_items(hidden, rebuild_profiles=False)
+        self._refresh_mesh_display()
+        self._refresh_profiles_if_needed()
 
     @staticmethod
     def _set_branch_expanded(item, expanded: bool):
@@ -3665,6 +3737,7 @@ class MainWindow(QMainWindow):
         row2.addTab(tr_ui("systems"))
 
         content_stack = QStackedWidget()
+        content_stack.setObjectName("sideContent")
         for tab_widget in (log_tab, properties_tab, analysis_results_tab, loads_tab, results_tab, status_tab, systems_tab):
             content_stack.addWidget(tab_widget)
         row2_first_index = content_stack.count() - 2  # index du contenu Statut (Systèmes = +1)

@@ -498,6 +498,7 @@ class VTKViewerWidget(QFrame):
         self._filter_thickness_names = None
         self._filter_material_names = None
         self._isolated_selection = []   # liste de {"role","index"} — vide = pas d'isolation
+        self._hidden_items = set()      # {(role, index)} masques via les cases de l'arbre Systemes
         self._linear_result_scale_factor = 1.0
         self._projection_mode = DEFAULT_VIEW_PROJECTION
 
@@ -3126,6 +3127,7 @@ class VTKViewerWidget(QFrame):
         self._filter_thickness_names = None
         self._filter_material_names = None
         self._isolated_selection = []
+        self._hidden_items = set()
         self._anomaly_overlay.set_isolation(None)
         self._apply_visibility_state()
 
@@ -4280,6 +4282,7 @@ class VTKViewerWidget(QFrame):
         }
         self._support_punctual_points = list(self._model_data["punctual_supports"])
         self._support_punctual_indexes = None
+        self._hidden_items = set()
 
         # Charges ponctuelles — désactivé à chaque nouveau chargement
         self._show_punctual_loads = False
@@ -4364,7 +4367,7 @@ class VTKViewerWidget(QFrame):
             if has_any and not line_indexes:
                 # Isolation active mais sur d'autres types → aucun filaire visible
                 return []
-            return sorted(line_indexes)
+            return self._without_hidden("lines", sorted(line_indexes))
         section_names = self._filter_section_names
         material_names = self._filter_material_names
         indexes = []
@@ -4374,7 +4377,7 @@ class VTKViewerWidget(QFrame):
             material_ok = True if material_names is None else str(props.get("material", "N/A")) in material_names
             if section_ok and material_ok:
                 indexes.append(idx)
-        return indexes
+        return self._without_hidden("lines", indexes)
 
     def _filtered_planar_indexes(self):
         items = list(self._model_data.get("planar_properties", []))
@@ -4394,7 +4397,7 @@ class VTKViewerWidget(QFrame):
                         planar_indexes.add(idx)
             if has_any and not planar_indexes:
                 return []
-            return sorted(planar_indexes)
+            return self._without_hidden("planars", sorted(planar_indexes))
         thickness_names = self._filter_thickness_names
         material_names = self._filter_material_names
         indexes = []
@@ -4404,7 +4407,11 @@ class VTKViewerWidget(QFrame):
             material_ok = True if material_names is None else str(props.get("material", "N/A")) in material_names
             if thickness_ok and material_ok:
                 indexes.append(idx)
-        return indexes
+        return self._without_hidden("planars", indexes)
+
+    def _without_hidden(self, role, indexes):
+        hidden = self._hidden_items
+        return [i for i in indexes if (role, i) not in hidden] if hidden else indexes
 
     def _select_items_by_indexes(self, items, indexes):
         source = list(items or [])
@@ -4698,6 +4705,16 @@ class VTKViewerWidget(QFrame):
         else:
             self._rebuild_planar_load_actors()
 
+        if self._hidden_items:
+            def drop_hidden(role, items, indexes):
+                indexes = range(len(items)) if indexes is None else indexes
+                kept = [(item, i) for item, i in zip(items, indexes) if (role, i) not in self._hidden_items]
+                return [item for item, _ in kept], [i for _, i in kept]
+            load_areas, load_area_indexes = drop_hidden("load_areas", load_areas, load_area_indexes)
+            punctual_supports, punctual_support_indexes = drop_hidden("support_punctual", punctual_supports, punctual_support_indexes)
+            linear_supports, linear_support_indexes = drop_hidden("support_linear", linear_supports, linear_support_indexes)
+            planar_supports, planar_support_indexes = drop_hidden("support_planar", planar_supports, planar_support_indexes)
+
         # Déterminer si des appuis surfaciques sont isolés (pour le centroïde)
         isolated_has_planar_support = any(
             str(e.get("role") or "") == "support_planar" for e in isolated
@@ -4813,6 +4830,11 @@ class VTKViewerWidget(QFrame):
         else:
             self._isolated_selection = []
         self._anomaly_overlay.set_isolation(self._isolated_selection)
+        self._rebuild_filtered_structural_actors(rebuild_profiles=rebuild_profiles)
+
+    def set_hidden_items(self, items, rebuild_profiles=True):
+        """Masque les items {role, index} donnes (cases decochees de l'arbre Systemes)."""
+        self._hidden_items = {(item["role"], item["index"]) for item in items or []}
         self._rebuild_filtered_structural_actors(rebuild_profiles=rebuild_profiles)
 
     def has_isolated_selection(self) -> bool:
