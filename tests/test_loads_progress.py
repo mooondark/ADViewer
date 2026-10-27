@@ -86,6 +86,9 @@ def _render_widget():
     w.punctual_load_color = (1.0, 0.0, 0.0)
     w.linear_load_color = (0.0, 1.0, 0.0)
     w.planar_load_color = (0.0, 0.0, 1.0)
+    w.punctual_load_line_width = 1.5
+    w.linear_load_line_width = 1.5
+    w.planar_load_line_width = 1.5
     return w
 
 
@@ -111,6 +114,7 @@ def test_apply_loads_batch_keep_preserves_untouched_actors():
     })
     assert len(w._punctual_load_actors) >= 1
     assert len(w._linear_load_actors) >= 1
+    assert w._linear_load_actors[0].GetProperty().GetLineWidth() == 1.5
     assert len(w._planar_load_actors) == 0
     punctual_actors_before = list(w._punctual_load_actors)
     linear_actors_before = list(w._linear_load_actors)

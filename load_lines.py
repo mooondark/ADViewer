@@ -18,6 +18,11 @@ ARC_SEGS = 24
 _AXES = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 
 
+def resultant(ld, keys) -> float:
+    """Norme du vecteur forme par les composantes keys d'une charge (ex. fx, fy, fz)."""
+    return math.sqrt(sum(float(ld.get(k) or 0.0) ** 2 for k in keys))
+
+
 def _cross(a, b):
     return (a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0])
 

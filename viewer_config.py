@@ -243,16 +243,17 @@ MESH_COLOR = (0.0, 1.0, 0.0)  # #00ff00
 # Charges ponctuelles
 PUNCTUAL_LOAD_COLOR = (1.0, 0.45, 0.0)   # orange vif
 PUNCTUAL_LOAD_SCALE = 1.0                 # facteur d'échelle par défaut (m par kN_max)
+PUNCTUAL_LOAD_LINE_WIDTH = 1.5           # épaisseur de trait en pixels (défaut)
 
 # Charges linéaires
 LINEAR_LOAD_COLOR = (1.0, 0.765, 0.059)  # #ffc30f
 LINEAR_LOAD_SCALE = 1.0                  # facteur d'échelle par défaut (m par kN_max)
-LINEAR_LOAD_ARROW_WIDTH = 0.02           # rayon de tige en mètres (défaut)
+LINEAR_LOAD_LINE_WIDTH = 1.5             # épaisseur de trait en pixels (défaut)
 
 # Charges surfaciques
 PLANAR_LOAD_COLOR = (1.0, 0.561, 0.059)  # #ff8f0f
 PLANAR_LOAD_SCALE = 1.0                  # facteur d'échelle par défaut (m par kN_max)
-PLANAR_LOAD_ARROW_WIDTH = 0.02           # rayon de tige en mètres (défaut)
+PLANAR_LOAD_LINE_WIDTH = 1.5             # épaisseur de trait en pixels (défaut)
 
 
 # ======================================================================
