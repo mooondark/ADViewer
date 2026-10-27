@@ -45,6 +45,15 @@ def _extract_diagnostics_text(details: dict) -> str:
     return " ; ".join(parts)
 
 
+def _diagnostics(details: dict) -> list:
+    """[(severite en minuscules, message), ...] des diagnostics de l'API."""
+    return [
+        (str(d.get("severity", "")).strip().lower(), str(d.get("message", "")).strip())
+        for d in (details.get("diagnostics", []) or [])
+        if str(d.get("message", "")).strip()
+    ]
+
+
 def _is_already_open_diagnostic(details: dict) -> bool:
     diagnostics = details.get("diagnostics", []) or []
     for d in diagnostics:
@@ -67,7 +76,7 @@ def _is_already_open_diagnostic(details: dict) -> bool:
     return False
 
 
-def _check(response: requests.Response, label: str) -> dict:
+def _check(response: requests.Response, label: str, tolerate_failure: bool = False) -> dict:
     try:
         response.raise_for_status()
     except requests.HTTPError as e:
@@ -82,7 +91,7 @@ def _check(response: requests.Response, label: str) -> dict:
     data = response.json()
     details = data.get("details", {}) or {}
 
-    if not details.get("success", True):
+    if not details.get("success", True) and not tolerate_failure:
         diag_text = _extract_diagnostics_text(details)
 
         if label == "OpenProject" and _is_already_open_diagnostic(details):
@@ -173,21 +182,24 @@ class AdvanceDesignApiClient:
         except (ApiUnavailableError, RuntimeError, requests.exceptions.RequestException):
             return False
 
-    def launch_analysis(self, timeout=None) -> bool:
+    def launch_analysis(self, timeout=None) -> tuple:
         """Lance le calcul éléments finis et bloque jusqu'à sa fin.
 
         L'API n'expose aucun flux de progression : la réponse HTTP n'arrive
         qu'une fois le calcul terminé. ``timeout`` en secondes (None = illimité).
         Les exceptions requests.Timeout / requests.ConnectionError sont laissées
         remonter pour que l'appelant les distingue.
-        Retourne le flag ``data`` : False => échec côté Advance Design malgré HTTP 200.
+        Retourne (flag ``data``, diagnostics [(severite, message)]). Des erreurs
+        moteur non bloquantes passent success a False alors que le calcul aboutit :
+        on ne leve donc pas, l'appelant tranche avec le statut d'analyse.
         """
         resp = requests.post(
             f"{self.host}/api/Model/analysis/LaunchAnalysis",
             json={},
             timeout=timeout,
         )
-        return _check(resp, "LaunchAnalysis").get("data", False)
+        payload = _check(resp, "LaunchAnalysis", tolerate_failure=True)
+        return payload.get("data", False), _diagnostics(payload.get("details", {}) or {})
 
     def get_element_ids(self, element_type: str) -> list:
         payload = [{
@@ -382,7 +394,7 @@ def close_session(host: str) -> bool:
     return get_api_client(host).close_session()
 
 
-def launch_analysis(host: str, timeout=None) -> bool:
+def launch_analysis(host: str, timeout=None) -> tuple:
     return get_api_client(host).launch_analysis(timeout)
 
 

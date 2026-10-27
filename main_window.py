@@ -1108,7 +1108,7 @@ class LaunchAnalysisWorker(QThread):
             self.log.emit(tr_log("calc_ef_started"), "info")
             start = time.monotonic()
             try:
-                data = launch_analysis(self.host, timeout=self.timeout_s or None)
+                data, diagnostics = launch_analysis(self.host, timeout=self.timeout_s or None)
             except requests.Timeout:
                 elapsed = time.monotonic() - start
                 raise RuntimeError(tr_log(
@@ -1119,7 +1119,16 @@ class LaunchAnalysisWorker(QThread):
             except requests.ConnectionError as e:
                 raise RuntimeError(tr_log("calc_ef_connection_lost", details=str(e)))
 
-            self.success.emit(bool(data), time.monotonic() - start)
+            elapsed = time.monotonic() - start
+            for severity, message in diagnostics:
+                if severity in ("error", "warning"):
+                    self.log.emit(message, "error" if severity == "error" else "warn")
+            # Le flag data est faux des qu'une erreur moteur, meme non bloquante, est signalee
+            try:
+                ok = bool(get_analysis_model_status(self.host).get("femIsCalculated"))
+            except Exception:
+                ok = bool(data)
+            self.success.emit(ok, elapsed)
         except Exception as e:
             self.error.emit(str(e))
         finally:

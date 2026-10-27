@@ -61,6 +61,24 @@ def test_already_open_only_for_open_project():
     assert not isinstance(exc.value, ProjectAlreadyOpenError)
 
 
+_WARNING = {"severity": "Warning", "code": "ENGINE_WARNING", "message": "Element 217 ignore", "source": "Analysis"}
+_ERROR = {"severity": "Error", "code": "ENGINE_ERROR", "message": "Filaire 191 non connecte", "source": "Analysis"}
+
+
+def test_launch_analysis_returns_diagnostics_instead_of_raising(monkeypatch):
+    payload = {"details": {"success": False, "diagnostics": [_WARNING, _ERROR]}, "data": False}
+    monkeypatch.setattr(ad_api_client.requests, "post", lambda *a, **k: _Resp(payload))
+    ok, diagnostics = ad_api_client.AdvanceDesignApiClient("http://h").launch_analysis()
+    assert ok is False
+    assert diagnostics == [("warning", "Element 217 ignore"), ("error", "Filaire 191 non connecte")]
+
+
+def test_launch_analysis_still_raises_on_http_error(monkeypatch):
+    monkeypatch.setattr(ad_api_client.requests, "post", lambda *a, **k: _Resp({"x": 1}, status=500))
+    with pytest.raises(RuntimeError):
+        ad_api_client.AdvanceDesignApiClient("http://h").launch_analysis()
+
+
 def test_check_port_unresolvable_host_is_api_unavailable():
     with pytest.raises(ApiUnavailableError):
         ad_api_client.check_port("http://hote-inexistant.invalid:52000")

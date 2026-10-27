@@ -9,12 +9,14 @@
 - Onglet Systèmes : arbre à branches classiques (traits pointillés, boîtes +/-) et case à cocher par système pour masquer ses éléments dans la vue 3D.
 - Cases à cocher plus compactes (16 px) dans toute l'application.
 - Correction : les boutons de l'onglet Résultats sont grisés tant que le modèle n'est pas calculé.
+- Calcul EF : erreurs et avertissements du moteur affichés un par ligne dans le journal ; la réussite est lue dans le statut d'analyse, une erreur non bloquante ne fait plus échouer un calcul abouti.
 
 ### EN
 - Side panel tabs in classic Windows style: square, slightly rounded corners, raised active tab, reduced height.
 - Systems tab: classic tree branches (dotted lines, +/- boxes) and a checkbox per system to hide its elements in the 3D view.
 - More compact checkboxes (16 px) throughout the application.
 - Fix: Results tab buttons are disabled until the model is calculated.
+- FE calculation: engine errors and warnings shown one per line in the log; success is read from the analysis status, so a non-blocking error no longer fails a completed calculation.
 
 ## 2.21
 
