@@ -5,18 +5,16 @@
 ## À paraître
 
 ### FR
-- Correction : contrôle modèle, le bouton "Voir" ne coupe plus une partie du modèle 3D sur les gros modèles (idem pour le zoom sur la sélection).
-- Interface plus douce : palette du thème alignée sur les couleurs de l'application, densité moins compacte, plus de texte en majuscules sur les boutons et onglets, coins arrondis.
-- Contrôle modèle : titres et cadres des sections des paramètres de détection en bleu (plus lisibles), texte du bouton "Voir" du rapport des anomalies entièrement visible.
-- Charges dessinées en lignes (style Advance Design) : affichage beaucoup plus rapide, pointes visibles sous tous les angles ; l'épaisseur des charges est désormais en pixels (réglage remis à 1.5 px).
-- Correction : les propriétés des charges ponctuelles, linéaires et surfaciques suivent désormais les unités et décimales de force et de moment choisies dans la boîte de dialogue Unités.
+- Interface plus douce : couleurs du thème harmonisées avec l'application, espacements plus aérés, fin des majuscules sur les boutons et onglets, coins arrondis.
+- Charges dessinées en lignes, comme dans Advance Design : affichage jusqu'à près de 100 fois plus rapide sur les gros modèles, pointes visibles sous tous les angles. L'épaisseur des charges se règle désormais en pixels (remise à 1.5 px).
+- Propriétés des charges affichées dans les unités et décimales de force et de moment choisies dans la boîte de dialogue Unités.
+- Contrôle modèle : sections des paramètres de détection plus lisibles ; dans le rapport des anomalies, le bouton "Voir" est entièrement visible et ne coupe plus une partie des gros modèles (idem pour le zoom sur la sélection).
 
 ### EN
-- Fix: model check, the "View" button no longer clips part of the 3D model on large models (same for zoom to selection).
-- Softer interface: theme palette aligned with the application colors, less compact density, no more uppercase text on buttons and tabs, rounded corners.
-- Model check: detection settings section titles and frames in blue (more readable), "View" button text in the anomaly report fully visible.
-- Loads drawn as lines (Advance Design style): much faster display, arrow tips visible from any angle; load thickness is now in pixels (setting reset to 1.5 px).
-- Fix: point, linear and planar load properties now follow the force and moment units and decimals chosen in the Units dialog.
+- Softer interface: theme colors matched to the application, roomier spacing, no more uppercase on buttons and tabs, rounded corners.
+- Loads drawn as lines, as in Advance Design: display up to almost 100 times faster on large models, arrow tips visible from any angle. Load thickness is now set in pixels (reset to 1.5 px).
+- Load properties shown in the force and moment units and decimals chosen in the Units dialog.
+- Model check: more readable detection settings sections; in the anomaly report, the "View" button is fully visible and no longer clips part of large models (same for zoom to selection).
 
 ## 2.20
 
