@@ -260,8 +260,6 @@ MSG_UI = {
     "prop_punctual_load_my": "My",
     "prop_punctual_load_mz": "Mz",
     "prop_punctual_load_case": "Cas de charge",
-    "prop_punctual_load_unit_kn":  "kN",
-    "prop_punctual_load_unit_knm": "kN·m",
     "prop_no_punctual_load": "Aucune propriété disponible pour cette charge.",
 
     "prop_linear_load": "Charge linéaire",
@@ -274,8 +272,6 @@ MSG_UI = {
     "prop_linear_load_mz": "Mz",
     "prop_linear_load_coeff1": "Coefficient 1",
     "prop_linear_load_coeff2": "Coefficient 2",
-    "prop_linear_load_unit_knm": "kN/m",
-    "prop_linear_load_unit_knm2": "kN.m/m",
     "prop_no_linear_load": "Aucune propriété disponible pour cette charge linéaire.",
 
     "prop_planar_load": "Charge surfacique",
@@ -285,7 +281,6 @@ MSG_UI = {
     "prop_planar_load_coeff1": "Coefficient 1",
     "prop_planar_load_coeff2": "Coefficient 2",
     "prop_planar_load_coeff3": "Coefficient 3",
-    "prop_planar_load_unit_knm2": "kN/m2",
     "prop_no_planar_load": "Aucune propriété disponible pour cette charge surfacique.",
     "show_linear_loads": "Afficher charges linéaires",
     "show_planar_loads": "Afficher charges surfaciques",

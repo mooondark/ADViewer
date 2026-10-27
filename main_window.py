@@ -113,6 +113,11 @@ def _fmt_hms(seconds: float) -> str:
     return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
 
 
+def _load_value_text(value_k: float, kind: str, per: str = "") -> str:
+    """Valeur de charge stockee en kN / kN.m, formatee dans l'unite d'affichage ; per : "/m" ou "/m²"."""
+    return display_units.fmt(value_k * 1000.0, kind) + per
+
+
 class SettingsDialog(QDialog):
     def __init__(
         self,
@@ -4642,19 +4647,14 @@ class MainWindow(QMainWindow):
         mz   = float(load.get("mz") or 0.0)
         f_res = math.sqrt(fx*fx + fy*fy + fz*fz)
 
-        def _fmt(v): return f"{v:.4g}"
-
-        unit_f = tr_ui("prop_punctual_load_unit_kn")
-        unit_m = tr_ui("prop_punctual_load_unit_knm")
-
         rows = [
-            (tr_ui("prop_punctual_load_fx"), f"{_fmt(fx)} {unit_f}"),
-            (tr_ui("prop_punctual_load_fy"), f"{_fmt(fy)} {unit_f}"),
-            (tr_ui("prop_punctual_load_fz"), f"{_fmt(fz)} {unit_f}"),
-            (tr_ui("prop_punctual_load_f"),  f"{_fmt(f_res)} {unit_f}"),
-            (tr_ui("prop_punctual_load_mx"), f"{_fmt(mx)} {unit_m}"),
-            (tr_ui("prop_punctual_load_my"), f"{_fmt(my)} {unit_m}"),
-            (tr_ui("prop_punctual_load_mz"), f"{_fmt(mz)} {unit_m}"),
+            (tr_ui("prop_punctual_load_fx"), _load_value_text(fx, "force")),
+            (tr_ui("prop_punctual_load_fy"), _load_value_text(fy, "force")),
+            (tr_ui("prop_punctual_load_fz"), _load_value_text(fz, "force")),
+            (tr_ui("prop_punctual_load_f"),  _load_value_text(f_res, "force")),
+            (tr_ui("prop_punctual_load_mx"), _load_value_text(mx, "moment")),
+            (tr_ui("prop_punctual_load_my"), _load_value_text(my, "moment")),
+            (tr_ui("prop_punctual_load_mz"), _load_value_text(mz, "moment")),
         ]
 
         table = self._create_properties_table(len(rows))
@@ -4697,19 +4697,14 @@ class MainWindow(QMainWindow):
         c1   = float(load.get("coeff1") or 1.0)
         c2   = float(load.get("coeff2") or 1.0)
 
-        def _fmt(v): return f"{v:.4g}"
-
-        unit_f = tr_ui("prop_linear_load_unit_knm")
-        unit_m = tr_ui("prop_linear_load_unit_knm2")
-
         rows = [
-            (tr_ui("prop_linear_load_fx"), f"{_fmt(fx)} {unit_f}"),
-            (tr_ui("prop_linear_load_fy"), f"{_fmt(fy)} {unit_f}"),
-            (tr_ui("prop_linear_load_fz"), f"{_fmt(fz)} {unit_f}"),
-            (tr_ui("prop_linear_load_f"),  f"{_fmt(f_res)} {unit_f}"),
-            (tr_ui("prop_linear_load_mx"), f"{_fmt(mx)} {unit_m}"),
-            (tr_ui("prop_linear_load_my"), f"{_fmt(my)} {unit_m}"),
-            (tr_ui("prop_linear_load_mz"), f"{_fmt(mz)} {unit_m}"),
+            (tr_ui("prop_linear_load_fx"), _load_value_text(fx, "force", "/m")),
+            (tr_ui("prop_linear_load_fy"), _load_value_text(fy, "force", "/m")),
+            (tr_ui("prop_linear_load_fz"), _load_value_text(fz, "force", "/m")),
+            (tr_ui("prop_linear_load_f"),  _load_value_text(f_res, "force", "/m")),
+            (tr_ui("prop_linear_load_mx"), _load_value_text(mx, "moment", "/m")),
+            (tr_ui("prop_linear_load_my"), _load_value_text(my, "moment", "/m")),
+            (tr_ui("prop_linear_load_mz"), _load_value_text(mz, "moment", "/m")),
             (tr_ui("prop_linear_load_coeff1"), f"{c1:.2f}"),
             (tr_ui("prop_linear_load_coeff2"), f"{c2:.2f}"),
         ]
@@ -4751,14 +4746,10 @@ class MainWindow(QMainWindow):
         c2   = float(load.get("coeff2") or 1.0)
         c3   = float(load.get("coeff3") or 1.0)
 
-        def _fmt(v): return f"{v:.4g}"
-
-        unit_f = tr_ui("prop_planar_load_unit_knm2")
-
         rows = [
-            (tr_ui("prop_planar_load_fx"), f"{_fmt(fx)} {unit_f}"),
-            (tr_ui("prop_planar_load_fy"), f"{_fmt(fy)} {unit_f}"),
-            (tr_ui("prop_planar_load_fz"), f"{_fmt(fz)} {unit_f}"),
+            (tr_ui("prop_planar_load_fx"), _load_value_text(fx, "force", "/m²")),
+            (tr_ui("prop_planar_load_fy"), _load_value_text(fy, "force", "/m²")),
+            (tr_ui("prop_planar_load_fz"), _load_value_text(fz, "force", "/m²")),
             (tr_ui("prop_planar_load_coeff1"), f"{c1:.2f}"),
             (tr_ui("prop_planar_load_coeff2"), f"{c2:.2f}"),
             (tr_ui("prop_planar_load_coeff3"), f"{c3:.2f}"),

@@ -260,8 +260,6 @@ MSG_UI = {
     "prop_punctual_load_my": "My",
     "prop_punctual_load_mz": "Mz",
     "prop_punctual_load_case": "Load case",
-    "prop_punctual_load_unit_kn":  "kN",
-    "prop_punctual_load_unit_knm": "kN.m",
     "prop_no_punctual_load": "No properties available for this load.",
 
     "prop_linear_load": "Linear load",
@@ -274,8 +272,6 @@ MSG_UI = {
     "prop_linear_load_mz": "Mz",
     "prop_linear_load_coeff1": "Coefficient 1",
     "prop_linear_load_coeff2": "Coefficient 2",
-    "prop_linear_load_unit_knm": "kN/m",
-    "prop_linear_load_unit_knm2": "kN.m/m",
     "prop_no_linear_load": "No properties available for this linear load.",
 
     "prop_planar_load": "Planar load",
@@ -285,7 +281,6 @@ MSG_UI = {
     "prop_planar_load_coeff1": "Coefficient 1",
     "prop_planar_load_coeff2": "Coefficient 2",
     "prop_planar_load_coeff3": "Coefficient 3",
-    "prop_planar_load_unit_knm2": "kN/m2",
     "prop_no_planar_load": "No properties available for this planar load.",
     "show_linear_loads": "Show linear loads",
     "show_planar_loads": "Show planar loads",
