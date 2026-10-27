@@ -234,6 +234,7 @@ MSG_UI = {
     "loads_punctual_title": "Charges ponctuelles",
     "loads_punctual_scale": "Echelle (m/kN_max)",
     "loads_load_case_filter": "Cas de charge",
+    "loads_auto_scale": "Échelle automatique",
     "loads_load_case_all": "Tous",
     "loads_punctual_count": "{count} charge(s) ponctuelle(s)",
     "loads_punctual_empty": "Aucune charge ponctuelle dans le modèle.",

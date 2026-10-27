@@ -1211,7 +1211,7 @@ class BuildLoadsWorker(QThread):
             if self._punctual_action == "build" and v._punctual_load_data:
                 batch["punctual"] = v._build_punctual_load_polydata_batch(
                     v._punctual_load_data,
-                    v.punctual_load_scale,
+                    v.effective_load_scale("punctual"),
                     case_filter=v._punctual_load_case_filter,
                     progress_cb=_progress_cb,
                 )
@@ -1227,7 +1227,7 @@ class BuildLoadsWorker(QThread):
             if self._linear_action == "build" and v._linear_load_data:
                 batch["linear"] = v._build_linear_load_polydata_batch(
                     v._linear_load_data,
-                    v.linear_load_scale,
+                    v.effective_load_scale("linear"),
                     case_filter=v._linear_load_case_filter,
                     global_data=v._linear_load_data,
                     progress_cb=_progress_cb,
@@ -1244,7 +1244,7 @@ class BuildLoadsWorker(QThread):
             if self._planar_action == "build" and v._planar_load_data:
                 batch["planar"] = v._build_planar_load_polydata_batch(
                     v._planar_load_data,
-                    v.planar_load_scale,
+                    v.effective_load_scale("planar"),
                     case_filter=v._planar_load_case_filter,
                     global_data=v._planar_load_data,
                     progress_cb=_progress_cb,
@@ -1454,6 +1454,7 @@ class MainWindow(QMainWindow):
         self.chk_punctual_loads = None
         self.cmb_punctual_load_case = None
         self.spin_punctual_load_scale = None
+        self.chk_load_auto_scale = None
         # Charges linéaires
         self._linear_load_cases: list = []
         self.chk_linear_loads = None
@@ -3539,6 +3540,12 @@ class MainWindow(QMainWindow):
         self.cmb_punctual_load_case.setEnabled(False)
         self.cmb_punctual_load_case.currentIndexChanged.connect(self._on_punctual_load_case_changed)
         layout.addWidget(self.cmb_punctual_load_case)
+
+        # --- Echelle automatique (commune aux trois types) ---
+        self.chk_load_auto_scale = QCheckBox(tr_ui("loads_auto_scale"))
+        self.chk_load_auto_scale.setChecked(True)
+        self.chk_load_auto_scale.toggled.connect(self._on_load_auto_scale_toggled)
+        layout.addWidget(self.chk_load_auto_scale)
 
         # --- Titre charges ponctuelles ---
         title_punctual = QLabel(tr_ui("loads_punctual_title"))
@@ -6668,6 +6675,16 @@ class MainWindow(QMainWindow):
         self.viewer._planar_load_case_filter   = int(case_eid) if case_eid is not None else None
         self._mark_loads_dirty("punctual", "linear", "planar")
 
+    def _on_load_auto_scale_toggled(self, checked: bool):
+        if self.viewer is None:
+            return
+        self.viewer.load_auto_scale = bool(checked)
+        for kind in ("punctual", "linear", "planar"):
+            spin = getattr(self, f"spin_{kind}_load_scale")
+            if spin is not None:
+                spin.setEnabled(not checked and bool(getattr(self.viewer, f"_{kind}_load_data")))
+        self._mark_loads_dirty("punctual", "linear", "planar")
+
     def _on_punctual_load_scale_changed(self, value: float):
         if self.viewer is None:
             return
@@ -7107,7 +7124,7 @@ class MainWindow(QMainWindow):
             self.chk_punctual_loads.setChecked(False)
             self.chk_punctual_loads.blockSignals(False)
         if self.spin_punctual_load_scale is not None:
-            self.spin_punctual_load_scale.setEnabled(has_punctual)
+            self.spin_punctual_load_scale.setEnabled(has_punctual and not self.viewer.load_auto_scale)
         if hasattr(self, "_loads_punctual_status_label") and self._loads_punctual_status_label is not None:
             if has_punctual:
                 self._loads_punctual_status_label.setText(
@@ -7128,7 +7145,7 @@ class MainWindow(QMainWindow):
             self.chk_linear_loads.setChecked(False)
             self.chk_linear_loads.blockSignals(False)
         if self.spin_linear_load_scale is not None:
-            self.spin_linear_load_scale.setEnabled(has_linear)
+            self.spin_linear_load_scale.setEnabled(has_linear and not self.viewer.load_auto_scale)
         if hasattr(self, "_loads_linear_status_label") and self._loads_linear_status_label is not None:
             if has_linear:
                 self._loads_linear_status_label.setText(
@@ -7155,7 +7172,7 @@ class MainWindow(QMainWindow):
             self.chk_planar_loads.setChecked(False)
             self.chk_planar_loads.blockSignals(False)
         if self.spin_planar_load_scale is not None:
-            self.spin_planar_load_scale.setEnabled(has_planar)
+            self.spin_planar_load_scale.setEnabled(has_planar and not self.viewer.load_auto_scale)
         if hasattr(self, "_loads_planar_status_label") and self._loads_planar_status_label is not None:
             if has_planar:
                 self._loads_planar_status_label.setText(

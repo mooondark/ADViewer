@@ -26,7 +26,7 @@ from PySide6.QtGui import QIcon
 #  Constantes applicatives
 # ======================================================================
 
-APP_VERSION = "2.20"
+APP_VERSION = "2.21"
 DEFAULT_HOST = "http://localhost:52000"
 DEFAULT_API_SERVER_EXE = r"C:\Program Files\Graitec\Advance Design\2027\Bin\AD.API.Srv.exe"
 CONFIG_FILE = "config.ini"
@@ -244,6 +244,7 @@ MESH_COLOR = (0.0, 1.0, 0.0)  # #00ff00
 PUNCTUAL_LOAD_COLOR = (1.0, 0.45, 0.0)   # orange vif
 PUNCTUAL_LOAD_SCALE = 1.0                 # facteur d'échelle par défaut (m par kN_max)
 PUNCTUAL_LOAD_LINE_WIDTH = 1.5           # épaisseur de trait en pixels (défaut)
+AUTO_LOAD_SCALE_RATIO = 0.1              # échelle automatique : charge max = 10 % de la taille du modèle
 
 # Charges linéaires
 LINEAR_LOAD_COLOR = (1.0, 0.765, 0.059)  # #ffc30f

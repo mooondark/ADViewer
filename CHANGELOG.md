@@ -2,17 +2,19 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
-## À paraître
+## 2.21
 
 ### FR
 - Interface plus douce : couleurs du thème harmonisées avec l'application, espacements plus aérés, fin des majuscules sur les boutons et onglets, coins arrondis.
 - Charges dessinées en lignes, comme dans Advance Design : affichage jusqu'à près de 100 fois plus rapide sur les gros modèles, pointes visibles sous tous les angles. L'épaisseur des charges se règle désormais en pixels (remise à 1.5 px).
+- Nouvelle option "Échelle automatique" (onglet Charges, cochée par défaut) : comme dans Advance Design, la plus forte charge de chaque type mesure 10 % de la taille du modèle ; décochée, les échelles manuelles en mètres s'appliquent.
 - Propriétés des charges affichées dans les unités et décimales de force et de moment choisies dans la boîte de dialogue Unités.
 - Contrôle modèle : sections des paramètres de détection plus lisibles ; dans le rapport des anomalies, le bouton "Voir" est entièrement visible et ne coupe plus une partie des gros modèles (idem pour le zoom sur la sélection).
 
 ### EN
 - Softer interface: theme colors matched to the application, roomier spacing, no more uppercase on buttons and tabs, rounded corners.
 - Loads drawn as lines, as in Advance Design: display up to almost 100 times faster on large models, arrow tips visible from any angle. Load thickness is now set in pixels (reset to 1.5 px).
+- New "Automatic scale" option (Loads tab, checked by default): as in Advance Design, the largest load of each type is 10% of the model size; unchecked, the manual scales in meters apply.
 - Load properties shown in the force and moment units and decimals chosen in the Units dialog.
 - Model check: more readable detection settings sections; in the anomaly report, the "View" button is fully visible and no longer clips part of large models (same for zoom to selection).
 

@@ -234,6 +234,7 @@ MSG_UI = {
     "loads_punctual_title": "Point loads",
     "loads_punctual_scale": "Scale (m/kN_max)",
     "loads_load_case_filter": "Load case",
+    "loads_auto_scale": "Automatic scale",
     "loads_load_case_all": "All",
     "loads_punctual_count": "{count} point load(s)",
     "loads_punctual_empty": "No point loads in the model.",

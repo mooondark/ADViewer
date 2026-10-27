@@ -29,7 +29,7 @@ import model_check_view as _mcv
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_LINE_WIDTH,
     PLANAR_LOAD_COLOR, PLANAR_LOAD_SCALE, PLANAR_LOAD_LINE_WIDTH,
-    PUNCTUAL_LOAD_LINE_WIDTH,
+    PUNCTUAL_LOAD_LINE_WIDTH, AUTO_LOAD_SCALE_RATIO,
     BG, PANEL, BORDER, ACCENT, ACCENT2, WARN, ERROR_COL,
     FG, FG_DIM, VTK_BG,
     LINEAR_LINE_WIDTH, PLANAR_LINE_WIDTH, OPENING_LINE_WIDTH, LOAD_AREA_LINE_WIDTH,
@@ -418,6 +418,8 @@ class VTKViewerWidget(QFrame):
         self.punctual_load_scale = float(PUNCTUAL_LOAD_SCALE)
         self.punctual_load_color = tuple(PUNCTUAL_LOAD_COLOR)
         self.punctual_load_line_width = float(PUNCTUAL_LOAD_LINE_WIDTH)
+        self.load_auto_scale = True
+        self._model_extent = 0.0
         self.punctual_load_count = 0
 
         self._linear_load_actors: list = []
@@ -1867,7 +1869,7 @@ class VTKViewerWidget(QFrame):
                 extra = {} if kind == "punctual" else {"global_data": loads}
                 actor_pairs = builder(
                     [loads[index]],
-                    getattr(self, f"{kind}_load_scale"),
+                    self.effective_load_scale(kind),
                     self.selection_color,
                     line_width=max(line_width, getattr(self, f"{kind}_load_line_width") + 1.0),
                     norm_loads=active,
@@ -3861,7 +3863,7 @@ class VTKViewerWidget(QFrame):
 
         actor_index_pairs = self._build_punctual_load_actors(
             self._punctual_load_data,
-            self.punctual_load_scale,
+            self.effective_load_scale("punctual"),
             self.punctual_load_color,
             case_filter=self._punctual_load_case_filter,
             line_width=self.punctual_load_line_width,
@@ -3993,7 +3995,7 @@ class VTKViewerWidget(QFrame):
 
         actor_index_pairs = self._build_linear_load_actors(
             self._linear_load_data,
-            self.linear_load_scale,
+            self.effective_load_scale("linear"),
             self.linear_load_color,
             case_filter=self._linear_load_case_filter,
             line_width=self.linear_load_line_width,
@@ -4221,7 +4223,7 @@ class VTKViewerWidget(QFrame):
 
         actor_index_pairs = self._build_planar_load_actors(
             self._planar_load_data,
-            self.planar_load_scale,
+            self.effective_load_scale("planar"),
             self.planar_load_color,
             case_filter=self._planar_load_case_filter,
             line_width=self.planar_load_line_width,
@@ -4326,7 +4328,21 @@ class VTKViewerWidget(QFrame):
         self.set_show_marker(self._show_marker)
         self._minimap.clear_geometry()
         self._minimap.build_geometry()
+        self._update_model_extent()
         self.set_isometric_view()
+
+    def _update_model_extent(self):
+        """Plus grande dimension (m) de la boite englobante des filaires et surfaciques."""
+        pts = [p for seg in self._model_data.get("lines", []) for p in seg]
+        pts += [p for item in self._model_data.get("planars", []) for p in (item.get("outer") or [])]
+        self._model_extent = max((max(p[k] for p in pts) - min(p[k] for p in pts) for k in range(3)), default=0.0) if pts else 0.0
+
+    def effective_load_scale(self, kind: str) -> float:
+        """Longueur (m) de la plus forte charge du type : fraction de la taille du modele
+        en echelle automatique, sinon l'echelle manuelle du type."""
+        if self.load_auto_scale and self._model_extent > 0:
+            return AUTO_LOAD_SCALE_RATIO * self._model_extent
+        return getattr(self, f"{kind}_load_scale")
 
     def _filtered_line_indexes(self):
         items = list(self._model_data.get("line_properties", []))
@@ -4605,7 +4621,7 @@ class VTKViewerWidget(QFrame):
                 if self._show_punctual_loads and isolated_loads:
                     actor_index_pairs = self._build_punctual_load_actors(
                         isolated_loads,
-                        self.punctual_load_scale,
+                        self.effective_load_scale("punctual"),
                         self.punctual_load_color,
                         case_filter=None,   # déjà filtré par index
                         line_width=self.punctual_load_line_width,
@@ -4636,7 +4652,7 @@ class VTKViewerWidget(QFrame):
                 if self._show_linear_loads and isolated_linear_loads:
                     actor_index_pairs = self._build_linear_load_actors(
                         isolated_linear_loads,
-                        self.linear_load_scale,
+                        self.effective_load_scale("linear"),
                         self.linear_load_color,
                         case_filter=None,
                         line_width=self.linear_load_line_width,
@@ -4666,7 +4682,7 @@ class VTKViewerWidget(QFrame):
                 if self._show_planar_loads and isolated_planar_loads:
                     actor_index_pairs = self._build_planar_load_actors(
                         isolated_planar_loads,
-                        self.planar_load_scale,
+                        self.effective_load_scale("planar"),
                         self.planar_load_color,
                         case_filter=None,
                         line_width=self.planar_load_line_width,
