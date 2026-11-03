@@ -694,18 +694,20 @@ def _build_linear_length_takeoff(linear_elements: list, key_fn) -> list:
     ]
 
 
-def _build_linear_takeoff(linear_elements: list, section_by_eid: dict) -> list:
+def _build_linear_ref_takeoff(linear_elements: list, ref_key: str, name_by_eid: dict) -> list:
+    """Metre de longueur groupe par le nom de la reference ref_key ("section", "material")."""
     def key_fn(el):
-        eid = _extract_ref_eid(el, "section")
-        return section_by_eid.get(eid, "N/A") if eid is not None else "N/A"
+        eid = _extract_ref_eid(el, ref_key)
+        return name_by_eid.get(eid, "N/A") if eid is not None else "N/A"
     return _build_linear_length_takeoff(linear_elements, key_fn)
+
+
+def _build_linear_takeoff(linear_elements: list, section_by_eid: dict) -> list:
+    return _build_linear_ref_takeoff(linear_elements, "section", section_by_eid)
 
 
 def _build_linear_material_takeoff(linear_elements: list, material_by_eid: dict) -> list:
-    def key_fn(el):
-        eid = _extract_ref_eid(el, "material")
-        return material_by_eid.get(eid, "N/A") if eid is not None else "N/A"
-    return _build_linear_length_takeoff(linear_elements, key_fn)
+    return _build_linear_ref_takeoff(linear_elements, "material", material_by_eid)
 
 
 def _compute_planar_net_area(el: dict):
@@ -808,25 +810,27 @@ def _format_eccentricity_cm(value) -> str:
     return du.fmt(value, "section_length")
 
 
-def _mesh_type_label(raw) -> str:
-    mapping = {
-        "complete":      "prop_mesh_type_complete",
-        "triangulation": "prop_mesh_type_triangulation",
-        "none":          "prop_mesh_type_none",
-    }
-    key = mapping.get((raw or "").lower())
+def _translated_value(raw, keys_by_value: dict) -> str:
+    """Libelle traduit d'une valeur API connue (casse ignoree), sinon la valeur brute ou "N/A"."""
+    key = keys_by_value.get((raw or "").lower())
     return tr_ui(key) if key else (raw or "N/A")
 
 
+def _mesh_type_label(raw) -> str:
+    return _translated_value(raw, {
+        "complete":      "prop_mesh_type_complete",
+        "triangulation": "prop_mesh_type_triangulation",
+        "none":          "prop_mesh_type_none",
+    })
+
+
 def _mesh_density_label(raw) -> str:
-    mapping = {
+    return _translated_value(raw, {
         "global":       "prop_mesh_density_global",
         "simplified":   "prop_mesh_density_simplified",
         "detailed":     "prop_mesh_density_detailed",
         "element_size": "prop_mesh_density_element_size",
-    }
-    key = mapping.get((raw or "").lower())
-    return tr_ui(key) if key else (raw or "N/A")
+    })
 
 
 def extract_planar_element_properties(el: dict, material_by_eid: dict):
@@ -1370,6 +1374,7 @@ def _build_support_torsor_rows(item: dict) -> list:
 
 
 def read_linear_support_results(host: str, support_eid: int, analysis_case_id: int, family_label: str) -> list:
+    """Torseur resultant d'un appui (lineaire ou surfacique) ; seule la famille Efforts existe."""
     family_key = _normalize_result_family_key(family_label)
     if family_key != "efforts":
         return []
@@ -1379,14 +1384,8 @@ def read_linear_support_results(host: str, support_eid: int, analysis_case_id: i
     return _build_support_torsor_rows(item)
 
 
-def read_planar_support_results(host: str, support_eid: int, analysis_case_id: int, family_label: str) -> list:
-    family_key = _normalize_result_family_key(family_label)
-    if family_key != "efforts":
-        return []
-
-    payloads = get_results(host, "resultantforces", analysis_case_id, [support_eid])
-    item = _extract_result_item_by_id(payloads, support_eid)
-    return _build_support_torsor_rows(item)
+# Meme lecture pour un appui surfacique : le torseur resultant ne depend pas du type d'appui
+read_planar_support_results = read_linear_support_results
 
 
 def _pick_planar_torsor_value(item: dict, *keys):
