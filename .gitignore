@@ -13,6 +13,9 @@ API data/*
 !API data/swagger.json
 #tests/
 
+# Metriques (crapper, dryer, mutator)
+target/
+
 # Exception : ignorer tous les fichiers cachés sauf .gitignore
 .*
 !.gitignore
