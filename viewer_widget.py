@@ -98,6 +98,36 @@ def _invert_selection_items(selected_items, universe_keys):
     return [{"role": role, "index": index} for (role, index) in sorted(set(universe_keys) - current)]
 
 
+def _indexes_by_role(selection) -> dict:
+    """{role: [index, ...]} des items {role, index} d'une selection, index negatifs ignores."""
+    by_role = {}
+    for entry in selection or []:
+        index = int(entry.get("index", -1))
+        if index >= 0:
+            by_role.setdefault(str(entry.get("role") or "").strip(), []).append(index)
+    return by_role
+
+
+def _visible_indexes(role: str, count: int, isolated_by_role, hidden):
+    """Index du modele visibles parmi `count` elements d'un role : isoles s'il y a
+    une isolation (isolated_by_role non None), moins les masques ; None = tous."""
+    if isolated_by_role is not None:
+        indexes = [i for i in isolated_by_role.get(role, []) if 0 <= i < count]
+    elif hidden:
+        indexes = range(count)
+    else:
+        return None
+    return [i for i in indexes if (role, i) not in hidden]
+
+
+def _isolated_load_indexes(indexes, loads, visible_cases) -> list:
+    """Charges isolees existantes dont le cas est visible (visible_cases None = tous)."""
+    return [
+        i for i in indexes
+        if 0 <= i < len(loads) and (visible_cases is None or loads[i].get("load_case_eid") in visible_cases)
+    ]
+
+
 class ConstrainedOrbitStyle(vtk.vtkInteractorStyleUser):
     def __init__(self, parent=None):
         super().__init__()
@@ -4545,179 +4575,78 @@ class VTKViewerWidget(QFrame):
         mapper.ScalarVisibilityOn()
         pd.Modified()
 
+    # (role, cle des donnees du modele, attribut compteur) des elements hors filaires/surfaciques
+    _STRUCTURE_ITEMS = (
+        ("load_areas", "load_areas", "load_areas_count"),
+        ("support_punctual", "punctual_supports", "support_punctual_count"),
+        ("support_linear", "linear_supports", "support_linear_count"),
+        ("support_planar", "planar_supports", "support_planar_count"),
+    )
+
+    def _rebuild_isolated_load_actors(self, kind: str, indexes: list):
+        """Remplace les acteurs de charges d'un type par ceux des seules charges isolees."""
+        for actor in getattr(self, f"_{kind}_load_actors"):
+            self._remove_actor(actor)
+        actors = []
+        setattr(self, f"_{kind}_load_actors", actors)
+        if not indexes or not getattr(self, f"_show_{kind}_loads"):
+            return
+        data = getattr(self, f"_{kind}_load_data")
+        extra = {} if kind == "punctual" else {"global_data": data}
+        actor_index_pairs = getattr(self, f"_build_{kind}_load_actors")(
+            [data[i] for i in indexes],
+            self.effective_load_scale(kind),
+            getattr(self, f"{kind}_load_color"),
+            case_filter=None,   # deja filtre par index
+            line_width=getattr(self, f"{kind}_load_line_width"),
+            **extra,
+        )
+        for actor, _idx in actor_index_pairs:
+            self._add_actor(actor, role=f"{kind}_load", pickable=True)
+            actors.append(actor)
+
+    def _rebuild_load_actors_for_isolation(self, isolated_by_role):
+        for kind in ("punctual", "linear", "planar"):
+            if isolated_by_role is None:
+                getattr(self, f"_rebuild_{kind}_load_actors")()
+                continue
+            indexes = _isolated_load_indexes(
+                isolated_by_role.get(f"{kind}_load", []),
+                getattr(self, f"_{kind}_load_data"),
+                getattr(self, f"_{kind}_load_case_filter"),
+            )
+            self._rebuild_isolated_load_actors(kind, indexes)
+
+    def _visible_structure_items(self, isolated_by_role) -> dict:
+        """{role: (elements visibles, index du modele ou None)} des parois et appuis."""
+        visible = {}
+        for role, data_key, count_attr in self._STRUCTURE_ITEMS:
+            items = list(self._model_data.get(data_key, []) or [])
+            indexes = _visible_indexes(role, len(items), isolated_by_role, self._hidden_items)
+            if indexes is not None:
+                items = [items[i] for i in indexes]
+            setattr(self, count_attr, len(items))
+            visible[role] = (items, indexes)
+        return visible
+
     def _rebuild_filtered_structural_actors(self, rebuild_profiles=True):
         line_indexes = self._filtered_line_indexes()
         planar_indexes = self._filtered_planar_indexes()
         filtered_lines = self._select_items_by_indexes(self._model_data.get("lines", []), line_indexes)
         filtered_line_sections = self._select_items_by_indexes(self._model_data.get("line_sections", []) or [], line_indexes)
         filtered_planars = self._select_items_by_indexes(self._model_data.get("planars", []), planar_indexes)
-        isolated = list(self._isolated_selection or [])
-        is_isolated = bool(isolated)
+        # None = pas d'isolation ; sinon les index du modele isoles, par role
+        isolated_by_role = _indexes_by_role(self._isolated_selection) if self._isolated_selection else None
 
-        load_areas = list(self._model_data.get("load_areas", []) or [])
-        punctual_supports = list(self._model_data.get("punctual_supports", []) or [])
-        linear_supports = list(self._model_data.get("linear_supports", []) or [])
-        planar_supports = list(self._model_data.get("planar_supports", []) or [])
-
-        # Indexes d'origine (modèle) des éléments affichés, pour que le picking
-        # renvoie le bon index après isolation. None = pas d'isolation (enum == index modèle).
-        load_area_indexes = None
-        punctual_support_indexes = None
-        linear_support_indexes = None
-        planar_support_indexes = None
-
-        if is_isolated:
-            # Collecter les indexes par type à partir de la liste d'isolation
-            load_area_idxs = []
-            punctual_idxs = []
-            linear_sup_idxs = []
-            planar_sup_idxs = []
-            punctual_load_idxs = []
-            linear_load_idxs = []
-            planar_load_idxs = []
-            for entry in isolated:
-                role = str(entry.get("role") or "").strip()
-                idx = int(entry.get("index", -1))
-                if role == "load_areas" and idx >= 0:
-                    load_area_idxs.append(idx)
-                elif role == "support_punctual" and idx >= 0:
-                    punctual_idxs.append(idx)
-                elif role == "support_linear" and idx >= 0:
-                    linear_sup_idxs.append(idx)
-                elif role == "support_planar" and idx >= 0:
-                    planar_sup_idxs.append(idx)
-                elif role == "punctual_load" and idx >= 0:
-                    punctual_load_idxs.append(idx)
-                elif role == "linear_load" and idx >= 0:
-                    linear_load_idxs.append(idx)
-                elif role == "planar_load" and idx >= 0:
-                    planar_load_idxs.append(idx)
-            for kind, idxs in (("punctual", punctual_load_idxs), ("linear", linear_load_idxs), ("planar", planar_load_idxs)):
-                visible_cases = getattr(self, f"_{kind}_load_case_filter")
-                data = getattr(self, f"_{kind}_load_data")
-                if visible_cases is not None:
-                    idxs[:] = [i for i in idxs if 0 <= i < len(data) and data[i].get("load_case_eid") in visible_cases]
-            load_areas = self._select_items_by_indexes(load_areas, load_area_idxs)
-            punctual_supports = self._select_items_by_indexes(punctual_supports, punctual_idxs)
-            linear_supports = self._select_items_by_indexes(linear_supports, linear_sup_idxs)
-            planar_supports = self._select_items_by_indexes(planar_supports, planar_sup_idxs)
-            load_area_indexes = list(load_area_idxs)
-            punctual_support_indexes = list(punctual_idxs)
-            linear_support_indexes = list(linear_sup_idxs)
-            planar_support_indexes = list(planar_sup_idxs)
-
-            # Filtrer les charges ponctuelles selon l'isolation
-            if punctual_load_idxs:
-                isolated_loads = [
-                    self._punctual_load_data[i]
-                    for i in punctual_load_idxs
-                    if 0 <= i < len(self._punctual_load_data)
-                ]
-                # Reconstruire les acteurs de charges avec uniquement les charges isolées
-                for actor in self._punctual_load_actors:
-                    self._remove_actor(actor)
-                self._punctual_load_actors = []
-                if self._show_punctual_loads and isolated_loads:
-                    actor_index_pairs = self._build_punctual_load_actors(
-                        isolated_loads,
-                        self.effective_load_scale("punctual"),
-                        self.punctual_load_color,
-                        case_filter=None,   # déjà filtré par index
-                        line_width=self.punctual_load_line_width,
-                    )
-                    for actor, _idx in actor_index_pairs:
-                        self._add_actor(actor, role="punctual_load", pickable=True)
-                        self._punctual_load_actors.append(actor)
-            else:
-                # Isolation active mais pas de charge sélectionnée : cacher toutes les charges
-                for actor in self._punctual_load_actors:
-                    self._remove_actor(actor)
-                self._punctual_load_actors = []
-        else:
-            # Pas d'isolation : reconstruire normalement
-            self._rebuild_punctual_load_actors()
-
-        # Isolation des charges linéaires
-        if is_isolated:
-            if linear_load_idxs:
-                isolated_linear_loads = [
-                    self._linear_load_data[i]
-                    for i in linear_load_idxs
-                    if 0 <= i < len(self._linear_load_data)
-                ]
-                for actor in self._linear_load_actors:
-                    self._remove_actor(actor)
-                self._linear_load_actors = []
-                if self._show_linear_loads and isolated_linear_loads:
-                    actor_index_pairs = self._build_linear_load_actors(
-                        isolated_linear_loads,
-                        self.effective_load_scale("linear"),
-                        self.linear_load_color,
-                        case_filter=None,
-                        line_width=self.linear_load_line_width,
-                        global_data=self._linear_load_data,
-                    )
-                    for actor, _idx in actor_index_pairs:
-                        self._add_actor(actor, role="linear_load", pickable=True)
-                        self._linear_load_actors.append(actor)
-            else:
-                for actor in self._linear_load_actors:
-                    self._remove_actor(actor)
-                self._linear_load_actors = []
-        else:
-            self._rebuild_linear_load_actors()
-
-        # Isolation des charges surfaciques
-        if is_isolated:
-            if planar_load_idxs:
-                isolated_planar_loads = [
-                    self._planar_load_data[i]
-                    for i in planar_load_idxs
-                    if 0 <= i < len(self._planar_load_data)
-                ]
-                for actor in self._planar_load_actors:
-                    self._remove_actor(actor)
-                self._planar_load_actors = []
-                if self._show_planar_loads and isolated_planar_loads:
-                    actor_index_pairs = self._build_planar_load_actors(
-                        isolated_planar_loads,
-                        self.effective_load_scale("planar"),
-                        self.planar_load_color,
-                        case_filter=None,
-                        line_width=self.planar_load_line_width,
-                        global_data=self._planar_load_data,
-                    )
-                    for actor, _idx in actor_index_pairs:
-                        self._add_actor(actor, role="planar_load", pickable=True)
-                        self._planar_load_actors.append(actor)
-            else:
-                for actor in self._planar_load_actors:
-                    self._remove_actor(actor)
-                self._planar_load_actors = []
-        else:
-            self._rebuild_planar_load_actors()
-
-        if self._hidden_items:
-            def drop_hidden(role, items, indexes):
-                indexes = range(len(items)) if indexes is None else indexes
-                kept = [(item, i) for item, i in zip(items, indexes) if (role, i) not in self._hidden_items]
-                return [item for item, _ in kept], [i for _, i in kept]
-            load_areas, load_area_indexes = drop_hidden("load_areas", load_areas, load_area_indexes)
-            punctual_supports, punctual_support_indexes = drop_hidden("support_punctual", punctual_supports, punctual_support_indexes)
-            linear_supports, linear_support_indexes = drop_hidden("support_linear", linear_supports, linear_support_indexes)
-            planar_supports, planar_support_indexes = drop_hidden("support_planar", planar_supports, planar_support_indexes)
-
-        # Déterminer si des appuis surfaciques sont isolés (pour le centroïde)
-        isolated_has_planar_support = any(
-            str(e.get("role") or "") == "support_planar" for e in isolated
-        ) if is_isolated else False
+        self._rebuild_load_actors_for_isolation(isolated_by_role)
+        visible = self._visible_structure_items(isolated_by_role)
+        load_areas, load_area_indexes = visible["load_areas"]
+        punctual_supports, punctual_support_indexes = visible["support_punctual"]
+        linear_supports, linear_support_indexes = visible["support_linear"]
+        planar_supports, planar_support_indexes = visible["support_planar"]
 
         self.lines_count = len(filtered_lines)
         self.planars_count = len(filtered_planars)
-        self.load_areas_count = len(load_areas)
-        self.support_punctual_count = len(punctual_supports)
-        self.support_linear_count = len(linear_supports)
-        self.support_planar_count = len(planar_supports)
         self._support_punctual_points = list(punctual_supports)
         self._support_punctual_indexes = punctual_support_indexes
 
@@ -4777,7 +4706,8 @@ class VTKViewerWidget(QFrame):
             role="support_planar",
             pickable=True,
         )
-        if not isolated_has_planar_support:
+        # Le centroide d'un resultat d'appui surfacique ne reste que si un appui surfacique est isole
+        if not (isolated_by_role or {}).get("support_planar"):
             self.clear_planar_support_result_centroid()
         self._apply_visibility_state()
         self.renderer.ResetCameraClippingRange()

@@ -142,3 +142,28 @@ def test_isolated_loads_of_a_hidden_type_are_not_built():
     assert w.log.loads == {"planar": (["planar1"], None, True)}
     assert w._linear_load_actors == []
     assert w.log.centroid_cleared
+
+
+def test_indexes_by_role_groups_valid_indexes():
+    from viewer_widget import _indexes_by_role
+
+    selection = [{"role": " lines ", "index": 2}, {"role": "lines", "index": 0}, {"role": "planars", "index": -1}, {"index": 3}]
+    assert _indexes_by_role(selection) == {"lines": [2, 0], "": [3]}
+    assert _indexes_by_role(None) == {}
+
+
+def test_visible_indexes_combines_isolation_and_hidden_items():
+    from viewer_widget import _visible_indexes
+
+    assert _visible_indexes("load_areas", 3, None, set()) is None
+    assert _visible_indexes("load_areas", 3, None, {("load_areas", 1)}) == [0, 2]
+    assert _visible_indexes("load_areas", 3, {"load_areas": [2, 7, 0]}, {("load_areas", 0)}) == [2]
+    assert _visible_indexes("load_areas", 3, {"lines": [0]}, set()) == []
+
+
+def test_isolated_load_indexes_keep_existing_loads_of_visible_cases():
+    from viewer_widget import _isolated_load_indexes
+
+    loads = [{"load_case_eid": 1}, {"load_case_eid": 2}]
+    assert _isolated_load_indexes([1, 0, 5, -1], loads, None) == [1, 0]
+    assert _isolated_load_indexes([1, 0], loads, {2}) == [1]
