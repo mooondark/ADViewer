@@ -7,12 +7,12 @@
 ### FR
 - Correction : une charge ponctuelle sans position valide est ignorée au lieu de faire échouer le chargement du modèle.
 - Correction : l'excentrement des tubes rectangulaires et ronds, des ronds pleins et des T dissymétriques est appliqué dans la vue 3D et l'export IFC (ils restaient centrés).
-- Qualité du code : lecture des charges, recalcul des unités et liste des résultats simplifiés et couverts par des tests, doublons supprimés ; script `scripts/metrics.sh` (couverture et scores CRAP).
+- Qualité du code : lecture des charges et des sections, recalcul des unités, liste des résultats et vue 3D (visibilité, sélection, diagrammes) simplifiés et couverts par des tests, doublons supprimés ; script `scripts/metrics.sh` (couverture et scores CRAP).
 
 ### EN
 - Fix: a point load without a valid position is skipped instead of making the model load fail.
 - Fix: section eccentricity of rectangular and circular tubes, solid rounds and asymmetric T sections is applied in the 3D view and IFC export (they stayed centered).
-- Code quality: load reading, unit recalculation and results list simplified and covered by tests, duplicates removed; `scripts/metrics.sh` script (coverage and CRAP scores).
+- Code quality: load and section reading, unit recalculation, results list and 3D view (visibility, selection, diagrams) simplified and covered by tests, duplicates removed; `scripts/metrics.sh` script (coverage and CRAP scores).
 
 ## 2.22
 
