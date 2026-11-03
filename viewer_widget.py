@@ -2493,15 +2493,23 @@ class VTKViewerWidget(QFrame):
         (rectangle pointille), clic point 2 -> selection puis fin du mode.
         gauche->droite : entites entierement comprises.
         droite->gauche : entites comprises + intersectees."""
+        self._set_rect_mode("_window_select_mode", "_win_pt1", active, self.windowSelectModeChanged)
+
+    def _set_rect_mode(self, mode_attr: str, point_attr: str, active, changed_signal):
+        """Active/desactive un mode "rectangle" (selection ou zoom fenetre) ; les
+        deux modes et le mode vol s'excluent."""
         active = bool(active)
-        if active == self._window_select_mode:
+        if active == getattr(self, mode_attr):
             return
-        if active and self._zoom_window_mode:
-            self.set_zoom_window_mode(False)
-        if active and self._flight.active:
-            self.set_flight_mode(False)
-        self._window_select_mode = active
-        self._win_pt1 = None
+        if active:
+            for other_attr, set_other in (("_window_select_mode", self.set_window_select_mode),
+                                          ("_zoom_window_mode", self.set_zoom_window_mode)):
+                if other_attr != mode_attr and getattr(self, other_attr):
+                    set_other(False)
+            if self._flight.active:
+                self.set_flight_mode(False)
+        setattr(self, mode_attr, active)
+        setattr(self, point_attr, None)
         if active:
             self.interactor.SetInteractorStyle(self._ensure_plain_style())
             self.vtk_widget.setCursor(Qt.CrossCursor)
@@ -2509,7 +2517,7 @@ class VTKViewerWidget(QFrame):
             self.interactor.SetInteractorStyle(self.interactor_style)
             self.vtk_widget.unsetCursor()
             self._hide_window_rect()
-        self.windowSelectModeChanged.emit(active)
+        changed_signal.emit(active)
 
     def _on_flight_mouse_move(self, obj, event):
         if not self._flight.active:
@@ -2532,23 +2540,7 @@ class VTKViewerWidget(QFrame):
         """Active/desactive le zoom fenetre : clic point 1, deplacement (rectangle
         pointille), clic point 2 -> recadrage camera sur le rectangle puis fin
         du mode."""
-        active = bool(active)
-        if active == self._zoom_window_mode:
-            return
-        if active and self._window_select_mode:
-            self.set_window_select_mode(False)
-        if active and self._flight.active:
-            self.set_flight_mode(False)
-        self._zoom_window_mode = active
-        self._zoom_win_pt1 = None
-        if active:
-            self.interactor.SetInteractorStyle(self._ensure_plain_style())
-            self.vtk_widget.setCursor(Qt.CrossCursor)
-        else:
-            self.interactor.SetInteractorStyle(self.interactor_style)
-            self.vtk_widget.unsetCursor()
-            self._hide_window_rect()
-        self.zoomWindowModeChanged.emit(active)
+        self._set_rect_mode("_zoom_window_mode", "_zoom_win_pt1", active, self.zoomWindowModeChanged)
 
     def _zoom_to_rect(self, p0, p1):
         """Recadre la camera sur le rectangle ecran (p0, p1). Portage de la
@@ -3334,17 +3326,18 @@ class VTKViewerWidget(QFrame):
         p = max(0, min(100, int(self._transparency_percent)))
         return max(0.0, min(1.0, 1.0 - (p / 100.0)))
 
-    def set_faces_transparency(self, percent: int):
-        self._transparency_percent = max(0, min(100, int(percent)))
+    def _set_transparency(self, attr: str, percent: int):
+        setattr(self, attr, max(0, min(100, int(percent))))
         self._apply_face_opacity_state()
         self.render_window.Render()
+
+    def set_faces_transparency(self, percent: int):
+        self._set_transparency("_transparency_percent", percent)
 
     def set_profiles_transparency(self, percent: int):
         """Opacite des solides de profils, appliquee seulement en mode
         Profilés + Faces cachées."""
-        self._profiles_transparency_percent = max(0, min(100, int(percent)))
-        self._apply_face_opacity_state()
-        self.render_window.Render()
+        self._set_transparency("_profiles_transparency_percent", percent)
 
     def _apply_face_opacity_state(self):
         if self._display_mode == "profiles_wire":
@@ -3835,29 +3828,36 @@ class VTKViewerWidget(QFrame):
         self.punctual_load_count = len(self._punctual_load_data)
         self._rebuild_punctual_load_actors()
 
-    def _rebuild_punctual_load_actors(self):
-        """Efface et reconstruit tous les acteurs de charges ponctuelles."""
-        # Effacer les acteurs existants
-        for actor in self._punctual_load_actors:
+    def _replace_load_actors(self, kind: str, loads: list, case_filter):
+        """Remplace les acteurs de charges d'un type par ceux de `loads` (rien si
+        le type est masque ou sans charge)."""
+        for actor in getattr(self, f"_{kind}_load_actors"):
             self._remove_actor(actor)
-        self._punctual_load_actors = []
-
-        if not self._show_punctual_loads or not self._punctual_load_data:
-            self.render_window.Render()
+        actors = []
+        setattr(self, f"_{kind}_load_actors", actors)
+        if not loads or not getattr(self, f"_show_{kind}_loads"):
             return
-
-        actor_index_pairs = self._build_punctual_load_actors(
-            self._punctual_load_data,
-            self.effective_load_scale("punctual"),
-            self.punctual_load_color,
-            case_filter=self._punctual_load_case_filter,
-            line_width=self.punctual_load_line_width,
+        data = getattr(self, f"_{kind}_load_data")
+        extra = {} if kind == "punctual" else {"global_data": data}
+        actor_index_pairs = getattr(self, f"_build_{kind}_load_actors")(
+            loads,
+            self.effective_load_scale(kind),
+            getattr(self, f"{kind}_load_color"),
+            case_filter=case_filter,
+            line_width=getattr(self, f"{kind}_load_line_width"),
+            **extra,
         )
-        for actor, idx in actor_index_pairs:
-            self._add_actor(actor, role="punctual_load", pickable=True)
-            self._punctual_load_actors.append(actor)
+        for actor, _idx in actor_index_pairs:
+            self._add_actor(actor, role=f"{kind}_load", pickable=True)
+            actors.append(actor)
 
+    def _rebuild_load_actors(self, kind: str):
+        """Efface et reconstruit tous les acteurs de charges d'un type."""
+        self._replace_load_actors(kind, getattr(self, f"_{kind}_load_data"), getattr(self, f"_{kind}_load_case_filter"))
         self.render_window.Render()
+
+    def _rebuild_punctual_load_actors(self):
+        self._rebuild_load_actors("punctual")
 
     def set_show_punctual_loads(self, visible: bool):
         self._show_punctual_loads = visible
@@ -3964,28 +3964,7 @@ class VTKViewerWidget(QFrame):
         self._rebuild_linear_load_actors()
 
     def _rebuild_linear_load_actors(self):
-        """Efface et reconstruit tous les acteurs de charges linéaires."""
-        for actor in self._linear_load_actors:
-            self._remove_actor(actor)
-        self._linear_load_actors = []
-
-        if not self._show_linear_loads or not self._linear_load_data:
-            self.render_window.Render()
-            return
-
-        actor_index_pairs = self._build_linear_load_actors(
-            self._linear_load_data,
-            self.effective_load_scale("linear"),
-            self.linear_load_color,
-            case_filter=self._linear_load_case_filter,
-            line_width=self.linear_load_line_width,
-            global_data=self._linear_load_data,
-        )
-        for actor, idx in actor_index_pairs:
-            self._add_actor(actor, role="linear_load", pickable=True)
-            self._linear_load_actors.append(actor)
-
-        self.render_window.Render()
+        self._rebuild_load_actors("linear")
 
     def set_show_linear_loads(self, visible: bool):
         self._show_linear_loads = visible
@@ -4188,28 +4167,7 @@ class VTKViewerWidget(QFrame):
         self._rebuild_planar_load_actors()
 
     def _rebuild_planar_load_actors(self):
-        """Efface et reconstruit tous les acteurs de charges surfaciques."""
-        for actor in self._planar_load_actors:
-            self._remove_actor(actor)
-        self._planar_load_actors = []
-
-        if not self._show_planar_loads or not self._planar_load_data:
-            self.render_window.Render()
-            return
-
-        actor_index_pairs = self._build_planar_load_actors(
-            self._planar_load_data,
-            self.effective_load_scale("planar"),
-            self.planar_load_color,
-            case_filter=self._planar_load_case_filter,
-            line_width=self.planar_load_line_width,
-            global_data=self._planar_load_data,
-        )
-        for actor, idx in actor_index_pairs:
-            self._add_actor(actor, role="planar_load", pickable=True)
-            self._planar_load_actors.append(actor)
-
-        self.render_window.Render()
+        self._rebuild_load_actors("planar")
 
     def set_show_planar_loads(self, visible: bool):
         self._show_planar_loads = visible
@@ -4509,25 +4467,8 @@ class VTKViewerWidget(QFrame):
 
     def _rebuild_isolated_load_actors(self, kind: str, indexes: list):
         """Remplace les acteurs de charges d'un type par ceux des seules charges isolees."""
-        for actor in getattr(self, f"_{kind}_load_actors"):
-            self._remove_actor(actor)
-        actors = []
-        setattr(self, f"_{kind}_load_actors", actors)
-        if not indexes or not getattr(self, f"_show_{kind}_loads"):
-            return
         data = getattr(self, f"_{kind}_load_data")
-        extra = {} if kind == "punctual" else {"global_data": data}
-        actor_index_pairs = getattr(self, f"_build_{kind}_load_actors")(
-            [data[i] for i in indexes],
-            self.effective_load_scale(kind),
-            getattr(self, f"{kind}_load_color"),
-            case_filter=None,   # deja filtre par index
-            line_width=getattr(self, f"{kind}_load_line_width"),
-            **extra,
-        )
-        for actor, _idx in actor_index_pairs:
-            self._add_actor(actor, role=f"{kind}_load", pickable=True)
-            actors.append(actor)
+        self._replace_load_actors(kind, [data[i] for i in indexes], None)   # deja filtre par index
 
     def _rebuild_load_actors_for_isolation(self, isolated_by_role):
         for kind in ("punctual", "linear", "planar"):
