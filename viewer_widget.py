@@ -4317,67 +4317,38 @@ class VTKViewerWidget(QFrame):
             return AUTO_LOAD_SCALE_RATIO * self._model_extent
         return getattr(self, f"{kind}_load_scale")
 
-    def _filtered_line_indexes(self):
-        items = list(self._model_data.get("line_properties", []))
+    _LINE_ROLE_ALIASES = {"lines", "line", "linear", "element_linear"}
+    _PLANAR_ROLE_ALIASES = {"planars", "planar", "element_planar"}
+
+    def _filtered_element_indexes(self, role, props_key, role_aliases, filters):
+        """Index visibles des filaires ou surfaciques : les isoles s'il y a une isolation
+        (les filtres sont alors ignores), sinon ceux qui passent tous les filtres
+        ((cle de propriete, noms admis ou None), ...) ; moins les elements masques."""
+        items = list(self._model_data.get(props_key, []))
         if not items:
             return []
-        isolated = list(self._isolated_selection or [])
-        if isolated:
-            LINEAR_ROLES = {"lines", "line", "linear", "element_linear"}
-            # Collecter tous les indexes de filaires isolés
-            line_indexes = set()
-            has_any = False
-            for entry in isolated:
-                role = str(entry.get("role") or "").strip()
-                has_any = True
-                if role in LINEAR_ROLES:
-                    idx = int(entry.get("index", -1))
-                    if 0 <= idx < len(items):
-                        line_indexes.add(idx)
-            if has_any and not line_indexes:
-                # Isolation active mais sur d'autres types → aucun filaire visible
-                return []
-            return self._without_hidden("lines", sorted(line_indexes))
-        section_names = self._filter_section_names
-        material_names = self._filter_material_names
-        indexes = []
-        for idx, props in enumerate(items):
-            props = props or {}
-            section_ok = True if section_names is None else str(props.get("section", "N/A")) in section_names
-            material_ok = True if material_names is None else str(props.get("material", "N/A")) in material_names
-            if section_ok and material_ok:
-                indexes.append(idx)
-        return self._without_hidden("lines", indexes)
+        if self._isolated_selection:
+            isolated = {
+                index
+                for isolated_role, indexes in _indexes_by_role(self._isolated_selection).items()
+                if isolated_role in role_aliases
+                for index in indexes
+                if index < len(items)
+            }
+            return self._without_hidden(role, sorted(isolated))
+        indexes = [
+            idx for idx, props in enumerate(items)
+            if all(names is None or str((props or {}).get(key, "N/A")) in names for key, names in filters)
+        ]
+        return self._without_hidden(role, indexes)
+
+    def _filtered_line_indexes(self):
+        filters = (("section", self._filter_section_names), ("material", self._filter_material_names))
+        return self._filtered_element_indexes("lines", "line_properties", self._LINE_ROLE_ALIASES, filters)
 
     def _filtered_planar_indexes(self):
-        items = list(self._model_data.get("planar_properties", []))
-        if not items:
-            return []
-        isolated = list(self._isolated_selection or [])
-        if isolated:
-            PLANAR_ROLES = {"planars", "planar", "element_planar"}
-            planar_indexes = set()
-            has_any = False
-            for entry in isolated:
-                role = str(entry.get("role") or "").strip()
-                has_any = True
-                if role in PLANAR_ROLES:
-                    idx = int(entry.get("index", -1))
-                    if 0 <= idx < len(items):
-                        planar_indexes.add(idx)
-            if has_any and not planar_indexes:
-                return []
-            return self._without_hidden("planars", sorted(planar_indexes))
-        thickness_names = self._filter_thickness_names
-        material_names = self._filter_material_names
-        indexes = []
-        for idx, props in enumerate(items):
-            props = props or {}
-            thickness_ok = True if thickness_names is None else str(props.get("thickness", "N/A")) in thickness_names
-            material_ok = True if material_names is None else str(props.get("material", "N/A")) in material_names
-            if thickness_ok and material_ok:
-                indexes.append(idx)
-        return self._without_hidden("planars", indexes)
+        filters = (("thickness", self._filter_thickness_names), ("material", self._filter_material_names))
+        return self._filtered_element_indexes("planars", "planar_properties", self._PLANAR_ROLE_ALIASES, filters)
 
     def _without_hidden(self, role, indexes):
         hidden = self._hidden_items
