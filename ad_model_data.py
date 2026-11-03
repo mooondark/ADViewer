@@ -1220,9 +1220,9 @@ def _find_first_dict_path(obj, preferred_keys=None):
 
 def _build_analysis_rows(result_family: str, result_payload: dict) -> list:
     rows = []
-    family = str(result_family or "").strip().lower()
+    family = _normalize_result_family_key(result_family)   # libelle traduit ou cle : meme famille
     payload = result_payload or {}
-    if family == "déplacements":
+    if family == "deplacements":
         rows = [
             ("dx", du.fmt(_dict_get_ci(payload, "dx"), "section_length")),
             ("dy", du.fmt(_dict_get_ci(payload, "dy"), "section_length")),
@@ -1283,7 +1283,7 @@ def read_punctual_support_results(host: str, support_eid: int, analysis_case_id:
 
     if not isinstance(payload, dict):
         return []
-    return _build_analysis_rows(_analysis_result_display_label(family_label), payload)
+    return _build_analysis_rows(family_key, payload)
 
 
 def _find_first_dict_with_any_key(obj, keys) -> dict:
