@@ -1,0 +1,11309 @@
+{
+"sections": [
+{
+"sec": {
+"name": "",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"materialName": "ACIER"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"materialName": "C25/30"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "IPE 200",
+"materialName": ""
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {
+"name": "IPE 200",
+"materialName": "S235"
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {
+"name": "IPE 200",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {
+"name": "IPE 200",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {
+"name": "IPE200",
+"materialName": ""
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {
+"name": "IPE200",
+"materialName": "S235"
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {
+"name": "IPE200",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {
+"name": "IPE200",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {
+"name": "IPN 160",
+"materialName": ""
+},
+"dims": {
+"kind": "I",
+"width": 0.06720000000000001,
+"depth": 0.16,
+"web": 0.004,
+"flange": 0.006,
+"overall_width": 0.06720000000000001,
+"overall_depth": 0.16,
+"web_thickness": 0.004,
+"flange_thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "IPN 160",
+"materialName": "S235"
+},
+"dims": {
+"kind": "I",
+"width": 0.06720000000000001,
+"depth": 0.16,
+"web": 0.004,
+"flange": 0.006,
+"overall_width": 0.06720000000000001,
+"overall_depth": 0.16,
+"web_thickness": 0.004,
+"flange_thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "IPN 160",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "I",
+"width": 0.06720000000000001,
+"depth": 0.16,
+"web": 0.004,
+"flange": 0.006,
+"overall_width": 0.06720000000000001,
+"overall_depth": 0.16,
+"web_thickness": 0.004,
+"flange_thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "IPN 160",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "I",
+"width": 0.06720000000000001,
+"depth": 0.16,
+"web": 0.004,
+"flange": 0.006,
+"overall_width": 0.06720000000000001,
+"overall_depth": 0.16,
+"web_thickness": 0.004,
+"flange_thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "HEA 300",
+"materialName": ""
+},
+"dims": {
+"kind": "I",
+"width": 0.285,
+"depth": 0.3,
+"web": 0.006,
+"flange": 0.0096,
+"overall_width": 0.285,
+"overall_depth": 0.3,
+"web_thickness": 0.006,
+"flange_thickness": 0.0096
+}
+},
+{
+"sec": {
+"name": "HEA 300",
+"materialName": "S235"
+},
+"dims": {
+"kind": "I",
+"width": 0.285,
+"depth": 0.3,
+"web": 0.006,
+"flange": 0.0096,
+"overall_width": 0.285,
+"overall_depth": 0.3,
+"web_thickness": 0.006,
+"flange_thickness": 0.0096
+}
+},
+{
+"sec": {
+"name": "HEA 300",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "I",
+"width": 0.285,
+"depth": 0.3,
+"web": 0.006,
+"flange": 0.0096,
+"overall_width": 0.285,
+"overall_depth": 0.3,
+"web_thickness": 0.006,
+"flange_thickness": 0.0096
+}
+},
+{
+"sec": {
+"name": "HEA 300",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "I",
+"width": 0.285,
+"depth": 0.3,
+"web": 0.006,
+"flange": 0.0096,
+"overall_width": 0.285,
+"overall_depth": 0.3,
+"web_thickness": 0.006,
+"flange_thickness": 0.0096
+}
+},
+{
+"sec": {
+"name": "HEB 100",
+"materialName": ""
+},
+"dims": {
+"kind": "I",
+"width": 0.095,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.095,
+"overall_depth": 0.1,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEB 100",
+"materialName": "S235"
+},
+"dims": {
+"kind": "I",
+"width": 0.095,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.095,
+"overall_depth": 0.1,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEB 100",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "I",
+"width": 0.095,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.095,
+"overall_depth": 0.1,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEB 100",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "I",
+"width": 0.095,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.095,
+"overall_depth": 0.1,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEM 200",
+"materialName": ""
+},
+"dims": {
+"kind": "I",
+"width": 0.19,
+"depth": 0.2,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.19,
+"overall_depth": 0.2,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEM 200",
+"materialName": "S235"
+},
+"dims": {
+"kind": "I",
+"width": 0.19,
+"depth": 0.2,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.19,
+"overall_depth": 0.2,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEM 200",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "I",
+"width": 0.19,
+"depth": 0.2,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.19,
+"overall_depth": 0.2,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEM 200",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "I",
+"width": 0.19,
+"depth": 0.2,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.19,
+"overall_depth": 0.2,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEA 260,5",
+"materialName": ""
+},
+"dims": {
+"kind": "I",
+"width": 0.247475,
+"depth": 0.2605,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.247475,
+"overall_depth": 0.2605,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEA 260,5",
+"materialName": "S235"
+},
+"dims": {
+"kind": "I",
+"width": 0.247475,
+"depth": 0.2605,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.247475,
+"overall_depth": 0.2605,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEA 260,5",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "I",
+"width": 0.247475,
+"depth": 0.2605,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.247475,
+"overall_depth": 0.2605,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "HEA 260,5",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "I",
+"width": 0.247475,
+"depth": 0.2605,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.247475,
+"overall_depth": 0.2605,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+}
+},
+{
+"sec": {
+"name": "UPE 200",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.11000000000000001,
+"depth": 0.2,
+"web": 0.007199999999999999,
+"flange": 0.0094
+}
+},
+{
+"sec": {
+"name": "UPE 200",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.11000000000000001,
+"depth": 0.2,
+"web": 0.007199999999999999,
+"flange": 0.0094
+}
+},
+{
+"sec": {
+"name": "UPE 200",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "U",
+"width": 0.11000000000000001,
+"depth": 0.2,
+"web": 0.007199999999999999,
+"flange": 0.0094
+}
+},
+{
+"sec": {
+"name": "UPE 200",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "U",
+"width": 0.11000000000000001,
+"depth": 0.2,
+"web": 0.007199999999999999,
+"flange": 0.0094
+}
+},
+{
+"sec": {
+"name": "UPN 120",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.054,
+"depth": 0.12,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UPN 120",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.054,
+"depth": 0.12,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UPN 120",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "U",
+"width": 0.054,
+"depth": 0.12,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UPN 120",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "U",
+"width": 0.054,
+"depth": 0.12,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UNP 100",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.045,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UNP 100",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.045,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UNP 100",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "U",
+"width": 0.045,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UNP 100",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "U",
+"width": 0.045,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UAP 150",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.0675,
+"depth": 0.15,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UAP 150",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.0675,
+"depth": 0.15,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UAP 150",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "U",
+"width": 0.0675,
+"depth": 0.15,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "UAP 150",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "U",
+"width": 0.0675,
+"depth": 0.15,
+"web": 0.006,
+"flange": 0.009
+}
+},
+{
+"sec": {
+"name": "U 100",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.4,
+"depth": 1.0,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "U 100",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.4,
+"depth": 1.0,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "U 100",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "U",
+"width": 0.4,
+"depth": 1.0,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "U 100",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "U",
+"width": 0.4,
+"depth": 1.0,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "U",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "U",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "U",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "U",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "CHANNEL 10 4",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.04,
+"depth": 0.1,
+"web": 0.0196,
+"flange": 0.0196
+}
+},
+{
+"sec": {
+"name": "CHANNEL 10 4",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.04,
+"depth": 0.1,
+"web": 0.0196,
+"flange": 0.0196
+}
+},
+{
+"sec": {
+"name": "CHANNEL 10 4",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "U",
+"width": 0.04,
+"depth": 0.1,
+"web": 0.0196,
+"flange": 0.0196
+}
+},
+{
+"sec": {
+"name": "CHANNEL 10 4",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "U",
+"width": 0.04,
+"depth": 0.1,
+"web": 0.0196,
+"flange": 0.0196
+}
+},
+{
+"sec": {
+"name": "CHANNEL",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "CHANNEL",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "CHANNEL",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "CHANNEL",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "L 50X50X5",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.05,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "L 50X50X5",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.05,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "L 50X50X5",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.05,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "L 50X50X5",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.05,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "L50X30X4",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.03,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "L50X30X4",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.03,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "L50X30X4",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.03,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "L50X30X4",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.03,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "L 10",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "L 10",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "L 10",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "L 10",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "L",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "L",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "L",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "L",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "ANGLE 10 8 1",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.08,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "ANGLE 10 8 1",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.08,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "ANGLE 10 8 1",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.08,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "ANGLE 10 8 1",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.08,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "ANGLE 10",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "ANGLE 10",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "ANGLE 10",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "ANGLE 10",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+}
+},
+{
+"sec": {
+"name": "ANGLE 10 8",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.049
+}
+},
+{
+"sec": {
+"name": "ANGLE 10 8",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.049
+}
+},
+{
+"sec": {
+"name": "ANGLE 10 8",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.049
+}
+},
+{
+"sec": {
+"name": "ANGLE 10 8",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.049
+}
+},
+{
+"sec": {
+"name": "V 32 8 8 4.5 1.6 4 0.3 0.2",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V 32 8 8 4.5 1.6 4 0.3 0.2",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V 32 8 8 4.5 1.6 4 0.3 0.2",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V 32 8 8 4.5 1.6 4 0.3 0.2",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V 32",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V 32",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V 32",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V 32",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "V",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "W 14 6 6 0.2 0.2",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W 14 6 6 0.2 0.2",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W 14 6 6 0.2 0.2",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W 14 6 6 0.2 0.2",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W14",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W14",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W14",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W14",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W 14 6",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W 14 6",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W 14 6",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "W 14 6",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "Z20X6X6X0.2X1X1X45X45 0.3",
+"materialName": ""
+},
+"dims": {
+"kind": "ZED_SLOPED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 45.0,
+"top_return_angle_deg": 45.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X6X0.2X1X1X45X45 0.3",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ZED_SLOPED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 45.0,
+"top_return_angle_deg": 45.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X6X0.2X1X1X45X45 0.3",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ZED_SLOPED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 45.0,
+"top_return_angle_deg": 45.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X6X0.2X1X1X45X45 0.3",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ZED_SLOPED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 45.0,
+"top_return_angle_deg": 45.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X6X0.2X1X1 0.3",
+"materialName": ""
+},
+"dims": {
+"kind": "ZED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X6X0.2X1X1 0.3",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ZED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X6X0.2X1X1 0.3",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "ZED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X6X0.2X1X1 0.3",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "ZED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5X0.2 0.25",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.0025,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5X0.2 0.25",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.0025,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5X0.2 0.25",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.0025,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5X0.2 0.25",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.0025,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5X0.2",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5X0.2",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5X0.2",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5X0.2",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z 20",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z 20",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z 20",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z 20",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5 0.2",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5 0.2",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5 0.2",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "Z20X6X5 0.2",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "RCT 20 10",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "RCT 20 10",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "RCT 20 10",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "RCT 20 10",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "RCT",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.04,
+"depth": 0.04
+}
+},
+{
+"sec": {
+"name": "RCT",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.04,
+"depth": 0.04
+}
+},
+{
+"sec": {
+"name": "RCT",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.04,
+"depth": 0.04
+}
+},
+{
+"sec": {
+"name": "RCT",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.04,
+"depth": 0.04
+}
+},
+{
+"sec": {
+"name": "RHS 100 50 5",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "RHS 100 50 5",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "RHS 100 50 5",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "RHS 100 50 5",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "RHS 100 50",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "RHS 100 50",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "RHS 100 50",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "RHS 100 50",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "RHS",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "RHS",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "RHS",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "RHS",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "SHS 80",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.008
+}
+},
+{
+"sec": {
+"name": "SHS 80",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.008
+}
+},
+{
+"sec": {
+"name": "SHS 80",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.008
+}
+},
+{
+"sec": {
+"name": "SHS 80",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.008
+}
+},
+{
+"sec": {
+"name": "SHSH 80 80 4",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "SHSH 80 80 4",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "SHSH 80 80 4",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "SHSH 80 80 4",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "CHS 100 5",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "CHS 100 5",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "CHS 100 5",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "CHS 100 5",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.005
+}
+},
+{
+"sec": {
+"name": "CHS 100",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "CHS 100",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "CHS 100",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "CHS 100",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "CHS",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "CHS",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "CHS",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "CHS",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "T 30 1 20 1.5",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.2,
+"depth": 0.3,
+"web": 0.01,
+"flange": 0.015
+}
+},
+{
+"sec": {
+"name": "T 30 1 20 1.5",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.2,
+"depth": 0.3,
+"web": 0.01,
+"flange": 0.015
+}
+},
+{
+"sec": {
+"name": "T 30 1 20 1.5",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "T",
+"width": 0.2,
+"depth": 0.3,
+"web": 0.01,
+"flange": 0.015
+}
+},
+{
+"sec": {
+"name": "T 30 1 20 1.5",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "T",
+"width": 0.2,
+"depth": 0.3,
+"web": 0.01,
+"flange": 0.015
+}
+},
+{
+"sec": {
+"name": "T 30",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "T 30",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "T 30",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "T 30",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "T",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "T",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "T",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "T",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "TUBE RECT 20 10 1",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "TUBE RECT 20 10 1",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "TUBE RECT 20 10 1",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "TUBE RECT 20 10 1",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "TUBE RECT 20",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE RECT 20",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE RECT 20",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE RECT 20",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE RECT",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE RECT",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE RECT",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE RECT",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE CIRC 20 1",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "TUBE CIRC 20 1",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "TUBE CIRC 20 1",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "TUBE CIRC 20 1",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "TUBE CIRC",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE CIRC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE CIRC",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "TUBE CIRC",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "ROND 20",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.01
+}
+},
+{
+"sec": {
+"name": "ROND 20",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.01
+}
+},
+{
+"sec": {
+"name": "ROND 20",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.01
+}
+},
+{
+"sec": {
+"name": "ROND 20",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.01
+}
+},
+{
+"sec": {
+"name": "Ø 16",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.008
+}
+},
+{
+"sec": {
+"name": "Ø 16",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.008
+}
+},
+{
+"sec": {
+"name": "Ø 16",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.008
+}
+},
+{
+"sec": {
+"name": "Ø 16",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.008
+}
+},
+{
+"sec": {
+"name": "DIAM 12",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.006
+}
+},
+{
+"sec": {
+"name": "DIAM 12",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.006
+}
+},
+{
+"sec": {
+"name": "DIAM 12",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.006
+}
+},
+{
+"sec": {
+"name": "DIAM 12",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.006
+}
+},
+{
+"sec": {
+"name": "DIAM TUBE 12",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "DIAM TUBE 12",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "DIAM TUBE 12",
+"materialName": "ACIER"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "DIAM TUBE 12",
+"materialName": "C25/30"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "CIRC 30",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "CIRC 30",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "CIRC 30",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "CIRC 30",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "CIRC",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "CIRC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "CIRC",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "CIRC",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "RECT 30 20",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "RECT 30 20",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "RECT 30 20",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "RECT 30 20",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "RECT 30",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.3
+}
+},
+{
+"sec": {
+"name": "RECT 30",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.3
+}
+},
+{
+"sec": {
+"name": "RECT 30",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.3
+}
+},
+{
+"sec": {
+"name": "RECT 30",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.3
+}
+},
+{
+"sec": {
+"name": "SQUARE 25",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.25,
+"depth": 0.25
+}
+},
+{
+"sec": {
+"name": "SQUARE 25",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.25,
+"depth": 0.25
+}
+},
+{
+"sec": {
+"name": "SQUARE 25",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.25,
+"depth": 0.25
+}
+},
+{
+"sec": {
+"name": "SQUARE 25",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.25,
+"depth": 0.25
+}
+},
+{
+"sec": {
+"name": "RECT",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "RECT",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "RECT",
+"materialName": "ACIER"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "RECT",
+"materialName": "C25/30"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "POUTRE 30X50",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "POUTRE 30X50",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "POUTRE 30X50",
+"materialName": "ACIER"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "POUTRE 30X50",
+"materialName": "C25/30"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "BETON",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "BETON",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "BETON",
+"materialName": "ACIER"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "BETON",
+"materialName": "C25/30"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"type": "",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"type": "",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"type": "",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"type": "",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"type": "",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"type": "",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"type": "ST_CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.16
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.16
+}
+},
+{
+"sec": {
+"name": "",
+"type": "STCIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "",
+"type": "STCIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "STCIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "STCIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "STCIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "STCIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "STCIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "STCIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "STCIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "STCIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "STCIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "STCIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "STCIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.16
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "STCIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.16
+}
+},
+{
+"sec": {
+"name": "",
+"type": "CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "",
+"type": "CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "CIRCULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.16
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "CIRCULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.16
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.06,
+"depth": 0.06,
+"thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.06,
+"depth": 0.06,
+"thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.03,
+"depth": 0.001,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.03,
+"depth": 0.001,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.032,
+"depth": 0.008,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.032,
+"depth": 0.008,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.06,
+"depth": 0.06,
+"thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.06,
+"depth": 0.06,
+"thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.03,
+"depth": 0.001,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.03,
+"depth": 0.001,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.032,
+"depth": 0.008,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_UNEQUAL_ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.032,
+"depth": 0.008,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.06,
+"depth": 0.06,
+"thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.06,
+"depth": 0.06,
+"thickness": 0.006
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.03,
+"depth": 0.001,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.03,
+"depth": 0.001,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ANGLE",
+"materialName": ""
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.032,
+"depth": 0.008,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ANGLE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "ANGLE",
+"width": 0.032,
+"depth": 0.008,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.3,
+"depth": 0.01,
+"thickness": 0.0049
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.3,
+"depth": 0.01,
+"thickness": 0.0049
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.32,
+"depth": 0.08,
+"thickness": 0.0392
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_RECTANGULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.32,
+"depth": 0.08,
+"thickness": 0.0392
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_SQUARE_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_SQUARE_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_SQUARE_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_SQUARE_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_SQUARE_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_SQUARE_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_SQUARE_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_SQUARE_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_SQUARE_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_SQUARE_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_SQUARE_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.3,
+"depth": 0.01,
+"thickness": 0.0049
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_SQUARE_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.3,
+"depth": 0.01,
+"thickness": 0.0049
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_SQUARE_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.32,
+"depth": 0.08,
+"thickness": 0.0392
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_SQUARE_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.32,
+"depth": 0.08,
+"thickness": 0.0392
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.098
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.098
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.098
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.098
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.098
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.098
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.15,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.15,
+"thickness": 0.01
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.16,
+"thickness": 0.08
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_CIRCULAR_TUBE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.16,
+"thickness": 0.08
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_T",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_T",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_T",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.12,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0588
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_T",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.12,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0588
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_T",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.12,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0588
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_T",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.12,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0588
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_T",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.01,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0049
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_T",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.01,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0049
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_T",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.01,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0049
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_T",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.01,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0049
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_T",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.2,
+"depth": 0.3,
+"web": 0.01,
+"flange": 0.015
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_T",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.2,
+"depth": 0.3,
+"web": 0.01,
+"flange": 0.015
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_T",
+"materialName": ""
+},
+"dims": {
+"kind": "T",
+"width": 0.08,
+"depth": 0.32,
+"web": 0.08,
+"flange": 0.0392
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_T",
+"materialName": "S235"
+},
+"dims": {
+"kind": "T",
+"width": 0.08,
+"depth": 0.32,
+"web": 0.08,
+"flange": 0.0392
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_U",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_U",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_U",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.08,
+"depth": 0.2,
+"web": 0.0392,
+"flange": 0.0392
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_U",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.08,
+"depth": 0.2,
+"web": 0.0392,
+"flange": 0.0392
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_U",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_U",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.04,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_U",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.01,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_U",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.01,
+"flange": 0.04
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_U",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.01,
+"flange": 0.02
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_U",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.01,
+"flange": 0.02
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_U",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.01,
+"depth": 0.3,
+"web": 0.0049,
+"flange": 0.0049
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_U",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.01,
+"depth": 0.3,
+"web": 0.0049,
+"flange": 0.0049
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_U",
+"materialName": ""
+},
+"dims": {
+"kind": "U",
+"width": 0.08,
+"depth": 0.32,
+"web": 0.0392,
+"flange": 0.0392
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_U",
+"materialName": "S235"
+},
+"dims": {
+"kind": "U",
+"width": 0.08,
+"depth": 0.32,
+"web": 0.0392,
+"flange": 0.0392
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_RECTANGULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_RECTANGULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_RECTANGULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_RECTANGULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_RECTANGULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_RECTANGULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_RECTANGULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_RECTANGULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_RECTANGULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_RECTANGULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_RECTANGULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.01
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_RECTANGULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.01
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_RECTANGULAR",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.32,
+"depth": 0.08
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_RECTANGULAR",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.32,
+"depth": 0.08
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_SQUARE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ST_SQUARE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_SQUARE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ST_SQUARE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_SQUARE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ST_SQUARE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_SQUARE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ST_SQUARE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_SQUARE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ST_SQUARE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_SQUARE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.01
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ST_SQUARE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.01
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_SQUARE",
+"materialName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.32,
+"depth": 0.08
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ST_SQUARE",
+"materialName": "S235"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.32,
+"depth": 0.08
+}
+},
+{
+"sec": {
+"name": "",
+"type": "T_DISSYMETRIC",
+"materialName": ""
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.4,
+"depth": 0.6,
+"web": 0.2,
+"left_width": 0.1,
+"left_thickness": 0.1,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.1,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"type": "T_DISSYMETRIC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.4,
+"depth": 0.6,
+"web": 0.2,
+"left_width": 0.1,
+"left_thickness": 0.1,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.1,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "T_DISSYMETRIC",
+"materialName": ""
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.4,
+"depth": 0.6,
+"web": 0.2,
+"left_width": 0.1,
+"left_thickness": 0.1,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.1,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "T_DISSYMETRIC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.4,
+"depth": 0.6,
+"web": 0.2,
+"left_width": 0.1,
+"left_thickness": 0.1,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.1,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "T_DISSYMETRIC",
+"materialName": ""
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.4,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.1,
+"left_thickness": 0.049,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "T_DISSYMETRIC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.4,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.1,
+"left_thickness": 0.049,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "T_DISSYMETRIC",
+"materialName": ""
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.31000000000000005,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.01,
+"left_thickness": 0.049,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "T_DISSYMETRIC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.31000000000000005,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.01,
+"left_thickness": 0.049,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "T_DISSYMETRIC",
+"materialName": ""
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.31000000000000005,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.01,
+"left_thickness": 0.02,
+"left_offset": 0.03,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "T_DISSYMETRIC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.31000000000000005,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.01,
+"left_thickness": 0.02,
+"left_offset": 0.03,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "T_DISSYMETRIC",
+"materialName": ""
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.52,
+"depth": 0.01,
+"web": 0.3,
+"left_width": 0.2,
+"left_thickness": 0.0049,
+"left_offset": 0.04,
+"right_width": 0.02,
+"right_thickness": 0.0049,
+"right_offset": 0.05
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "T_DISSYMETRIC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.52,
+"depth": 0.01,
+"web": 0.3,
+"left_width": 0.2,
+"left_thickness": 0.0049,
+"left_offset": 0.04,
+"right_width": 0.02,
+"right_thickness": 0.0049,
+"right_offset": 0.05
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "T_DISSYMETRIC",
+"materialName": ""
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.44,
+"depth": 0.08,
+"web": 0.32,
+"left_width": 0.08,
+"left_thickness": 0.0392,
+"left_offset": 0.016,
+"right_width": 0.04,
+"right_thickness": 0.003,
+"right_offset": 0.002
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "T_DISSYMETRIC",
+"materialName": "S235"
+},
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.44,
+"depth": 0.08,
+"web": 0.32,
+"left_width": 0.08,
+"left_thickness": 0.0392,
+"left_offset": 0.016,
+"right_width": 0.04,
+"right_thickness": 0.003,
+"right_offset": 0.002
+}
+},
+{
+"sec": {
+"name": "",
+"type": "I_SYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"type": "I_SYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"type": "I_SYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"type": "I_SYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"type": "I_SYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"type": "I_SYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "I_SYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "I_SYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "I_SYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "I_SYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "I_SYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "I_SYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "I_SYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "I_SYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"type": "IASYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"type": "IASYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"type": "IASYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"type": "IASYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"type": "IASYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"type": "IASYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "IASYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "IASYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "IASYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "IASYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "IASYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "IASYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "IASYMETRIC",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "IASYMETRIC",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"type": "OMEGA",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "",
+"type": "OMEGA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "OMEGA",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.2,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "OMEGA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.2,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "OMEGA",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.1,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.30000000000000004,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "OMEGA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.1,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.30000000000000004,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "OMEGA",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "OMEGA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "OMEGA",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.0049,
+"fillet_radius": 0.03,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "OMEGA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.0049,
+"fillet_radius": 0.03,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "OMEGA",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.01,
+"depth": 0.3,
+"top_flange_width": 0.2,
+"thickness": 0.0049,
+"fillet_radius": 0.04,
+"overall_width": 0.22,
+"overall_depth": 0.3
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "OMEGA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.01,
+"depth": 0.3,
+"top_flange_width": 0.2,
+"thickness": 0.0049,
+"fillet_radius": 0.04,
+"overall_width": 0.22,
+"overall_depth": 0.3
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "OMEGA",
+"materialName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.08,
+"depth": 0.32,
+"top_flange_width": 0.08,
+"thickness": 0.0392,
+"fillet_radius": 0.016,
+"overall_width": 0.24,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "OMEGA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.08,
+"depth": 0.32,
+"top_flange_width": 0.08,
+"thickness": 0.0392,
+"fillet_radius": 0.016,
+"overall_width": 0.24,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ZED",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"type": "ZED",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ZED",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "ZED",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ZED",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "ZED",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ZED",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "ZED",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ZED",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "ZED",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ZED",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.01,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "ZED",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.01,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ZED",
+"materialName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "ZED",
+"materialName": "S235"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"type": "SIGMA",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "",
+"type": "SIGMA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "SIGMA",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"type": "SIGMA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "SIGMA",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"type": "SIGMA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "SIGMA",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "SIGMA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "SIGMA",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.02,
+"web_offset": 0.03,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "SIGMA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.02,
+"web_offset": 0.03,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "SIGMA",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.01,
+"depth": 0.3,
+"inner_web_height": 0.2,
+"outer_web_height": 0.015,
+"web_offset": 0.04,
+"return_lip": 0.02,
+"thickness": 0.0049,
+"inner_radius": 0.05,
+"overall_width": 0.01,
+"overall_depth": 0.3
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "SIGMA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.01,
+"depth": 0.3,
+"inner_web_height": 0.2,
+"outer_web_height": 0.015,
+"web_offset": 0.04,
+"return_lip": 0.02,
+"thickness": 0.0049,
+"inner_radius": 0.05,
+"overall_width": 0.01,
+"overall_depth": 0.3
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "SIGMA",
+"materialName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "SIGMA",
+"materialName": "S235"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "",
+"type": "CIRCULARTUBE",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"type": "CIRCULARTUBE",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"type": "CIRCULARTUBE",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"type": "CIRCULARTUBE",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"type": "CIRCULARTUBE",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"type": "CIRCULARTUBE",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "CIRCULARTUBE",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"type": "CIRCULARTUBE",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "CIRCULARTUBE",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"type": "CIRCULARTUBE",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "CIRCULARTUBE",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"type": "CIRCULARTUBE",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "CIRCULARTUBE",
+"materialName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"type": "CIRCULARTUBE",
+"materialName": "S235"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "",
+"catalogName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"familyCode": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "",
+"catalogName": "20"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "",
+"catalogName": "20 10"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "",
+"catalogName": "20 10 1"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "",
+"catalogName": "20 10 1 2 3"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "V"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "V",
+"catalogName": ""
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "V"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "V",
+"catalogName": "20"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "V"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "V",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "V"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "V",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "V"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.02,
+"web_offset": 0.03,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "V",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.02,
+"web_offset": 0.03,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "V"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.01,
+"depth": 0.3,
+"inner_web_height": 0.2,
+"outer_web_height": 0.015,
+"web_offset": 0.04,
+"return_lip": 0.02,
+"thickness": 0.0049,
+"inner_radius": 0.05,
+"overall_width": 0.01,
+"overall_depth": 0.3
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "V",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.01,
+"depth": 0.3,
+"inner_web_height": 0.2,
+"outer_web_height": 0.015,
+"web_offset": 0.04,
+"return_lip": 0.02,
+"thickness": 0.0049,
+"inner_radius": 0.05,
+"overall_width": 0.01,
+"overall_depth": 0.3
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "V"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "V",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "W"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "W",
+"catalogName": ""
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "W"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.2,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "W",
+"catalogName": "20"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.2,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "W"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.1,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.30000000000000004,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "W",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.1,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.30000000000000004,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "W"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "W",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "W"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.0049,
+"fillet_radius": 0.03,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "W",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.0049,
+"fillet_radius": 0.03,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "W"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.01,
+"depth": 0.3,
+"top_flange_width": 0.2,
+"thickness": 0.0049,
+"fillet_radius": 0.04,
+"overall_width": 0.22,
+"overall_depth": 0.3
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "W",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.01,
+"depth": 0.3,
+"top_flange_width": 0.2,
+"thickness": 0.0049,
+"fillet_radius": 0.04,
+"overall_width": 0.22,
+"overall_depth": 0.3
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "W"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.08,
+"depth": 0.32,
+"top_flange_width": 0.08,
+"thickness": 0.0392,
+"fillet_radius": 0.016,
+"overall_width": 0.24,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "W",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "OMEGA",
+"width": 0.08,
+"depth": 0.32,
+"top_flange_width": 0.08,
+"thickness": 0.0392,
+"fillet_radius": 0.016,
+"overall_width": 0.24,
+"overall_depth": 0.32
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "Z"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "Z",
+"catalogName": ""
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "Z"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "Z",
+"catalogName": "20"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "Z"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "Z",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "Z"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "Z",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "Z"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "Z",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "Z"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.01,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "Z",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "Z"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "Z",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSC",
+"catalogName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "RHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSC",
+"catalogName": "20"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "RHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSC",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "RHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSC",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "RHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSC",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "RHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSC",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "RHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSC",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSH",
+"catalogName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "RHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSH",
+"catalogName": "20"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "RHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSH",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "RHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSH",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "RHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSH",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "RHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSH",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "RHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RHSH",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSC",
+"catalogName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "SHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSC",
+"catalogName": "20"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "SHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSC",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "SHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSC",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "SHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSC",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "SHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSC",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "SHSC"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSC",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSH",
+"catalogName": ""
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "SHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSH",
+"catalogName": "20"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "SHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSH",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "SHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSH",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "SHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSH",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "SHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSH",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "SHSH"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "SHSH",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSC"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSC",
+"catalogName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "CHSC"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSC",
+"catalogName": "20"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "CHSC"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSC",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "CHSC"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSC",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "CHSC"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSC",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "CHSC"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.015,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSC",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.015,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "CHSC"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.016,
+"thickness": 0.008
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSC",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.016,
+"thickness": 0.008
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSH"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSH",
+"catalogName": ""
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "CHSH"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSH",
+"catalogName": "20"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.002
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "CHSH"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSH",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "CHSH"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSH",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "CHSH"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSH",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "CHSH"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.015,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSH",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.015,
+"thickness": 0.001
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "CHSH"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.016,
+"thickness": 0.008
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "CHSH",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.016,
+"thickness": 0.008
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RCT"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.04,
+"depth": 0.04
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RCT",
+"catalogName": ""
+},
+"dims": {
+"kind": "RECT",
+"width": 0.04,
+"depth": 0.04
+}
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "RCT"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.02,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RCT",
+"catalogName": "20"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.02,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "RCT"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RCT",
+"catalogName": "20 10"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "RCT"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RCT",
+"catalogName": "20 10 1"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "RCT"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RCT",
+"catalogName": "20 10 1 2 3"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+}
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "RCT"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.001,
+"depth": 0.03
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RCT",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.001,
+"depth": 0.03
+}
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "RCT"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.008,
+"depth": 0.032
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "RCT",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": {
+"kind": "RECT",
+"width": 0.008,
+"depth": 0.032
+}
+},
+{
+"sec": {
+"name": "",
+"familyCode": "IPE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "IPE",
+"catalogName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "IPE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "IPE",
+"catalogName": "20"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "IPE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "IPE",
+"catalogName": "20 10"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "IPE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "IPE",
+"catalogName": "20 10 1"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "IPE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "IPE",
+"catalogName": "20 10 1 2 3"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "IPE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "IPE",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "IPE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "IPE",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "AUTRE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "AUTRE",
+"catalogName": ""
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20",
+"familyCode": "AUTRE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "AUTRE",
+"catalogName": "20"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10",
+"familyCode": "AUTRE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "AUTRE",
+"catalogName": "20 10"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1",
+"familyCode": "AUTRE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "AUTRE",
+"catalogName": "20 10 1"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "20 10 1 2 3",
+"familyCode": "AUTRE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "AUTRE",
+"catalogName": "20 10 1 2 3"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "30 1 20 1.5 4 2 1 5",
+"familyCode": "AUTRE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "AUTRE",
+"catalogName": "30 1 20 1.5 4 2 1 5"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "32 8 8 4.5 1.6 4 0.3 0.2 9",
+"familyCode": "AUTRE"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "",
+"familyCode": "AUTRE",
+"catalogName": "32 8 8 4.5 1.6 4 0.3 0.2 9"
+},
+"dims": null
+},
+{
+"sec": {
+"name": "IPE 200",
+"material": "S355"
+},
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+}
+},
+{
+"sec": {},
+"dims": null
+},
+{
+"sec": {
+"name": null,
+"type": null,
+"familyCode": null,
+"catalogName": null,
+"materialName": null
+},
+"dims": null
+}
+],
+"bounds": [
+{
+"dims": null,
+"bounds": null
+},
+{
+"dims": {
+"kind": "I",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.0044,
+"flange": 0.0068000000000000005,
+"overall_width": 0.1,
+"overall_depth": 0.2,
+"web_thickness": 0.0044,
+"flange_thickness": 0.0068000000000000005
+},
+"bounds": [
+-0.05,
+-0.1,
+0.05,
+0.1
+]
+},
+{
+"dims": {
+"kind": "I",
+"width": 0.06720000000000001,
+"depth": 0.16,
+"web": 0.004,
+"flange": 0.006,
+"overall_width": 0.06720000000000001,
+"overall_depth": 0.16,
+"web_thickness": 0.004,
+"flange_thickness": 0.006
+},
+"bounds": [
+-0.033600000000000005,
+-0.08,
+0.033600000000000005,
+0.08
+]
+},
+{
+"dims": {
+"kind": "I",
+"width": 0.285,
+"depth": 0.3,
+"web": 0.006,
+"flange": 0.0096,
+"overall_width": 0.285,
+"overall_depth": 0.3,
+"web_thickness": 0.006,
+"flange_thickness": 0.0096
+},
+"bounds": [
+-0.1425,
+-0.15,
+0.1425,
+0.15
+]
+},
+{
+"dims": {
+"kind": "I",
+"width": 0.095,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.095,
+"overall_depth": 0.1,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+},
+"bounds": [
+-0.0475,
+-0.05,
+0.0475,
+0.05
+]
+},
+{
+"dims": {
+"kind": "I",
+"width": 0.19,
+"depth": 0.2,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.19,
+"overall_depth": 0.2,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+},
+"bounds": [
+-0.095,
+-0.1,
+0.095,
+0.1
+]
+},
+{
+"dims": {
+"kind": "I",
+"width": 0.247475,
+"depth": 0.2605,
+"web": 0.006,
+"flange": 0.009,
+"overall_width": 0.247475,
+"overall_depth": 0.2605,
+"web_thickness": 0.006,
+"flange_thickness": 0.009
+},
+"bounds": [
+-0.1237375,
+-0.13025,
+0.1237375,
+0.13025
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.11000000000000001,
+"depth": 0.2,
+"web": 0.007199999999999999,
+"flange": 0.0094
+},
+"bounds": [
+-0.05500000000000001,
+-0.1,
+0.05500000000000001,
+0.1
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.054,
+"depth": 0.12,
+"web": 0.006,
+"flange": 0.009
+},
+"bounds": [
+-0.027,
+-0.06,
+0.027,
+0.06
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.045,
+"depth": 0.1,
+"web": 0.006,
+"flange": 0.009
+},
+"bounds": [
+-0.0225,
+-0.05,
+0.0225,
+0.05
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.0675,
+"depth": 0.15,
+"web": 0.006,
+"flange": 0.009
+},
+"bounds": [
+-0.03375,
+-0.075,
+0.03375,
+0.075
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.4,
+"depth": 1.0,
+"web": 0.04,
+"flange": 0.04
+},
+"bounds": [
+-0.2,
+-0.5,
+0.2,
+0.5
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.12,
+"depth": 0.3,
+"web": 0.04,
+"flange": 0.04
+},
+"bounds": [
+-0.06,
+-0.15,
+0.06,
+0.15
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.04,
+"depth": 0.1,
+"web": 0.0196,
+"flange": 0.0196
+},
+"bounds": [
+-0.02,
+-0.05,
+0.02,
+0.05
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.05,
+"thickness": 0.005
+},
+"bounds": [
+-0.025,
+-0.025,
+0.025,
+0.025
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.05,
+"depth": 0.03,
+"thickness": 0.004
+},
+"bounds": [
+-0.025,
+-0.015,
+0.025,
+0.015
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.015
+},
+"bounds": [
+-0.05,
+-0.05,
+0.05,
+0.05
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.08,
+"depth": 0.1,
+"thickness": 0.01
+},
+"bounds": [
+-0.04,
+-0.05,
+0.04,
+0.05
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.1,
+"depth": 0.1,
+"thickness": 0.049
+},
+"bounds": [
+-0.05,
+-0.05,
+0.05,
+0.05
+]
+},
+{
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.32,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.32
+},
+"bounds": [
+0.0,
+-0.16,
+0.08,
+0.16
+]
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.14
+},
+"bounds": [
+-0.09,
+-0.07,
+0.09,
+0.07
+]
+},
+{
+"dims": {
+"kind": "ZED_SLOPED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 45.0,
+"top_return_angle_deg": 45.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.06,
+-0.1,
+0.06,
+0.1
+]
+},
+{
+"dims": {
+"kind": "ZED",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"top_return": 0.01,
+"bottom_return": 0.01,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.06,
+-0.1,
+0.06,
+0.1
+]
+},
+{
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.0025,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.05,
+-0.1,
+0.06,
+0.1
+]
+},
+{
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.05,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.11,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.05,
+-0.1,
+0.06,
+0.1
+]
+},
+{
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.0294,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.06,
+-0.1,
+0.06,
+0.1
+]
+},
+{
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.002,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.06,
+-0.1,
+0.06,
+0.1
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.01,
+"depth": 0.02
+},
+"bounds": [
+-0.005,
+-0.01,
+0.005,
+0.01
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.04,
+"depth": 0.04
+},
+"bounds": [
+-0.02,
+-0.02,
+0.02,
+0.02
+]
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.05,
+"depth": 0.1,
+"thickness": 0.005
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.04,
+"depth": 0.04,
+"thickness": 0.004
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.008
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.08,
+"depth": 0.08,
+"thickness": 0.004
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.005
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.05,
+"thickness": 0.01
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.02,
+"thickness": 0.004
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "T",
+"width": 0.2,
+"depth": 0.3,
+"web": 0.01,
+"flange": 0.015
+},
+"bounds": [
+-0.1,
+-0.15,
+0.1,
+0.15
+]
+},
+{
+"dims": {
+"kind": "T",
+"width": 0.18,
+"depth": 0.3,
+"web": 0.1,
+"flange": 0.0882
+},
+"bounds": [
+-0.09,
+-0.15,
+0.09,
+0.15
+]
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.1,
+"thickness": 0.01
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.2,
+"depth": 0.2,
+"thickness": 0.02
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.01
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.02
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.01
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.008
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.006
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.15
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.1
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.2
+},
+"bounds": [
+-0.15,
+-0.1,
+0.15,
+0.1
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.3
+},
+"bounds": [
+-0.15,
+-0.15,
+0.15,
+0.15
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.25,
+"depth": 0.25
+},
+"bounds": [
+-0.125,
+-0.125,
+0.125,
+0.125
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.2
+},
+"bounds": [
+-0.1,
+-0.1,
+0.1,
+0.1
+]
+},
+{
+"dims": {
+"kind": "CIRCLE",
+"radius": 0.16
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.06,
+"depth": 0.06,
+"thickness": 0.006
+},
+"bounds": [
+-0.03,
+-0.03,
+0.03,
+0.03
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.004
+},
+"bounds": [
+-0.01,
+-0.01,
+0.01,
+0.01
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.004
+},
+"bounds": [
+-0.01,
+-0.005,
+0.01,
+0.005
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.02,
+"depth": 0.01,
+"thickness": 0.001
+},
+"bounds": [
+-0.01,
+-0.005,
+0.01,
+0.005
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.03,
+"depth": 0.001,
+"thickness": 0.001
+},
+"bounds": [
+-0.015,
+-0.0005,
+0.015,
+0.0005
+]
+},
+{
+"dims": {
+"kind": "ANGLE",
+"width": 0.032,
+"depth": 0.008,
+"thickness": 0.00392
+},
+"bounds": [
+-0.016,
+-0.004,
+0.016,
+0.004
+]
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.3,
+"depth": 0.01,
+"thickness": 0.0049
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.32,
+"depth": 0.08,
+"thickness": 0.0392
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.1,
+"thickness": 0.098
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.15,
+"thickness": 0.01
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.16,
+"thickness": 0.08
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "T",
+"width": 0.12,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0588
+},
+"bounds": [
+-0.06,
+-0.1,
+0.06,
+0.1
+]
+},
+{
+"dims": {
+"kind": "T",
+"width": 0.01,
+"depth": 0.2,
+"web": 0.098,
+"flange": 0.0049
+},
+"bounds": [
+-0.005,
+-0.1,
+0.005,
+0.1
+]
+},
+{
+"dims": {
+"kind": "T",
+"width": 0.08,
+"depth": 0.32,
+"web": 0.08,
+"flange": 0.0392
+},
+"bounds": [
+-0.04,
+-0.16,
+0.04,
+0.16
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.08,
+"depth": 0.2,
+"web": 0.0392,
+"flange": 0.0392
+},
+"bounds": [
+-0.04,
+-0.1,
+0.04,
+0.1
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.04,
+"flange": 0.04
+},
+"bounds": [
+-0.05,
+-0.1,
+0.05,
+0.1
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.01,
+"flange": 0.04
+},
+"bounds": [
+-0.05,
+-0.1,
+0.05,
+0.1
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.1,
+"depth": 0.2,
+"web": 0.01,
+"flange": 0.02
+},
+"bounds": [
+-0.05,
+-0.1,
+0.05,
+0.1
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.01,
+"depth": 0.3,
+"web": 0.0049,
+"flange": 0.0049
+},
+"bounds": [
+-0.005,
+-0.15,
+0.005,
+0.15
+]
+},
+{
+"dims": {
+"kind": "U",
+"width": 0.08,
+"depth": 0.32,
+"web": 0.0392,
+"flange": 0.0392
+},
+"bounds": [
+-0.04,
+-0.16,
+0.04,
+0.16
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.2,
+"depth": 0.1
+},
+"bounds": [
+-0.1,
+-0.05,
+0.1,
+0.05
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.3,
+"depth": 0.01
+},
+"bounds": [
+-0.15,
+-0.005,
+0.15,
+0.005
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.32,
+"depth": 0.08
+},
+"bounds": [
+-0.16,
+-0.04,
+0.16,
+0.04
+]
+},
+{
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.4,
+"depth": 0.6,
+"web": 0.2,
+"left_width": 0.1,
+"left_thickness": 0.1,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.1,
+"right_offset": 0.2
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.4,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.1,
+"left_thickness": 0.049,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.31000000000000005,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.01,
+"left_thickness": 0.049,
+"left_offset": 0.2,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.31000000000000005,
+"depth": 0.1,
+"web": 0.2,
+"left_width": 0.01,
+"left_thickness": 0.02,
+"left_offset": 0.03,
+"right_width": 0.1,
+"right_thickness": 0.049,
+"right_offset": 0.2
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.52,
+"depth": 0.01,
+"web": 0.3,
+"left_width": 0.2,
+"left_thickness": 0.0049,
+"left_offset": 0.04,
+"right_width": 0.02,
+"right_thickness": 0.0049,
+"right_offset": 0.05
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "TDISSYMETRIC",
+"width": 0.44,
+"depth": 0.08,
+"web": 0.32,
+"left_width": 0.08,
+"left_thickness": 0.0392,
+"left_offset": 0.016,
+"right_width": 0.04,
+"right_thickness": 0.003,
+"right_offset": 0.002
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.2,
+"top_flange_width": 0.06,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.18,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.09,
+-0.1,
+0.09,
+0.1
+]
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.1,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.30000000000000004,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.15000000000000002,
+-0.1,
+0.15000000000000002,
+0.1
+]
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.002,
+"fillet_radius": 0.002,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.10500000000000001,
+-0.1,
+0.10500000000000001,
+0.1
+]
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.1,
+"depth": 0.2,
+"top_flange_width": 0.01,
+"thickness": 0.0049,
+"fillet_radius": 0.03,
+"overall_width": 0.21000000000000002,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.10500000000000001,
+-0.1,
+0.10500000000000001,
+0.1
+]
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.01,
+"depth": 0.3,
+"top_flange_width": 0.2,
+"thickness": 0.0049,
+"fillet_radius": 0.04,
+"overall_width": 0.22,
+"overall_depth": 0.3
+},
+"bounds": [
+-0.11,
+-0.15,
+0.11,
+0.15
+]
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.08,
+"depth": 0.32,
+"top_flange_width": 0.08,
+"thickness": 0.0392,
+"fillet_radius": 0.016,
+"overall_width": 0.24,
+"overall_depth": 0.32
+},
+"bounds": [
+-0.12,
+-0.16,
+0.12,
+0.16
+]
+},
+{
+"dims": {
+"kind": "Z",
+"depth": 0.2,
+"top_flange_width": 0.06,
+"bottom_flange_width": 0.06,
+"thickness": 0.01,
+"inner_radius": 0.002,
+"top_return": 0.0,
+"bottom_return": 0.0,
+"bottom_return_angle_deg": 90.0,
+"top_return_angle_deg": 90.0,
+"overall_width": 0.12,
+"overall_depth": 0.2
+},
+"bounds": [
+-0.06,
+-0.1,
+0.06,
+0.1
+]
+},
+{
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.08,
+"overall_depth": 0.2
+},
+"bounds": [
+0.0,
+-0.1,
+0.08,
+0.1
+]
+},
+{
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.08,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+},
+"bounds": [
+0.0,
+-0.1,
+0.1,
+0.1
+]
+},
+{
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.045,
+"web_offset": 0.016,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+},
+"bounds": [
+0.0,
+-0.1,
+0.1,
+0.1
+]
+},
+{
+"dims": {
+"kind": "SIGMA",
+"width": 0.1,
+"depth": 0.2,
+"inner_web_height": 0.01,
+"outer_web_height": 0.02,
+"web_offset": 0.03,
+"return_lip": 0.04,
+"thickness": 0.003,
+"inner_radius": 0.002,
+"overall_width": 0.1,
+"overall_depth": 0.2
+},
+"bounds": [
+0.0,
+-0.1,
+0.1,
+0.1
+]
+},
+{
+"dims": {
+"kind": "SIGMA",
+"width": 0.01,
+"depth": 0.3,
+"inner_web_height": 0.2,
+"outer_web_height": 0.015,
+"web_offset": 0.04,
+"return_lip": 0.02,
+"thickness": 0.0049,
+"inner_radius": 0.05,
+"overall_width": 0.01,
+"overall_depth": 0.3
+},
+"bounds": [
+0.0,
+-0.15,
+0.0449,
+0.15
+]
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.02,
+"depth": 0.02,
+"thickness": 0.002
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.01,
+"depth": 0.02,
+"thickness": 0.001
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.001,
+"depth": 0.03,
+"thickness": 0.001
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECTTUBE",
+"width": 0.008,
+"depth": 0.032,
+"thickness": 0.00392
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.002
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.01,
+"thickness": 0.0098
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.015,
+"thickness": 0.001
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CIRCLETUBE",
+"radius": 0.016,
+"thickness": 0.008
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.02,
+"depth": 0.02
+},
+"bounds": [
+-0.01,
+-0.01,
+0.01,
+0.01
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.001,
+"depth": 0.03
+},
+"bounds": [
+-0.0005,
+-0.015,
+0.0005,
+0.015
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0.008,
+"depth": 0.032
+},
+"bounds": [
+-0.004,
+-0.016,
+0.004,
+0.016
+]
+},
+{
+"dims": {},
+"bounds": null
+},
+{
+"dims": {
+"kind": "PIPE",
+"radius": 0.1
+},
+"bounds": [
+-0.1,
+-0.1,
+0.1,
+0.1
+]
+},
+{
+"dims": {
+"kind": "CHS",
+"radius": 0
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "CHS",
+"width": 0.2,
+"depth": 0.2
+},
+"bounds": [
+-0.1,
+-0.1,
+0.1,
+0.1
+]
+},
+{
+"dims": {
+"kind": "RHS",
+"width": 0.2,
+"depth": 0.1
+},
+"bounds": [
+-0.1,
+-0.05,
+0.1,
+0.05
+]
+},
+{
+"dims": {
+"kind": "SHS",
+"width": 0.1,
+"depth": 0.1
+},
+"bounds": [
+-0.05,
+-0.05,
+0.05,
+0.05
+]
+},
+{
+"dims": {
+"kind": "C",
+"width": 0.1,
+"depth": 0.2
+},
+"bounds": [
+-0.05,
+-0.1,
+0.05,
+0.1
+]
+},
+{
+"dims": {
+"kind": "T_DISSYM",
+"width": 0.3,
+"depth": 0.5
+},
+"bounds": [
+-0.15,
+-0.25,
+0.15,
+0.25
+]
+},
+{
+"dims": {
+"kind": "RECT",
+"width": 0,
+"depth": 0.5
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "rect",
+"width": 0.2,
+"depth": 0.5
+},
+"bounds": [
+-0.1,
+-0.25,
+0.1,
+0.25
+]
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14
+},
+"bounds": [
+-0.09,
+-0.07,
+0.09,
+0.07
+]
+},
+{
+"dims": {
+"kind": "OMEGA",
+"width": 0.06,
+"depth": 0.14,
+"top_flange_width": 0.04,
+"overall_width": 0
+},
+"bounds": [
+-0.08,
+-0.07,
+0.08,
+0.07
+]
+},
+{
+"dims": {
+"kind": "SIGMA",
+"width": 0.08,
+"depth": 0.3
+},
+"bounds": [
+0.0,
+-0.15,
+0.08,
+0.15
+]
+},
+{
+"dims": {
+"kind": "SIGMA",
+"width": 0.01,
+"depth": 0.3,
+"web_offset": 0.02,
+"thickness": 0.003,
+"return_lip": 0.0
+},
+"bounds": [
+0.0,
+-0.15,
+0.023,
+0.15
+]
+},
+{
+"dims": {
+"kind": "ZED",
+"depth": 0.2
+},
+"bounds": [
+-0.0,
+-0.1,
+0.0,
+0.1
+]
+},
+{
+"dims": {
+"kind": "Z",
+"depth": null,
+"width": null
+},
+"bounds": [
+-0.0,
+-0.0,
+0.0,
+0.0
+]
+},
+{
+"dims": {
+"kind": null
+},
+"bounds": null
+},
+{
+"dims": {
+"kind": "INCONNU",
+"width": 1,
+"depth": 1
+},
+"bounds": null
+}
+]
+}
