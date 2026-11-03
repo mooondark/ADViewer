@@ -2,7 +2,7 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
-## À paraître
+## 2.23
 
 ### FR
 - Correction : une charge ponctuelle sans position valide est ignorée au lieu de faire échouer le chargement du modèle.
