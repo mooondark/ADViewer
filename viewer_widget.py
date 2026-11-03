@@ -12,6 +12,8 @@ import os
 import math
 import time
 import hashlib
+from typing import NamedTuple
+
 import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkRenderingCore import vtkBillboardTextActor3D
@@ -91,6 +93,172 @@ def _seg_intersects_rect(ax, ay, bx, by, xmin, ymin, xmax, ymax):
                 if t < u2:
                     u2 = t
     return u1 <= u2
+
+
+class _DiagramGeometry(NamedTuple):
+    u: tuple            # direction de la poutre
+    normal: tuple       # direction dans laquelle les valeurs positives sont tracees
+    scale_height: float
+    samples: list       # [{"value", "abscissa", "base", "tip"}]
+    min_val: float
+    max_val: float
+
+
+def _is_vertical_displacement(title: str) -> bool:
+    """Titre "Deplacements - dz" ou "- d" : diagramme trace vers le bas."""
+    family, sep, component = str(title or "").strip().lower().partition("-")
+    return family.strip() in ("déplacements", "deplacements") and sep and component.strip() in ("dz", "d")
+
+
+def _diagram_normal(p1, p2, u, line_property, title):
+    line_property = line_property if isinstance(line_property, dict) else {}
+    local_axes = line_property.get("local_axes") or {}
+    normal = _normalize_vector3(local_axes.get("z")) if isinstance(local_axes, dict) else None
+    if normal is None:
+        # p1 != p2 : les axes reconstruits ont toujours une normale valide
+        rebuilt = _build_ad_local_axes(p1, p2, line_property.get("section_orientation_angle_rad", 0.0))
+        normal = _normalize_vector3(rebuilt["z"])
+    normal = _normalize_vector3(_rotate_vector_around_axis(normal, u, -math.pi / 2.0)) or normal
+    if _is_vertical_displacement(title):
+        normal = (-normal[0], -normal[1], -normal[2])
+    return normal
+
+
+def _diagram_samples(p1, u, normal, length, series, scale_height) -> list:
+    values = [float((entry or {}).get("value", 0.0)) for entry in series]
+    max_abs = max(abs(v) for v in values)
+    amplitude_scale = (scale_height / max_abs) if max_abs > 1e-12 else 0.0
+    samples = []
+    for entry, value in zip(series, values):
+        abscissa = max(0.0, min(length, float((entry or {}).get("abscissa", 0.0))))
+        base = tuple(p1[i] + u[i] * abscissa for i in range(3))
+        tip = tuple(base[i] + normal[i] * value * amplitude_scale for i in range(3))
+        samples.append({"value": value, "abscissa": abscissa, "base": base, "tip": tip})
+    return samples
+
+
+def _linear_diagram_geometry(line_points, series, title, line_property, scale_factor):
+    """Geometrie d'un diagramme filaire, None si la poutre ou la serie est inexploitable."""
+    if not isinstance(line_points, (list, tuple)) or len(line_points) != 2:
+        return None
+    if not isinstance(series, list) or len(series) < 2:
+        return None
+    try:
+        p1 = tuple(float(v) for v in line_points[0])
+        p2 = tuple(float(v) for v in line_points[1])
+    except Exception:
+        return None
+    axis = tuple(p2[i] - p1[i] for i in range(3))
+    length = math.sqrt(sum(c * c for c in axis))
+    if length <= 1e-9:
+        return None
+    u = tuple(c / length for c in axis)
+    normal = _diagram_normal(p1, p2, u, line_property, title)
+    scale_height = max(0.25, 0.15 * length) * max(1e-6, float(scale_factor))
+    samples = _diagram_samples(p1, u, normal, length, series, scale_height)
+    values = [sample["value"] for sample in samples]
+    return _DiagramGeometry(u, normal, scale_height, samples, min(values), max(values))
+
+
+def _format_diagram_value(value: float, decimals, unit: str) -> str:
+    """Valeur d'etiquette ; sous la precision affichee, "+0" / "-0" garde le signe."""
+    dec = 3 if decimals is None else int(decimals)
+    if dec >= 1 and abs(value) < 10.0 ** (-dec):
+        formatted = "+0" if value >= 0.0 else "-0"
+    else:
+        formatted = f"{value:.{dec}f}"
+    unit = str(unit or "").strip()
+    return f"{formatted} {unit}" if unit else formatted
+
+
+def _diagram_label_samples(samples) -> list:
+    """Echantillons etiquetes : le min et le max, ou une seule valeur si elles sont egales.
+    Le second element vaut la couleur imposee, None = couleur du degrade."""
+    min_sample = min(samples, key=lambda item: item["value"])
+    max_sample = max(samples, key=lambda item: item["value"])
+    if abs(max_sample["value"] - min_sample["value"]) <= 1e-12:
+        return [(max_sample, (0.85, 0.0, 0.0))]
+    return [(min_sample, None), (max_sample, None)]
+
+
+def _diagram_polyline(points_list):
+    points = vtk.vtkPoints()
+    cells = vtk.vtkCellArray()
+    polyline = vtk.vtkPolyLine()
+    polyline.GetPointIds().SetNumberOfIds(len(points_list))
+    for i, pt in enumerate(points_list):
+        polyline.GetPointIds().SetId(i, points.InsertNextPoint(*pt))
+    cells.InsertNextCell(polyline)
+    poly = vtk.vtkPolyData()
+    poly.SetPoints(points)
+    poly.SetLines(cells)
+    return poly
+
+
+def _color_array():
+    colors = vtk.vtkUnsignedCharArray()
+    colors.SetName("Colors")
+    colors.SetNumberOfComponents(3)
+    return colors
+
+
+def _diagram_stems(samples, rgb_of):
+    """Un segment base -> pointe par echantillon, colore selon sa valeur."""
+    pts = vtk.vtkPoints()
+    cells = vtk.vtkCellArray()
+    colors = _color_array()
+    for sample in samples:
+        line = vtk.vtkLine()
+        line.GetPointIds().SetId(0, pts.InsertNextPoint(*sample["base"]))
+        line.GetPointIds().SetId(1, pts.InsertNextPoint(*sample["tip"]))
+        cells.InsertNextCell(line)
+        colors.InsertNextTuple3(*rgb_of(sample["value"]))
+    poly = vtk.vtkPolyData()
+    poly.SetPoints(pts)
+    poly.SetLines(cells)
+    poly.GetCellData().SetScalars(colors)
+    return poly
+
+
+def _diagram_fill(samples, rgb_of):
+    """Bande triangulee entre la poutre et le diagramme, couleurs aux sommets."""
+    n = len(samples)
+    pts = vtk.vtkPoints()
+    colors = _color_array()
+    for key in ("base", "tip"):
+        for sample in samples:
+            pts.InsertNextPoint(*sample[key])
+            colors.InsertNextTuple3(*rgb_of(sample["value"]))
+    cells = vtk.vtkCellArray()
+    for i in range(n - 1):
+        for ids in ((i, n + i, n + i + 1), (i, n + i + 1, i + 1)):
+            tri = vtk.vtkTriangle()
+            for k, pid in enumerate(ids):
+                tri.GetPointIds().SetId(k, pid)
+            cells.InsertNextCell(tri)
+    poly = vtk.vtkPolyData()
+    poly.SetPoints(pts)
+    poly.SetPolys(cells)
+    poly.GetPointData().SetScalars(colors)
+    return poly
+
+
+def _diagram_colored_actor(polydata, line_width=1.0, opacity=1.0, use_point_colors=False):
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(polydata)
+    if use_point_colors:
+        mapper.SetScalarModeToUsePointData()
+    else:
+        mapper.SetScalarModeToUseCellData()
+    mapper.SetColorModeToDirectScalars()
+    mapper.ScalarVisibilityOn()
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.PickableOff()
+    prop = actor.GetProperty()
+    prop.SetOpacity(opacity)
+    prop.SetLineWidth(line_width)
+    return actor
 
 
 def _invert_selection_items(selected_items, universe_keys):
@@ -2022,6 +2190,27 @@ class VTKViewerWidget(QFrame):
                 )
         return stops[-1][1]
 
+    def _add_diagram_label(self, sample, color, geometry: _DiagramGeometry, unit, decimals):
+        """Etiquette de valeur posee juste au-dela de la pointe, cote exterieur du diagramme."""
+        value = sample["value"]
+        sign = 1.0 if value >= 0.0 else -1.0
+        offset = max(0.03, geometry.scale_height * 0.06) * sign
+        normal = geometry.normal
+        actor = vtkBillboardTextActor3D()
+        actor.SetInput(_format_diagram_value(value, decimals, unit))
+        actor.SetPosition(*(float(sample["tip"][i]) + normal[i] * offset for i in range(3)))
+        text_prop = actor.GetTextProperty()
+        text_prop.SetFontSize(16)
+        text_prop.BoldOn()
+        is_dark_theme = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
+        text_prop.SetColor(*((1.0, 1.0, 1.0) if is_dark_theme else color))
+        actor._diagram_original_color = tuple(color)
+        actor._diagram_outward = (normal[0] * sign, normal[1] * sign, normal[2] * sign)
+        actor._diagram_tangent = geometry.u
+        self._orient_diagram_label(actor)
+        actor.PickableOff()
+        return self._add_actor(actor)
+
     def _build_linear_diagram_actors(self, line_points, series, title: str = "", line_property: dict = None, unit: str = "", decimals=None):
         """Construit et ajoute au renderer les acteurs VTK d'un diagramme filaire.
 
@@ -2029,265 +2218,38 @@ class VTKViewerWidget(QFrame):
         listes _diagram_overlay_actors / _diagram_label_actors existantes.
         Cela permet d'appeler cette méthode de manière additive.
         """
-        if not isinstance(line_points, (list, tuple)) or len(line_points) != 2:
+        geometry = _linear_diagram_geometry(
+            line_points, series, title, line_property, getattr(self, "_linear_result_scale_factor", 1.0))
+        if geometry is None:
             return []
-        if not isinstance(series, list) or len(series) < 2:
-            return []
+        samples = geometry.samples
 
-        try:
-            p1 = tuple(float(v) for v in line_points[0])
-            p2 = tuple(float(v) for v in line_points[1])
-        except Exception:
-            return []
+        def color_of(value):
+            return self._diagram_value_to_color(value, geometry.min_val, geometry.max_val)
 
-        axis = (p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2])
-        length = math.sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2])
-        if length <= 1e-9:
-            return []
-        u = (axis[0] / length, axis[1] / length, axis[2] / length)
+        def rgb_of(value):
+            r, g, b = color_of(value)
+            return int(r * 255), int(g * 255), int(b * 255)
 
-        local_axes = ((line_property or {}).get("local_axes") or {}) if isinstance(line_property, dict) else {}
-        normal = _normalize_vector3(local_axes.get("z")) if isinstance(local_axes, dict) else None
-        if normal is None:
-            rebuilt = _build_ad_local_axes(p1, p2, (line_property or {}).get("section_orientation_angle_rad", 0.0) if isinstance(line_property, dict) else 0.0)
-            normal = _normalize_vector3((rebuilt or {}).get("z")) if isinstance(rebuilt, dict) else None
-        if normal is None:
-            normal = _normalize_vector3(_cross_vector3(u, (0.0, 0.0, 1.0)))
-        if normal is None:
-            normal = _normalize_vector3(_cross_vector3(u, (0.0, 1.0, 0.0)))
-        if normal is None:
-            return []
-        rotated_normal = _rotate_vector_around_axis(normal, u, -math.pi / 2.0)
-        normal = _normalize_vector3(rotated_normal) or normal
-        title_key = str(title or "").strip().lower()
-        family_key, sep, component_key = title_key.partition("-")
-        family_key = family_key.strip()
-        component_key = component_key.strip() if sep else ""
-        if family_key in ("déplacements", "deplacements") and component_key in ("dz", "d"):
-            normal = (-normal[0], -normal[1], -normal[2])
+        fill_actor = _diagram_colored_actor(_diagram_fill(samples, rgb_of), opacity=0.82, use_point_colors=True)
+        fill_actor.GetProperty().SetRepresentationToSurface()
+        fill_actor.GetProperty().LightingOff()
+        stems_actor = _diagram_colored_actor(_diagram_stems(samples, rgb_of), line_width=1.2)
+        baseline_actor = self._make_wire_actor(
+            _diagram_polyline([sample["base"] for sample in samples]), (0.35, 0.35, 0.35), 1.5)
+        diagram_actor = self._make_wire_actor(
+            _diagram_polyline([sample["tip"] for sample in samples]), (0.10, 0.10, 0.10), max(1.5, self.linear_line_width))
+        baseline_actor.PickableOff()
+        diagram_actor.PickableOff()
+        actors = [self._add_actor(actor) for actor in (fill_actor, stems_actor, baseline_actor, diagram_actor)]
 
-        scale_height = max(0.25, 0.15 * length)
-        scale_height *= max(1e-6, float(getattr(self, "_linear_result_scale_factor", 1.0)))
-
-        all_values = [float((entry or {}).get("value", 0.0)) for entry in series]
-        max_abs = max(abs(v) for v in all_values)
-        min_val = min(all_values)
-        max_val = max(all_values)
-        amplitude_scale = (scale_height / max_abs) if max_abs > 1e-12 else 0.0
-
-        baseline_points = []
-        diagram_points = []
-        stems = []
-        samples = []
-        for entry in series:
-            abscissa = max(0.0, min(length, float((entry or {}).get("abscissa", 0.0))))
-            value = float((entry or {}).get("value", 0.0))
-            base = (
-                p1[0] + u[0] * abscissa,
-                p1[1] + u[1] * abscissa,
-                p1[2] + u[2] * abscissa,
-            )
-            tip = (
-                base[0] + normal[0] * value * amplitude_scale,
-                base[1] + normal[1] * value * amplitude_scale,
-                base[2] + normal[2] * value * amplitude_scale,
-            )
-            baseline_points.append(base)
-            diagram_points.append(tip)
-            stems.append((base, tip, value))
-            samples.append({"value": value, "abscissa": abscissa, "tip": tip})
-
-        def build_polyline(points_list):
-            if len(points_list) < 2:
-                return None
-            points = vtk.vtkPoints()
-            cells = vtk.vtkCellArray()
-            polyline = vtk.vtkPolyLine()
-            polyline.GetPointIds().SetNumberOfIds(len(points_list))
-            for i, pt in enumerate(points_list):
-                pid = points.InsertNextPoint(*pt)
-                polyline.GetPointIds().SetId(i, pid)
-            cells.InsertNextCell(polyline)
-            poly = vtk.vtkPolyData()
-            poly.SetPoints(points)
-            poly.SetLines(cells)
-            return poly
-
-        def build_colored_stems(segments_list):
-            pts = vtk.vtkPoints()
-            cells = vtk.vtkCellArray()
-            colors = vtk.vtkUnsignedCharArray()
-            colors.SetName("Colors")
-            colors.SetNumberOfComponents(3)
-            for start, end, value in segments_list:
-                rgb = self._diagram_value_to_color(value, min_val, max_val)
-                pid0 = pts.InsertNextPoint(*start)
-                pid1 = pts.InsertNextPoint(*end)
-                line = vtk.vtkLine()
-                line.GetPointIds().SetId(0, pid0)
-                line.GetPointIds().SetId(1, pid1)
-                cells.InsertNextCell(line)
-                r, g, b = int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255)
-                colors.InsertNextTuple3(r, g, b)
-            poly = vtk.vtkPolyData()
-            poly.SetPoints(pts)
-            poly.SetLines(cells)
-            poly.GetCellData().SetScalars(colors)
-            return poly
-
-        def build_filled_diagram(base_pts, tip_pts, values):
-            if len(base_pts) < 2:
-                return None
-            n = len(base_pts)
-            pts = vtk.vtkPoints()
-            colors = vtk.vtkUnsignedCharArray()
-            colors.SetName("Colors")
-            colors.SetNumberOfComponents(3)
-            for i in range(n):
-                pts.InsertNextPoint(*base_pts[i])
-                rgb = self._diagram_value_to_color(values[i], min_val, max_val)
-                colors.InsertNextTuple3(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
-            for i in range(n):
-                pts.InsertNextPoint(*tip_pts[i])
-                rgb = self._diagram_value_to_color(values[i], min_val, max_val)
-                colors.InsertNextTuple3(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
-            cells = vtk.vtkCellArray()
-            for i in range(n - 1):
-                b0, b1 = i,     i + 1
-                t0, t1 = n + i, n + i + 1
-                tri1 = vtk.vtkTriangle()
-                tri1.GetPointIds().SetId(0, b0)
-                tri1.GetPointIds().SetId(1, t0)
-                tri1.GetPointIds().SetId(2, t1)
-                cells.InsertNextCell(tri1)
-                tri2 = vtk.vtkTriangle()
-                tri2.GetPointIds().SetId(0, b0)
-                tri2.GetPointIds().SetId(1, t1)
-                tri2.GetPointIds().SetId(2, b1)
-                cells.InsertNextCell(tri2)
-            poly = vtk.vtkPolyData()
-            poly.SetPoints(pts)
-            poly.SetPolys(cells)
-            poly.GetPointData().SetScalars(colors)
-            return poly
-
-        def make_colored_polydata_actor(polydata, line_width=1.0, opacity=1.0, use_point_colors=False):
-            if polydata is None or polydata.GetNumberOfCells() == 0:
-                return None
-            mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputData(polydata)
-            if use_point_colors:
-                mapper.SetScalarModeToUsePointData()
-            else:
-                mapper.SetScalarModeToUseCellData()
-            mapper.SetColorModeToDirectScalars()
-            mapper.ScalarVisibilityOn()
-            actor = vtk.vtkActor()
-            actor.SetMapper(mapper)
-            actor.PickableOff()
-            prop = actor.GetProperty()
-            prop.SetOpacity(opacity)
-            prop.SetLineWidth(line_width)
-            return actor
-
-        unit_str = str(unit or "").strip()
-
-        def _format_diagram_label_value(text_value):
-            try:
-                value = float(text_value)
-            except Exception:
-                return str(text_value)
-            dec = 3 if decimals is None else int(decimals)
-            if dec >= 1 and abs(value) < 10.0 ** (-dec):
-                formatted = "+0" if value >= 0.0 else "-0"
-            else:
-                formatted = f"{value:.{dec}f}"
-            return f"{formatted} {unit_str}" if unit_str else formatted
-
-        new_label_actors = []
-
-        def add_billboard_label(text_value, point, color, offset_factor=0.06):
-            if point is None:
-                return None
-            try:
-                actor = vtkBillboardTextActor3D()
-            except Exception:
-                return None
-            offset = max(0.03, scale_height * offset_factor)
-            try:
-                sign = 1.0 if float(text_value) >= 0.0 else -1.0
-            except Exception:
-                sign = 1.0
-            pos = (
-                float(point[0]) + normal[0] * offset * sign,
-                float(point[1]) + normal[1] * offset * sign,
-                float(point[2]) + normal[2] * offset * sign,
-            )
-            actor.SetInput(_format_diagram_label_value(text_value))
-            actor.SetPosition(*pos)
-            text_prop = actor.GetTextProperty()
-            text_prop.SetFontSize(16)
-            text_prop.BoldOn()
-            is_dark_theme = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
-            applied_color = (1.0, 1.0, 1.0) if is_dark_theme else color
-            text_prop.SetColor(*applied_color)
-            actor._diagram_original_color = tuple(color)
-            actor._diagram_outward = (normal[0] * sign, normal[1] * sign, normal[2] * sign)
-            actor._diagram_tangent = u
-            self._orient_diagram_label(actor)
-            actor.PickableOff()
-            self.renderer.AddActor(actor)
-            self._actors.append(actor)
-            self._clip.apply_to_actor(actor)
-            new_label_actors.append(actor)
-            return actor
-
-        new_actors = []
-        values_list = [s["value"] for s in samples]
-
-        fill_poly = build_filled_diagram(baseline_points, diagram_points, values_list)
-        fill_actor = make_colored_polydata_actor(fill_poly, opacity=0.82, use_point_colors=True)
-        if fill_actor is not None:
-            fill_actor.GetProperty().SetRepresentationToSurface()
-            fill_actor.GetProperty().LightingOff()
-            new_actors.append(self._add_actor(fill_actor, role=None, pickable=False))
-
-        stems_poly = build_colored_stems(stems)
-        stems_actor = make_colored_polydata_actor(stems_poly, line_width=1.2)
-        if stems_actor is not None:
-            new_actors.append(self._add_actor(stems_actor, role=None, pickable=False))
-
-        baseline_actor = self._make_wire_actor(build_polyline(baseline_points), (0.35, 0.35, 0.35), 1.5)
-        if baseline_actor is not None:
-            baseline_actor.PickableOff()
-            new_actors.append(self._add_actor(baseline_actor, role=None, pickable=False))
-
-        diagram_actor = self._make_wire_actor(build_polyline(diagram_points), (0.10, 0.10, 0.10), max(1.5, self.linear_line_width))
-        if diagram_actor is not None:
-            diagram_actor.PickableOff()
-            new_actors.append(self._add_actor(diagram_actor, role=None, pickable=False))
-
-        if samples:
-            min_sample = min(samples, key=lambda item: float(item["value"]))
-            max_sample = max(samples, key=lambda item: float(item["value"]))
-            if abs(float(max_sample["value"]) - float(min_sample["value"])) <= 1e-12:
-                label_actor = add_billboard_label(max_sample["value"], max_sample["tip"], (0.85, 0.0, 0.0))
-                if label_actor is not None:
-                    new_actors.append(label_actor)
-            else:
-                min_color = self._diagram_value_to_color(min_sample["value"], min_val, max_val)
-                max_color = self._diagram_value_to_color(max_sample["value"], min_val, max_val)
-                min_actor = add_billboard_label(min_sample["value"], min_sample["tip"], min_color)
-                max_actor = add_billboard_label(max_sample["value"], max_sample["tip"], max_color)
-                if min_actor is not None:
-                    new_actors.append(min_actor)
-                if max_actor is not None:
-                    new_actors.append(max_actor)
-
+        labels = [
+            self._add_diagram_label(sample, color or color_of(sample["value"]), geometry, unit, decimals)
+            for sample, color in _diagram_label_samples(samples)
+        ]
         # Enregistrer les labels dans la liste officielle (pour apply_theme, etc.)
-        self._diagram_label_actors.extend(new_label_actors)
-
-        return [a for a in new_actors if a is not None]
+        self._diagram_label_actors.extend(labels)
+        return actors + labels
 
     def set_linear_result_diagram(self, line_points, series, title: str = "", line_property: dict = None, unit: str = "", decimals=None):
         """Remplace le diagramme courant (clear + reconstruction d'un seul élément)."""
