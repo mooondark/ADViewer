@@ -1,0 +1,3476 @@
+{
+ "efforts fy, unite et decimales": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       -0.370370358
+      ],
+      [
+       2.0,
+       -0.0,
+       0.088888891
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       3,
+       4
+      ],
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       1,
+       4,
+       5
+      ],
+      [
+       1,
+       5,
+       2
+      ]
+     ],
+     "point_scalars": [
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       56.0,
+       216.0,
+       113.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       56.0,
+       216.0,
+       113.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       -0.370370358
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       -0.0,
+       0.088888891
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "cell_scalars": [
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       56.0,
+       216.0,
+       113.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       -0.370370358
+      ],
+      [
+       2.0,
+       -0.0,
+       0.088888891
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "-12.50 kN",
+    "position": [
+     0.0,
+     0.0,
+     -0.40637037
+    ],
+    "color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     -0.0,
+     0.0,
+     -1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Top"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "20.25 kN",
+    "position": [
+     4.0,
+     -0.0,
+     0.636
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     0.0,
+     -0.0,
+     1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Bottom"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "deplacements dz retourne": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       1.333333373,
+       0.0,
+       0.0
+      ],
+      [
+       2.666666746,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       1.333333373,
+       0.393442631,
+       0.0
+      ],
+      [
+       2.666666746,
+       0.600000024,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       4,
+       5
+      ],
+      [
+       0,
+       5,
+       1
+      ],
+      [
+       1,
+       5,
+       6
+      ],
+      [
+       1,
+       6,
+       2
+      ],
+      [
+       2,
+       6,
+       7
+      ],
+      [
+       2,
+       7,
+       3
+      ]
+     ],
+     "point_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       191.0,
+       227.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       191.0,
+       227.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       1.333333373,
+       0.0,
+       0.0
+      ],
+      [
+       1.333333373,
+       0.393442631,
+       0.0
+      ],
+      [
+       2.666666746,
+       0.0,
+       0.0
+      ],
+      [
+       2.666666746,
+       0.600000024,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ],
+      [
+       6,
+       7
+      ]
+     ],
+     "cell_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       191.0,
+       227.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       1.333333373,
+       0.0,
+       0.0
+      ],
+      [
+       2.666666746,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2,
+       3
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       1.333333373,
+       0.393442631,
+       0.0
+      ],
+      [
+       2.666666746,
+       0.600000024,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2,
+       3
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "-0.0061 m",
+    "position": [
+     2.666666667,
+     0.636,
+     0.0
+    ],
+    "color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Bottom"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "+0 m",
+    "position": [
+     0.0,
+     -0.036,
+     -0.0
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     -0.0,
+     -1.0,
+     -0.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Top"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "deplacements d sans accent": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       -0.600000024
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       3,
+       4
+      ],
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       1,
+       4,
+       5
+      ],
+      [
+       1,
+       5,
+       2
+      ]
+     ],
+     "point_scalars": [
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       -0.600000024
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "cell_scalars": [
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       -0.600000024
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "+0",
+    "position": [
+     0.0,
+     0.0,
+     -0.036
+    ],
+    "color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     -0.0,
+     0.0,
+     -1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Top"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "0.010",
+    "position": [
+     2.0,
+     0.0,
+     -0.636
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     -0.0,
+     0.0,
+     -1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Top"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "axes reconstruits avec angle": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       1.0,
+       2.0,
+       0.5
+      ],
+      [
+       1.0,
+       3.999939203,
+       1.499969602
+      ],
+      [
+       1.0,
+       5.999878407,
+       2.499939203
+      ],
+      [
+       1.321608424,
+       1.736725211,
+       1.026549578
+      ],
+      [
+       0.678391576,
+       4.263214111,
+       0.973420084
+      ],
+      [
+       1.128643394,
+       5.894568443,
+       2.71055913
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       3,
+       4
+      ],
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       1,
+       4,
+       5
+      ],
+      [
+       1,
+       5,
+       2
+      ]
+     ],
+     "point_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       255.0,
+       165.0,
+       0.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       255.0,
+       165.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       1.0,
+       2.0,
+       0.5
+      ],
+      [
+       1.321608424,
+       1.736725211,
+       1.026549578
+      ],
+      [
+       1.0,
+       3.999939203,
+       1.499969602
+      ],
+      [
+       0.678391576,
+       4.263214111,
+       0.973420084
+      ],
+      [
+       1.0,
+       5.999878407,
+       2.499939203
+      ],
+      [
+       1.128643394,
+       5.894568443,
+       2.71055913
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "cell_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       255.0,
+       165.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       1.0,
+       2.0,
+       0.5
+      ],
+      [
+       1.0,
+       3.999939203,
+       1.499969602
+      ],
+      [
+       1.0,
+       5.999878407,
+       2.499939203
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       1.321608424,
+       1.736725211,
+       1.026549578
+      ],
+      [
+       0.678391576,
+       4.263214111,
+       0.973420084
+      ],
+      [
+       1.128643394,
+       5.894568443,
+       2.71055913
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "-5.000",
+    "position": [
+     0.659095066,
+     4.279010454,
+     0.94182709
+    ],
+    "color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     -0.479425539,
+     0.392466853,
+     -0.784933706
+    ],
+    "tangent": [
+     0.0,
+     0.894427191,
+     0.447213595
+    ],
+    "justify": [
+     "Right",
+     "Centered"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "5.000",
+    "position": [
+     1.340904934,
+     1.720928745,
+     1.058142509
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     0.479425539,
+     -0.392466853,
+     0.784933706
+    ],
+    "tangent": [
+     0.0,
+     0.894427191,
+     0.447213595
+    ],
+    "justify": [
+     "Left",
+     "Centered"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "poteau vertical": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       3.0
+      ],
+      [
+       -0.0,
+       0.224999994,
+       0.0
+      ],
+      [
+       -0.0,
+       0.449999988,
+       3.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       2,
+       3
+      ],
+      [
+       0,
+       3,
+       1
+      ]
+     ],
+     "point_scalars": [
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       -0.0,
+       0.224999994,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       3.0
+      ],
+      [
+       -0.0,
+       0.449999988,
+       3.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ]
+     ],
+     "cell_scalars": [
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       3.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       -0.0,
+       0.224999994,
+       0.0
+      ],
+      [
+       -0.0,
+       0.449999988,
+       3.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "1.000",
+    "position": [
+     -0.0,
+     0.255,
+     0.0
+    ],
+    "color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     -0.0,
+     1.0,
+     0.0
+    ],
+    "tangent": [
+     0.0,
+     0.0,
+     1.0
+    ],
+    "justify": [
+     "Left",
+     "Centered"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "2.000",
+    "position": [
+     -0.0,
+     0.48,
+     3.0
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     -0.0,
+     1.0,
+     0.0
+    ],
+    "tangent": [
+     0.0,
+     0.0,
+     1.0
+    ],
+    "justify": [
+     "Left",
+     "Centered"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "valeurs constantes": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       2.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       3,
+       4
+      ],
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       1,
+       4,
+       5
+      ],
+      [
+       1,
+       5,
+       2
+      ]
+     ],
+     "point_scalars": [
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "cell_scalars": [
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       2.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "7.000 kN",
+    "position": [
+     0.0,
+     -0.0,
+     0.636
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     0.0,
+     -0.0,
+     1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Bottom"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 1,
+  "renderer_actors": 10
+ },
+ "valeurs quasi nulles": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       1.2e-05
+      ],
+      [
+       2.0,
+       0.0,
+       -2.4e-05
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       3,
+       4
+      ],
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       1,
+       4,
+       5
+      ],
+      [
+       1,
+       5,
+       2
+      ]
+     ],
+     "point_scalars": [
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       1.2e-05
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       -2.4e-05
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "cell_scalars": [
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       2.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       -0.0,
+       1.2e-05
+      ],
+      [
+       2.0,
+       0.0,
+       -2.4e-05
+      ],
+      [
+       4.0,
+       -0.0,
+       0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "-0 kN",
+    "position": [
+     2.0,
+     0.0,
+     -0.036024
+    ],
+    "color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     -0.0,
+     0.0,
+     -1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Top"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "0.500 kN",
+    "position": [
+     4.0,
+     -0.0,
+     0.636
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     0.0,
+     -0.0,
+     1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Bottom"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "toutes nulles": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       2,
+       3
+      ],
+      [
+       0,
+       3,
+       1
+      ]
+     ],
+     "point_scalars": [
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ]
+     ],
+     "cell_scalars": [
+      [
+       76.0,
+       216.0,
+       76.0
+      ],
+      [
+       76.0,
+       216.0,
+       76.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "+0",
+    "position": [
+     0.0,
+     -0.0,
+     0.036
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     0.0,
+     -0.0,
+     1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Bottom"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 1,
+  "renderer_actors": 10
+ },
+ "abscisses hors poutre": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       4.0,
+       0.0,
+       -0.300000012
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       3,
+       4
+      ],
+      [
+       0,
+       4,
+       1
+      ],
+      [
+       1,
+       4,
+       5
+      ],
+      [
+       1,
+       5,
+       2
+      ]
+     ],
+     "point_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       0.0,
+       187.0,
+       229.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       0.0,
+       187.0,
+       229.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       -0.300000012
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       4,
+       5
+      ]
+     ],
+     "cell_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       0.0,
+       187.0,
+       229.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       -0.0,
+       0.600000024
+      ],
+      [
+       4.0,
+       0.0,
+       -0.300000012
+      ],
+      [
+       0.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1,
+       2
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "-1",
+    "position": [
+     4.0,
+     0.0,
+     -0.336
+    ],
+    "color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     -0.0,
+     0.0,
+     -1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Top"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "2",
+    "position": [
+     0.0,
+     -0.0,
+     0.636
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     0.0,
+     -0.0,
+     1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Bottom"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "echelle doublee": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       0.400000006
+      ],
+      [
+       4.0,
+       0.0,
+       -1.200000048
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       2,
+       3
+      ],
+      [
+       0,
+       3,
+       1
+      ]
+     ],
+     "point_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       0.400000006
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       -1.200000048
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ]
+     ],
+     "cell_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       -0.0,
+       0.400000006
+      ],
+      [
+       4.0,
+       0.0,
+       -1.200000048
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "-3.000",
+    "position": [
+     4.0,
+     0.0,
+     -1.272
+    ],
+    "color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     -0.0,
+     0.0,
+     -1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Top"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "1.000",
+    "position": [
+     0.0,
+     -0.0,
+     0.472
+    ],
+    "color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     0.0,
+     -0.0,
+     1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Bottom"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "theme sombre": {
+  "actors": [
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       0.200000003
+      ],
+      [
+       4.0,
+       0.0,
+       -0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       2,
+       3
+      ],
+      [
+       0,
+       3,
+       1
+      ]
+     ],
+     "point_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ],
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ]
+     ]
+    },
+    "scalar_mode": "UsePointData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 0.82,
+    "line_width": 1.0,
+    "representation": 2,
+    "lighting": false,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       -0.0,
+       0.200000003
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       -0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ],
+      [
+       2,
+       3
+      ]
+     ],
+     "cell_scalars": [
+      [
+       216.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       140.0
+      ]
+     ]
+    },
+    "scalar_mode": "UseCellData",
+    "scalar_visibility": 1,
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "opacity": 1.0,
+    "line_width": 1.200000048,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       4.0,
+       0.0,
+       0.0
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "opacity": 1.0,
+    "line_width": 1.5,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "polydata": {
+     "points": [
+      [
+       0.0,
+       -0.0,
+       0.200000003
+      ],
+      [
+       4.0,
+       0.0,
+       -0.600000024
+      ]
+     ],
+     "cells": [
+      [
+       0,
+       1
+      ]
+     ]
+    },
+    "scalar_mode": "Default",
+    "scalar_visibility": 0,
+    "color": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "opacity": 1.0,
+    "line_width": 2.0,
+    "representation": 2,
+    "lighting": true,
+    "pickable": 0
+   },
+   {
+    "label": "-3.000",
+    "position": [
+     4.0,
+     0.0,
+     -0.636
+    ],
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.0,
+     0.0,
+     0.55
+    ],
+    "outward": [
+     -0.0,
+     0.0,
+     -1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Top"
+    ],
+    "pickable": 0
+   },
+   {
+    "label": "1.000",
+    "position": [
+     0.0,
+     -0.0,
+     0.236
+    ],
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "font": 16,
+    "bold": 1,
+    "original_color": [
+     0.85,
+     0.0,
+     0.0
+    ],
+    "outward": [
+     0.0,
+     -0.0,
+     1.0
+    ],
+    "tangent": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "justify": [
+     "Centered",
+     "Bottom"
+    ],
+    "pickable": 0
+   }
+  ],
+  "registered_labels": 2,
+  "renderer_actors": 12
+ },
+ "points invalides": {
+  "actors": [],
+  "registered_labels": 0,
+  "renderer_actors": 0
+ },
+ "entrees refusees": {
+  "actors": [],
+  "registered_labels": 0,
+  "renderer_actors": 0
+ },
+ "serie trop courte": {
+  "actors": [],
+  "registered_labels": 0,
+  "renderer_actors": 0
+ },
+ "longueur nulle": {
+  "actors": [],
+  "registered_labels": 0,
+  "renderer_actors": 0
+ }
+}
