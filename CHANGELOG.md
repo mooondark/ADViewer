@@ -2,6 +2,16 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## À paraître
+
+### FR
+- Correction : une charge ponctuelle sans position valide est ignorée au lieu de faire échouer le chargement du modèle.
+- Qualité du code : lecture des charges, recalcul des unités et liste des résultats simplifiés et couverts par des tests, doublons supprimés ; script `scripts/metrics.sh` (couverture et scores CRAP).
+
+### EN
+- Fix: a point load without a valid position is skipped instead of making the model load fail.
+- Code quality: load reading, unit recalculation and results list simplified and covered by tests, duplicates removed; `scripts/metrics.sh` script (coverage and CRAP scores).
+
 ## 2.22
 
 ### FR
