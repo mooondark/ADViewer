@@ -12,6 +12,7 @@ import os
 import math
 import time
 import hashlib
+from functools import partial
 from typing import NamedTuple
 
 import vtk
@@ -93,6 +94,56 @@ def _seg_intersects_rect(ax, ay, bx, by, xmin, ymin, xmax, ymax):
                 if t < u2:
                     u2 = t
     return u1 <= u2
+
+
+_FACE_ROLES = ("planars", "load_areas", "support_planar")   # cellules fermees : le dernier bord rejoint le premier
+
+
+def _cell_inside(screen_points, rect) -> bool:
+    x0, y0, x1, y1 = rect
+    return all(x0 <= sx <= x1 and y0 <= sy <= y1 for sx, sy in screen_points)
+
+
+def _cell_touches(screen_points, closed: bool, rect) -> bool:
+    """Un point : dedans ; sinon un bord de la cellule coupe le rectangle."""
+    if len(screen_points) == 1:
+        return _cell_inside(screen_points, rect)
+    n = len(screen_points)
+    edges = range(n if closed else n - 1)
+    return any(_seg_intersects_rect(*screen_points[e], *screen_points[(e + 1) % n], *rect) for e in edges)
+
+
+def _window_selected_keys(cells, rect, crossing: bool) -> list:
+    """Cles (role, index) choisies par une fenetre de selection.
+
+    cells : (cle, points ecran ou None si non projetable, cellule fermee). Un
+    element est pris si toutes ses cellules sont dans le rectangle, ou, en
+    selection croisee (tracee de droite a gauche), si l'une d'elles le touche.
+    """
+    all_in = {}
+    touched = set()
+    for key, screen_points, closed in cells:
+        if screen_points is None:
+            all_in[key] = False
+            continue
+        all_in[key] = all_in.get(key, True) and _cell_inside(screen_points, rect)
+        if crossing and key not in touched and _cell_touches(screen_points, closed, rect):
+            touched.add(key)
+    return sorted(key for key, inside in all_in.items() if inside or key in touched)
+
+
+def _merge_window_selection(current, keys, additive: bool) -> list:
+    """Nouvelle selection ; en mode additif, ajoutee a la suite de l'actuelle sans doublon."""
+    new_items = [{"role": role, "index": index} for role, index in keys]
+    if not additive:
+        return new_items
+    have = {(it["role"], it["index"]) for it in current}
+    return list(current) + [it for it in new_items if (it["role"], it["index"]) not in have]
+
+
+def _cell_points(pd, pts, cid) -> list:
+    cell = pd.GetCell(cid)
+    return [pts.GetPoint(cell.GetPointId(k)) for k in range(cell.GetNumberOfPoints())]
 
 
 class _DiagramGeometry(NamedTuple):
@@ -2612,46 +2663,13 @@ class VTKViewerWidget(QFrame):
             self._window_rect_actor.SetVisibility(False)
             self.render_window.Render()
 
-    def _window_select_from_rect(self, p0, p1, additive):
-        x0, x1 = sorted((p0[0], p1[0]))
-        y0, y1 = sorted((p0[1], p1[1]))
-        crossing = p1[0] < p0[0]   # trace de droite a gauche => inclut les intersectees
-
-        # Rectangle degenere (simple clic) -> picking ponctuel classique.
-        if (x1 - x0) < 3 and (y1 - y0) < 3:
-            cands = self._pick_selection_candidates(int(round(p1[0])), int(round(p1[1])))
-            if cands:
-                c = cands[0]
-                self._select_item(c["role"], c["index"], additive=additive)
-            elif not additive:
-                self.clear_selection()
-            self.windowSelectionDone.emit(list(self._selected_items))
-            return
-
-        cam = self.renderer.GetActiveCamera()
-        if cam is None:
-            return
-        w, h = self.renderer.GetSize()
-        m = cam.GetCompositeProjectionTransformMatrix(self.renderer.GetTiledAspectRatio(), -1.0, 1.0)
-
-        def _proj(pt):
-            o = m.MultiplyPoint((pt[0], pt[1], pt[2], 1.0))
-            if abs(o[3]) < 1e-9:
-                return None
-            return ((o[0] / o[3] * 0.5 + 0.5) * w, (o[1] / o[3] * 0.5 + 0.5) * h)
-
-        FACE_ROLES = ("planars", "load_areas", "support_planar")
-        all_in = {}   # cle -> toutes les cellules vues jusqu'ici entierement dans le rectangle
-        cross = {}    # cle -> au moins une cellule touchant le rectangle
-
-        # ponytail: boucle python O(cellules) par selection-fenetre ; OK jusqu'a
-        # ~100k cellules. Passer a vtk.util.numpy_support (projection vectorisee)
-        # si le rendu du modele est plus lourd.
+    def _visible_pickable_cells(self):
+        """(role, index d'element, points()) des cellules des acteurs pickables visibles ;
+        points() lit les points monde de la cellule a la demande."""
         for info in self._pickable_actors.values():
             actor = info["actor"]
             if actor is None or not actor.GetVisibility():
                 continue
-            role = info["role"]
             pd = self._get_actor_polydata(actor)
             if pd is None:
                 continue
@@ -2660,51 +2678,56 @@ class VTKViewerWidget(QFrame):
             if arr is None or pts is None:
                 continue
             for cid in range(pd.GetNumberOfCells()):
-                key = (role, int(arr.GetTuple1(cid)))
-                cell = pd.GetCell(cid)
-                npc = cell.GetNumberOfPoints()
-                if npc == 0:
-                    continue
-                world = self._clip.visible_part([pts.GetPoint(cell.GetPointId(k)) for k in range(npc)])
-                npc = len(world)
-                if npc == 0:
-                    continue
-                scr = []
-                ok = True
-                for k in range(npc):
-                    sp = _proj(world[k])
-                    if sp is None:
-                        ok = False
-                        break
-                    scr.append(sp)
-                if not ok:
-                    all_in[key] = False
-                    continue
-                cell_in = all(x0 <= sx <= x1 and y0 <= sy <= y1 for sx, sy in scr)
-                all_in[key] = all_in.get(key, True) and cell_in
-                if cross.get(key):
-                    continue
-                if npc == 1:
-                    if cell_in:
-                        cross[key] = True
-                    continue
-                closed = npc >= 3 and role in FACE_ROLES
-                n_edges = npc if closed else npc - 1
-                for e in range(n_edges):
-                    ax, ay = scr[e]
-                    bx, by = scr[(e + 1) % npc]
-                    if _seg_intersects_rect(ax, ay, bx, by, x0, y0, x1, y1):
-                        cross[key] = True
-                        break
+                yield info["role"], int(arr.GetTuple1(cid)), partial(_cell_points, pd, pts, cid)
 
-        keys = [k for k, v in all_in.items() if v or (crossing and cross.get(k))]
-        new_items = [{"role": r, "index": i} for (r, i) in sorted(keys)]
-        if additive:
-            have = {(it["role"], it["index"]) for it in self._selected_items}
-            new_items = list(self._selected_items) + [
-                it for it in new_items if (it["role"], it["index"]) not in have
-            ]
-        self._selected_items = new_items
+    def _screen_projector(self):
+        """Fonction point monde -> point ecran (None derriere la camera), None sans camera."""
+        cam = self.renderer.GetActiveCamera()
+        if cam is None:
+            return None
+        w, h = self.renderer.GetSize()
+        m = cam.GetCompositeProjectionTransformMatrix(self.renderer.GetTiledAspectRatio(), -1.0, 1.0)
+
+        def project(pt):
+            o = m.MultiplyPoint((pt[0], pt[1], pt[2], 1.0))
+            if abs(o[3]) < 1e-9:
+                return None
+            return ((o[0] / o[3] * 0.5 + 0.5) * w, (o[1] / o[3] * 0.5 + 0.5) * h)
+
+        return project
+
+    def _projected_pickable_cells(self, project):
+        """(cle, points ecran ou None, cellule fermee) des parties visibles (boite de coupe)."""
+        # shortcut: boucle python O(cellules) par selection-fenetre ; OK jusqu'a ~100k
+        # cellules. Passer a vtk.util.numpy_support (projection vectorisee) au-dela.
+        for role, index, points in self._visible_pickable_cells():
+            world = self._clip.visible_part(points())
+            if not world:
+                continue
+            screen = [project(pt) for pt in world]
+            closed = len(world) >= 3 and role in _FACE_ROLES
+            yield (role, index), (None if None in screen else screen), closed
+
+    def _window_select_from_rect(self, p0, p1, additive):
+        x0, x1 = sorted((p0[0], p1[0]))
+        y0, y1 = sorted((p0[1], p1[1]))
+
+        # Rectangle degenere (simple clic) -> picking ponctuel classique.
+        if (x1 - x0) < 3 and (y1 - y0) < 3:
+            cands = self._pick_selection_candidates(int(round(p1[0])), int(round(p1[1])))
+            if cands:
+                self._select_item(cands[0]["role"], cands[0]["index"], additive=additive)
+            elif not additive:
+                self.clear_selection()
+            self.windowSelectionDone.emit(list(self._selected_items))
+            return
+
+        project = self._screen_projector()
+        if project is None:
+            return
+        crossing = p1[0] < p0[0]   # trace de droite a gauche => inclut les intersectees
+        keys = _window_selected_keys(self._projected_pickable_cells(project), (x0, y0, x1, y1), crossing)
+        self._selected_items = _merge_window_selection(self._selected_items, keys, additive)
         self._selected_item = self._selected_items[0] if self._selected_items else None
         self._selection_candidates = []
         self._selection_candidate_keys = []
@@ -2718,28 +2741,11 @@ class VTKViewerWidget(QFrame):
         elements entierement coupes par la boite de coupe."""
         keys = set()
         clip_active = self._clip.active
-        for info in self._pickable_actors.values():
-            actor = info["actor"]
-            if actor is None or not actor.GetVisibility():
+        for role, index, points in self._visible_pickable_cells():
+            key = (role, index)
+            if key in keys or (clip_active and not self._clip.visible_part(points())):
                 continue
-            pd = self._get_actor_polydata(actor)
-            if pd is None:
-                continue
-            arr = pd.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
-            pts = pd.GetPoints()
-            if arr is None or pts is None:
-                continue
-            role = info["role"]
-            for cid in range(pd.GetNumberOfCells()):
-                key = (role, int(arr.GetTuple1(cid)))
-                if key in keys:
-                    continue
-                if clip_active:
-                    cell = pd.GetCell(cid)
-                    world = [pts.GetPoint(cell.GetPointId(k)) for k in range(cell.GetNumberOfPoints())]
-                    if not self._clip.visible_part(world):
-                        continue
-                keys.add(key)
+            keys.add(key)
         return keys
 
     def invert_selection(self):

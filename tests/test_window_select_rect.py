@@ -132,3 +132,13 @@ def test_simple_click_picks_the_first_candidate_or_clears():
     w._window_select_from_rect((100, 100), (100, 101), False)
     assert cleared == [True]
     assert [name for name, _ in w.emitted] == ["done", "done"]
+
+
+def test_selected_keys_reject_elements_with_a_cell_that_cannot_be_projected():
+    from viewer_widget import _window_selected_keys
+
+    rect = (0, 0, 10, 10)
+    inside = [(1, 1), (2, 2)]
+    cells = [(("lines", 0), inside, False), (("lines", 0), None, False), (("lines", 1), inside, False)]
+    assert _window_selected_keys(cells, rect, crossing=False) == [("lines", 1)]
+    assert _window_selected_keys(cells, rect, crossing=True) == [("lines", 0), ("lines", 1)]
