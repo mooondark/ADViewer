@@ -10,6 +10,7 @@ Aucune dependance hors stdlib (re, math).
 
 import math
 import re
+from dataclasses import dataclass
 
 CIRCLE_SIDES = 12  # facettes des cercles et tubes circulaires (suffisant pour le rendu)
 
@@ -63,345 +64,377 @@ def is_steel_material_name(name):
     return bool(re.search(r'\bS\d{3}\b', txt)) or any(tag in txt for tag in ['STEEL', 'ACIER', 'METAL'])
 
 
-def parse_section_dims(sec: dict):
-    name = (sec.get("name") or "").upper().strip()
-    sec_type = re.sub(r"[^A-Z0-9]", "", (sec.get("type") or "").upper())
-    family = (sec.get("familyCode") or "").upper().strip()
-    catalog = (sec.get("catalogName") or "").upper().strip()
-    material_name = (sec.get("materialName") or sec.get("material") or "").upper().strip()
-    raw = " ".join([name, family, catalog]).strip()
-    nums_cm = [float(x.replace(',', '.')) for x in re.findall(r"(\d+(?:[.,]\d+)?)", raw)]
-
-    def pick_cm(i, default_cm):
-        return nums_cm[i] if len(nums_cm) > i else default_cm
-
-    def cm(v):
-        return float(v) / 100.0
-
-    def mm(v):
-        return float(v) / 1000.0
-
-    def clamp_thickness_m(t_m, *sizes_m):
-        limit = min([s for s in sizes_m if s and s > 0] or [0.02]) * 0.49
-        return max(0.001, min(t_m, limit))
-
-    steel_by_name = is_steel_material_name(material_name)
-    steel_by_family = any(tag in raw for tag in ['IPE', 'IPN', 'HEA', 'HEB', 'HEM', 'RHS', 'SHS', 'CHS'])
-    steel_by_type = any(tag in sec_type for tag in ['ANGLE', 'I_SYMETRIC', 'IASYMETRIC', 'CIRCULARTUBE', 'RECTANGULARTUBE', 'SQUARETUBE', 'SIGMA'])
-    steel_by_shape = bool(re.match(r'^L\s*\d+(?:[.,]\d+)?X\d+(?:[.,]\d+)?X\d+(?:[.,]\d+)?$', name))
-    is_mm_metal = steel_by_name or steel_by_family or steel_by_type or steel_by_shape
+_NUMBER = r"(\d+(?:[.,]\d+)?)"
+_L_SHAPE = re.compile(r'^L\s*' + _NUMBER + 'X' + _NUMBER + 'X' + _NUMBER + '$')
+_I_FAMILY = re.compile(r"\b(IPE|IPN|HEA|HEB|HEM)\s*" + _NUMBER)
+_U_FAMILY = re.compile(r"\b(UPE|UPN|UNP|UAP|U)\s*" + _NUMBER)
+# (largeur / hauteur, ame min mm, ame / hauteur, aile min mm, aile / hauteur) des profils lamines
+_I_RATIOS = {'IPE': (0.5, 4.4, 0.021, 6.0, 0.034), 'IPN': (0.42, 4.0, 0.02, 6.0, 0.035)}
+_H_RATIOS = (0.95, 6.0, 0.018, 9.0, 0.032)   # HEA, HEB, HEM
+_U_RATIOS = {'UPE': (0.55, 6.0, 0.036, 8.5, 0.047),
+             'UPN': (0.45, 6.0, 0.038, 9.0, 0.052), 'UNP': (0.45, 6.0, 0.038, 9.0, 0.052),
+             'UAP': (0.45, 6.0, 0.038, 9.0, 0.052)}
+_STEEL_FAMILY_TAGS = ('IPE', 'IPN', 'HEA', 'HEB', 'HEM', 'RHS', 'SHS', 'CHS')
+_STEEL_TYPE_TAGS = ('ANGLE', 'I_SYMETRIC', 'IASYMETRIC', 'CIRCULARTUBE', 'RECTANGULARTUBE', 'SQUARETUBE', 'SIGMA')
 
 
-    if name.startswith('V') or 'SIGMA' in sec_type or family.startswith('V'):
-        if len(nums_cm) >= 8:
-            h_cm, b_cm, hi_cm, he_cm, d_cm, r_cm, t_cm, ri_cm = nums_cm[:8]
-            return {
-                'kind': 'SIGMA',
-                'width': cm(b_cm),
-                'depth': cm(h_cm),
-                'inner_web_height': cm(hi_cm),
-                'outer_web_height': cm(he_cm),
-                'web_offset': cm(d_cm),
-                'return_lip': cm(r_cm),
-                'thickness': clamp_thickness_m(cm(t_cm), cm(h_cm), cm(b_cm), cm(hi_cm), cm(he_cm), cm(r_cm)),
-                'inner_radius': cm(ri_cm),
-                'overall_width': cm(b_cm),
-                'overall_depth': cm(h_cm),
-            }
-        return {
-            'kind': 'SIGMA',
-            'width': cm(pick_cm(1, 8.0)),
-            'depth': cm(pick_cm(0, 32.0)),
-            'inner_web_height': cm(pick_cm(2, 8.0)),
-            'outer_web_height': cm(pick_cm(3, 4.5)),
-            'web_offset': cm(pick_cm(4, 1.6)),
-            'return_lip': cm(pick_cm(5, 4.0)),
-            'thickness': clamp_thickness_m(cm(pick_cm(6, 0.3)), cm(pick_cm(0, 32.0)), cm(pick_cm(1, 8.0))),
-            'inner_radius': cm(pick_cm(7, 0.2)),
-            'overall_width': cm(pick_cm(1, 8.0)),
-            'overall_depth': cm(pick_cm(0, 32.0)),
-        }
+def _numbers(text: str) -> list:
+    return [float(x.replace(',', '.')) for x in re.findall(_NUMBER, text)]
 
-    if name.startswith('W') or 'OMEGA' in sec_type or family.startswith('W'):
-        if len(nums_cm) >= 5:
-            h_cm, b_cm, top_b_cm, t_cm, r_cm = nums_cm[:5]
-            return {
-                'kind': 'OMEGA',
-                'width': cm(b_cm),
-                'depth': cm(h_cm),
-                'top_flange_width': cm(top_b_cm),
-                'thickness': clamp_thickness_m(cm(t_cm), cm(h_cm), cm(b_cm), cm(top_b_cm)),
-                'fillet_radius': cm(r_cm),
-                'overall_width': 2.0 * cm(b_cm) + cm(top_b_cm),
-                'overall_depth': cm(h_cm),
-            }
-        return {
-            'kind': 'OMEGA',
-            'width': cm(pick_cm(1, 6.0)),
-            'depth': cm(pick_cm(0, 14.0)),
-            'top_flange_width': cm(pick_cm(2, pick_cm(1, 6.0))),
-            'thickness': clamp_thickness_m(cm(pick_cm(3, 0.2)), cm(pick_cm(0, 14.0)), cm(pick_cm(1, 6.0)), cm(pick_cm(2, pick_cm(1, 6.0)))),
-            'fillet_radius': cm(pick_cm(4, 0.2)),
-            'overall_width': 2.0 * cm(pick_cm(1, 6.0)) + cm(pick_cm(2, pick_cm(1, 6.0))),
-            'overall_depth': cm(pick_cm(0, 14.0)),
-        }
 
-    if name.startswith('Z') or 'ZED' in sec_type or family.startswith('Z'):
-        z_raw = (sec.get("name") or "").upper().strip()
-        z_parts = z_raw.split()
-        z_geom = z_parts[0] if z_parts else ''
-        z_suffix = z_parts[1] if len(z_parts) > 1 else ''
-        z_main_nums = [float(x.replace(',', '.')) for x in re.findall(r"(\d+(?:[.,]\d+)?)", z_geom)]
-        z_suffix_nums = [float(x.replace(',', '.')) for x in re.findall(r"(\d+(?:[.,]\d+)?)", z_suffix)]
-        t_cm = z_suffix_nums[0] if z_suffix_nums else 0.2
+def _cm(v) -> float:
+    return float(v) / 100.0
 
-        if len(z_main_nums) == 8:
-            h_cm, btop_cm, bbot_cm, ri_cm, rtop_cm, rbot_cm, ang_bot_deg, ang_top_deg = z_main_nums
-            return {
-                'kind': 'ZED_SLOPED',
-                'depth': cm(h_cm),
-                'top_flange_width': cm(btop_cm),
-                'bottom_flange_width': cm(bbot_cm),
-                'thickness': clamp_thickness_m(cm(t_cm), cm(h_cm), cm(btop_cm), cm(bbot_cm)),
-                'inner_radius': cm(ri_cm),
-                'top_return': cm(rtop_cm),
-                'bottom_return': cm(rbot_cm),
-                'bottom_return_angle_deg': float(ang_bot_deg),
-                'top_return_angle_deg': float(ang_top_deg),
-                'overall_width': cm(btop_cm) + cm(bbot_cm),
-                'overall_depth': cm(h_cm),
-            }
-        if len(z_main_nums) == 6:
-            h_cm, btop_cm, bbot_cm, ri_cm, rtop_cm, rbot_cm = z_main_nums
-            return {
-                'kind': 'ZED',
-                'depth': cm(h_cm),
-                'top_flange_width': cm(btop_cm),
-                'bottom_flange_width': cm(bbot_cm),
-                'thickness': clamp_thickness_m(cm(t_cm), cm(h_cm), cm(btop_cm), cm(bbot_cm)),
-                'inner_radius': cm(ri_cm),
-                'top_return': cm(rtop_cm),
-                'bottom_return': cm(rbot_cm),
-                'bottom_return_angle_deg': 90.0,
-                'top_return_angle_deg': 90.0,
-                'overall_width': cm(btop_cm) + cm(bbot_cm),
-                'overall_depth': cm(h_cm),
-            }
-        if len(z_main_nums) == 4:
-            h_cm, btop_cm, bbot_cm, ri_cm = z_main_nums
-            return {
-                'kind': 'Z',
-                'depth': cm(h_cm),
-                'top_flange_width': cm(btop_cm),
-                'bottom_flange_width': cm(bbot_cm),
-                'thickness': clamp_thickness_m(cm(t_cm), cm(h_cm), cm(btop_cm), cm(bbot_cm)),
-                'inner_radius': cm(ri_cm),
-                'top_return': 0.0,
-                'bottom_return': 0.0,
-                'bottom_return_angle_deg': 90.0,
-                'top_return_angle_deg': 90.0,
-                'overall_width': cm(btop_cm) + cm(bbot_cm),
-                'overall_depth': cm(h_cm),
-            }
-        return {
-            'kind': 'Z',
-            'depth': cm(20.0),
-            'top_flange_width': cm(6.0),
-            'bottom_flange_width': cm(6.0),
-            'thickness': clamp_thickness_m(cm(t_cm), cm(20.0), cm(6.0), cm(6.0)),
-            'inner_radius': cm(0.2),
-            'top_return': 0.0,
-            'bottom_return': 0.0,
-            'bottom_return_angle_deg': 90.0,
-            'top_return_angle_deg': 90.0,
-            'overall_width': cm(12.0),
-            'overall_depth': cm(20.0),
-        }
 
-    m = re.search(r"\b(IPE|IPN|HEA|HEB|HEM)\s*(\d+(?:[.,]\d+)?)", name)
-    if m:
-        family_i = m.group(1)
-        h_mm = float(m.group(2).replace(',', '.'))
-        if family_i == 'IPE':
-            b_mm = 0.5 * h_mm
-            tw_mm = max(4.4, 0.021 * h_mm)
-            tf_mm = max(6.0, 0.034 * h_mm)
-        elif family_i == 'IPN':
-            b_mm = 0.42 * h_mm
-            tw_mm = max(4.0, 0.02 * h_mm)
-            tf_mm = max(6.0, 0.035 * h_mm)
-        else:
-            b_mm = 0.95 * h_mm
-            tw_mm = max(6.0, 0.018 * h_mm)
-            tf_mm = max(9.0, 0.032 * h_mm)
-        return {
-            'kind': 'I',
-            'width': b_mm / 1000.0,
-            'depth': h_mm / 1000.0,
-            'web': tw_mm / 1000.0,
-            'flange': tf_mm / 1000.0,
-            'overall_width': b_mm / 1000.0,
-            'overall_depth': h_mm / 1000.0,
-            'web_thickness': tw_mm / 1000.0,
-            'flange_thickness': tf_mm / 1000.0,
-        }
+def _mm(v) -> float:
+    return float(v) / 1000.0
 
-    mm_family_rect = any(tag in raw for tag in [' RCT', 'RHSC', 'RHSH', 'SHSC', 'SHSH']) or name.startswith(('RCT', 'RHS', 'SHS')) or family.startswith(('RCT', 'RHSC', 'RHSH', 'SHSC', 'SHSH'))
-    mm_family_circ = any(tag in raw for tag in ['CHSC', 'CHSH']) or name.startswith('CHS') or family.startswith(('CHSC', 'CHSH'))
 
-    if mm_family_rect:
-        n0 = nums_cm[0] if len(nums_cm) > 0 else 40.0
-        n1 = nums_cm[1] if len(nums_cm) > 1 else n0
-        n2 = nums_cm[2] if len(nums_cm) > 2 else None
-        depth = mm(n0)
-        width = mm(n1)
-        if 'RCT' in raw or name.startswith('RCT') or family.startswith('RCT'):
-            return {'kind': 'RECT', 'width': width, 'depth': depth}
-        thickness = clamp_thickness_m(mm(n2 if n2 is not None else min(n0, n1) * 0.10), width, depth)
-        return {'kind': 'RECTTUBE', 'width': width, 'depth': depth, 'thickness': thickness}
+def _clamp_thickness_m(t_m, *sizes_m):
+    """Epaisseur bornee a 49 % de la plus petite dimension non nulle (0,02 m si aucune)."""
+    limit = min([s for s in sizes_m if s and s > 0] or [0.02]) * 0.49
+    return max(0.001, min(t_m, limit))
 
-    if mm_family_circ:
-        n0 = nums_cm[0] if len(nums_cm) > 0 else 40.0
-        n1 = nums_cm[1] if len(nums_cm) > 1 else max(2.0, n0 * 0.10)
-        diameter = mm(n0)
-        thickness = clamp_thickness_m(mm(n1), diameter)
-        return {'kind': 'CIRCLETUBE', 'radius': diameter / 2.0, 'thickness': thickness}
 
-    m = re.match(r'^L\s*(\d+(?:[.,]\d+)?)X(\d+(?:[.,]\d+)?)X(\d+(?:[.,]\d+)?)$', name)
-    if m:
-        a_mm = float(m.group(1).replace(',', '.'))
-        b_mm = float(m.group(2).replace(',', '.'))
-        t_mm = float(m.group(3).replace(',', '.'))
-        return {'kind': 'ANGLE', 'width': mm(a_mm), 'depth': mm(b_mm), 'thickness': clamp_thickness_m(mm(t_mm), mm(a_mm), mm(b_mm))}
+@dataclass(frozen=True)
+class _SectionText:
+    """Champs texte d'une section Advance Design, normalises une fois."""
+    name: str
+    sec_type: str
+    family: str
+    raw: str
+    material: str
+    nums: tuple
 
-    if is_mm_metal and ('STANGLE' in sec_type or 'ANGLE' in sec_type):
-        n0 = nums_cm[0] if len(nums_cm) > 0 else 60.0
-        n1 = nums_cm[1] if len(nums_cm) > 1 else n0
-        n2 = nums_cm[2] if len(nums_cm) > 2 else max(4.0, min(n0, n1) * 0.10)
-        return {'kind': 'ANGLE', 'width': mm(n0), 'depth': mm(n1), 'thickness': clamp_thickness_m(mm(n2), mm(n0), mm(n1))}
+    @classmethod
+    def of(cls, sec: dict):
+        name = (sec.get("name") or "").upper().strip()
+        family = (sec.get("familyCode") or "").upper().strip()
+        catalog = (sec.get("catalogName") or "").upper().strip()
+        raw = " ".join([name, family, catalog]).strip()
+        return cls(
+            name=name,
+            sec_type=re.sub(r"[^A-Z0-9]", "", (sec.get("type") or "").upper()),
+            family=family,
+            raw=raw,
+            material=(sec.get("materialName") or sec.get("material") or "").upper().strip(),
+            nums=tuple(_numbers(raw)),
+        )
 
-    if 'STRECTANGULARTUBE' in sec_type or 'STSQUARETUBE' in sec_type or ('TUBE' in name and 'RECT' in name):
-        width = cm(pick_cm(0, 20.0))
-        depth = cm(pick_cm(1, pick_cm(0, 20.0)))
-        thickness = clamp_thickness_m(cm(pick_cm(2, min(pick_cm(0, 20.0), pick_cm(1, pick_cm(0, 20.0))) * 0.10)), width, depth)
-        return {'kind': 'RECTTUBE', 'width': width, 'depth': depth, 'thickness': thickness}
+    def pick(self, i, default):
+        """i-eme nombre du texte, ou default s'il n'y en a pas autant."""
+        return self.nums[i] if len(self.nums) > i else default
 
-    if 'STCIRCULARTUBE' in sec_type or ('TUBE' in name and 'CIRC' in name):
-        diameter = cm(pick_cm(0, 20.0))
-        thickness = clamp_thickness_m(cm(pick_cm(1, pick_cm(0, 20.0) * 0.10)), diameter)
-        return {'kind': 'CIRCLETUBE', 'radius': diameter / 2.0, 'thickness': thickness}
+    def is_steel(self) -> bool:
+        return (is_steel_material_name(self.material)
+                or any(tag in self.raw for tag in _STEEL_FAMILY_TAGS)
+                or any(tag in self.sec_type for tag in _STEEL_TYPE_TAGS))
 
-    mm_round = ('ROND' in raw) or ('Ø' in raw) or ('DIAM' in raw and 'TUBE' not in raw)
-    if sec_type == 'STCIRCULAR' or ('CIRCULAR' in sec_type and 'TUBE' not in sec_type) or ('CIRC' in name and 'TUBE' not in name) or mm_round:
-        diameter = mm(pick_cm(0, 20.0)) if mm_round else cm(pick_cm(0, 20.0))
-        return {'kind': 'CIRCLE', 'radius': diameter / 2.0}
 
-    if 'TDISSYMETRIC' in sec_type:
-        web = cm(pick_cm(0, 20.0))
-        height = cm(pick_cm(1, 60.0))
-        left_width = cm(pick_cm(2, 10.0))
-        left_thickness = clamp_thickness_m(cm(pick_cm(3, 10.0)), height)
-        left_offset = cm(pick_cm(4, 20.0))
-        right_width = cm(pick_cm(5, 10.0))
-        right_thickness = clamp_thickness_m(cm(pick_cm(6, 10.0)), height)
-        right_offset = cm(pick_cm(7, 20.0))
-        return {
-            'kind': 'TDISSYMETRIC',
-            'width': web + left_width + right_width,
-            'depth': height,
-            'web': web,
-            'left_width': left_width,
-            'left_thickness': left_thickness,
-            'left_offset': left_offset,
-            'right_width': right_width,
-            'right_thickness': right_thickness,
-            'right_offset': right_offset,
-        }
+def _rolled_dims(h_mm, ratios):
+    b_k, tw_min, tw_k, tf_min, tf_k = ratios
+    return h_mm * b_k, max(tw_min, tw_k * h_mm), max(tf_min, tf_k * h_mm)
 
-    if sec_type == 'STT' or re.search(r"\bT\b", name):
-        height = cm(pick_cm(0, 30.0))
-        web = clamp_thickness_m(cm(pick_cm(1, 10.0)), height)
-        width = cm(pick_cm(2, pick_cm(0, 30.0) * 0.6))
-        flange = clamp_thickness_m(cm(pick_cm(3, 10.0)), width, height)
-        return {'kind': 'T', 'width': width, 'depth': height, 'web': web, 'flange': flange}
 
-    m = re.search(r"\b(UPE|UPN|UNP|UAP|U)\s*(\d+(?:[.,]\d+)?)", name)
-    if sec_type == 'STU' or ('CHANNEL' in name) or m or re.search(r"\bU\b", name):
-        family_u = m.group(1) if m else ''
-        h_mm = float(m.group(2).replace(',', '.')) if m else pick_cm(0, 30.0) * 10.0
-        if family_u == 'UPE':
-            b_mm = 0.55 * h_mm
-            tw_mm = max(6.0, 0.036 * h_mm)
-            tf_mm = max(8.5, 0.047 * h_mm)
-        elif family_u in ('UPN', 'UNP', 'UAP'):
-            b_mm = 0.45 * h_mm
-            tw_mm = max(6.0, 0.038 * h_mm)
-            tf_mm = max(9.0, 0.052 * h_mm)
-        else:
-            height = cm(pick_cm(0, 30.0))
-            width = cm(pick_cm(1, pick_cm(0, 30.0) * 0.4))
-            web = clamp_thickness_m(cm(pick_cm(2, 4.0)), width, height)
-            flange = clamp_thickness_m(cm(pick_cm(3, 4.0)), width, height)
-            return {'kind': 'U', 'width': width, 'depth': height, 'web': web, 'flange': flange}
-        return {
-            'kind': 'U',
-            'width': b_mm / 1000.0,
-            'depth': h_mm / 1000.0,
-            'web': tw_mm / 1000.0,
-            'flange': tf_mm / 1000.0,
-        }
+def _parse_sigma(s: _SectionText):
+    h, b, hi, he, d, r, t, ri = (s.pick(i, dflt) for i, dflt in enumerate((32.0, 8.0, 8.0, 4.5, 1.6, 4.0, 0.3, 0.2)))
+    clamp_sizes = (h, b, hi, he, r) if len(s.nums) >= 8 else (h, b)
+    return {
+        'kind': 'SIGMA',
+        'width': _cm(b),
+        'depth': _cm(h),
+        'inner_web_height': _cm(hi),
+        'outer_web_height': _cm(he),
+        'web_offset': _cm(d),
+        'return_lip': _cm(r),
+        'thickness': _clamp_thickness_m(_cm(t), *(_cm(v) for v in clamp_sizes)),
+        'inner_radius': _cm(ri),
+        'overall_width': _cm(b),
+        'overall_depth': _cm(h),
+    }
 
-    if 'STANGLE' in sec_type or 'STUNEQUALANGLE' in sec_type or 'ANGLE' in name or re.search(r"\bL\b", name):
-        height = cm(pick_cm(0, 10.0))
-        if len(nums_cm) >= 3:
-            width = cm(pick_cm(1, pick_cm(0, 10.0)))
-            thickness = clamp_thickness_m(cm(pick_cm(2, min(pick_cm(0, 10.0), pick_cm(1, pick_cm(0, 10.0))) * 0.15)), width, height)
-        else:
-            width = height
-            thickness = clamp_thickness_m(cm(pick_cm(1, pick_cm(0, 10.0) * 0.15)), width, height)
-        return {'kind': 'ANGLE', 'width': width, 'depth': height, 'thickness': thickness}
 
-    if 'STRECTANGULAR' in sec_type or 'STSQUARE' in sec_type or 'RECT' in name or 'SQUARE' in name:
-        width = cm(pick_cm(0, 20.0))
-        depth = cm(pick_cm(1, pick_cm(0, 20.0)))
+def _parse_omega(s: _SectionText):
+    h, b = s.pick(0, 14.0), s.pick(1, 6.0)
+    top_b, t, r = s.pick(2, b), s.pick(3, 0.2), s.pick(4, 0.2)
+    return {
+        'kind': 'OMEGA',
+        'width': _cm(b),
+        'depth': _cm(h),
+        'top_flange_width': _cm(top_b),
+        'thickness': _clamp_thickness_m(_cm(t), _cm(h), _cm(b), _cm(top_b)),
+        'fillet_radius': _cm(r),
+        'overall_width': 2.0 * _cm(b) + _cm(top_b),
+        'overall_depth': _cm(h),
+    }
+
+
+def _parse_zed(s: _SectionText):
+    # "Z<h>X<b haut>X<b bas>X<ri>[X<retours>[X<angles>]] <epaisseur>" : 8, 6 ou 4 nombres
+    parts = s.name.split()
+    main = _numbers(parts[0]) if parts else []
+    suffix = _numbers(parts[1]) if len(parts) > 1 else []
+    t = suffix[0] if suffix else 0.2
+    values = main if len(main) in (4, 6, 8) else [20.0, 6.0, 6.0, 0.2]
+    h, b_top, b_bot, ri = values[:4]
+    r_top, r_bot = values[4:6] or (0.0, 0.0)
+    ang_bot, ang_top = values[6:8] or (90.0, 90.0)
+    return {
+        'kind': {8: 'ZED_SLOPED', 6: 'ZED'}.get(len(values), 'Z'),
+        'depth': _cm(h),
+        'top_flange_width': _cm(b_top),
+        'bottom_flange_width': _cm(b_bot),
+        'thickness': _clamp_thickness_m(_cm(t), _cm(h), _cm(b_top), _cm(b_bot)),
+        'inner_radius': _cm(ri),
+        'top_return': _cm(r_top),
+        'bottom_return': _cm(r_bot),
+        'bottom_return_angle_deg': float(ang_bot),
+        'top_return_angle_deg': float(ang_top),
+        'overall_width': _cm(b_top) + _cm(b_bot),
+        'overall_depth': _cm(h),
+    }
+
+
+def _parse_rolled_i(s: _SectionText):
+    m = _I_FAMILY.search(s.name)
+    h_mm = float(m.group(2).replace(',', '.'))
+    b_mm, tw_mm, tf_mm = _rolled_dims(h_mm, _I_RATIOS.get(m.group(1), _H_RATIOS))
+    return {
+        'kind': 'I',
+        'width': _mm(b_mm),
+        'depth': _mm(h_mm),
+        'web': _mm(tw_mm),
+        'flange': _mm(tf_mm),
+        'overall_width': _mm(b_mm),
+        'overall_depth': _mm(h_mm),
+        'web_thickness': _mm(tw_mm),
+        'flange_thickness': _mm(tf_mm),
+    }
+
+
+def _is_mm_rect_family(s: _SectionText) -> bool:
+    return (any(tag in s.raw for tag in (' RCT', 'RHSC', 'RHSH', 'SHSC', 'SHSH'))
+            or s.name.startswith(('RCT', 'RHS', 'SHS'))
+            or s.family.startswith(('RCT', 'RHSC', 'RHSH', 'SHSC', 'SHSH')))
+
+
+def _parse_mm_rect(s: _SectionText):
+    n0 = s.pick(0, 40.0)
+    n1 = s.pick(1, n0)
+    depth, width = _mm(n0), _mm(n1)
+    if 'RCT' in s.raw:
         return {'kind': 'RECT', 'width': width, 'depth': depth}
+    thickness = _clamp_thickness_m(_mm(s.pick(2, min(n0, n1) * 0.10)), width, depth)
+    return {'kind': 'RECTTUBE', 'width': width, 'depth': depth, 'thickness': thickness}
 
+
+def _is_mm_circ_family(s: _SectionText) -> bool:
+    return (any(tag in s.raw for tag in ('CHSC', 'CHSH'))
+            or s.name.startswith('CHS') or s.family.startswith(('CHSC', 'CHSH')))
+
+
+def _parse_mm_circ(s: _SectionText):
+    n0 = s.pick(0, 40.0)
+    diameter = _mm(n0)
+    thickness = _clamp_thickness_m(_mm(s.pick(1, max(2.0, n0 * 0.10))), diameter)
+    return {'kind': 'CIRCLETUBE', 'radius': diameter / 2.0, 'thickness': thickness}
+
+
+def _parse_l_shape(s: _SectionText):
+    a_mm, b_mm, t_mm = (float(g.replace(',', '.')) for g in _L_SHAPE.match(s.name).groups())
+    return {'kind': 'ANGLE', 'width': _mm(a_mm), 'depth': _mm(b_mm),
+            'thickness': _clamp_thickness_m(_mm(t_mm), _mm(a_mm), _mm(b_mm))}
+
+
+def _parse_steel_angle(s: _SectionText):
+    n0 = s.pick(0, 60.0)
+    n1 = s.pick(1, n0)
+    n2 = s.pick(2, max(4.0, min(n0, n1) * 0.10))
+    return {'kind': 'ANGLE', 'width': _mm(n0), 'depth': _mm(n1),
+            'thickness': _clamp_thickness_m(_mm(n2), _mm(n0), _mm(n1))}
+
+
+def _parse_rect_tube(s: _SectionText):
+    a = s.pick(0, 20.0)
+    b = s.pick(1, a)
+    width, depth = _cm(a), _cm(b)
+    thickness = _clamp_thickness_m(_cm(s.pick(2, min(a, b) * 0.10)), width, depth)
+    return {'kind': 'RECTTUBE', 'width': width, 'depth': depth, 'thickness': thickness}
+
+
+def _parse_circ_tube(s: _SectionText):
+    a = s.pick(0, 20.0)
+    diameter = _cm(a)
+    thickness = _clamp_thickness_m(_cm(s.pick(1, a * 0.10)), diameter)
+    return {'kind': 'CIRCLETUBE', 'radius': diameter / 2.0, 'thickness': thickness}
+
+
+def _is_mm_round(s: _SectionText) -> bool:
+    return 'ROND' in s.raw or 'Ø' in s.raw or ('DIAM' in s.raw and 'TUBE' not in s.raw)
+
+
+def _is_circle(s: _SectionText) -> bool:
+    return (('CIRCULAR' in s.sec_type and 'TUBE' not in s.sec_type)
+            or ('CIRC' in s.name and 'TUBE' not in s.name) or _is_mm_round(s))
+
+
+def _parse_circle(s: _SectionText):
+    to_m = _mm if _is_mm_round(s) else _cm
+    return {'kind': 'CIRCLE', 'radius': to_m(s.pick(0, 20.0)) / 2.0}
+
+
+def _parse_t_dissym(s: _SectionText):
+    web = _cm(s.pick(0, 20.0))
+    height = _cm(s.pick(1, 60.0))
+    left_width = _cm(s.pick(2, 10.0))
+    right_width = _cm(s.pick(5, 10.0))
+    return {
+        'kind': 'TDISSYMETRIC',
+        'width': web + left_width + right_width,
+        'depth': height,
+        'web': web,
+        'left_width': left_width,
+        'left_thickness': _clamp_thickness_m(_cm(s.pick(3, 10.0)), height),
+        'left_offset': _cm(s.pick(4, 20.0)),
+        'right_width': right_width,
+        'right_thickness': _clamp_thickness_m(_cm(s.pick(6, 10.0)), height),
+        'right_offset': _cm(s.pick(7, 20.0)),
+    }
+
+
+def _parse_t(s: _SectionText):
+    height = _cm(s.pick(0, 30.0))
+    width = _cm(s.pick(2, s.pick(0, 30.0) * 0.6))
+    return {'kind': 'T', 'width': width, 'depth': height,
+            'web': _clamp_thickness_m(_cm(s.pick(1, 10.0)), height),
+            'flange': _clamp_thickness_m(_cm(s.pick(3, 10.0)), width, height)}
+
+
+def _is_u(s: _SectionText) -> bool:
+    return (s.sec_type == 'STU' or 'CHANNEL' in s.name
+            or bool(_U_FAMILY.search(s.name)) or bool(re.search(r"\bU\b", s.name)))
+
+
+def _parse_u(s: _SectionText):
+    m = _U_FAMILY.search(s.name)
+    ratios = _U_RATIOS.get(m.group(1)) if m else None
+    if ratios is None:
+        height = _cm(s.pick(0, 30.0))
+        width = _cm(s.pick(1, s.pick(0, 30.0) * 0.4))
+        return {'kind': 'U', 'width': width, 'depth': height,
+                'web': _clamp_thickness_m(_cm(s.pick(2, 4.0)), width, height),
+                'flange': _clamp_thickness_m(_cm(s.pick(3, 4.0)), width, height)}
+    h_mm = float(m.group(2).replace(',', '.'))
+    b_mm, tw_mm, tf_mm = _rolled_dims(h_mm, ratios)
+    return {'kind': 'U', 'width': _mm(b_mm), 'depth': _mm(h_mm), 'web': _mm(tw_mm), 'flange': _mm(tf_mm)}
+
+
+def _is_angle(s: _SectionText) -> bool:
+    return ('STANGLE' in s.sec_type or 'STUNEQUALANGLE' in s.sec_type
+            or 'ANGLE' in s.name or bool(re.search(r"\bL\b", s.name)))
+
+
+def _parse_angle(s: _SectionText):
+    a = s.pick(0, 10.0)
+    height = _cm(a)
+    if len(s.nums) >= 3:
+        width = _cm(s.pick(1, a))
+        thickness = _cm(s.pick(2, min(a, s.pick(1, a)) * 0.15))
+    else:
+        width = height
+        thickness = _cm(s.pick(1, a * 0.15))
+    return {'kind': 'ANGLE', 'width': width, 'depth': height,
+            'thickness': _clamp_thickness_m(thickness, width, height)}
+
+
+def _parse_rect(s: _SectionText):
+    a = s.pick(0, 20.0)
+    return {'kind': 'RECT', 'width': _cm(a), 'depth': _cm(s.pick(1, a))}
+
+
+# Regles essayees dans l'ordre : la premiere qui s'applique decide du profil
+_SECTION_RULES = (
+    (lambda s: s.name.startswith('V') or 'SIGMA' in s.sec_type or s.family.startswith('V'), _parse_sigma),
+    (lambda s: s.name.startswith('W') or 'OMEGA' in s.sec_type or s.family.startswith('W'), _parse_omega),
+    (lambda s: s.name.startswith('Z') or 'ZED' in s.sec_type or s.family.startswith('Z'), _parse_zed),
+    (lambda s: bool(_I_FAMILY.search(s.name)), _parse_rolled_i),
+    (_is_mm_rect_family, _parse_mm_rect),
+    (_is_mm_circ_family, _parse_mm_circ),
+    (lambda s: bool(_L_SHAPE.match(s.name)), _parse_l_shape),
+    (lambda s: 'ANGLE' in s.sec_type and s.is_steel(), _parse_steel_angle),
+    (lambda s: ('STRECTANGULARTUBE' in s.sec_type or 'STSQUARETUBE' in s.sec_type
+                or ('TUBE' in s.name and 'RECT' in s.name)), _parse_rect_tube),
+    (lambda s: 'STCIRCULARTUBE' in s.sec_type or ('TUBE' in s.name and 'CIRC' in s.name), _parse_circ_tube),
+    (_is_circle, _parse_circle),
+    (lambda s: 'TDISSYMETRIC' in s.sec_type, _parse_t_dissym),
+    (lambda s: s.sec_type == 'STT' or bool(re.search(r"\bT\b", s.name)), _parse_t),
+    (_is_u, _parse_u),
+    (_is_angle, _parse_angle),
+    (lambda s: ('STRECTANGULAR' in s.sec_type or 'STSQUARE' in s.sec_type
+                or 'RECT' in s.name or 'SQUARE' in s.name), _parse_rect),
+)
+
+
+def parse_section_dims(sec: dict):
+    """Dimensions (m) du profil d'une section Advance Design, None si non reconnu."""
+    text = _SectionText.of(sec)
+    for applies, parse in _SECTION_RULES:
+        if applies(text):
+            return parse(text)
     return None
+
+
+def _dim(dims: dict, key, default=0.0) -> float:
+    return float(dims.get(key, default) or default)
+
+
+def _zed_bounds(dims: dict):
+    half_depth = _dim(dims, 'depth') / 2.0
+    return (-_dim(dims, 'bottom_flange_width'), -half_depth, _dim(dims, 'top_flange_width'), half_depth)
+
+
+def _omega_bounds(dims: dict):
+    width = _dim(dims, 'width')
+    half_depth = _dim(dims, 'depth') / 2.0
+    top_b = _dim(dims, 'top_flange_width', width)
+    half_total = _dim(dims, 'overall_width', 2.0 * width + top_b) / 2.0
+    return (-half_total, -half_depth, half_total, half_depth)
+
+
+def _sigma_bounds(dims: dict):
+    half_depth = _dim(dims, 'depth') / 2.0
+    y_max = max(_dim(dims, 'width'), _dim(dims, 'web_offset') + _dim(dims, 'thickness', 0.003))
+    return (0.0, -half_depth, y_max, half_depth)
+
+
+def _centered_bounds(dims: dict):
+    width, depth = _dim(dims, 'width'), _dim(dims, 'depth')
+    if width > 0.0 and depth > 0.0:
+        return (-width / 2.0, -depth / 2.0, width / 2.0, depth / 2.0)
+    return None
+
+
+def _round_bounds(dims: dict):
+    radius = _dim(dims, 'radius')
+    if radius > 0.0:
+        return (-radius, -radius, radius, radius)
+    return _centered_bounds(dims)
+
+
+_BOUNDS_BY_KIND = {
+    'Z': _zed_bounds, 'ZED': _zed_bounds, 'ZED_SLOPED': _zed_bounds,
+    'OMEGA': _omega_bounds,
+    'SIGMA': _sigma_bounds,
+    'PIPE': _round_bounds, 'CHS': _round_bounds,
+    **{kind: _centered_bounds for kind in ('RECT', 'RHS', 'SHS', 'I', 'T', 'ANGLE', 'U', 'C', 'T_DISSYM')},
+}
 
 
 def profile_bounds_from_dims(dims: dict):
-    kind = str((dims or {}).get('kind') or '').upper()
-    width = float((dims or {}).get('width', 0.0) or 0.0)
-    depth = float((dims or {}).get('depth', 0.0) or 0.0)
-    if kind in {'Z', 'ZED', 'ZED_SLOPED'}:
-        top_b = float((dims or {}).get('top_flange_width', 0.0) or 0.0)
-        bottom_b = float((dims or {}).get('bottom_flange_width', 0.0) or 0.0)
-        return (-bottom_b, -depth / 2.0, top_b, depth / 2.0)
-    if kind == 'OMEGA':
-        top_b = float((dims or {}).get('top_flange_width', width) or width)
-        total_w = float((dims or {}).get('overall_width', (2.0 * width + top_b)) or (2.0 * width + top_b))
-        return (-total_w / 2.0, -depth / 2.0, total_w / 2.0, depth / 2.0)
-    if kind == 'SIGMA':
-        t = float((dims or {}).get('thickness', 0.003) or 0.003)
-        off = float((dims or {}).get('web_offset', 0.0) or 0.0)
-        return_lip = float((dims or {}).get('return_lip', 0.0) or 0.0)
-        y_min = 0.0
-        y_max = max(width, off + t)
-        if return_lip > 0.0:
-            z_min = -depth / 2.0
-            z_max = depth / 2.0
-        else:
-            z_min = -depth / 2.0
-            z_max = depth / 2.0
-        return (y_min, z_min, y_max, z_max)
-    if kind in {'RECT', 'RHS', 'SHS', 'I', 'T', 'ANGLE', 'PIPE', 'CHS', 'U', 'C', 'T_DISSYM'}:
-        if kind in {'PIPE', 'CHS'}:
-            radius = float((dims or {}).get('radius', 0.0) or 0.0)
-            if radius > 0.0:
-                return (-radius, -radius, radius, radius)
-        if width > 0.0 and depth > 0.0:
-            return (-width / 2.0, -depth / 2.0, width / 2.0, depth / 2.0)
-    return None
+    """(ymin, zmin, ymax, zmax) du profil dans son repere local, None si type sans regle."""
+    dims = dims or {}
+    bounds = _BOUNDS_BY_KIND.get(str(dims.get('kind') or '').upper())
+    return bounds(dims) if bounds else None
 
 
 def section_excentration_option_normalized(el: dict):
