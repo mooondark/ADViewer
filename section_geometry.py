@@ -421,12 +421,13 @@ def _round_bounds(dims: dict):
     return _centered_bounds(dims)
 
 
+# Une regle par type produit par parse_section_dims ; un type absent n'a pas d'excentrement
 _BOUNDS_BY_KIND = {
     'Z': _zed_bounds, 'ZED': _zed_bounds, 'ZED_SLOPED': _zed_bounds,
     'OMEGA': _omega_bounds,
     'SIGMA': _sigma_bounds,
-    'PIPE': _round_bounds, 'CHS': _round_bounds,
-    **{kind: _centered_bounds for kind in ('RECT', 'RHS', 'SHS', 'I', 'T', 'ANGLE', 'U', 'C', 'T_DISSYM')},
+    'CIRCLE': _round_bounds, 'CIRCLETUBE': _round_bounds,
+    **{kind: _centered_bounds for kind in ('RECT', 'RECTTUBE', 'I', 'T', 'TDISSYMETRIC', 'ANGLE', 'U')},
 }
 
 

@@ -10157,7 +10157,12 @@
 "depth": 0.1,
 "thickness": 0.005
 },
-"bounds": null
+"bounds": [
+-0.025,
+-0.05,
+0.025,
+0.05
+]
 },
 {
 "dims": {
@@ -10166,7 +10171,12 @@
 "depth": 0.04,
 "thickness": 0.004
 },
-"bounds": null
+"bounds": [
+-0.02,
+-0.02,
+0.02,
+0.02
+]
 },
 {
 "dims": {
@@ -10175,7 +10185,12 @@
 "depth": 0.08,
 "thickness": 0.008
 },
-"bounds": null
+"bounds": [
+-0.04,
+-0.04,
+0.04,
+0.04
+]
 },
 {
 "dims": {
@@ -10184,7 +10199,12 @@
 "depth": 0.08,
 "thickness": 0.004
 },
-"bounds": null
+"bounds": [
+-0.04,
+-0.04,
+0.04,
+0.04
+]
 },
 {
 "dims": {
@@ -10192,7 +10212,12 @@
 "radius": 0.05,
 "thickness": 0.005
 },
-"bounds": null
+"bounds": [
+-0.05,
+-0.05,
+0.05,
+0.05
+]
 },
 {
 "dims": {
@@ -10200,7 +10225,12 @@
 "radius": 0.05,
 "thickness": 0.01
 },
-"bounds": null
+"bounds": [
+-0.05,
+-0.05,
+0.05,
+0.05
+]
 },
 {
 "dims": {
@@ -10208,7 +10238,12 @@
 "radius": 0.02,
 "thickness": 0.004
 },
-"bounds": null
+"bounds": [
+-0.02,
+-0.02,
+0.02,
+0.02
+]
 },
 {
 "dims": {
@@ -10247,7 +10282,12 @@
 "depth": 0.1,
 "thickness": 0.01
 },
-"bounds": null
+"bounds": [
+-0.1,
+-0.05,
+0.1,
+0.05
+]
 },
 {
 "dims": {
@@ -10256,7 +10296,12 @@
 "depth": 0.2,
 "thickness": 0.02
 },
-"bounds": null
+"bounds": [
+-0.1,
+-0.1,
+0.1,
+0.1
+]
 },
 {
 "dims": {
@@ -10264,7 +10309,12 @@
 "radius": 0.1,
 "thickness": 0.01
 },
-"bounds": null
+"bounds": [
+-0.1,
+-0.1,
+0.1,
+0.1
+]
 },
 {
 "dims": {
@@ -10272,42 +10322,72 @@
 "radius": 0.1,
 "thickness": 0.02
 },
-"bounds": null
+"bounds": [
+-0.1,
+-0.1,
+0.1,
+0.1
+]
 },
 {
 "dims": {
 "kind": "CIRCLE",
 "radius": 0.01
 },
-"bounds": null
+"bounds": [
+-0.01,
+-0.01,
+0.01,
+0.01
+]
 },
 {
 "dims": {
 "kind": "CIRCLE",
 "radius": 0.008
 },
-"bounds": null
+"bounds": [
+-0.008,
+-0.008,
+0.008,
+0.008
+]
 },
 {
 "dims": {
 "kind": "CIRCLE",
 "radius": 0.006
 },
-"bounds": null
+"bounds": [
+-0.006,
+-0.006,
+0.006,
+0.006
+]
 },
 {
 "dims": {
 "kind": "CIRCLE",
 "radius": 0.15
 },
-"bounds": null
+"bounds": [
+-0.15,
+-0.15,
+0.15,
+0.15
+]
 },
 {
 "dims": {
 "kind": "CIRCLE",
 "radius": 0.1
 },
-"bounds": null
+"bounds": [
+-0.1,
+-0.1,
+0.1,
+0.1
+]
 },
 {
 "dims": {
@@ -10366,7 +10446,12 @@
 "kind": "CIRCLE",
 "radius": 0.16
 },
-"bounds": null
+"bounds": [
+-0.16,
+-0.16,
+0.16,
+0.16
+]
 },
 {
 "dims": {
@@ -10459,7 +10544,12 @@
 "depth": 0.01,
 "thickness": 0.0049
 },
-"bounds": null
+"bounds": [
+-0.15,
+-0.005,
+0.15,
+0.005
+]
 },
 {
 "dims": {
@@ -10468,7 +10558,12 @@
 "depth": 0.08,
 "thickness": 0.0392
 },
-"bounds": null
+"bounds": [
+-0.16,
+-0.04,
+0.16,
+0.04
+]
 },
 {
 "dims": {
@@ -10476,7 +10571,12 @@
 "radius": 0.1,
 "thickness": 0.098
 },
-"bounds": null
+"bounds": [
+-0.1,
+-0.1,
+0.1,
+0.1
+]
 },
 {
 "dims": {
@@ -10484,7 +10584,12 @@
 "radius": 0.15,
 "thickness": 0.01
 },
-"bounds": null
+"bounds": [
+-0.15,
+-0.15,
+0.15,
+0.15
+]
 },
 {
 "dims": {
@@ -10492,7 +10597,12 @@
 "radius": 0.16,
 "thickness": 0.08
 },
-"bounds": null
+"bounds": [
+-0.16,
+-0.16,
+0.16,
+0.16
+]
 },
 {
 "dims": {
@@ -10681,7 +10791,12 @@
 "right_thickness": 0.1,
 "right_offset": 0.2
 },
-"bounds": null
+"bounds": [
+-0.2,
+-0.3,
+0.2,
+0.3
+]
 },
 {
 "dims": {
@@ -10696,7 +10811,12 @@
 "right_thickness": 0.049,
 "right_offset": 0.2
 },
-"bounds": null
+"bounds": [
+-0.2,
+-0.05,
+0.2,
+0.05
+]
 },
 {
 "dims": {
@@ -10711,7 +10831,12 @@
 "right_thickness": 0.049,
 "right_offset": 0.2
 },
-"bounds": null
+"bounds": [
+-0.15500000000000003,
+-0.05,
+0.15500000000000003,
+0.05
+]
 },
 {
 "dims": {
@@ -10726,7 +10851,12 @@
 "right_thickness": 0.049,
 "right_offset": 0.2
 },
-"bounds": null
+"bounds": [
+-0.15500000000000003,
+-0.05,
+0.15500000000000003,
+0.05
+]
 },
 {
 "dims": {
@@ -10741,7 +10871,12 @@
 "right_thickness": 0.0049,
 "right_offset": 0.05
 },
-"bounds": null
+"bounds": [
+-0.26,
+-0.005,
+0.26,
+0.005
+]
 },
 {
 "dims": {
@@ -10756,7 +10891,12 @@
 "right_thickness": 0.003,
 "right_offset": 0.002
 },
-"bounds": null
+"bounds": [
+-0.22,
+-0.04,
+0.22,
+0.04
+]
 },
 {
 "dims": {
@@ -11000,7 +11140,12 @@
 "depth": 0.02,
 "thickness": 0.002
 },
-"bounds": null
+"bounds": [
+-0.01,
+-0.01,
+0.01,
+0.01
+]
 },
 {
 "dims": {
@@ -11009,7 +11154,12 @@
 "depth": 0.02,
 "thickness": 0.001
 },
-"bounds": null
+"bounds": [
+-0.005,
+-0.01,
+0.005,
+0.01
+]
 },
 {
 "dims": {
@@ -11018,7 +11168,12 @@
 "depth": 0.03,
 "thickness": 0.001
 },
-"bounds": null
+"bounds": [
+-0.0005,
+-0.015,
+0.0005,
+0.015
+]
 },
 {
 "dims": {
@@ -11027,7 +11182,12 @@
 "depth": 0.032,
 "thickness": 0.00392
 },
-"bounds": null
+"bounds": [
+-0.004,
+-0.016,
+0.004,
+0.016
+]
 },
 {
 "dims": {
@@ -11035,7 +11195,12 @@
 "radius": 0.01,
 "thickness": 0.002
 },
-"bounds": null
+"bounds": [
+-0.01,
+-0.01,
+0.01,
+0.01
+]
 },
 {
 "dims": {
@@ -11043,7 +11208,12 @@
 "radius": 0.01,
 "thickness": 0.0098
 },
-"bounds": null
+"bounds": [
+-0.01,
+-0.01,
+0.01,
+0.01
+]
 },
 {
 "dims": {
@@ -11051,7 +11221,12 @@
 "radius": 0.015,
 "thickness": 0.001
 },
-"bounds": null
+"bounds": [
+-0.015,
+-0.015,
+0.015,
+0.015
+]
 },
 {
 "dims": {
@@ -11059,7 +11234,12 @@
 "radius": 0.016,
 "thickness": 0.008
 },
-"bounds": null
+"bounds": [
+-0.016,
+-0.016,
+0.016,
+0.016
+]
 },
 {
 "dims": {
@@ -11109,12 +11289,7 @@
 "kind": "PIPE",
 "radius": 0.1
 },
-"bounds": [
--0.1,
--0.1,
-0.1,
-0.1
-]
+"bounds": null
 },
 {
 "dims": {
@@ -11129,12 +11304,7 @@
 "width": 0.2,
 "depth": 0.2
 },
-"bounds": [
--0.1,
--0.1,
-0.1,
-0.1
-]
+"bounds": null
 },
 {
 "dims": {
@@ -11142,12 +11312,7 @@
 "width": 0.2,
 "depth": 0.1
 },
-"bounds": [
--0.1,
--0.05,
-0.1,
-0.05
-]
+"bounds": null
 },
 {
 "dims": {
@@ -11155,12 +11320,7 @@
 "width": 0.1,
 "depth": 0.1
 },
-"bounds": [
--0.05,
--0.05,
-0.05,
-0.05
-]
+"bounds": null
 },
 {
 "dims": {
@@ -11168,12 +11328,7 @@
 "width": 0.1,
 "depth": 0.2
 },
-"bounds": [
--0.05,
--0.1,
-0.05,
-0.1
-]
+"bounds": null
 },
 {
 "dims": {
@@ -11181,12 +11336,7 @@
 "width": 0.3,
 "depth": 0.5
 },
-"bounds": [
--0.15,
--0.25,
-0.15,
-0.25
-]
+"bounds": null
 },
 {
 "dims": {
