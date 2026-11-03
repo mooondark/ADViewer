@@ -2013,122 +2013,107 @@ class VTKViewerWidget(QFrame):
             return self._show_planar_loads
         return True
 
+    # Role -> (methode qui construit son recouvrement, cle des donnees du modele)
+    _SELECTION_OVERLAYS = {
+        "lines": ("_line_selection_overlay", "lines"),
+        "planars": ("_planar_selection_overlay", "planars"),
+        "load_areas": ("_area_selection_overlay", "load_areas"),
+        "support_planar": ("_area_selection_overlay", "planar_supports"),
+        "support_punctual": ("_support_point_selection_overlay", "punctual_supports"),
+        "support_linear": ("_support_line_selection_overlay", "linear_supports"),
+        "punctual_load": ("_load_selection_overlay", None),
+        "linear_load": ("_load_selection_overlay", None),
+        "planar_load": ("_load_selection_overlay", None),
+    }
+
     def _make_selection_overlay_actors(self, role: str, index: int):
-        overlays = []
+        method_name, data_key = self._SELECTION_OVERLAYS.get(role, (None, None))
+        if method_name is None:
+            return []
+        if data_key is not None:
+            items = self._model_data.get(data_key, [])
+            if not 0 <= index < len(items):
+                return []
+            target = items[index]
+        else:
+            target = role
         line_width = max(self.selection_line_width, self._style_for_role(role)[1] + 1.0)
+        return [actor for actor in getattr(self, method_name)(target, index, line_width) if actor]
 
-        if role == "lines":
-            # En mode profils la selection est rendue en recolorant les cellules
-            # de _profiles_actor (cf. _rebuild_profiles_actor), pas par un overlay.
-            if self._display_mode in _PROFILE_MODES:
-                return overlays
-            lines = self._model_data.get("lines", [])
-            if 0 <= index < len(lines):
-                poly = self._build_lines_polydata([lines[index]], include_section_colors=False)
-                actor = self._make_wire_actor(poly, self.selection_color, line_width)
-                if actor:
-                    overlays.append(actor)
+    def _selection_wire(self, polydata, line_width):
+        return self._make_wire_actor(polydata, self.selection_color, line_width)
 
-        elif role == "planars":
-            items = self._model_data.get("planars", [])
-            if 0 <= index < len(items):
-                item = items[index]
-                wire_poly = self._build_loops_wire_polydata([{"outer": item.get("outer"), "openings": item.get("openings", [])}], openings=False)
-                actor = self._make_wire_actor(wire_poly, self.selection_color, line_width)
-                if actor:
-                    overlays.append(actor)
-                opening_poly = self._build_loops_wire_polydata([{"outer": [], "openings": item.get("openings", [])}], openings=True)
-                opening_actor = self._make_wire_actor(opening_poly, self.selection_color, line_width)
-                if opening_actor:
-                    overlays.append(opening_actor)
-                if self._planar_thickness_enabled and self._display_mode in _PROFILE_MODES:
-                    # Le recouvrement de selection doit suivre la meme geometrie
-                    # (solide epaissi) que _planar_faces_actor, sinon une face
-                    # plate au plan de reference se retrouve enterree a
-                    # l'interieur du solide opaque et devient invisible.
-                    thicknesses = self._model_data.get("planar_thicknesses", []) or []
-                    eccentricities = self._model_data.get("planar_eccentricities", []) or []
-                    thickness = float(thicknesses[index]) if index < len(thicknesses) else 0.0
-                    eccentricity = float(eccentricities[index]) if index < len(eccentricities) else 0.0
-                    face_poly = self._build_planar_thickness_polydata([item], [thickness], [eccentricity])
-                else:
-                    face_poly = self._build_faces_polydata([item])
-                face_actor = self._make_surface_actor(face_poly, self.selection_color, max(0.18, 0.30 * self._transparency_factor()))
-                if face_actor:
-                    # Le recouvrement est geometriquement coincident avec la
-                    # face de base (plate, ou solide epaissi) : sans decalage,
-                    # le z-fighting le fait perdre a la face de base et le
-                    # recouvrement devient invisible - surtout marque quand la
-                    # surface est quasi perpendiculaire a la camera (ex: une
-                    # toiture vue de dessus, contrairement a un mur vu de biais).
-                    face_actor.GetMapper().SetResolveCoincidentTopologyToPolygonOffset()
-                    face_actor.GetMapper().SetRelativeCoincidentTopologyPolygonOffsetParameters(-4, -4)
-                    overlays.append(face_actor)
+    def _selection_face(self, polydata):
+        return self._make_surface_actor(polydata, self.selection_color, max(0.18, 0.30 * self._transparency_factor()))
 
-        elif role == "load_areas":
-            items = self._model_data.get("load_areas", [])
-            if 0 <= index < len(items):
-                item = items[index]
-                wire_poly = self._build_loops_wire_polydata([{"outer": item.get("outer"), "openings": item.get("openings", [])}], openings=False)
-                actor = self._make_wire_actor(wire_poly, self.selection_color, line_width)
-                if actor:
-                    overlays.append(actor)
-                face_poly = self._build_faces_polydata([item])
-                face_actor = self._make_surface_actor(face_poly, self.selection_color, max(0.18, 0.30 * self._transparency_factor()))
-                if face_actor:
-                    overlays.append(face_actor)
+    def _selection_outline(self, item, line_width):
+        loop = {"outer": item.get("outer"), "openings": item.get("openings", [])}
+        return self._selection_wire(self._build_loops_wire_polydata([loop], openings=False), line_width)
 
-        elif role == "support_punctual":
-            points = self._model_data.get("punctual_supports", [])
-            if 0 <= index < len(points):
-                poly = self._build_punctual_supports_polydata([points[index]])
-                actor = self._make_wire_actor(poly, self.selection_color, line_width)
-                if actor:
-                    overlays.append(actor)
+    def _line_selection_overlay(self, line, index, line_width):
+        # En mode profils la selection est rendue en recolorant les cellules
+        # de _profiles_actor (cf. _rebuild_profiles_actor), pas par un overlay.
+        if self._display_mode in _PROFILE_MODES:
+            return []
+        return [self._selection_wire(self._build_lines_polydata([line], include_section_colors=False), line_width)]
 
-        elif role == "support_linear":
-            lines = self._model_data.get("linear_supports", [])
-            if 0 <= index < len(lines):
-                poly = self._build_lines_polydata([lines[index]])
-                actor = self._make_wire_actor(poly, self.selection_color, line_width)
-                if actor:
-                    overlays.append(actor)
+    def _planar_selection_overlay(self, item, index, line_width):
+        openings = {"outer": [], "openings": item.get("openings", [])}
+        opening_actor = self._selection_wire(self._build_loops_wire_polydata([openings], openings=True), line_width)
+        face_actor = self._selection_face(self._planar_selection_face_polydata(item, index))
+        if face_actor:
+            # Le recouvrement est geometriquement coincident avec la
+            # face de base (plate, ou solide epaissi) : sans decalage,
+            # le z-fighting le fait perdre a la face de base et le
+            # recouvrement devient invisible - surtout marque quand la
+            # surface est quasi perpendiculaire a la camera (ex: une
+            # toiture vue de dessus, contrairement a un mur vu de biais).
+            face_actor.GetMapper().SetResolveCoincidentTopologyToPolygonOffset()
+            face_actor.GetMapper().SetRelativeCoincidentTopologyPolygonOffsetParameters(-4, -4)
+        return [self._selection_outline(item, line_width), opening_actor, face_actor]
 
-        elif role == "support_planar":
-            items = self._model_data.get("planar_supports", [])
-            if 0 <= index < len(items):
-                item = items[index]
-                wire_poly = self._build_loops_wire_polydata([{"outer": item.get("outer"), "openings": item.get("openings", [])}], openings=False)
-                actor = self._make_wire_actor(wire_poly, self.selection_color, line_width)
-                if actor:
-                    overlays.append(actor)
-                face_poly = self._build_faces_polydata([item])
-                face_actor = self._make_surface_actor(face_poly, self.selection_color, max(0.18, 0.30 * self._transparency_factor()))
-                if face_actor:
-                    overlays.append(face_actor)
+    def _planar_selection_face_polydata(self, item, index):
+        if not (self._planar_thickness_enabled and self._display_mode in _PROFILE_MODES):
+            return self._build_faces_polydata([item])
+        # Le recouvrement de selection doit suivre la meme geometrie
+        # (solide epaissi) que _planar_faces_actor, sinon une face
+        # plate au plan de reference se retrouve enterree a
+        # l'interieur du solide opaque et devient invisible.
+        thicknesses = self._model_data.get("planar_thicknesses", []) or []
+        eccentricities = self._model_data.get("planar_eccentricities", []) or []
+        thickness = float(thicknesses[index]) if index < len(thicknesses) else 0.0
+        eccentricity = float(eccentricities[index]) if index < len(eccentricities) else 0.0
+        return self._build_planar_thickness_polydata([item], [thickness], [eccentricity])
 
-        elif role in ("punctual_load", "linear_load", "planar_load"):
-            # Charge redessinee en couleur de selection, normalisee sur les charges
-            # actives (meme filtre de cas) pour coincider avec la charge affichee
-            kind = role[:-len("_load")]
-            loads = getattr(self, f"_{kind}_load_data")
-            if 0 <= index < len(loads):
-                case = getattr(self, f"_{kind}_load_case_filter")
-                active = [ld for ld in loads if case is None or ld.get("load_case_eid") in case]
-                builder = getattr(self, f"_build_{kind}_load_actors")
-                extra = {} if kind == "punctual" else {"global_data": loads}
-                actor_pairs = builder(
-                    [loads[index]],
-                    self.effective_load_scale(kind),
-                    self.selection_color,
-                    line_width=max(line_width, getattr(self, f"{kind}_load_line_width") + 1.0),
-                    norm_loads=active,
-                    **extra,
-                )
-                for a, _ in actor_pairs:
-                    overlays.append(a)
+    def _area_selection_overlay(self, item, index, line_width):
+        """Parois et appuis surfaciques : contour et face."""
+        return [self._selection_outline(item, line_width), self._selection_face(self._build_faces_polydata([item]))]
 
-        return overlays
+    def _support_point_selection_overlay(self, point, index, line_width):
+        return [self._selection_wire(self._build_punctual_supports_polydata([point]), line_width)]
+
+    def _support_line_selection_overlay(self, line, index, line_width):
+        return [self._selection_wire(self._build_lines_polydata([line]), line_width)]
+
+    def _load_selection_overlay(self, role, index, line_width):
+        # Charge redessinee en couleur de selection, normalisee sur les charges
+        # actives (meme filtre de cas) pour coincider avec la charge affichee
+        kind = role[:-len("_load")]
+        loads = getattr(self, f"_{kind}_load_data")
+        if not 0 <= index < len(loads):
+            return []
+        case = getattr(self, f"_{kind}_load_case_filter")
+        active = [ld for ld in loads if case is None or ld.get("load_case_eid") in case]
+        extra = {} if kind == "punctual" else {"global_data": loads}
+        actor_pairs = getattr(self, f"_build_{kind}_load_actors")(
+            [loads[index]],
+            self.effective_load_scale(kind),
+            self.selection_color,
+            line_width=max(line_width, getattr(self, f"{kind}_load_line_width") + 1.0),
+            norm_loads=active,
+            **extra,
+        )
+        return [actor for actor, _ in actor_pairs]
 
     def _refresh_selection_overlay(self):
         self._clear_selection_overlay()
