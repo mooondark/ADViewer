@@ -1834,40 +1834,31 @@ def _read_results_cases_data(host: str) -> list:
     )
 
 
+def _load_case_eid(el: dict):
+    """EID du cas de charge reference par un objet charge, None si absent ou invalide."""
+    return _eid_val(el.get("loadCase") or {})
+
+
+def _load_case_label(eid: int, obj: dict) -> str:
+    """Libelle "numero : nom" d'un cas de charge, l'EID remplacant un numero absent."""
+    user_id = obj.get("userID")
+    name = _get_username(obj) or str(obj.get("name") or "").strip()
+    left = str(user_id).strip() if user_id not in (None, "") else str(eid)
+    return f"{left} : {name}" if name else left
+
+
 def _resolve_load_case_labels(host: str, elements: list) -> dict:
-    """Resout les libelles des cas de charge references par une liste d'elements.
-
-    Retourne un dict {eid_int: label_str} pour tous les cas trouves.
-    Utilise GetInformationalElementsObject dans un ordre deterministe (insertion).
-    """
-    lc_eids_needed: set = set()
-    for el in elements:
-        if not isinstance(el, dict):
-            continue
-        lc_ref = el.get("loadCase") or {}
-        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
-        if lc_eid is not None:
-            try:
-                lc_eids_needed.add(int(lc_eid))
-            except (TypeError, ValueError):
-                pass
-
-    lc_by_eid: dict = {}
-    if lc_eids_needed:
-        try:
-            ordered_eids = list(lc_eids_needed)   # ordre d'insertion - stable Python 3.7+
-            lc_objects = get_informational_elements_objects(host, ordered_eids)
-            for lc_eid, lc_obj in zip(ordered_eids, lc_objects or []):
-                if not isinstance(lc_obj, dict):
-                    continue
-                user_id = lc_obj.get("userID")
-                name = _get_username(lc_obj) or str(lc_obj.get("name") or "").strip()
-                left = str(user_id).strip() if user_id not in (None, "") else str(lc_eid)
-                label = f"{left} : {name}" if name else left
-                lc_by_eid[int(lc_eid)] = label
-        except Exception:
-            pass
-    return lc_by_eid
+    """{eid: libelle} des cas de charge references par les elements ({} si l'API echoue)."""
+    eids = list(dict.fromkeys(
+        eid for eid in (_load_case_eid(el) for el in elements if isinstance(el, dict)) if eid is not None
+    ))
+    if not eids:
+        return {}
+    try:
+        objects = get_informational_elements_objects(host, eids)
+    except Exception:
+        return {}
+    return {eid: _load_case_label(eid, obj) for eid, obj in zip(eids, objects or []) if isinstance(obj, dict)}
 
 
 def _get_element_float(el: dict, key: str) -> float:
@@ -1887,307 +1878,93 @@ def _get_moment_float(el: dict, moment_dict, key: str) -> float:
     return float(el.get(key) or el.get(key_cap) or 0.0)
 
 
-def _build_punctual_loads_payload(host: str, ids_data: dict, objects_data: dict) -> dict:
-    """Construit la liste des charges ponctuelles avec résolution des cas de charge.
+def _load_forces(el: dict) -> dict:
+    """Forces en kN (l'API les donne en N, N/m ou N/m2)."""
+    return {key: _get_element_float(el, key) / 1000.0 for key in ("fx", "fy", "fz")}
 
-    Retourne un dict avec :
-    - ``punctual_loads``      : liste de dicts par charge (position, forces, cas)
-    - ``punctual_load_cases`` : liste de dicts {eid, label} — cas uniques triés
-    - ``punctual_load_ids_count`` / ``punctual_load_count`` : compteurs
-    """
-    punctual_load_ids = list(ids_data.get("punctual_load_ids", []) or [])
-    punctual_load_elements = list(objects_data.get("punctual_load_elements", []) or [])
 
-    if not punctual_load_ids or not punctual_load_elements:
-        return {
-            "punctual_loads": [],
-            "punctual_load_cases": [],
-            "punctual_load_ids_count": len(punctual_load_ids),
-            "punctual_load_count": 0,
-        }
+def _load_moments(el: dict) -> dict:
+    """Moments en kN.m ; sous-dict "moment" ou a plat selon la version de l'API."""
+    moment_dict = el.get("moment") or {}
+    return {key: _get_moment_float(el, moment_dict, key) / 1000.0 for key in ("mx", "my", "mz")}
 
-    lc_by_eid = _resolve_load_case_labels(host, punctual_load_elements)
 
-    # Construire la liste des charges
-    punctual_loads = []
-    seen_lc_eids = {}  # eid -> label, pour ordre d'apparition
-    for el in punctual_load_elements:
-        if not isinstance(el, dict):
+def _variation_coeffs(el: dict, count: int) -> dict:
+    """coeff1..coeffN de la variation de la charge, 1.0 par defaut."""
+    variation = el.get("variation")
+    if not isinstance(variation, dict):
+        variation = {}
+    coeffs = {}
+    for i in range(1, count + 1):
+        value = variation.get(f"coefficient{i}")
+        coeffs[f"coeff{i}"] = float(1.0 if value is None else value)
+    return coeffs
+
+
+def _punctual_load_fields(el: dict):
+    pos = _point3d_from_api(el.get("geomPt")) if el.get("geomPt") else None
+    if pos is None:
+        return None
+    return {"pos": pos, **_load_forces(el), **_load_moments(el)}
+
+
+def _linear_load_fields(el: dict):
+    if not el.get("geomPtStart") or not el.get("geomPtEnd"):
+        return None
+    start, end = _point3d_from_api(el["geomPtStart"]), _point3d_from_api(el["geomPtEnd"])
+    if start is None or end is None:
+        return None
+    return {"pt_start": start, "pt_end": end, **_load_forces(el), **_load_moments(el), **_variation_coeffs(el, 2)}
+
+
+def _planar_load_fields(el: dict):
+    pts = [pt for pt in (_point3d_from_api(raw) for raw in el.get("geomPtsList") or []) if pt is not None]
+    if len(pts) < 3:
+        return None
+    return {"pts": pts, **_load_forces(el), **_variation_coeffs(el, 3)}
+
+
+# Champs propres a chaque type de charge ; None = objet sans geometrie exploitable, ignore
+_LOAD_FIELDS = {
+    "punctual": _punctual_load_fields,
+    "linear": _linear_load_fields,
+    "planar": _planar_load_fields,
+}
+
+
+def _loads_payload(kind: str, ids: list, elements: list, lc_by_eid: dict) -> dict:
+    """Charges d'un type (``punctual``, ``linear`` ou ``planar``) et leurs cas, dans
+    l'ordre d'apparition. Sans appel API : les libelles des cas sont fournis."""
+    loads = []
+    cases = {}
+    for el in elements if ids else []:
+        fields = _LOAD_FIELDS[kind](el) if isinstance(el, dict) else None
+        if fields is None:
             continue
-        pt = el.get("geomPt") or {}
-        if not pt:
-            continue
-        try:
-            x = float(pt.get("x", 0.0))
-            y = float(pt.get("y", 0.0))
-            z = float(pt.get("z", 0.0))
-        except (TypeError, ValueError):
-            continue
-
-        fx = _get_element_float(el, "fx") / 1000.0   # N -> kN
-        fy = _get_element_float(el, "fy") / 1000.0
-        fz = _get_element_float(el, "fz") / 1000.0
-
-        # Moments — l'API retourne un sous-dict {"mx": ..., "my": ..., "mz": ...}
-        # sous la cle "moment", mais peut aussi les exposer a plat selon la version.
-        moment_dict = el.get("moment") or {}
-        mx = _get_moment_float(el, moment_dict, "mx") / 1000.0
-        my = _get_moment_float(el, moment_dict, "my") / 1000.0
-        mz = _get_moment_float(el, moment_dict, "mz") / 1000.0
-
-        # Identifiant utilisateur
-        user_id = el.get("userID") or el.get("userId") or el.get("userid")
-
-        # Cas de charge
-        lc_ref = el.get("loadCase") or {}
-        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
-        lc_eid_int = None
-        lc_label = ""
-        if lc_eid is not None:
-            try:
-                lc_eid_int = int(lc_eid)
-                lc_label = lc_by_eid.get(lc_eid_int, str(lc_eid_int))
-                if lc_eid_int not in seen_lc_eids:
-                    seen_lc_eids[lc_eid_int] = lc_label
-            except (TypeError, ValueError):
-                pass
-
-        punctual_loads.append({
-            "pos": (x, y, z),
-            "fx": fx,
-            "fy": fy,
-            "fz": fz,
-            "mx": mx,
-            "my": my,
-            "mz": mz,
-            "user_id": user_id,
-            "load_case_eid": lc_eid_int,
-            "load_case_label": lc_label,
+        case_eid = _load_case_eid(el)
+        label = "" if case_eid is None else lc_by_eid.get(case_eid, str(case_eid))
+        if case_eid is not None:
+            cases.setdefault(case_eid, label)
+        loads.append({
+            **fields,
+            "user_id": el.get("userID") or el.get("userId") or el.get("userid"),
+            "load_case_eid": case_eid,
+            "load_case_label": label,
         })
-
-    # Cas de charge uniques, dans l'ordre d'apparition
-    punctual_load_cases = [
-        {"eid": eid, "label": label}
-        for eid, label in seen_lc_eids.items()
-    ]
-
     return {
-        "punctual_loads": punctual_loads,
-        "punctual_load_cases": punctual_load_cases,
-        "punctual_load_ids_count": len(punctual_load_ids),
-        "punctual_load_count": len(punctual_loads),
+        f"{kind}_loads": loads,
+        f"{kind}_load_cases": [{"eid": eid, "label": label} for eid, label in cases.items()],
+        f"{kind}_load_ids_count": len(ids),
+        f"{kind}_load_count": len(loads),
     }
 
 
-def _build_linear_loads_payload(host: str, ids_data: dict, objects_data: dict) -> dict:
-    """Construit la liste des charges linéaires avec résolution des cas de charge.
-
-    Retourne un dict avec :
-    - ``linear_loads``      : liste de dicts par charge (points, forces, moments, variation, cas)
-    - ``linear_load_cases`` : liste de dicts {eid, label} — cas uniques triés
-    - ``linear_load_ids_count`` / ``linear_load_count`` : compteurs
-    """
-    linear_load_ids = list(ids_data.get("linear_load_ids", []) or [])
-    linear_load_elements = list(objects_data.get("linear_load_elements", []) or [])
-
-    if not linear_load_ids or not linear_load_elements:
-        return {
-            "linear_loads": [],
-            "linear_load_cases": [],
-            "linear_load_ids_count": len(linear_load_ids),
-            "linear_load_count": 0,
-        }
-
-    lc_by_eid = _resolve_load_case_labels(host, linear_load_elements)
-
-    # Construire la liste des charges linéaires
-    linear_loads = []
-    seen_lc_eids = {}
-    for el in linear_load_elements:
-        if not isinstance(el, dict):
-            continue
-        pt1 = el.get("geomPtStart") or {}
-        pt2 = el.get("geomPtEnd") or {}
-        if not pt1 or not pt2:
-            continue
-        try:
-            x1 = float(pt1.get("x", 0.0))
-            y1 = float(pt1.get("y", 0.0))
-            z1 = float(pt1.get("z", 0.0))
-            x2 = float(pt2.get("x", 0.0))
-            y2 = float(pt2.get("y", 0.0))
-            z2 = float(pt2.get("z", 0.0))
-        except (TypeError, ValueError):
-            continue
-
-        # Forces (N/m -> kN/m)
-        fx = _get_element_float(el, "fx") / 1000.0
-        fy = _get_element_float(el, "fy") / 1000.0
-        fz = _get_element_float(el, "fz") / 1000.0
-
-        # Moments (N.m/m -> kN.m/m) — sous-dict "moment"
-        moment_dict = el.get("moment") or {}
-        mx = _get_moment_float(el, moment_dict, "mx") / 1000.0
-        my = _get_moment_float(el, moment_dict, "my") / 1000.0
-        mz = _get_moment_float(el, moment_dict, "mz") / 1000.0
-
-        # Variation (coefficients de début et fin)
-        variation = el.get("variation")
-        if isinstance(variation, dict):
-            coeff1 = float(variation.get("coefficient1") if variation.get("coefficient1") is not None else 1.0)
-            coeff2 = float(variation.get("coefficient2") if variation.get("coefficient2") is not None else 1.0)
-        else:
-            coeff1 = 1.0
-            coeff2 = 1.0
-
-        # Identifiant utilisateur
-        user_id = el.get("userID") or el.get("userId") or el.get("userid")
-
-        # Cas de charge
-        lc_ref = el.get("loadCase") or {}
-        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
-        lc_eid_int = None
-        lc_label = ""
-        if lc_eid is not None:
-            try:
-                lc_eid_int = int(lc_eid)
-                lc_label = lc_by_eid.get(lc_eid_int, str(lc_eid_int))
-                if lc_eid_int not in seen_lc_eids:
-                    seen_lc_eids[lc_eid_int] = lc_label
-            except (TypeError, ValueError):
-                pass
-
-        linear_loads.append({
-            "pt_start": (x1, y1, z1),
-            "pt_end": (x2, y2, z2),
-            "fx": fx,
-            "fy": fy,
-            "fz": fz,
-            "mx": mx,
-            "my": my,
-            "mz": mz,
-            "coeff1": coeff1,
-            "coeff2": coeff2,
-            "user_id": user_id,
-            "load_case_eid": lc_eid_int,
-            "load_case_label": lc_label,
-        })
-
-    linear_load_cases = [
-        {"eid": eid, "label": label}
-        for eid, label in seen_lc_eids.items()
-    ]
-
-    return {
-        "linear_loads": linear_loads,
-        "linear_load_cases": linear_load_cases,
-        "linear_load_ids_count": len(linear_load_ids),
-        "linear_load_count": len(linear_loads),
-    }
-
-
-def _build_planar_loads_payload(host: str, ids_data: dict, objects_data: dict) -> dict:
-    """Construit la liste des charges surfaciques avec resolution des cas de charge.
-
-    Retourne un dict avec :
-    - ``planar_loads``      : liste de dicts par charge (points, forces, variation, cas)
-    - ``planar_load_cases`` : liste de dicts {eid, label} - cas uniques
-    - ``planar_load_ids_count`` / ``planar_load_count`` : compteurs
-    """
-    planar_load_ids = list(ids_data.get("planar_load_ids", []) or [])
-    planar_load_elements = list(objects_data.get("planar_load_elements", []) or [])
-
-    if not planar_load_ids or not planar_load_elements:
-        return {
-            "planar_loads": [],
-            "planar_load_cases": [],
-            "planar_load_ids_count": len(planar_load_ids),
-            "planar_load_count": 0,
-        }
-
-    lc_by_eid = _resolve_load_case_labels(host, planar_load_elements)
-
-    # Construire la liste des charges surfaciques
-    planar_loads = []
-    seen_lc_eids = {}
-    for el in planar_load_elements:
-        if not isinstance(el, dict):
-            continue
-
-        # Points geometriques (polygone de la charge)
-        geom_pts_raw = el.get("geomPtsList") or []
-        pts = []
-        for pt in geom_pts_raw:
-            if not isinstance(pt, dict):
-                continue
-            try:
-                x = float(pt.get("x", 0.0))
-                y = float(pt.get("y", 0.0))
-                z = float(pt.get("z", 0.0))
-                pts.append((x, y, z))
-            except (TypeError, ValueError):
-                continue
-
-        if len(pts) < 3:
-            continue
-
-        # Forces (N/m2 -> kN/m2)
-        fx = _get_element_float(el, "fx") / 1000.0
-        fy = _get_element_float(el, "fy") / 1000.0
-        fz = _get_element_float(el, "fz") / 1000.0
-
-        # Variation (coefficients 1/2/3 pour les 3 premiers points)
-        variation = el.get("variation")
-        if isinstance(variation, dict):
-            coeff1 = float(variation.get("coefficient1") if variation.get("coefficient1") is not None else 1.0)
-            coeff2 = float(variation.get("coefficient2") if variation.get("coefficient2") is not None else 1.0)
-            coeff3 = float(variation.get("coefficient3") if variation.get("coefficient3") is not None else 1.0)
-        else:
-            coeff1 = 1.0
-            coeff2 = 1.0
-            coeff3 = 1.0
-
-        # Identifiant utilisateur
-        user_id = el.get("userID") or el.get("userId") or el.get("userid")
-
-        # Cas de charge
-        lc_ref = el.get("loadCase") or {}
-        lc_eid = lc_ref.get("value") if isinstance(lc_ref, dict) else lc_ref
-        lc_eid_int = None
-        lc_label = ""
-        if lc_eid is not None:
-            try:
-                lc_eid_int = int(lc_eid)
-                lc_label = lc_by_eid.get(lc_eid_int, str(lc_eid_int))
-                if lc_eid_int not in seen_lc_eids:
-                    seen_lc_eids[lc_eid_int] = lc_label
-            except (TypeError, ValueError):
-                pass
-
-        planar_loads.append({
-            "pts": pts,
-            "fx": fx,
-            "fy": fy,
-            "fz": fz,
-            "coeff1": coeff1,
-            "coeff2": coeff2,
-            "coeff3": coeff3,
-            "user_id": user_id,
-            "load_case_eid": lc_eid_int,
-            "load_case_label": lc_label,
-        })
-
-    planar_load_cases = [
-        {"eid": eid, "label": label}
-        for eid, label in seen_lc_eids.items()
-    ]
-
-    return {
-        "planar_loads": planar_loads,
-        "planar_load_cases": planar_load_cases,
-        "planar_load_ids_count": len(planar_load_ids),
-        "planar_load_count": len(planar_loads),
-    }
+def _build_loads_payload(kind: str, host: str, ids_data: dict, objects_data: dict) -> dict:
+    """Lit les charges d'un type : libelles des cas via l'API, puis _loads_payload."""
+    ids = list(ids_data.get(f"{kind}_load_ids", []) or [])
+    elements = list(objects_data.get(f"{kind}_load_elements", []) or [])
+    lc_by_eid = _resolve_load_case_labels(host, elements) if ids and elements else {}
+    return _loads_payload(kind, ids, elements, lc_by_eid)
 
 
 def recompute_unit_dependent_fields(cache: dict) -> dict:
@@ -2892,13 +2669,13 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         geometry_payload = _build_geometry_payload(ids_data, objects_data, refs_data)
 
         progress(80, tr_ui("progress_read_punctual_loads"))
-        punctual_loads_payload = _build_punctual_loads_payload(host, ids_data, objects_data)
+        punctual_loads_payload = _build_loads_payload("punctual", host, ids_data, objects_data)
 
         progress(84, tr_ui("progress_read_linear_loads"))
-        linear_loads_payload = _build_linear_loads_payload(host, ids_data, objects_data)
+        linear_loads_payload = _build_loads_payload("linear", host, ids_data, objects_data)
 
         progress(86, tr_ui("progress_read_planar_loads"))
-        planar_loads_payload = _build_planar_loads_payload(host, ids_data, objects_data)
+        planar_loads_payload = _build_loads_payload("planar", host, ids_data, objects_data)
 
         progress(87, tr_ui("progress_read_systems"))
         system_ids = get_informational_ids(host, "StructuralSystem")

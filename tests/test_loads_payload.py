@@ -31,8 +31,8 @@ def _fake_api(monkeypatch):
 
 
 def _payload(kind, elements):
-    builder = getattr(amd, f"_build_{kind}_loads_payload")
-    return builder("http://h", {f"{kind}_load_ids": list(range(len(elements)))}, {f"{kind}_load_elements": elements})
+    return amd._build_loads_payload(
+        kind, "http://h", {f"{kind}_load_ids": list(range(len(elements)))}, {f"{kind}_load_elements": elements})
 
 
 def test_load_case_labels_use_user_id_then_name_with_fallbacks():
@@ -58,11 +58,13 @@ def test_load_case_labels_do_not_call_the_api_without_cases(_fake_api):
 
 @pytest.mark.parametrize("kind", ["punctual", "linear", "planar"])
 def test_no_ids_or_no_elements_gives_an_empty_payload(kind):
-    builder = getattr(amd, f"_build_{kind}_loads_payload")
-    assert builder("h", {f"{kind}_load_ids": [1, 2]}, {f"{kind}_load_elements": []}) == {
+    def builder(ids_data, objects_data):
+        return amd._build_loads_payload(kind, "h", ids_data, objects_data)
+
+    assert builder({f"{kind}_load_ids": [1, 2]}, {f"{kind}_load_elements": []}) == {
         f"{kind}_loads": [], f"{kind}_load_cases": [], f"{kind}_load_ids_count": 2, f"{kind}_load_count": 0,
     }
-    assert builder("h", {}, {f"{kind}_load_elements": [{}]})[f"{kind}_load_ids_count"] == 0
+    assert builder({}, {f"{kind}_load_elements": [{}]})[f"{kind}_load_ids_count"] == 0
 
 
 def test_punctual_loads():
