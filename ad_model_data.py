@@ -1967,6 +1967,18 @@ def _build_loads_payload(kind: str, host: str, ids_data: dict, objects_data: dic
     return _loads_payload(kind, ids, elements, lc_by_eid)
 
 
+def _has_segment(el: dict) -> bool:
+    return bool(el.get("geomPtStart") and el.get("geomPtEnd"))
+
+
+def _has_point(el: dict) -> bool:
+    return bool(el.get("geomPt"))
+
+
+def _has_polygon(el: dict) -> bool:
+    return len(el.get("geomPtsList") or []) >= 3
+
+
 def recompute_unit_dependent_fields(cache: dict) -> dict:
     """Recalcule les listes Proprietes + Metre qui dependent des unites
     d'affichage, a partir des objets bruts mis en cache par
@@ -1975,57 +1987,38 @@ def recompute_unit_dependent_fields(cache: dict) -> dict:
     pour que les listes restent alignees avec lines / planars / *_eids.
     """
     cache = cache or {}
-    linear_elements = list(cache.get("linear_elements") or [])
-    planar_elements = list(cache.get("planar_elements") or [])
-    load_area_elements = list(cache.get("load_area_elements") or [])
-    punctual_support_elements = list(cache.get("punctual_support_elements") or [])
-    linear_support_elements = list(cache.get("linear_support_elements") or [])
-    planar_support_elements = list(cache.get("planar_support_elements") or [])
-    planar_ids = list(cache.get("planar_ids") or [])
-    punctual_support_ids = list(cache.get("punctual_support_ids") or [])
-    linear_support_ids = list(cache.get("linear_support_ids") or [])
-    planar_support_ids = list(cache.get("planar_support_ids") or [])
-    lm = dict(cache.get("linear_material_by_eid") or {})
-    ls = dict(cache.get("linear_section_by_eid") or {})
-    pm = dict(cache.get("planar_material_by_eid") or {})
 
-    line_properties = []
-    for el in linear_elements:
-        if el.get("geomPtStart") and el.get("geomPtEnd"):
-            line_properties.append(extract_linear_element_properties(el, lm, ls))
+    def cached(key, default=list):
+        return default(cache.get(key) or default())
 
-    planar_properties = []
-    for _eid, el in zip(planar_ids, planar_elements):
-        if extract_planar_geometry(el):
-            planar_properties.append(extract_planar_element_properties(el, pm))
-
-    load_area_properties = []
-    for el in load_area_elements:
-        if extract_load_area_geometry(el):
-            load_area_properties.append(extract_load_area_properties(el))
-
-    punctual_support_properties = []
-    for _eid, el in zip(punctual_support_ids, punctual_support_elements):
-        if el.get("geomPt"):
-            punctual_support_properties.append(extract_punctual_support_properties(el))
-
-    linear_support_properties = []
-    for _eid, el in zip(linear_support_ids, linear_support_elements):
-        if el.get("geomPtStart") and el.get("geomPtEnd"):
-            linear_support_properties.append(extract_linear_support_properties(el))
-
-    planar_support_properties = []
-    for _eid, el in zip(planar_support_ids, planar_support_elements):
-        if len(el.get("geomPtsList") or []) >= 3:
-            planar_support_properties.append(extract_planar_support_properties(el))
-
+    lm = cached("linear_material_by_eid", dict)
+    ls = cached("linear_section_by_eid", dict)
+    pm = cached("planar_material_by_eid", dict)
+    linear_elements = cached("linear_elements")
+    planar_elements = cached("planar_elements")
+    load_area_elements = cached("load_area_elements")
+    # (cle produite, objets, cle des ids a aligner par zip ou None, filtre, extraction)
+    rules = (
+        ("line_properties", linear_elements, None, _has_segment,
+         lambda el: extract_linear_element_properties(el, lm, ls)),
+        ("planar_properties", planar_elements, "planar_ids", extract_planar_geometry,
+         lambda el: extract_planar_element_properties(el, pm)),
+        ("load_area_properties", load_area_elements, None, extract_load_area_geometry,
+         extract_load_area_properties),
+        ("punctual_support_properties", cached("punctual_support_elements"), "punctual_support_ids",
+         _has_point, extract_punctual_support_properties),
+        ("linear_support_properties", cached("linear_support_elements"), "linear_support_ids",
+         _has_segment, extract_linear_support_properties),
+        ("planar_support_properties", cached("planar_support_elements"), "planar_support_ids",
+         _has_polygon, extract_planar_support_properties),
+    )
+    fields = {}
+    for key, elements, ids_key, accept, extract in rules:
+        if ids_key is not None:
+            elements = elements[:len(cached(ids_key))]   # meme troncature que zip(ids, elements)
+        fields[key] = [extract(el) for el in elements if accept(el)]
     return {
-        "line_properties": line_properties,
-        "planar_properties": planar_properties,
-        "load_area_properties": load_area_properties,
-        "punctual_support_properties": punctual_support_properties,
-        "linear_support_properties": linear_support_properties,
-        "planar_support_properties": planar_support_properties,
+        **fields,
         "linear_takeoff": _build_linear_takeoff(linear_elements, ls),
         "linear_material_takeoff": _build_linear_material_takeoff(linear_elements, lm),
         "planar_takeoff": _build_planar_takeoff(planar_elements),
