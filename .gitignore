@@ -19,3 +19,4 @@ target/
 # Exception : ignorer tous les fichiers cachés sauf .gitignore
 .*
 !.gitignore
+!.gitattributes
