@@ -167,3 +167,45 @@ def test_isolated_load_indexes_keep_existing_loads_of_visible_cases():
     loads = [{"load_case_eid": 1}, {"load_case_eid": 2}]
     assert _isolated_load_indexes([1, 0, 5, -1], loads, None) == [1, 0]
     assert _isolated_load_indexes([1, 0], loads, {2}) == [1]
+
+
+def _filter_viewer():
+    w = VTKViewerWidget.__new__(VTKViewerWidget)
+    w._model_data = {
+        "line_properties": [{"section": "IPE 200", "material": "S235"}, {"section": "HEA 100", "material": "S235"},
+                            {"material": "S355"}, None],
+        "planar_properties": [{"thickness": "0.2", "material": "C25"}, {"thickness": "0.3", "material": "C25"}, {}],
+    }
+    w._filter_section_names = w._filter_thickness_names = w._filter_material_names = None
+    w._isolated_selection = []
+    w._hidden_items = set()
+    return w
+
+
+def test_section_thickness_and_material_filters():
+    w = _filter_viewer()
+    assert w._filtered_line_indexes() == [0, 1, 2, 3]
+    w._filter_section_names = {"IPE 200", "N/A"}
+    assert w._filtered_line_indexes() == [0, 2, 3]
+    w._filter_material_names = {"S235", "C25"}
+    assert w._filtered_line_indexes() == [0]
+    assert w._filtered_planar_indexes() == [0, 1]
+    w._filter_thickness_names = {"0.3", "N/A"}
+    w._filter_material_names = None
+    assert w._filtered_planar_indexes() == [1, 2]
+    w._hidden_items = {("planars", 2), ("lines", 0)}
+    assert w._filtered_planar_indexes() == [1]
+    assert w._filtered_line_indexes() == [2, 3]
+
+
+def test_isolation_ignores_filters_and_accepts_role_aliases():
+    w = _filter_viewer()
+    w._filter_section_names = {"rien"}
+    w._isolated_selection = [{"role": "element_linear", "index": 2}, {"role": "line", "index": 0},
+                             {"role": "lines", "index": 9}, {"role": "planar", "index": 1}]
+    assert w._filtered_line_indexes() == [0, 2]
+    assert w._filtered_planar_indexes() == [1]
+    w._isolated_selection = [{"role": "support_punctual", "index": 0}]
+    assert w._filtered_line_indexes() == [] and w._filtered_planar_indexes() == []
+    w._model_data["line_properties"] = []
+    assert w._filtered_line_indexes() == []
