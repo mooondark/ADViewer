@@ -8,13 +8,13 @@
 - Correction : une charge ponctuelle sans position valide est ignorée au lieu de faire échouer le chargement du modèle.
 - Correction : l'excentrement des tubes rectangulaires et ronds, des ronds pleins et des T dissymétriques est appliqué dans la vue 3D et l'export IFC (ils restaient centrés).
 - Correction : les résultats des appuis ponctuels (déplacements, efforts, contraintes) s'affichent aussi avec l'interface en anglais (ils restaient vides).
-- Qualité du code : lecture des charges et des sections, recalcul des unités, liste des résultats et vue 3D (visibilité, sélection, diagrammes) simplifiés et couverts par des tests, doublons supprimés ; script `scripts/metrics.sh` (couverture et scores CRAP).
+- Qualité du code : lecture des charges et des sections, recalcul des unités, liste des résultats et vue 3D (visibilité, sélection, diagrammes) simplifiés et couverts par des tests, doublons supprimés ; tests ajoutés pour l'API, l'export IFC, le contrôle modèle, la boîte de coupe, la minicarte, le mode Navigation et les interactions de la vue 3D ; script `scripts/metrics.sh` (couverture et scores CRAP).
 
 ### EN
 - Fix: a point load without a valid position is skipped instead of making the model load fail.
 - Fix: section eccentricity of rectangular and circular tubes, solid rounds and asymmetric T sections is applied in the 3D view and IFC export (they stayed centered).
 - Fix: point support results (displacements, forces, stresses) are shown with the English interface too (they stayed empty).
-- Code quality: load and section reading, unit recalculation, results list and 3D view (visibility, selection, diagrams) simplified and covered by tests, duplicates removed; `scripts/metrics.sh` script (coverage and CRAP scores).
+- Code quality: load and section reading, unit recalculation, results list and 3D view (visibility, selection, diagrams) simplified and covered by tests, duplicates removed; tests added for the API, IFC export, model check, clip box, minimap, Navigation mode and 3D view interactions; `scripts/metrics.sh` script (coverage and CRAP scores).
 
 ## 2.22
 
