@@ -277,3 +277,27 @@ def test_screenshot_is_written_at_the_exact_size_without_resizing_the_view(tmp_p
     reader.Update()
     assert reader.GetOutput().GetDimensions()[:2] == (64, 48)
     assert window.GetSize() == (200, 100) and window.HasRenderer(w.renderer)
+
+
+def test_clear_scene_empties_the_view_selection_filters_and_clip_box():
+    w = _scene()
+    w.render_window = None
+    events = []
+    w.clipBoxChanged = types.SimpleNamespace(emit=lambda active: events.append(("clip", active)))
+    w._update_view_overlay = lambda render=True: events.append(("overlay", render))
+    w._minimap = types.SimpleNamespace(clear_geometry=lambda: events.append("minimap"))
+    w._apply_visibility_state = lambda: events.append("visibility")
+    w._add_actor(_actor(), role="lines", pickable=True)
+    w._clip.activate([0, 1, 0, 1, 0, 1])
+    w._selected_items = [{"role": "lines", "index": 0}]
+    w._isolated_selection = [{"role": "lines", "index": 0}]
+    w._hidden_items = {("lines", 0)}
+    w._filter_section_names = {"IPE"}
+    w.lines_count = 3
+    w.clear_scene()
+    assert not w._clip.active and ("clip", False) in events
+    assert w.renderer.GetActors().GetNumberOfItems() == 0 and w._actors == [] and w._pickable_actors == {}
+    assert w._selected_items == [] and w._selected_item is None
+    assert w._isolated_selection == [] and w._hidden_items == set() and w._filter_section_names is None
+    assert w.lines_count == 0 and w._model_data["lines"] == [] and not w._has_model
+    assert events[-1] == "visibility" and "minimap" in events
