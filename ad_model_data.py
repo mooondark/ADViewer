@@ -185,40 +185,30 @@ def build_model_data(payload: dict) -> ModelDataDict:
     return data
 
 
+def _results_entry(kind: str, eid, obj, number_key: str, name_fallback: bool):
+    """Entree "numero : nom" de la liste Resultats, None si l'objet n'a ni numero ni nom."""
+    if not isinstance(obj, dict):
+        return None
+    number = obj.get(number_key)
+    has_number = number not in (None, "")
+    name = _get_username(obj)
+    if not has_number and not name:
+        return None
+    if not name and name_fallback:
+        name = str(obj.get("name") or "").strip()
+    left = str(number).strip() if has_number else str(eid)
+    return normalize_results_case_entry(kind, eid, f"{left} : {name or eid}")
+
+
 def _build_results_cases_combinations(load_case_ids: list, load_case_objects: list, combination_ids: list, combination_objects: list) -> list:
-    entries = []
-
-    for eid, obj in zip(load_case_ids or [], load_case_objects or []):
-        if not isinstance(obj, dict):
-            continue
-        user_id = obj.get("userID")
-        user_name = _get_username(obj)
-        if user_id in (None, "") and not user_name:
-            continue
-        label_left = str(user_id).strip() if user_id not in (None, "") else str(eid)
-        label_right = user_name or str(obj.get("name") or "").strip() or str(eid)
-        entries.append(normalize_results_case_entry(
-            "load_case",
-            eid,
-            f"{label_left} : {label_right}",
-        ))
-
-    for eid, obj in zip(combination_ids or [], combination_objects or []):
-        if not isinstance(obj, dict):
-            continue
-        comb_id = obj.get("idComb")
-        user_name = _get_username(obj)
-        if comb_id in (None, "") and not user_name:
-            continue
-        label_left = str(comb_id).strip() if comb_id not in (None, "") else str(eid)
-        label_right = user_name or str(eid)
-        entries.append(normalize_results_case_entry(
-            "combination",
-            eid,
-            f"{label_left} : {label_right}",
-        ))
-
-    return entries
+    entries = [
+        _results_entry("load_case", eid, obj, "userID", True)
+        for eid, obj in zip(load_case_ids or [], load_case_objects or [])
+    ] + [
+        _results_entry("combination", eid, obj, "idComb", False)
+        for eid, obj in zip(combination_ids or [], combination_objects or [])
+    ]
+    return [entry for entry in entries if entry is not None]
 
 
 def _has_non_empty_results_data(data) -> bool:

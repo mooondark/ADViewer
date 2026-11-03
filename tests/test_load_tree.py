@@ -174,3 +174,23 @@ def test_select_ignores_the_loads_of_unchecked_cases():
     _find(host.systems_tree, "6 - QB").setCheckState(0, Qt.Unchecked)
     items = host._tree_selection_items([_find(host.systems_tree, "Exploitations")])
     assert sorted((i["role"], i["index"]) for i in items) == [("linear_load", 0), ("punctual_load", 1)]
+
+
+def test_results_cases_and_combinations_entries():
+    from ad_model_data import _build_results_cases_combinations
+
+    entries = _build_results_cases_combinations(
+        [1, 2, 3, 4, 5],
+        [{"userID": 4, "userName": "G"}, {"userID": 5, "name": "QE"}, {"userName": "Sans numero"}, {}, "bruit"],
+        [10, 11, 12],
+        [{"idComb": "101", "userName": "ELU"}, {"idComb": 102, "name": "ignore"}, {"userName": "Env"}],
+    )
+    assert [(e["kind"], e["eid"], e["label"]) for e in entries] == [
+        ("load_case", 1, "4 : G"),
+        ("load_case", 2, "5 : QE"),
+        ("load_case", 3, "3 : Sans numero"),
+        ("combination", 10, "101 : ELU"),
+        ("combination", 11, "102 : 11"),
+        ("combination", 12, "12 : Env"),
+    ]
+    assert _build_results_cases_combinations(None, None, None, None) == []
