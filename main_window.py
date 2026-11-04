@@ -1585,6 +1585,9 @@ class MainWindow(QMainWindow):
             "minimap_size": "small" if (self.act_minimap_size_small is not None and self.act_minimap_size_small.isChecked()) else "large",
             "minimap_visible": "true" if (self.minimap_btn is not None and self.minimap_btn.isChecked()) else "false",
             "clip_box_margin_pct": str(self.viewer.get_clip_box_margin()),
+            "grid_visible": "false" if (getattr(self, "chk_grid", None) is not None and not self.chk_grid.isChecked()) else "true",
+            "grid_step_x": str(self.viewer.get_grid_step()[0]),
+            "grid_step_y": str(self.viewer.get_grid_step()[1]),
         }
         cfg["styles"] = {
             "linear_width": str(self.viewer.linear_line_width),
@@ -1744,6 +1747,14 @@ class MainWindow(QMainWindow):
             )
             try:
                 self.viewer.set_clip_box_margin(float(general.get("clip_box_margin_pct", self.viewer.get_clip_box_margin())))
+            except ValueError:
+                pass
+            self.chk_grid.setChecked(general.get("grid_visible", "true").strip().lower() == "true")
+            try:
+                self.viewer.set_grid_step(
+                    float(general.get("grid_step_x", self.viewer.get_grid_step()[0])),
+                    float(general.get("grid_step_y", self.viewer.get_grid_step()[1])),
+                )
             except ValueError:
                 pass
             self.apply_theme(loaded_theme)
@@ -2708,6 +2719,10 @@ class MainWindow(QMainWindow):
         act_clip_margin.triggered.connect(self.open_clip_margin_dialog)
         view3d_menu.addAction(act_clip_margin)
 
+        act_grid = QAction(tr_ui("menu_grid"), self)
+        act_grid.triggered.connect(self.open_grid_dialog)
+        view3d_menu.addAction(act_grid)
+
         # Sous-menu Minicarte
         minimap_menu = QMenu(tr_ui("menu_minimap"), self)
         settings_menu.addMenu(minimap_menu)
@@ -3124,6 +3139,11 @@ class MainWindow(QMainWindow):
         self.chk_marker.setChecked(True)
         self.chk_marker.toggled.connect(self.on_toggle_marker)
         action_card.layout.addWidget(self.chk_marker)
+
+        self.chk_grid = QCheckBox(tr_ui("show_grid"))
+        self.chk_grid.setChecked(True)
+        self.chk_grid.toggled.connect(self.on_toggle_grid)
+        action_card.layout.addWidget(self.chk_grid)
 
         self.chk_mesh = QCheckBox(tr_ui("show_mesh"))
         self.chk_mesh.setChecked(False)
@@ -6113,6 +6133,7 @@ class MainWindow(QMainWindow):
         self.chk_support_linear.setText(self._format_display_checkbox_text("show_support_linear", counts["support_linear"]))
         self.chk_support_planar.setText(self._format_display_checkbox_text("show_support_planar", counts["support_planar"]))
         self.chk_marker.setText(tr_ui("show_marker"))
+        self.chk_grid.setText(tr_ui("show_grid"))
         # chk_punctual_loads : libellé avec compteur
         if self.chk_punctual_loads is not None:
             n = counts.get("punctual_loads", 0)
@@ -6679,6 +6700,31 @@ class MainWindow(QMainWindow):
 
     def on_toggle_marker(self, checked: bool):
         self._toggle_visibility("set_show_marker", "show_marker_on", "show_marker_off", checked)
+
+    def on_toggle_grid(self, checked: bool):
+        self._toggle_visibility("set_show_grid", "show_grid_on", "show_grid_off", checked)
+        if not self._suspend_config_save:
+            self.save_config()
+
+    def open_grid_dialog(self):
+        dlg = QDialog(self)
+        dlg.setWindowTitle(tr_ui("grid_title"))
+        form = QFormLayout(dlg)
+        spins = []
+        for label_key, value in zip(("grid_step_x_label", "grid_step_y_label"), self.viewer.get_grid_step()):
+            spin = QDoubleSpinBox()
+            spin.setRange(0.1, 1000.0)
+            spin.setDecimals(2)
+            spin.setValue(value)
+            form.addRow(tr_ui(label_key), spin)
+            spins.append(spin)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        form.addRow(buttons)
+        if dlg.exec() == QDialog.Accepted:
+            self.viewer.set_grid_step(spins[0].value(), spins[1].value())
+            self.save_config()
 
     def on_toggle_mesh(self, checked: bool):
         if self.viewer:

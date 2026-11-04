@@ -26,6 +26,7 @@ def _viewer():
     w._filter_section_names = w._filter_thickness_names = w._filter_material_names = None
     w._isolated_selection = []
     w._hidden_items = set()
+    w._grid_base = None
     for kind, cases in (("punctual", [1, 2, 1]), ("linear", [2, 2]), ("planar", [1, 3])):
         setattr(w, f"_{kind}_load_data", [{"id": f"{kind}{i}", "load_case_eid": c} for i, c in enumerate(cases)])
         setattr(w, f"_{kind}_load_actors", [f"old-{kind}"])
@@ -179,6 +180,7 @@ def _filter_viewer():
     w._filter_section_names = w._filter_thickness_names = w._filter_material_names = None
     w._isolated_selection = []
     w._hidden_items = set()
+    w._grid_base = None
     return w
 
 

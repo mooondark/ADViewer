@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## À paraître
+
+### FR
+- Nouveau : grille horizontale sous le modèle (case « Afficher la grille » sous « Afficher repère », cochée par défaut), placée au Z le plus bas des éléments structuraux (fixe après l'ouverture du modèle), son étendue en X et Y suivant les éléments affichés (systèmes masqués, isolation, filtres) ; pas en X et Y réglables dans Réglages > Vue 3D > Grille (1 m par défaut), enregistrés dans `config.ini`.
+
+### EN
+- New: horizontal grid under the model ("Show grid" checkbox under "Show marker", checked by default), placed at the lowest Z of the structural elements (fixed once the model is open), its X and Y extent following the displayed elements (hidden systems, isolation, filters); X and Y steps set in Settings > 3D view > Grid (1 m by default), saved in `config.ini`.
+
 ## 2.23
 
 ### FR

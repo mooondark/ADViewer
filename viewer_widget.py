@@ -28,6 +28,7 @@ import scene_light as _scene_light
 import flight_navigation as _flight_nav
 import minimap as _minimap
 import clip_box as _clip_box
+import grid as _grid
 import model_check_view as _mcv
 from viewer_config import (
     LINEAR_LOAD_COLOR, LINEAR_LOAD_SCALE, LINEAR_LOAD_LINE_WIDTH,
@@ -696,6 +697,10 @@ class VTKViewerWidget(QFrame):
         self._show_support_linear = True
         self._show_support_planar = True
         self._show_marker = True
+        self._show_grid = True
+        self._grid_step = (1.0, 1.0)
+        self._grid_base = None
+        self._grid_actors = []
         self._show_mesh = False
         self._show_punctual_loads = False
         self._show_linear_loads = False
@@ -3049,9 +3054,11 @@ class VTKViewerWidget(QFrame):
         self.support_linear_count = 0
         self.support_planar_count = 0
 
-        for actor in list(self._actors):
+        for actor in list(self._actors) + self._grid_actors:
             self.renderer.RemoveActor(actor)
         self._actors = []
+        self._grid_actors = []
+        self._grid_base = None
         self._pickable_actors = {}
         self._selection_overlay_actors = []
         self._diagram_overlay_actors = []
@@ -3528,6 +3535,58 @@ class VTKViewerWidget(QFrame):
             else:
                 self.orientation_widget.SetEnabled(0)
         self.render_window.Render()
+
+    def _rebuild_grid(self):
+        for actor in self._grid_actors:
+            self.renderer.RemoveActor(actor)
+        self._grid_actors = []
+        if self._grid_base is not None:
+            for major, opacity, width in ((False, 0.35, 1.0), (True, 0.7, 1.5)):
+                mapper = vtk.vtkPolyDataMapper()
+                mapper.SetInputData(_grid.build_polydata(self._grid_base, *self._grid_step, major))
+                actor = vtk.vtkActor()
+                actor.SetMapper(mapper)
+                prop = actor.GetProperty()
+                prop.SetColor(0.5, 0.5, 0.5)
+                prop.SetOpacity(opacity)
+                prop.SetLineWidth(width)
+                prop.LightingOff()
+                actor.PickableOff()
+                actor.UseBoundsOff()  # hors cadrage camera
+                actor.SetVisibility(self._show_grid)
+                self.renderer.AddActor(actor)
+                self._grid_actors.append(actor)
+        if self.render_window is not None:
+            self.render_window.Render()
+
+    def _update_grid_extent(self, visible_data):
+        """Etendue XY de la grille sur les elements visibles (systemes, isolation, filtres) ;
+        le Z reste celui du modele entier (repere de hauteur)."""
+        if self._grid_base is None:
+            return
+        base = _grid.grid_base(visible_data, self._clip.margin_pct)
+        if base is None:
+            return
+        base["z"] = self._grid_base["z"]
+        self._grid_base = base
+        self._rebuild_grid()
+
+    def set_show_grid(self, visible: bool):
+        self._show_grid = bool(visible)
+        for actor in self._grid_actors:
+            actor.SetVisibility(self._show_grid)
+        if self.render_window is not None:
+            self.render_window.Render()
+
+    def get_show_grid(self) -> bool:
+        return self._show_grid
+
+    def set_grid_step(self, step_x: float, step_y: float):
+        self._grid_step = (max(_grid.MIN_STEP, float(step_x)), max(_grid.MIN_STEP, float(step_y)))
+        self._rebuild_grid()
+
+    def get_grid_step(self):
+        return self._grid_step
 
     def set_show_mesh(self, visible: bool):
         self._show_mesh = visible
@@ -4260,6 +4319,8 @@ class VTKViewerWidget(QFrame):
         self._minimap.clear_geometry()
         self._minimap.build_geometry()
         self._update_model_extent()
+        self._grid_base = _grid.grid_base(self._model_data, self._clip.margin_pct)
+        self._rebuild_grid()
         self.set_isometric_view()
 
     def _update_model_extent(self):
@@ -4509,6 +4570,11 @@ class VTKViewerWidget(QFrame):
         punctual_supports, punctual_support_indexes = visible["support_punctual"]
         linear_supports, linear_support_indexes = visible["support_linear"]
         planar_supports, planar_support_indexes = visible["support_planar"]
+        self._update_grid_extent({
+            "lines": filtered_lines, "planars": filtered_planars, "load_areas": load_areas,
+            "punctual_supports": punctual_supports, "linear_supports": linear_supports,
+            "planar_supports": planar_supports,
+        })
 
         self.lines_count = len(filtered_lines)
         self.planars_count = len(filtered_planars)

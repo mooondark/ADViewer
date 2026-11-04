@@ -156,6 +156,7 @@ def _scene():
     w = _viewer_stub()
     w._diagram_overlay_actors = []
     w._diagram_label_actors = []
+    w._grid_actors = []
     renders = []
     w.render_window = types.SimpleNamespace(Render=lambda: renders.append(1))
     w.renders = renders
