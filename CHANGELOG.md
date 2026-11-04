@@ -5,10 +5,14 @@
 ## À paraître
 
 ### FR
-- Nouveau : grille horizontale sous le modèle (case « Afficher la grille » sous « Afficher repère », cochée par défaut), placée au Z le plus bas des éléments structuraux (fixe après l'ouverture du modèle), son étendue en X et Y suivant les éléments affichés (systèmes masqués, isolation, filtres) ; pas en X et Y réglables dans Réglages > Vue 3D > Grille (1 m par défaut), enregistrés dans `config.ini`.
+- Nouveau : grille sous le modèle, avec case « Afficher la grille » et pas X/Y réglables (Réglages > Vue 3D > Grille).
+- Info-bulles et menus : coins arrondis et ombre.
+- Unités : « m² » et « cm² » affichés avec l'exposant.
 
 ### EN
-- New: horizontal grid under the model ("Show grid" checkbox under "Show marker", checked by default), placed at the lowest Z of the structural elements (fixed once the model is open), its X and Y extent following the displayed elements (hidden systems, isolation, filters); X and Y steps set in Settings > 3D view > Grid (1 m by default), saved in `config.ini`.
+- New: grid under the model, with a "Show grid" checkbox and X/Y steps (Settings > 3D view > Grid).
+- Tooltips and menus: rounded corners and shadow.
+- Units: "m²" and "cm²" shown with the superscript.
 
 ## 2.23
 

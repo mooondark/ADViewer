@@ -68,6 +68,7 @@ except ImportError:
 from viewer_config import *
 from viewer_config import _DARK_VTK_BG
 import viewer_config
+from popup_shadow import PopupShadowFilter
 
 # --- Wrapper pour synchroniser les globales de couleur mutables ---
 # _set_fallback_colors() utilise `global` pour réassigner BG, ACCENT, etc.
@@ -367,7 +368,7 @@ class UnitsDialog(QDialog):
             combo = QComboBox()
             combo.setView(QListView())
             for u in display_units.units_for(kind):
-                combo.addItem(u, u)
+                combo.addItem(display_units.label(u), u)
             idx = combo.findData(cur_unit)
             combo.setCurrentIndex(idx if idx >= 0 else 0)
 
@@ -2478,11 +2479,6 @@ class MainWindow(QMainWindow):
                 padding: 4px;
                 font-family: "Segoe UI";
                 font-size: 11px;
-            }}
-            QToolTip {{
-                padding: 6px 8px;
-                font-family: Segoe UI;
-                font-size: 10pt;
             }}
             QSplitter::handle {{
                 background: transparent;
@@ -6244,6 +6240,20 @@ class MainWindow(QMainWindow):
         self.app_ref.setStyleSheet(
             self.app_ref.styleSheet() +
             f"""
+            QMenu {{
+                margin: 10px;
+                border-radius: 8px;
+            }}
+            QToolTip {{
+                margin: 6px;
+                padding: 2px 4px;
+                border: 1px solid {BORDER};
+                border-radius: 8px;
+                background-color: {PANEL};
+                color: {FG};
+                font-family: Segoe UI;
+                font-size: 10pt;
+            }}
             QMenu::item {{
                 padding: -2px 12px -2px 8px;
                 min-height: 18px;
@@ -7537,6 +7547,8 @@ def install_qt_translators(app, language):
 def main():
     set_windows_app_user_model_id("graitec.viewer.desktop")
     app = QApplication(sys.argv)
+    popup_filter = PopupShadowFilter(app)
+    app.installEventFilter(popup_filter)
     app_icon = load_app_icon("cube.ico", "cube.png", "icon.ico", "icon.png")
     if not app_icon.isNull():
         app.setWindowIcon(app_icon)

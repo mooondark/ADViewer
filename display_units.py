@@ -73,9 +73,12 @@ def scale(kind):
     return _REGISTRY[kind]["units"][_state[kind]["unit"]]
 
 
+def label(unit_label):
+    return _DISPLAY_LABEL.get(unit_label, unit_label)
+
+
 def unit(kind):
-    u = _state[kind]["unit"]
-    return _DISPLAY_LABEL.get(u, u)
+    return label(_state[kind]["unit"])
 
 
 def decimals(kind):
