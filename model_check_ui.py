@@ -538,10 +538,9 @@ class ModelCheckController(QObject):
         self._gen = 0    # incremente par clear() : les resultats d'une detection perimee sont ignores
         self.act_run = self.act_report = self.act_toggle = self.act_clear = self.act_settings = None
 
-    # --- menu ---
-    def build_menu(self, menu_bar):
+    # --- actions (affichees dans le ruban) ---
+    def build_actions(self):
         w = self.window
-        menu = menu_bar.addMenu(tr_ui("mc_menu"))
         self.act_run = QAction(tr_ui("mc_action_run"), w)
         self.act_run.triggered.connect(self.run)
         self.act_report = QAction(tr_ui("mc_action_report"), w)
@@ -553,10 +552,6 @@ class ModelCheckController(QObject):
         self.act_clear.triggered.connect(self.clear)
         self.act_settings = QAction(tr_ui("mc_action_settings"), w)
         self.act_settings.triggered.connect(self.open_settings)
-        for act in (self.act_run, self.act_report, self.act_toggle, self.act_clear):
-            menu.addAction(act)
-        menu.addSeparator()
-        menu.addAction(self.act_settings)
         self.update_actions()
 
     def update_actions(self):

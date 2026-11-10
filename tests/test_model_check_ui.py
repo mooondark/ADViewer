@@ -118,7 +118,7 @@ def test_main_window_wires_the_controller_in_every_lifecycle_point():
 
     src = inspect.getsource(main_window.MainWindow)
     assert "self.model_check = ModelCheckController(self)" in src
-    assert "self.model_check.build_menu(menu_bar)" in src
+    assert "self.model_check.build_actions()" in src
     assert "self.model_check.on_selection(selection_list)" in src
     assert src.count("self.model_check.on_model_changed()") >= 2     # chargement + fermeture du projet
     assert "mc.SECTION" in src and "mc.Thresholds.from_section" in src

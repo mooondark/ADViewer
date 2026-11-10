@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Ruban QML (QQuickWidget) qui pilote des QAbstractButton existants."""
+"""Ruban QML (QQuickWidget) qui pilote des QAbstractButton, QSlider et QAction existants."""
 
 import os
 
 from PySide6.QtCore import QEvent, QObject, Property, Signal, Slot, QUrl
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QAction, QColor
 from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QSlider
@@ -34,9 +34,13 @@ class RibbonBridge(QObject):
             g_model = []
             for g_title, items in groups:
                 i_model = []
-                for label, btn in items:
+                for label, btn, *kind in items:
                     key = f"b{len(self._buttons)}"
                     self._buttons[key] = btn
+                    if isinstance(btn, QAction):
+                        btn.changed.connect(self.refresh)
+                        i_model.append({"id": key, "label": label, "check": bool(kind)})
+                        continue
                     btn.installEventFilter(self)
                     if isinstance(btn, QSlider):
                         btn.valueChanged.connect(self.refresh)
@@ -94,10 +98,11 @@ class RibbonBridge(QObject):
 
     @Slot(str)
     def trigger(self, key):
-        self._buttons[key].click()
+        btn = self._buttons[key]
+        btn.trigger() if isinstance(btn, QAction) else btn.click()
 
 
-def make_ribbon(spec, colors, parent=None, height=118):
+def make_ribbon(spec, colors, parent=None, height=124):
     widget = QQuickWidget(parent)
     bridge = RibbonBridge(spec, widget)
     bridge.set_colors(*colors)  # avant setSource : le QML lit theme des le chargement

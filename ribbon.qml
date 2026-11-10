@@ -58,16 +58,18 @@ Rectangle {
                                 delegate: Item {
                                     id: cell
                                     property bool isSlider: !!modelData.slider
-                                    width: isSlider ? 170 : Math.max(54, lbl.implicitWidth + 14)
-                                    height: 58
+                                    property bool isCheck: !!modelData.check
+                                    width: isSlider ? 170 : (isCheck ? chkText.implicitWidth + 44 : Math.max(54, Math.min(lblM.width, 70) + 14))
+                                    height: 64
+                                    TextMetrics { id: lblM; text: cell.isSlider || cell.isCheck ? "" : modelData.label; font.family: "Segoe UI"; font.pixelSize: 12 }
 
                                     // --- bouton ---
                                     Rectangle {
                                         id: btn
-                                        visible: !cell.isSlider
+                                        visible: !cell.isSlider && !cell.isCheck
                                         anchors.fill: parent
-                                        property bool on: cell.isSlider ? false : bridge.checked(modelData.id, bridge.rev)
-                                        property bool ok: cell.isSlider ? true : bridge.enabled(modelData.id, bridge.rev)
+                                        property bool on: cell.isSlider || cell.isCheck ? false : bridge.checked(modelData.id, bridge.rev)
+                                        property bool ok: cell.isSlider || cell.isCheck ? true : bridge.enabled(modelData.id, bridge.rev)
                                         radius: 8
                                         opacity: ok ? 1 : 0.35
                                         color: on ? th.active : (ma.containsMouse && ok ? th.hover : "transparent")
@@ -77,13 +79,16 @@ Rectangle {
                                             width: 28; height: 28
                                             sourceSize: Qt.size(56, 56)
                                             smooth: true
-                                            source: cell.isSlider ? "" : "image://ribbon/" + modelData.id + "?" + bridge.rev
+                                            source: cell.isSlider || cell.isCheck ? "" : "image://ribbon/" + modelData.id + "?" + bridge.rev
                                         }
                                         Text {
                                             id: lbl
                                             anchors.horizontalCenter: parent.horizontalCenter
-                                            y: 38
-                                            text: cell.isSlider ? "" : modelData.label
+                                            y: 36
+                                            width: Math.min(lblM.width, 70)
+                                            wrapMode: Text.WordWrap
+                                            horizontalAlignment: Text.AlignHCenter
+                                            text: cell.isSlider || cell.isCheck ? "" : modelData.label
                                             font.family: "Segoe UI"; font.pixelSize: 12
                                             color: btn.on ? th.accent : th.fg
                                         }
@@ -91,12 +96,47 @@ Rectangle {
                                             id: ma
                                             anchors.fill: parent
                                             hoverEnabled: true
-                                            enabled: btn.ok && !cell.isSlider
+                                            enabled: btn.ok && !cell.isSlider && !cell.isCheck
                                             onClicked: bridge.trigger(modelData.id)
                                         }
                                         ToolTip.visible: ma.containsMouse
                                         ToolTip.delay: 600
-                                        ToolTip.text: cell.isSlider ? "" : bridge.tip(modelData.id, bridge.rev)
+                                        ToolTip.text: cell.isSlider || cell.isCheck ? "" : bridge.tip(modelData.id, bridge.rev)
+                                    }
+
+                                    // --- case a cocher ---
+                                    Rectangle {
+                                        id: chk
+                                        visible: cell.isCheck
+                                        property bool on: cell.isCheck ? bridge.checked(modelData.id, bridge.rev) : false
+                                        property bool ok: cell.isCheck ? bridge.enabled(modelData.id, bridge.rev) : true
+                                        y: 14
+                                        width: parent.width; height: 32
+                                        radius: 8
+                                        opacity: ok ? 1 : 0.35
+                                        color: chkMa.containsMouse && ok ? th.hover : "transparent"
+                                        Rectangle {
+                                            x: 8; anchors.verticalCenter: parent.verticalCenter
+                                            width: 18; height: 18; radius: 4
+                                            color: chk.on ? th.accent : "transparent"
+                                            border.color: chk.on ? th.accent : th.dim
+                                            border.width: 1.5
+                                            Text { anchors.centerIn: parent; visible: chk.on; text: "✓"; color: "white"; font.pixelSize: 13; font.bold: true }
+                                        }
+                                        Text {
+                                            id: chkText
+                                            x: 34; anchors.verticalCenter: parent.verticalCenter
+                                            text: cell.isCheck ? modelData.label : ""
+                                            font.family: "Segoe UI"; font.pixelSize: 12
+                                            color: th.fg
+                                        }
+                                        MouseArea {
+                                            id: chkMa
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            enabled: chk.ok
+                                            onClicked: bridge.trigger(modelData.id)
+                                        }
                                     }
 
                                     // --- slider ---

@@ -70,6 +70,7 @@ from viewer_config import _DARK_VTK_BG
 import viewer_config
 from popup_shadow import PopupShadowFilter
 from ribbon import make_ribbon
+from PySide6.QtSvg import QSvgRenderer
 
 # --- Wrapper pour synchroniser les globales de couleur mutables ---
 # _set_fallback_colors() utilise `global` pour réassigner BG, ACCENT, etc.
@@ -2339,6 +2340,98 @@ class MainWindow(QMainWindow):
             'CjxwYXRoIGQ9Ik03IDIySDRWMTkiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUi'
             'IHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
         ),
+        "model_check_run": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMS41IDEyLjVM'
+            'NS41NzU3NCAxNi41NzU3QzUuODEwMDUgMTYuODEwMSA2LjE4OTk1IDE2LjgxMDEg'
+            'Ni40MjQyNiAxNi41NzU3TDkgMTQiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdp'
+            'ZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTYg'
+            'N0wxMiAxMSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ry'
+            'b2tlLWxpbmVjYXA9InJvdW5kIi8+CjxwYXRoIGQ9Ik03IDEyTDExLjU3NTcgMTYu'
+            'NTc1N0MxMS44MTAxIDE2LjgxMDEgMTIuMTg5OSAxNi44MTAxIDEyLjQyNDMgMTYu'
+            'NTc1N0wyMiA3IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBz'
+            'dHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+'
+        ),
+        "model_check_report": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNyAxOEgxMC41'
+            'SDE0IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2Ut'
+            'bGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGgg'
+            'ZD0iTTcgMTRINy41SDgiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIx'
+            'LjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3Vu'
+            'ZCIvPgo8cGF0aCBkPSJNNyAxMEg4LjVIMTAiIHN0cm9rZT0iIzAwMDAwMCIgc3Ry'
+            'b2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxp'
+            'bmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNNyAyTDE2LjUgMkwyMSA2LjVWMTki'
+            'IHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5l'
+            'Y2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJN'
+            'MyAyMC41VjYuNUMzIDUuNjcxNTcgMy42NzE1NyA1IDQuNSA1SDE0LjI1MTVDMTQu'
+            'NDEwNiA1IDE0LjU2MzIgNS4wNjMyMSAxNC42NzU3IDUuMTc1NzRMMTcuODI0MyA4'
+            'LjMyNDI2QzE3LjkzNjggOC40MzY3OSAxOCA4LjU4OTQgMTggOC43NDg1M1YyMC41'
+            'QzE4IDIxLjMyODQgMTcuMzI4NCAyMiAxNi41IDIySDQuNUMzLjY3MTU3IDIyIDMg'
+            'MjEuMzI4NCAzIDIwLjVaIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0i'
+            'MS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91'
+            'bmQiLz4KPHBhdGggZD0iTTE0IDguNFY1LjM1MzU1QzE0IDUuMTU4MjkgMTQuMTU4'
+            'MyA1IDE0LjM1MzYgNUMxNC40NDczIDUgMTQuNTM3MiA1LjAzNzI1IDE0LjYwMzYg'
+            'NS4xMDM1NUwxNy44OTY0IDguMzk2NDVDMTcuOTYyOCA4LjQ2Mjc1IDE4IDguNTUy'
+            'NjggMTggOC42NDY0NUMxOCA4Ljg0MTcxIDE3Ljg0MTcgOSAxNy42NDY0IDlIMTQu'
+            'NkMxNC4yNjg2IDkgMTQgOC43MzEzNyAxNCA4LjRaIiBmaWxsPSIjMDAwMDAwIiBz'
+            'dHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNh'
+            'cD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+        ),
+        "model_check_clear": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMi44NzEzMiAy'
+            'MS4xMjEzTDQuOTkyNjQgMTlNNy4xMTM5NiAxNi44Nzg3TDQuOTkyNjQgMTlNNC45'
+            'OTI2NCAxOUwyLjg3MTMyIDE2Ljg3ODdNNC45OTI2NCAxOUw3LjExMzk2IDIxLjEy'
+            'MTMiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1s'
+            'aW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBk'
+            'PSJNNyAyTDE2LjUgMkwyMSA2LjVWMTkiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tl'
+            'LXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVq'
+            'b2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTEgMjJIMTYuNUMxNy4zMjg0IDIyIDE4'
+            'IDIxLjMyODQgMTggMjAuNVY4Ljc0ODUzQzE4IDguNTg5NCAxNy45MzY4IDguNDM2'
+            'NzkgMTcuODI0MyA4LjMyNDI2TDE0LjY3NTcgNS4xNzU3NEMxNC41NjMyIDUuMDYz'
+            'MjEgMTQuNDEwNiA1IDE0LjI1MTUgNUg0LjVDMy42NzE1NyA1IDMgNS42NzE1NyAz'
+            'IDYuNVYxMyIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ry'
+            'b2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjxw'
+            'YXRoIGQ9Ik0xNCA4LjRWNS4zNTM1NUMxNCA1LjE1ODI5IDE0LjE1ODMgNSAxNC4z'
+            'NTM2IDVDMTQuNDQ3MyA1IDE0LjUzNzIgNS4wMzcyNSAxNC42MDM2IDUuMTAzNTVM'
+            'MTcuODk2NCA4LjM5NjQ1QzE3Ljk2MjggOC40NjI3NSAxOCA4LjU1MjY4IDE4IDgu'
+            'NjQ2NDVDMTggOC44NDE3MSAxNy44NDE3IDkgMTcuNjQ2NCA5SDE0LjZDMTQuMjY4'
+            'NiA5IDE0IDguNzMxMzcgMTQgOC40WiIgZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIj'
+            'MDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5k'
+            'IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg=='
+        ),
+        "model_check_settings": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTIgMTVDMTMu'
+            'NjU2OSAxNSAxNSAxMy42NTY5IDE1IDEyQzE1IDEwLjM0MzEgMTMuNjU2OSA5IDEy'
+            'IDlDMTAuMzQzMSA5IDkgMTAuMzQzMSA5IDEyQzkgMTMuNjU2OSAxMC4zNDMxIDE1'
+            'IDEyIDE1WiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ry'
+            'b2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjxw'
+            'YXRoIGQ9Ik0xOS42MjI0IDEwLjM5NTRMMTguNTI0NyA3Ljc0NDhMMjAgNkwxOCA0'
+            'TDE2LjI2NDcgNS40ODI5NUwxMy41NTc4IDQuMzY5NzRMMTIuOTM1MyAySDEwLjk4'
+            'MUwxMC4zNDkxIDQuNDAxMTNMNy43MDQ0MSA1LjUxNTk2TDYgNEw0IDZMNS40NTMz'
+            'NyA3Ljc4ODg1TDQuMzcyNSAxMC40NDYzTDIgMTFWMTNMNC40MDExMSAxMy42NTU1'
+            'TDUuNTE1NzUgMTYuMjk5N0w0IDE4TDYgMjBMNy43OTExNiAxOC41NDAzTDEwLjM5'
+            'NyAxOS42MTIzTDExIDIySDEzTDEzLjYwNDUgMTkuNjEzMkwxNi4yNTUxIDE4LjUx'
+            'NTVDMTYuNjk2OSAxOC44MzEzIDE4IDIwIDE4IDIwTDIwIDE4TDE4LjUxNTkgMTYu'
+            'MjQ5NEwxOS42MTM5IDEzLjU5OEwyMS45OTk5IDEyLjk3NzJMMjIgMTFMMTkuNjIy'
+            'NCAxMC4zOTU0WiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIg'
+            'c3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+'
+            'Cjwvc3ZnPg=='
+        ),
     }
 
     def _make_view_icon(self, kind: str) -> QIcon:
@@ -2766,8 +2859,6 @@ class MainWindow(QMainWindow):
         act_api_url.triggered.connect(self.open_api_url_dialog)
         configuration_menu.addAction(act_api_url)
 
-        self.model_check.build_menu(menu_bar)
-
         # ── Menu Aide ──
         help_menu = menu_bar.addMenu(tr_ui("menu_help"))
 
@@ -2868,6 +2959,9 @@ class MainWindow(QMainWindow):
     def _build_ribbon(self):
         # Les boutons existants restent la source de verite (caches) ; le ruban QML les pilote.
         r = lambda key: tr_ui(key)
+        mc = self.model_check
+        self.model_check.build_actions()
+        self._refresh_model_check_icons()
         spec = [
             (r("ribbon_tab_view"), [
                 (r("ribbon_group_zoom"), [
@@ -2909,18 +3003,49 @@ class MainWindow(QMainWindow):
                     (r("ribbon_calc"), self.calc_btn),
                 ]),
             ]),
+            (r("ribbon_tab_check"), [
+                (r("ribbon_group_detection"), [
+                    (r("mc_action_run"), mc.act_run),
+                    (r("mc_ribbon_report"), mc.act_report),
+                    (r("mc_ribbon_clear"), mc.act_clear),
+                    (r("mc_ribbon_settings"), mc.act_settings),
+                ]),
+                (r("ribbon_group_display"), [
+                    (r("mc_ribbon_toggle"), mc.act_toggle, "check"),
+                ]),
+            ]),
         ]
         for _t, groups in spec:
             for _g, items in groups:
-                for _l, btn in items:
-                    btn.setParent(self)
-                    btn.hide()
+                for item in items:
+                    if not isinstance(item[1], QAction):
+                        item[1].setParent(self)
+                        item[1].hide()
         for lbl in (self.transparency_value_label, self.profiles_transparency_value_label):
             lbl.setParent(self)
             lbl.hide()
         self.ribbon = make_ribbon(spec, self._ribbon_colors(), self)
         self._root_layout.insertWidget(0, self.ribbon)
         self._refresh_ribbon_theme()
+
+    def _file_svg_icon(self, name: str) -> QIcon:
+        import base64
+        data = base64.b64decode("".join(self._SVG_VECTOR_DATA[name]))
+        if self.theme_name == "dark":
+            data = data.replace(b"#000000", b"#ffffff")
+        pm = QPixmap(64, 64)
+        pm.fill(Qt.transparent)
+        painter = QPainter(pm)
+        QSvgRenderer(data).render(painter)
+        painter.end()
+        return QIcon(pm)
+
+    def _refresh_model_check_icons(self):
+        mc = self.model_check
+        for act, name in ((mc.act_run, "run"), (mc.act_report, "report"),
+                          (mc.act_clear, "clear"), (mc.act_settings, "settings")):
+            if act is not None:
+                act.setIcon(self._file_svg_icon(f"model_check_{name}"))
 
     def _ribbon_colors(self):
         panel = "#dde4ee" if self.theme_name == "light" else PANEL
@@ -6343,6 +6468,7 @@ class MainWindow(QMainWindow):
         # Re-apply our custom tweaks on top
         self._apply_style()
         self._refresh_toolbar_icons()
+        self._refresh_model_check_icons()
         self._refresh_ribbon_theme()
 
         if self.transparency_value_label is not None:
