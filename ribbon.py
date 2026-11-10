@@ -78,7 +78,8 @@ class RibbonBridge(QObject):
 
     @Slot(str, int, result=bool)
     def checked(self, key, rev):
-        return self._buttons[key].isChecked()
+        btn = self._buttons[key]
+        return btn.isChecked() or bool(btn.property("stateActive"))
 
     @Slot(str, int, result=bool)
     def enabled(self, key, rev):

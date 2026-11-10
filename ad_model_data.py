@@ -2638,7 +2638,7 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
         fem_nodes: list = []
         fem_by_eid: dict = {}
         if has_analysis_results:
-            progress(71, tr_ui("progress_read_fem_mesh"))
+            progress(71, tr_log("progress_read_fem_mesh"))
             linear_ids = [int(eid) for eid in (ids_data.get("linear_ids") or []) if eid is not None]
             planar_ids = [int(eid) for eid in (ids_data.get("planar_ids") or []) if eid is not None]
             all_element_eids = linear_ids + planar_ids

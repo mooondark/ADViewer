@@ -2478,6 +2478,41 @@ class MainWindow(QMainWindow):
             'cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2Fw'
             'PSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
         ),
+        "file_open": (
+            'PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmlld0JveD0iMCAwIDI0IDI0'
+            'IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmci'
+            'PgogIDxwYXRoIGQ9Ik0yMCAyMUgzYTEgMSAwIDAgMS0xLTFWNGExIDEgMCAwIDEg'
+            'MS0xaDQuNzM0YTEgMSAwIDAgMSAuODU3LjQ4Nkw5LjgxIDUuNTE0YTEgMSAwIDAg'
+            'MCAuODU3LjQ4NkgyMGExIDEgMCAwIDEgMSAxdjMiIHN0cm9rZT0iIzAwMDAwMCIg'
+            'c3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0ibTQuNzk5IDEwLjcz'
+            'Ny0yLjQ1NSA5QTEgMSAwIDAgMCAzLjMxIDIxaDE1LjkyN2ExIDEgMCAwIDAgLjk2'
+            'NS0uNzM3bDIuNDU0LTlBMSAxIDAgMCAwIDIxLjY5MiAxMEg1Ljc2NGExIDEgMCAw'
+            'IDAtLjk2NS43MzdaIiBzdHJva2U9IiMwMDAwMDAiLz4KPC9zdmc+'
+        ),
+        "file_close": (
+            'PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmlld0JveD0iMCAwIDI0IDI0'
+            'IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmci'
+            'PgogIDxwYXRoIGQ9Ik0yIDIwVjRhMSAxIDAgMCAxIDEtMWg1LjQ0OGExIDEgMCAw'
+            'IDEgLjg0Ni40NjdsMS4zIDIuMDY2YTEgMSAwIDAgMCAuODQ3LjQ2N0gyMWExIDEg'
+            'MCAwIDEgMSAxdjEzYTEgMSAwIDAgMS0xIDFIM2ExIDEgMCAwIDEtMS0xWiIgc3Ry'
+            'b2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8cGF0aCBkPSJtMTQu'
+            'NSAxNi01LTVtMCA1IDUtNSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9'
+            'IjEiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4='
+        ),
+        "export_ifc": (
+            'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9'
+            'IjAgMCAzNjAgMzYwIiB3aWR0aD0iMzYwIiBoZWlnaHQ9IjM2MCIgZmlsbD0ibm9u'
+            'ZSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGlu'
+            'ZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogIDxnIHRyYW5z'
+            'Zm9ybT0idHJhbnNsYXRlKDM3IC0xKSI+CiAgICA8cGF0aCBkPSJNNDIgMTI0VjUw'
+            'YTE4IDE4IDAgMCAxIDE4LTE4aDE2N2ExOCAxOCAwIDAgMSAxOCAxOHY3NE00MiAy'
+            'MDZ2MTA2YTE4IDE4IDAgMCAwIDE4IDE4aDE2N2ExOCAxOCAwIDAgMCAxOC0xOFYy'
+            'MDZNNjUgNjVoODFNNjUgOThoMTU5Ii8+CiAgICA8cmVjdCB4PSIzMCIgeT0iMTI0'
+            'IiB3aWR0aD0iMjI2IiBoZWlnaHQ9IjgyIiByeD0iMjAiLz4KICAgIDxwYXRoIGQ9'
+            'Ik03Ny43IDE0MXY0OG03MC00OGgtNDB2NDhtMC0yNGgzNG02Ni43LTE1YTI0IDI0'
+            'IDAgMSAwIDAgMzBNNjUgMjYzaDE1OU02NSAyOTdoODEiLz4KICA8L2c+Cjwvc3Zn'
+            'Pgo='
+        ),
     }
 
     def _make_view_icon(self, kind: str) -> QIcon:
@@ -2558,7 +2593,6 @@ class MainWindow(QMainWindow):
             (self.camera_btn,      "camera"),
             (self.invert_btn,      "inverse"),
             (self.scene_light_btn, "light_bulb"),
-            (self.browse_fto_btn,  "parcourir"),
             (self.clear_log_btn,   "effacer"),
             (self.load_btn,        "charger_modele"),
         ]
@@ -2756,29 +2790,6 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
         menu_bar.clear()
 
-        # ── Menu Fichier ──
-        file_menu = menu_bar.addMenu(tr_ui("menu_file"))
-
-        act_open = QAction(tr_ui("menu_open"), self)
-        act_open.setShortcut("Ctrl+O")
-        act_open.triggered.connect(self.browse_fto)
-        file_menu.addAction(act_open)
-
-        act_close = QAction(tr_ui("menu_close"), self)
-        act_close.triggered.connect(self.close_current_project)
-        file_menu.addAction(act_close)
-
-        act_export_ifc = QAction(tr_ui("menu_export_ifc"), self)
-        act_export_ifc.triggered.connect(self.export_ifc_from_viewer)
-        file_menu.addAction(act_export_ifc)
-
-        file_menu.addSeparator()
-
-        act_quit = QAction(tr_ui("menu_quit"), self)
-        act_quit.setShortcut("Ctrl+Q")
-        act_quit.triggered.connect(self.close)
-        file_menu.addAction(act_quit)
-
         # ── Menu Paramètres ──
         settings_menu = menu_bar.addMenu(tr_ui("menu_settings"))
 
@@ -2923,8 +2934,6 @@ class MainWindow(QMainWindow):
         return main_splitter
 
     def _build_project_card(self, left_layout):
-        file_card = Card(tr_ui("project"))
-
         self.host_edit = QLineEdit(self.api_host)
         self.host_edit.setVisible(False)
 
@@ -2943,20 +2952,7 @@ class MainWindow(QMainWindow):
         self._setup_view_button(self.api_restart_btn, "api_restart", tr_ui("restart_api"))
         self.api_restart_btn.clicked.connect(self._restart_api_server)
 
-        api_label = QLabel("API")
-        api_label.setStyleSheet("font-weight:bold;")
-
-        # Ligne 1 : API + On + Off + Restart
-        api_row = QHBoxLayout()
-        api_row.addWidget(api_label)
-        api_row.addSpacing(4)
-        api_row.addWidget(self.api_on_btn)
-        api_row.addWidget(self.api_off_btn)
-        api_row.addWidget(self.api_restart_btn)
-        api_row.addStretch(1)
-        file_card.layout.addLayout(api_row)
-
-        # Ligne 2 : chemin + parcourir + charger
+        # Chemin du fichier (champ cache, rempli par Parcourir) ; API, Parcourir et Charger sont dans le ruban
         self.fto_edit = QLineEdit()
         self.fto_edit.setPlaceholderText(tr_ui("project_file"))
 
@@ -2970,16 +2966,17 @@ class MainWindow(QMainWindow):
         self._setup_view_button(self.load_btn, "charger_modele", tr_ui("load_model"))
         self.load_btn.clicked.connect(self.load_model)
 
-        path_row = QHBoxLayout()
-        path_row.addWidget(self.fto_edit, 1)
-        path_row.addWidget(self.browse_fto_btn)
-        path_row.addWidget(self.load_btn)
-        file_card.layout.addLayout(path_row)
-
+        self.fto_edit.setParent(self)
+        self.fto_edit.hide()
         self.fto_edit.textChanged.connect(self._update_load_btn_state)
         self._update_load_btn_state()
 
-        left_layout.addWidget(file_card)
+    def _update_window_title(self):
+        title = f"{tr_ui('app_title')} - v{APP_VERSION}"
+        name = os.path.basename(self.fto_edit.text().strip().replace("\\", "/"))
+        if self.current_model_data is not None and name:
+            title += f" ({name})"
+        self.setWindowTitle(title)
 
     def _update_load_btn_state(self):
         if self.load_btn is not None and self.fto_edit is not None:
@@ -2991,6 +2988,13 @@ class MainWindow(QMainWindow):
         r = lambda key: tr_ui(key)
         mc = self.model_check
         self.model_check.build_actions()
+        self.act_close = QAction(tr_ui("menu_close"), self)
+        self.act_close.triggered.connect(self.close_current_project)
+        self.act_export_ifc = QAction(tr_ui("menu_export_ifc"), self)
+        self.act_export_ifc.triggered.connect(self.export_ifc_from_viewer)
+        # raccourcis de l'ancien menu Fichier
+        QShortcut(QKeySequence("Ctrl+O"), self, self.browse_fto)
+        QShortcut(QKeySequence("Ctrl+Q"), self, self.close)
         self.act_help_controls = QAction(tr_ui("menu_controls"), self)
         self.act_help_controls.setShortcut("F1")
         self.act_help_controls.setToolTip(f'{tr_ui("menu_controls")} (F1)')
@@ -3002,6 +3006,21 @@ class MainWindow(QMainWindow):
         self.act_help_about.triggered.connect(self.open_about_dialog)
         self._refresh_action_icons()
         spec = [
+            (r("ribbon_tab_home"), [
+                ("API", [
+                    (r("ribbon_api_start"), self.api_on_btn),
+                    (r("ribbon_api_stop"), self.api_off_btn),
+                    (r("ribbon_api_restart"), self.api_restart_btn),
+                ]),
+                (r("menu_file"), [
+                    (r("ribbon_browse"), self.browse_fto_btn),
+                    (r("load_model"), self.load_btn),
+                    (r("menu_close"), self.act_close),
+                ]),
+                (r("ribbon_group_export"), [
+                    (r("ribbon_ifc"), self.act_export_ifc),
+                ]),
+            ]),
             (r("ribbon_tab_view"), [
                 (r("ribbon_group_zoom"), [
                     (r("ribbon_fit"), self.fit_btn),
@@ -3090,6 +3109,9 @@ class MainWindow(QMainWindow):
         mc = self.model_check
         for act, name in ((mc.act_run, "model_check_run"), (mc.act_report, "model_check_report"),
                           (mc.act_clear, "model_check_clear"), (mc.act_settings, "model_check_settings"),
+                          (getattr(self, "browse_fto_btn", None), "file_open"),
+                          (getattr(self, "act_close", None), "file_close"),
+                          (getattr(self, "act_export_ifc", None), "export_ifc"),
                           (getattr(self, "act_help_controls", None), "help_controls"),
                           (getattr(self, "act_help_update", None), "help_update"),
                           (getattr(self, "act_help_about", None), "help_about")):
@@ -6447,6 +6469,8 @@ class MainWindow(QMainWindow):
             btn.style().unpolish(btn)
             btn.style().polish(btn)
         self._update_load_btn_state()
+        if getattr(self, "ribbon", None) is not None:
+            self.ribbon.bridge.refresh()  # icones attenuees et etat actif
 
     def apply_language(self, code: str) -> None:
         if code not in LANGUAGES:
@@ -7265,6 +7289,7 @@ class MainWindow(QMainWindow):
         self._close_project_session(tr_log("project_closed_by_user"))
 
         self.current_model_data = None
+        self._update_window_title()
         self.model_check.on_model_changed()
         self.current_sections = []
         self.current_thicknesses = []
@@ -7471,6 +7496,7 @@ class MainWindow(QMainWindow):
     def on_model_loaded(self, model_data: ModelDataDict):
         self.model_check.on_model_changed()
         self.current_model_data = model_data
+        self._update_window_title()
         self._sync_project_session_state(model_data)
         (self.current_sections, self.current_thicknesses, self.current_materials,
          self.current_section_counts, self.current_thickness_counts, self.current_material_counts) = self._extract_filter_choices(model_data)
