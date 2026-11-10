@@ -8,13 +8,13 @@
 - Nouveau : grille sous le modèle, avec case « Afficher la grille » et pas X/Y réglables (Réglages > Vue 3D > Grille).
 - Info-bulles et menus : coins arrondis et ombre.
 - Unités : « m² » et « cm² » affichés avec l'exposant.
-- Ruban en haut de la fenêtre (onglets Vue, Sélection, Outils, Contrôle) : les boutons de vue, de filtre et de sélection, les outils, les curseurs de transparence et le menu « Contrôle modèle » y sont regroupés ; la carte Actions et le menu « Contrôle modèle » sont allégés en conséquence.
+- Ruban en haut de la fenêtre (onglets Vue, Sélection, Outils, Contrôle, Aide) : les boutons de vue, de filtre et de sélection, les outils, les curseurs de transparence et les menus « Contrôle modèle » et « Aide » y sont regroupés.
 
 ### EN
 - New: grid under the model, with a "Show grid" checkbox and X/Y steps (Settings > 3D view > Grid).
 - Tooltips and menus: rounded corners and shadow.
 - Units: "m²" and "cm²" shown with the superscript.
-- Ribbon at the top of the window (View, Selection, Tools, Check tabs): the view, filter and selection buttons, the tools, the transparency sliders and the "Model check" menu are grouped there; the Actions card and the "Model check" menu are slimmed down accordingly.
+- Ribbon at the top of the window (View, Selection, Tools, Check, Help tabs): the view, filter and selection buttons, the tools, the transparency sliders and the "Model check" and "Help" menus are grouped there.
 
 ## 2.23
 

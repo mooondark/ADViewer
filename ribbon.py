@@ -102,7 +102,7 @@ class RibbonBridge(QObject):
         btn.trigger() if isinstance(btn, QAction) else btn.click()
 
 
-def make_ribbon(spec, colors, parent=None, height=124):
+def make_ribbon(spec, colors, parent=None, height=130):
     widget = QQuickWidget(parent)
     bridge = RibbonBridge(spec, widget)
     bridge.set_colors(*colors)  # avant setSource : le QML lit theme des le chargement

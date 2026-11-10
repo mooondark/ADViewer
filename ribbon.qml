@@ -59,8 +59,8 @@ Rectangle {
                                     id: cell
                                     property bool isSlider: !!modelData.slider
                                     property bool isCheck: !!modelData.check
-                                    width: isSlider ? 170 : (isCheck ? chkText.implicitWidth + 44 : Math.max(54, Math.min(lblM.width, 70) + 14))
-                                    height: 64
+                                    width: isSlider ? 170 : (isCheck ? chkText.implicitWidth + 44 : Math.max(54, Math.min(lblM.width, 80) + 14))
+                                    height: 70
                                     TextMetrics { id: lblM; text: cell.isSlider || cell.isCheck ? "" : modelData.label; font.family: "Segoe UI"; font.pixelSize: 12 }
 
                                     // --- bouton ---
@@ -85,7 +85,7 @@ Rectangle {
                                             id: lbl
                                             anchors.horizontalCenter: parent.horizontalCenter
                                             y: 36
-                                            width: Math.min(lblM.width, 70)
+                                            width: Math.min(lblM.width + 2, 80)
                                             wrapMode: Text.WordWrap
                                             horizontalAlignment: Text.AlignHCenter
                                             text: cell.isSlider || cell.isCheck ? "" : modelData.label

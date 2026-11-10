@@ -2432,6 +2432,52 @@ class MainWindow(QMainWindow):
             'c3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+'
             'Cjwvc3ZnPg=='
         ),
+        "help_controls": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMjAgMTBWMTRD'
+            'MjAgMTguNDE4MyAxNi40MTgzIDIyIDEyIDIyQzcuNTgxNzIgMjIgNCAxOC40MTgz'
+            'IDQgMTRWOUM0IDUuMTM0MDEgNy4xMzQwMSAyIDExIDJIMTJDMTYuNDE4MyAyIDIw'
+            'IDUuNTgxNzIgMjAgMTBaIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0i'
+            'MS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPHBhdGggZD0iTTEyIDJWOC40'
+            'QzEyIDguNzMxMzcgMTEuNzMxNCA5IDExLjQgOUg0IiBzdHJva2U9IiMwMDAwMDAi'
+            'IHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9z'
+            'dmc+'
+        ),
+        "help_update": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNOCAxOEwxMSAy'
+            'MUwxNiAxNiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ry'
+            'b2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjxw'
+            'YXRoIGQ9Ik0yMCAxNy42MDczQzIxLjQ5MzcgMTcuMDIyMSAyMyAxNS42ODg5IDIz'
+            'IDEzQzIzIDkgMTkuNjY2NyA4IDE4IDhDMTggNiAxOCAyIDEyIDJDNiAyIDYgNiA2'
+            'IDhDNC4zMzMzMyA4IDEgOSAxIDEzQzEgMTUuNjg4OSAyLjUwNjI4IDE3LjAyMjEg'
+            'NCAxNy42MDczIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBz'
+            'dHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4K'
+            'PC9zdmc+'
+        ),
+        "help_about": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTIgMjJDMTcu'
+            'NTIyOCAyMiAyMiAxNy41MjI4IDIyIDEyQzIyIDYuNDc3MTUgMTcuNTIyOCAyIDEy'
+            'IDJDNi40NzcxNSAyIDIgNi40NzcxNSAyIDEyQzIgMTcuNTIyOCA2LjQ3NzE1IDIy'
+            'IDEyIDIyWiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ry'
+            'b2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjxw'
+            'YXRoIGQ9Ik05IDlDOSA1LjQ5OTk3IDE0LjUgNS41IDE0LjUgOUMxNC41IDExLjUg'
+            'MTIgMTAuOTk5OSAxMiAxMy45OTk5IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13'
+            'aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9p'
+            'bj0icm91bmQiLz4KPHBhdGggZD0iTTEyIDE4LjAxTDEyLjAxIDE3Ljk5ODkiIHN0'
+            'cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2Fw'
+            'PSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
+        ),
     }
 
     def _make_view_icon(self, kind: str) -> QIcon:
@@ -2859,22 +2905,6 @@ class MainWindow(QMainWindow):
         act_api_url.triggered.connect(self.open_api_url_dialog)
         configuration_menu.addAction(act_api_url)
 
-        # ── Menu Aide ──
-        help_menu = menu_bar.addMenu(tr_ui("menu_help"))
-
-        act_controls = QAction(tr_ui("menu_controls"), self)
-        act_controls.setShortcut("F1")
-        act_controls.triggered.connect(self.open_controls_dialog)
-        help_menu.addAction(act_controls)
-
-        act_check_update = QAction(tr_ui("menu_check_update"), self)
-        act_check_update.triggered.connect(self.check_for_update_manual)
-        help_menu.addAction(act_check_update)
-
-        act_about = QAction(tr_ui("menu_about"), self)
-        act_about.triggered.connect(self.open_about_dialog)
-        help_menu.addAction(act_about)
-
         self.apply_view_projection(self.view_projection_mode, save=False)
 
     def _create_main_layout(self):
@@ -2961,7 +2991,16 @@ class MainWindow(QMainWindow):
         r = lambda key: tr_ui(key)
         mc = self.model_check
         self.model_check.build_actions()
-        self._refresh_model_check_icons()
+        self.act_help_controls = QAction(tr_ui("menu_controls"), self)
+        self.act_help_controls.setShortcut("F1")
+        self.act_help_controls.setToolTip(f'{tr_ui("menu_controls")} (F1)')
+        self.act_help_controls.triggered.connect(self.open_controls_dialog)
+        self.addAction(self.act_help_controls)  # garde le raccourci F1 actif sans menu
+        self.act_help_update = QAction(tr_ui("menu_check_update"), self)
+        self.act_help_update.triggered.connect(self.check_for_update_manual)
+        self.act_help_about = QAction(tr_ui("menu_about"), self)
+        self.act_help_about.triggered.connect(self.open_about_dialog)
+        self._refresh_action_icons()
         spec = [
             (r("ribbon_tab_view"), [
                 (r("ribbon_group_zoom"), [
@@ -3014,6 +3053,13 @@ class MainWindow(QMainWindow):
                     (r("mc_ribbon_toggle"), mc.act_toggle, "check"),
                 ]),
             ]),
+            (r("menu_help"), [
+                (r("menu_help"), [
+                    (r("menu_controls"), self.act_help_controls),
+                    (r("menu_check_update"), self.act_help_update),
+                    (r("menu_about"), self.act_help_about),
+                ]),
+            ]),
         ]
         for _t, groups in spec:
             for _g, items in groups:
@@ -3040,12 +3086,15 @@ class MainWindow(QMainWindow):
         painter.end()
         return QIcon(pm)
 
-    def _refresh_model_check_icons(self):
+    def _refresh_action_icons(self):
         mc = self.model_check
-        for act, name in ((mc.act_run, "run"), (mc.act_report, "report"),
-                          (mc.act_clear, "clear"), (mc.act_settings, "settings")):
+        for act, name in ((mc.act_run, "model_check_run"), (mc.act_report, "model_check_report"),
+                          (mc.act_clear, "model_check_clear"), (mc.act_settings, "model_check_settings"),
+                          (getattr(self, "act_help_controls", None), "help_controls"),
+                          (getattr(self, "act_help_update", None), "help_update"),
+                          (getattr(self, "act_help_about", None), "help_about")):
             if act is not None:
-                act.setIcon(self._file_svg_icon(f"model_check_{name}"))
+                act.setIcon(self._file_svg_icon(name))
 
     def _ribbon_colors(self):
         panel = "#dde4ee" if self.theme_name == "light" else PANEL
@@ -6468,7 +6517,7 @@ class MainWindow(QMainWindow):
         # Re-apply our custom tweaks on top
         self._apply_style()
         self._refresh_toolbar_icons()
-        self._refresh_model_check_icons()
+        self._refresh_action_icons()
         self._refresh_ribbon_theme()
 
         if self.transparency_value_label is not None:
