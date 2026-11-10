@@ -69,6 +69,7 @@ from viewer_config import *
 from viewer_config import _DARK_VTK_BG
 import viewer_config
 from popup_shadow import PopupShadowFilter
+from ribbon import make_ribbon
 
 # --- Wrapper pour synchroniser les globales de couleur mutables ---
 # _set_fallback_colors() utilise `global` pour réassigner BG, ACCENT, etc.
@@ -2797,6 +2798,7 @@ class MainWindow(QMainWindow):
         main_splitter.setHandleWidth(6)
         main_splitter.setChildrenCollapsible(False)
         root.addWidget(main_splitter, 1)
+        self._root_layout = root
         return main_splitter
 
     def _build_project_card(self, left_layout):
@@ -2862,6 +2864,74 @@ class MainWindow(QMainWindow):
         if self.load_btn is not None and self.fto_edit is not None:
             api_running = bool(self.api_server_process and self.api_server_process.poll() is None)
             self.load_btn.setEnabled(api_running and bool(self.fto_edit.text().strip()))
+
+    def _build_ribbon(self):
+        # Les boutons existants restent la source de verite (caches) ; le ruban QML les pilote.
+        r = lambda key: tr_ui(key)
+        spec = [
+            (r("ribbon_tab_view"), [
+                (r("ribbon_group_zoom"), [
+                    (r("ribbon_fit"), self.fit_btn),
+                    (r("ribbon_window"), self.zoom_window_btn),
+                ]),
+                (r("ribbon_group_views"), [
+                    (r("ribbon_front"), self.view_front_btn),
+                    (r("ribbon_left"), self.view_left_btn),
+                    (r("ribbon_top"), self.view_top_btn),
+                    (r("ribbon_iso"), self.view_iso_btn),
+                    (r("ribbon_flight"), self.flight_btn),
+                ]),
+                (r("ribbon_group_transparency"), [
+                    (r("transparency"), self.transparency_slider),
+                    (r("transparency_profiles"), self.profiles_transparency_slider),
+                ]),
+            ]),
+            (r("ribbon_tab_selection"), [
+                (r("ribbon_group_filter"), [
+                    (r("ribbon_filter"), self.filter_btn),
+                    (r("ribbon_clear_filter"), self.clear_filter_btn),
+                ]),
+                (r("ribbon_group_select"), [
+                    (r("ribbon_isolate"), self.isolate_btn),
+                    (r("ribbon_invert"), self.invert_btn),
+                    (r("ribbon_window"), self.window_select_btn),
+                ]),
+            ]),
+            (r("ribbon_tab_tools"), [
+                (r("ribbon_group_display"), [
+                    (r("ribbon_clip"), self.clip_btn),
+                    (r("ribbon_frame"), self.frame_btn),
+                    (r("ribbon_minimap"), self.minimap_btn),
+                    (r("ribbon_light"), self.scene_light_btn),
+                    (r("ribbon_camera"), self.camera_btn),
+                ]),
+                (r("ribbon_group_calc"), [
+                    (r("ribbon_calc"), self.calc_btn),
+                ]),
+            ]),
+        ]
+        for _t, groups in spec:
+            for _g, items in groups:
+                for _l, btn in items:
+                    btn.setParent(self)
+                    btn.hide()
+        for lbl in (self.transparency_value_label, self.profiles_transparency_value_label):
+            lbl.setParent(self)
+            lbl.hide()
+        self.ribbon = make_ribbon(spec, self._ribbon_colors(), self)
+        self._root_layout.insertWidget(0, self.ribbon)
+        self._refresh_ribbon_theme()
+
+    def _ribbon_colors(self):
+        panel = "#dde4ee" if self.theme_name == "light" else PANEL
+        return (panel, FG, FG_DIM, ACCENT, BORDER)
+
+    def _refresh_ribbon_theme(self):
+        ribbon = getattr(self, "ribbon", None)
+        if ribbon is None:
+            return
+        ribbon.setClearColor(self.palette().window().color())
+        ribbon.bridge.set_colors(*self._ribbon_colors())
 
     def _build_actions_card(self, left_layout):
         action_card = Card(tr_ui("actions"))
@@ -3030,15 +3100,6 @@ class MainWindow(QMainWindow):
         fit_row.addWidget(self.calc_btn)
         fit_row.addStretch(1)
 
-        action_card.layout.addLayout(fit_row)
-        action_card.layout.addLayout(views_row)
-        action_card.layout.addLayout(filter_row)
-        action_card.layout.addLayout(clip_row)
-
-        transparency_title = QLabel(tr_ui("transparency"))
-        transparency_title.setStyleSheet(f"color:{FG_DIM};")
-        action_card.layout.addWidget(transparency_title)
-
         transparency_row = QHBoxLayout()
         transparency_row.setContentsMargins(0, 0, 0, 0)
         transparency_row.setSpacing(4)
@@ -3057,11 +3118,6 @@ class MainWindow(QMainWindow):
 
         transparency_row.addWidget(self.transparency_slider, 1)
         transparency_row.addWidget(self.transparency_value_label)
-        action_card.layout.addLayout(transparency_row)
-
-        profiles_transparency_title = QLabel(tr_ui("transparency_profiles"))
-        profiles_transparency_title.setStyleSheet(f"color:{FG_DIM};")
-        action_card.layout.addWidget(profiles_transparency_title)
 
         profiles_transparency_row = QHBoxLayout()
         profiles_transparency_row.setContentsMargins(0, 0, 0, 0)
@@ -3081,7 +3137,8 @@ class MainWindow(QMainWindow):
 
         profiles_transparency_row.addWidget(self.profiles_transparency_slider, 1)
         profiles_transparency_row.addWidget(self.profiles_transparency_value_label)
-        action_card.layout.addLayout(profiles_transparency_row)
+
+        self._build_ribbon()
 
         display_title = QLabel(tr_ui("display"))
         display_title.setStyleSheet(f"color:{FG_DIM}; font-weight:bold;")
@@ -6286,6 +6343,7 @@ class MainWindow(QMainWindow):
         # Re-apply our custom tweaks on top
         self._apply_style()
         self._refresh_toolbar_icons()
+        self._refresh_ribbon_theme()
 
         if self.transparency_value_label is not None:
             self.transparency_value_label.setStyleSheet(f"color:{FG_DIM}; min-width:48px;")
