@@ -2,6 +2,14 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
+## À paraître
+
+### FR
+- Police : les textes de la vue 3D (informations, mode Navigation, étiquettes de diagrammes, repère) passent en Segoe UI, comme le reste de l'interface (Arial si la police est absente).
+
+### EN
+- Font: 3D view texts (information, Navigation mode, diagram labels, axes) now use Segoe UI like the rest of the interface (Arial if the font is missing).
+
 ## 2.24
 
 ### FR
@@ -11,7 +19,6 @@
 - Ruban en haut de la fenêtre (onglets Accueil, Vue, Sélection, Outils, Contrôle, Paramètres, Aide) : il remplace tous les menus (Fichier, Paramètres, Contrôle modèle, Aide), le volet Projet et les boutons de la carte Actions (curseurs de transparence inclus).
 - Démarrage de l'application en fenêtre maximisée.
 - Titre de la fenêtre : le nom du fichier .fto ouvert est affiché entre parenthèses.
-- Police : les textes de la vue 3D (informations, mode Navigation, étiquettes de diagrammes, repère) passent en Segoe UI, comme le reste de l'interface (Arial si la police est absente).
 - Correction : le message « Lecture du maillage FEM... » s'affichait sous forme de clé brute pendant le chargement.
 
 ### EN
@@ -21,7 +28,6 @@
 - Ribbon at the top of the window (Home, View, Selection, Tools, Check, Settings, Help tabs): it replaces all the menus (File, Settings, Model check, Help), the Project pane and the Actions card buttons (transparency sliders included).
 - The application starts maximized.
 - Window title: the name of the open .fto file is shown in parentheses.
-- Font: 3D view texts (information, Navigation mode, diagram labels, axes) now use Segoe UI like the rest of the interface (Arial if the font is missing).
 - Fix: the "Reading FEM mesh..." message was shown as a raw key while loading.
 
 ## 2.23
