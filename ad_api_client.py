@@ -214,13 +214,9 @@ class AdvanceDesignApiClient:
         nombre de round-trips de 4 à 1.
 
         Si la liste est vide, retourne [] sans appel réseau.
-        Si elle ne contient qu'un seul type, délègue à get_element_ids() pour
-        conserver le label d'erreur précis.
         """
         if not element_types:
             return []
-        if len(element_types) == 1:
-            return self.get_element_ids(element_types[0])
         payload = [
             {"$type": "QueryElementsModel", "elementType": et}
             for et in element_types

@@ -116,3 +116,14 @@ def test_close_requests_report_success_and_swallow_failures(posts, monkeypatch, 
 
     monkeypatch.setattr(ad_api_client.requests, "post", down)
     assert getattr(_client(), method)() is False
+
+
+def test_one_type_gives_the_same_request_as_get_element_ids(posts):
+    client = _client()
+    client.get_element_ids("BEAM")
+    client.get_element_ids_for_types(["BEAM"])
+    assert posts[0] == posts[1]
+
+
+def test_no_types_means_no_request(posts):
+    assert _client().get_element_ids_for_types([]) == [] and posts == []
