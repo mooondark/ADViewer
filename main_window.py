@@ -19,6 +19,7 @@ import urllib.parse
 import traceback
 import subprocess
 import configparser
+from functools import partial
 try:
     from openpyxl import Workbook
 except ImportError as e:
@@ -980,6 +981,27 @@ class Card(QFrame):
         self.setGraphicsEffect(shadow)
 
 
+def _pump_ui_events():
+    # la fenetre se redessine pendant l'attente ; clavier et souris sont ignores (pas de re-entrance)
+    QApplication.processEvents(QEventLoop.ExcludeUserInputEvents, 50)
+    QThread.msleep(20)
+
+
+def wait_for_api(host, timeout=20.0, interval=0.5, check=check_port, pump=_pump_ui_events) -> bool:
+    """Attend que l'API reponde : True des le premier succes, False apres `timeout` secondes."""
+    deadline = time.time() + timeout
+    next_check = 0.0
+    while time.time() < deadline:
+        if time.time() >= next_check:
+            try:
+                check(host)
+                return True
+            except Exception:
+                next_check = time.time() + interval
+        pump()
+    return False
+
+
 class UpdateCheckWorker(QThread):
     success = Signal(bool, str, str)
     error = Signal()
@@ -1569,12 +1591,12 @@ class MainWindow(QMainWindow):
         except Exception:
             return fallback
 
-    def save_config(self):
-        if self.viewer is None or self._suspend_config_save:
-            return
+    @staticmethod
+    def _is_checked(widget, default=False):
+        return default if widget is None else widget.isChecked()
 
-        cfg = configparser.ConfigParser()
-        cfg["general"] = {
+    def _config_general(self):
+        return {
             "theme": self.theme_name,
             "language": getattr(self, "_pending_language", None) or get_language(),
             "api_server_exe": self.api_server_exe,
@@ -1584,15 +1606,18 @@ class MainWindow(QMainWindow):
             "png_export_scale": str(self.png_export_scale),
             "png_export_mode": self.png_export_mode,
             "calc_ef_timeout": str(self.calc_ef_timeout),
-            "minimap_corner": "bottom_right" if (self.act_minimap_bottom_right is not None and self.act_minimap_bottom_right.isChecked()) else "bottom_left",
-            "minimap_size": "small" if (self.act_minimap_size_small is not None and self.act_minimap_size_small.isChecked()) else "large",
-            "minimap_visible": "true" if (self.minimap_btn is not None and self.minimap_btn.isChecked()) else "false",
+            "minimap_corner": "bottom_right" if self._is_checked(self.act_minimap_bottom_right) else "bottom_left",
+            "minimap_size": "small" if self._is_checked(self.act_minimap_size_small) else "large",
+            "minimap_visible": "true" if self._is_checked(self.minimap_btn) else "false",
             "clip_box_margin_pct": str(self.viewer.get_clip_box_margin()),
-            "grid_visible": "false" if (getattr(self, "chk_grid", None) is not None and not self.chk_grid.isChecked()) else "true",
+            "grid_visible": "true" if self._is_checked(getattr(self, "chk_grid", None), True) else "false",
             "grid_step_x": str(self.viewer.get_grid_step()[0]),
             "grid_step_y": str(self.viewer.get_grid_step()[1]),
         }
-        cfg["styles"] = {
+
+
+    def _config_styles(self):
+        return {
             "linear_width": str(self.viewer.linear_line_width),
             "planar_width": str(self.viewer.planar_line_width),
             "opening_width": str(self.viewer.opening_line_width),
@@ -1608,7 +1633,10 @@ class MainWindow(QMainWindow):
             "planar_load_line_width": str(self.viewer.planar_load_line_width),
             "clip_edge_width": str(self.viewer.get_clip_box_edge_width()),
         }
-        cfg["colors"] = {
+
+
+    def _config_colors(self):
+        return {
             "linear_color": self._format_color(self.viewer.linear_color),
             "planar_color": self._format_color(self.viewer.planar_color),
             "opening_color": self._format_color(self.viewer.opening_color),
@@ -1624,14 +1652,18 @@ class MainWindow(QMainWindow):
             "clip_box_color": self._format_color(self.viewer.get_clip_box_style()[0]),
             "clip_edge_color": self._format_color(self.viewer.get_clip_box_style()[1]),
         }
+
+    def save_config(self):
+        if self.viewer is None or self._suspend_config_save:
+            return
+
+        cfg = configparser.ConfigParser()
+        cfg["general"] = self._config_general()
+        cfg["styles"] = self._config_styles()
+        cfg["colors"] = self._config_colors()
         cfg[mc.SECTION] = self.model_check.thresholds.to_section()
         cfg["units"] = display_units.get_state_ini()
-
-        path = self._config_path()
-        tmp = path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            cfg.write(f)
-        os.replace(tmp, path)  # une coupure pendant l'ecriture ne laisse jamais un config.ini tronque
+        write_ini_atomic(cfg, self._config_path())
 
     def _load_or_create_config(self):
         path = self._config_path()
@@ -2977,92 +3009,59 @@ class MainWindow(QMainWindow):
         if save and not self._suspend_config_save:
             self.save_config()
 
+    # (attribut, cle de langue, methode) des reglages qui ouvrent un dialogue
+    _SETTINGS_DIALOG_ACTIONS = (
+        ("act_line_widths", "menu_styles", "open_settings_dialog"),
+        ("act_png_export", "menu_png_export", "open_png_export_dialog"),
+        ("act_units", "menu_units", "open_units_dialog"),
+        ("act_calc_ef", "menu_calc_ef", "open_calc_ef_dialog"),
+        ("act_scene_light", "menu_scene_light", "open_scene_light_dialog"),
+        ("act_clip_margin", "menu_clip_box", "open_clip_margin_dialog"),
+        ("act_grid", "menu_grid", "open_grid_dialog"),
+        ("act_api_server", "menu_api_server", "open_configuration_dialog"),
+        ("act_api_url", "menu_api_url", "open_api_url_dialog"),
+    )
+
+    def _make_radios(self, items):
+        """Groupe exclusif d'actions cochables ; `items` = (libelle, methode, valeur), appelee seulement quand l'action est cochee."""
+        group = QActionGroup(self)
+        group.setExclusive(True)
+        actions = []
+        for label, method, value in items:
+            act = QAction(label, self, checkable=True)
+            act.triggered.connect(lambda checked, m=method, v=value: checked and m(v))
+            group.addAction(act)
+            actions.append(act)
+        return actions
+
     def _build_settings_actions(self):
         # Actions de l'ancien menu Parametres ; affichees dans le ruban (onglet Parametres)
+        for attr, key, method in self._SETTINGS_DIALOG_ACTIONS:
+            act = QAction(tr_ui(key), self)
+            act.triggered.connect(getattr(self, method))
+            setattr(self, attr, act)
 
-        self.act_line_widths = QAction(tr_ui("menu_styles"), self)
-        self.act_line_widths.triggered.connect(self.open_settings_dialog)
-
-        self.act_png_export = QAction(tr_ui("menu_png_export"), self)
-        self.act_png_export.triggered.connect(self.open_png_export_dialog)
-
-        self.act_units = QAction(tr_ui("menu_units"), self)
-        self.act_units.triggered.connect(self.open_units_dialog)
-
-        self.act_calc_ef = QAction(tr_ui("menu_calc_ef"), self)
-        self.act_calc_ef.triggered.connect(self.open_calc_ef_dialog)
-
-        theme_group = QActionGroup(self)
-        theme_group.setExclusive(True)
-
-        self.act_theme_dark = QAction(tr_ui("theme_dark"), self, checkable=True)
-        self.act_theme_dark.triggered.connect(lambda checked: checked and self.apply_theme("dark"))
-        theme_group.addAction(self.act_theme_dark)
-
-        self.act_theme_light = QAction(tr_ui("theme_light"), self, checkable=True)
-        self.act_theme_light.triggered.connect(lambda checked: checked and self.apply_theme("light"))
-        theme_group.addAction(self.act_theme_light)
-
-        language_group = QActionGroup(self)
-        language_group.setExclusive(True)
-
-        self.act_languages = []
-        for code, (label, _module) in LANGUAGES.items():
-            act = QAction(label, self, checkable=True)
-            self.act_languages.append(act)
+        self.act_theme_dark, self.act_theme_light = self._make_radios([
+            (tr_ui("theme_dark"), self.apply_theme, "dark"),
+            (tr_ui("theme_light"), self.apply_theme, "light"),
+        ])
+        self.act_languages = self._make_radios([(label, self.apply_language, code) for code, (label, _m) in LANGUAGES.items()])
+        for act, code in zip(self.act_languages, LANGUAGES):
             act.setChecked(code == get_language())
-            act.triggered.connect(lambda checked, c=code: checked and self.apply_language(c))
-            language_group.addAction(act)
-
-        projection_group = QActionGroup(self)
-        projection_group.setExclusive(True)
-
-        self.act_view_projection_perspective = QAction(tr_ui("view_projection_perspective"), self, checkable=True)
-        self.act_view_projection_perspective.triggered.connect(lambda checked: checked and self.apply_view_projection("perspective"))
-        projection_group.addAction(self.act_view_projection_perspective)
-
-        self.act_view_projection_orthogonal = QAction(tr_ui("view_projection_orthogonal"), self, checkable=True)
-        self.act_view_projection_orthogonal.triggered.connect(lambda checked: checked and self.apply_view_projection("orthogonal"))
-        projection_group.addAction(self.act_view_projection_orthogonal)
-
-        self.act_scene_light = QAction(tr_ui("menu_scene_light"), self)
-        self.act_scene_light.triggered.connect(self.open_scene_light_dialog)
-
-        self.act_clip_margin = QAction(tr_ui("menu_clip_box"), self)
-        self.act_clip_margin.triggered.connect(self.open_clip_margin_dialog)
-
-        self.act_grid = QAction(tr_ui("menu_grid"), self)
-        self.act_grid.triggered.connect(self.open_grid_dialog)
-
-        minimap_group = QActionGroup(self)
-        minimap_group.setExclusive(True)
-
-        self.act_minimap_bottom_left = QAction(tr_ui("minimap_position_bottom_left"), self, checkable=True)
+        self.act_view_projection_perspective, self.act_view_projection_orthogonal = self._make_radios([
+            (tr_ui("view_projection_perspective"), self.apply_view_projection, "perspective"),
+            (tr_ui("view_projection_orthogonal"), self.apply_view_projection, "orthogonal"),
+        ])
+        self.act_minimap_bottom_left, self.act_minimap_bottom_right = self._make_radios([
+            (tr_ui("minimap_position_bottom_left"), self.apply_minimap_corner, "bottom_left"),
+            (tr_ui("minimap_position_bottom_right"), self.apply_minimap_corner, "bottom_right"),
+        ])
         self.act_minimap_bottom_left.setChecked(True)
-        self.act_minimap_bottom_left.triggered.connect(lambda checked: checked and self.apply_minimap_corner("bottom_left"))
-        minimap_group.addAction(self.act_minimap_bottom_left)
-
-        self.act_minimap_bottom_right = QAction(tr_ui("minimap_position_bottom_right"), self, checkable=True)
-        self.act_minimap_bottom_right.triggered.connect(lambda checked: checked and self.apply_minimap_corner("bottom_right"))
-        minimap_group.addAction(self.act_minimap_bottom_right)
-
-        minimap_size_group = QActionGroup(self)
-        minimap_size_group.setExclusive(True)
-
-        self.act_minimap_size_large = QAction(tr_ui("minimap_size_large"), self, checkable=True)
+        self.act_minimap_size_large, self.act_minimap_size_small = self._make_radios([
+            (tr_ui("minimap_size_large"), self.apply_minimap_size, "large"),
+            (tr_ui("minimap_size_small"), self.apply_minimap_size, "small"),
+        ])
         self.act_minimap_size_large.setChecked(True)
-        self.act_minimap_size_large.triggered.connect(lambda checked: checked and self.apply_minimap_size("large"))
-        minimap_size_group.addAction(self.act_minimap_size_large)
-
-        self.act_minimap_size_small = QAction(tr_ui("minimap_size_small"), self, checkable=True)
-        self.act_minimap_size_small.triggered.connect(lambda checked: checked and self.apply_minimap_size("small"))
-        minimap_size_group.addAction(self.act_minimap_size_small)
-
-        self.act_api_server = QAction(tr_ui("menu_api_server"), self)
-        self.act_api_server.triggered.connect(self.open_configuration_dialog)
-
-        self.act_api_url = QAction(tr_ui("menu_api_url"), self)
-        self.act_api_url.triggered.connect(self.open_api_url_dialog)
 
     def _build_menu(self):
         self.menuBar().hide()  # plus de menu : tout est dans le ruban
@@ -3593,19 +3592,19 @@ class MainWindow(QMainWindow):
         self.chk_punctual_loads = QCheckBox(tr_ui("show_punctual_loads"))
         self.chk_punctual_loads.setChecked(False)
         self.chk_punctual_loads.setEnabled(False)
-        self.chk_punctual_loads.toggled.connect(self.on_toggle_punctual_loads)
+        self.chk_punctual_loads.toggled.connect(partial(self._toggle_loads, "punctual"))
         action_card.layout.addWidget(self.chk_punctual_loads)
 
         self.chk_linear_loads = QCheckBox(tr_ui("show_linear_loads"))
         self.chk_linear_loads.setChecked(False)
         self.chk_linear_loads.setEnabled(False)
-        self.chk_linear_loads.toggled.connect(self.on_toggle_linear_loads)
+        self.chk_linear_loads.toggled.connect(partial(self._toggle_loads, "linear"))
         action_card.layout.addWidget(self.chk_linear_loads)
 
         self.chk_planar_loads = QCheckBox(tr_ui("show_planar_loads"))
         self.chk_planar_loads.setChecked(False)
         self.chk_planar_loads.setEnabled(False)
-        self.chk_planar_loads.toggled.connect(self.on_toggle_planar_loads)
+        self.chk_planar_loads.toggled.connect(partial(self._toggle_loads, "planar"))
         action_card.layout.addWidget(self.chk_planar_loads)
 
         self.chk_color_by_section = QCheckBox(tr_ui("color_by_section"))
@@ -4180,7 +4179,7 @@ class MainWindow(QMainWindow):
         self.spin_punctual_load_scale.setSingleStep(0.1)
         self.spin_punctual_load_scale.setValue(1.0)
         self.spin_punctual_load_scale.setEnabled(False)
-        self.spin_punctual_load_scale.valueChanged.connect(self._on_punctual_load_scale_changed)
+        self.spin_punctual_load_scale.valueChanged.connect(partial(self._set_load_scale, "punctual"))
         scale_row.addWidget(self.spin_punctual_load_scale)
         scale_row.addStretch(1)
         layout.addLayout(scale_row)
@@ -4208,7 +4207,7 @@ class MainWindow(QMainWindow):
         self.spin_linear_load_scale.setSingleStep(0.1)
         self.spin_linear_load_scale.setValue(1.0)
         self.spin_linear_load_scale.setEnabled(False)
-        self.spin_linear_load_scale.valueChanged.connect(self._on_linear_load_scale_changed)
+        self.spin_linear_load_scale.valueChanged.connect(partial(self._set_load_scale, "linear"))
         scale_row2.addWidget(self.spin_linear_load_scale)
         scale_row2.addStretch(1)
         layout.addLayout(scale_row2)
@@ -4236,7 +4235,7 @@ class MainWindow(QMainWindow):
         self.spin_planar_load_scale.setSingleStep(0.1)
         self.spin_planar_load_scale.setValue(1.0)
         self.spin_planar_load_scale.setEnabled(False)
-        self.spin_planar_load_scale.valueChanged.connect(self._on_planar_load_scale_changed)
+        self.spin_planar_load_scale.valueChanged.connect(partial(self._set_load_scale, "planar"))
         scale_row3.addWidget(self.spin_planar_load_scale)
         scale_row3.addStretch(1)
         layout.addLayout(scale_row3)
@@ -7010,20 +7009,10 @@ class MainWindow(QMainWindow):
             self.log(tr_err("api_server_start_failed", details=details), "error")
             return False
 
-        deadline = time.time() + 20.0
         host = self.host_edit.text().strip().rstrip("/") if self.host_edit is not None else ""
-        next_check = 0.0
-        while time.time() < deadline:
-            if time.time() >= next_check:
-                try:
-                    check_port(host)
-                    self.log(tr_log("api_server_restarted"), "ok")
-                    return True
-                except Exception:
-                    next_check = time.time() + 0.5
-            # la fenetre se redessine pendant l'attente ; clavier et souris sont ignores (pas de re-entrance)
-            QApplication.processEvents(QEventLoop.ExcludeUserInputEvents, 50)
-            QThread.msleep(20)
+        if wait_for_api(host):
+            self.log(tr_log("api_server_restarted"), "ok")
+            return True
         self.log(tr_log("log_api_not_responding_after_restart"), "error")
         return False
 
@@ -7293,23 +7282,12 @@ class MainWindow(QMainWindow):
             self.load_progress_container.setVisible(False)
         self._loads_worker = None
 
-    def on_toggle_punctual_loads(self, checked: bool):
+    def _toggle_loads(self, kind: str, checked: bool):
+        """Affiche ou masque les charges `kind` (punctual, linear, planar)."""
         if self.viewer:
-            self.viewer._show_punctual_loads = checked
-        self.log(tr_log("show_punctual_loads_on" if checked else "show_punctual_loads_off"), "info")
-        self._mark_loads_dirty("punctual")
-
-    def on_toggle_linear_loads(self, checked: bool):
-        if self.viewer:
-            self.viewer._show_linear_loads = checked
-        self.log(tr_log("show_linear_loads_on" if checked else "show_linear_loads_off"), "info")
-        self._mark_loads_dirty("linear")
-
-    def on_toggle_planar_loads(self, checked: bool):
-        if self.viewer:
-            self.viewer._show_planar_loads = checked
-        self.log(tr_log("show_planar_loads_on" if checked else "show_planar_loads_off"), "info")
-        self._mark_loads_dirty("planar")
+            setattr(self.viewer, f"_show_{kind}_loads", checked)
+        self.log(tr_log(f"show_{kind}_loads_{'on' if checked else 'off'}"), "info")
+        self._mark_loads_dirty(kind)
 
     def _on_load_auto_scale_toggled(self, checked: bool):
         if self.viewer is None:
@@ -7321,23 +7299,11 @@ class MainWindow(QMainWindow):
                 spin.setEnabled(not checked and bool(getattr(self.viewer, f"_{kind}_load_data")))
         self._mark_loads_dirty("punctual", "linear", "planar")
 
-    def _on_punctual_load_scale_changed(self, value: float):
+    def _set_load_scale(self, kind: str, value: float):
         if self.viewer is None:
             return
-        self.viewer.punctual_load_scale = max(0.1, float(value))
-        self._mark_loads_dirty("punctual")
-
-    def _on_linear_load_scale_changed(self, value: float):
-        if self.viewer is None:
-            return
-        self.viewer.linear_load_scale = max(0.1, float(value))
-        self._mark_loads_dirty("linear")
-
-    def _on_planar_load_scale_changed(self, value: float):
-        if self.viewer is None:
-            return
-        self.viewer.planar_load_scale = max(0.1, float(value))
-        self._mark_loads_dirty("planar")
+        setattr(self.viewer, f"{kind}_load_scale", max(0.1, float(value)))
+        self._mark_loads_dirty(kind)
 
     def on_toggle_color_by_section(self, checked: bool):
         if self.viewer:
@@ -7795,7 +7761,7 @@ class MainWindow(QMainWindow):
         self.viewer.planar_load_count = len(planar_loads)
         # Desactive/reinitialise a chaque nouveau chargement (comme _show_punctual_loads
         # /_linear_loads et leurs case_filter dans viewer_widget.load_model()) : la checkbox
-        # ci-dessous est reinitialisee visuellement via blockSignals, donc on_toggle_planar_loads
+        # ci-dessous est reinitialisee visuellement via blockSignals, donc _toggle_loads
         # n'est pas declenche et self.viewer._show_planar_loads doit etre resynchronise ici.
         self.viewer._show_planar_loads = False
         self.viewer._planar_load_case_filter = None

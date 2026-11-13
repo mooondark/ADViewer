@@ -30,39 +30,37 @@ class RibbonBridge(QObject):
         self._rev = 0
         self._icon_rev = 0
         self._theme = {}
-        self._model = []
-        for t_title, groups in spec:
-            g_model = []
-            for g_title, items in groups:
-                i_model = []
-                for label, btn, *kind in items:
-                    if kind and kind[0] == "radios":  # btn = [(libelle, QAction), ...] : colonne de radios
-                        opts = []
-                        for lab, act in btn:
-                            k2 = f"b{len(self._buttons)}"
-                            self._buttons[k2] = act
-                            act.changed.connect(self.refresh_icons)
-                            opts.append({"id": k2, "label": lab})
-                        # shortcut: largeur estimee au nombre de caracteres, a mesurer si la police change
-                        i_model.append({"radios": opts, "w": 36 + 6.5 * max(len(o["label"]) for o in opts)})
-                        continue
-                    key = f"b{len(self._buttons)}"
-                    self._buttons[key] = btn
-                    if isinstance(btn, QAction):
-                        btn.changed.connect(self.refresh_icons)
-                        i_model.append({"id": key, "label": label, "check": bool(kind)})
-                        continue
-                    btn.installEventFilter(self)
-                    if isinstance(btn, QSlider):
-                        btn.valueChanged.connect(self.refresh)  # pas d'icone a recharger
-                        i_model.append({"id": key, "label": label, "slider": True,
-                                        "min": btn.minimum(), "max": btn.maximum()})
-                        continue
-                    if btn.isCheckable():
-                        btn.toggled.connect(self.refresh_icons)  # l'icone peut changer (ex. Isoler)
-                    i_model.append({"id": key, "label": label})
-                g_model.append({"title": g_title, "items": i_model})
-            self._model.append({"title": t_title, "groups": g_model})
+        self._model = [
+            {"title": t_title, "groups": [
+                {"title": g_title, "items": [self._item(label, btn, *kind) for label, btn, *kind in items]}
+                for g_title, items in groups]}
+            for t_title, groups in spec]
+
+    def _register(self, obj):
+        key = f"b{len(self._buttons)}"
+        self._buttons[key] = obj
+        return key
+
+    def _item(self, label, btn, *kind):
+        """Entree du modele QML pour un bouton, une action, un slider ou (kind == radios) une colonne de radios."""
+        if kind and kind[0] == "radios":  # btn = [(libelle, QAction), ...]
+            opts = []
+            for lab, act in btn:
+                act.changed.connect(self.refresh_icons)
+                opts.append({"id": self._register(act), "label": lab})
+            # shortcut: largeur estimee au nombre de caracteres, a mesurer si la police change
+            return {"radios": opts, "w": 36 + 6.5 * max(len(o["label"]) for o in opts)}
+        key = self._register(btn)
+        if isinstance(btn, QAction):
+            btn.changed.connect(self.refresh_icons)
+            return {"id": key, "label": label, "check": bool(kind)}
+        btn.installEventFilter(self)
+        if isinstance(btn, QSlider):
+            btn.valueChanged.connect(self.refresh)  # pas d'icone a recharger
+            return {"id": key, "label": label, "slider": True, "min": btn.minimum(), "max": btn.maximum()}
+        if btn.isCheckable():
+            btn.toggled.connect(self.refresh_icons)  # l'icone peut changer (ex. Isoler)
+        return {"id": key, "label": label}
 
     def eventFilter(self, obj, event):
         if event.type() in (QEvent.EnabledChange, QEvent.ToolTipChange):

@@ -3,6 +3,7 @@
 # crapper est attendu a cote du depot (../crapper, ou CRAPPER_DIR) avec son .venv installe.
 # Son lanceur et son choix d'interpreteur supposent Unix et unittest : on mesure la couverture
 # nous-memes avec pytest et on la lui fait relire.
+# QT_QPA_PLATFORM=windows (ou autre) pour inclure les tests qui creent la fenetre principale (VTK exige OpenGL).
 set -e
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 CRAPPER=${CRAPPER_DIR:-$ROOT/../crapper}
@@ -16,7 +17,7 @@ fi
 OUT="$ROOT/target/coverage/python"
 cd "$ROOT"
 mkdir -p "$OUT"
-QT_QPA_PLATFORM=offscreen python -m coverage run --data-file="$OUT/.coverage" --source=. \
+QT_QPA_PLATFORM=${QT_QPA_PLATFORM:-offscreen} python -m coverage run --data-file="$OUT/.coverage" --source=. \
   --omit="tests/*,graphify-out/*" -m pytest -q
 python -m coverage lcov -i --data-file="$OUT/.coverage" -o "$OUT/lcov.info"
 PYTHONIOENCODING=utf-8 "$PY_CRAPPER" -m crapper --use-existing-coverage "$@"

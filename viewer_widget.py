@@ -1100,16 +1100,6 @@ class VTKViewerWidget(QFrame):
             actor.GetProperty().SetRepresentationToSurface()
         return actor
 
-    def _normalize_vector3(self, vec):
-        try:
-            x, y, z = float(vec[0]), float(vec[1]), float(vec[2])
-        except Exception:
-            return None
-        length = math.sqrt(x * x + y * y + z * z)
-        if length <= 1e-12:
-            return None
-        return (x / length, y / length, z / length)
-
     def _polygon_local_frame(self, outer):
         """Repere local (normale, u, v) d'un polygone 3D : normale via le
         premier triangle non degenere du contour, u le long du premier
@@ -1123,7 +1113,7 @@ class VTKViewerWidget(QFrame):
             cx, cy, cz = outer[i + 1]
             ux, uy, uz = bx - ax, by - ay, bz - az
             vx, vy, vz = cx - ax, cy - ay, cz - az
-            normal = self._normalize_vector3((uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx))
+            normal = _normalize_vector3((uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx))
             if normal is not None:
                 break
         if normal is None:
@@ -1133,15 +1123,15 @@ class VTKViewerWidget(QFrame):
         for i in range(len(outer)):
             p1 = outer[i]
             p2 = outer[(i + 1) % len(outer)]
-            u_vec = self._normalize_vector3((p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]))
+            u_vec = _normalize_vector3((p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]))
             if u_vec is not None:
                 break
         if u_vec is None:
             fallback = (1.0, 0.0, 0.0) if abs(normal[0]) < 0.9 else (0.0, 1.0, 0.0)
             proj = fallback[0] * normal[0] + fallback[1] * normal[1] + fallback[2] * normal[2]
-            u_vec = self._normalize_vector3((fallback[0] - proj * normal[0], fallback[1] - proj * normal[1], fallback[2] - proj * normal[2])) or (1.0, 0.0, 0.0)
+            u_vec = _normalize_vector3((fallback[0] - proj * normal[0], fallback[1] - proj * normal[1], fallback[2] - proj * normal[2])) or (1.0, 0.0, 0.0)
 
-        v_vec = self._normalize_vector3((
+        v_vec = _normalize_vector3((
             normal[1] * u_vec[2] - normal[2] * u_vec[1],
             normal[2] * u_vec[0] - normal[0] * u_vec[2],
             normal[0] * u_vec[1] - normal[1] * u_vec[0],
@@ -1223,8 +1213,8 @@ class VTKViewerWidget(QFrame):
             cx, cy, cz = float(center[0]), float(center[1]), float(center[2])
         except Exception:
             return None
-        u_vec = self._normalize_vector3(u_vec) or (1.0, 0.0, 0.0)
-        v_vec = self._normalize_vector3(v_vec) or (0.0, 1.0, 0.0)
+        u_vec = _normalize_vector3(u_vec) or (1.0, 0.0, 0.0)
+        v_vec = _normalize_vector3(v_vec) or (0.0, 1.0, 0.0)
         half = max(0.01, float(size) * 0.5)
 
         points = vtk.vtkPoints()

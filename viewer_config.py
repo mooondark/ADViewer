@@ -73,6 +73,18 @@ def resource_path(relative_path):
 _FONTS_DIR = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts")
 
 
+def write_ini_atomic(cfg, path):
+    """Ecrit `cfg` dans `path` sans jamais laisser un fichier tronque (fichier temporaire puis remplacement)."""
+    tmp = path + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            cfg.write(f)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
 def apply_vtk_font(text_prop):
     """Segoe UI (fichier systeme, non embarque) pour les textes VTK ; Arial si absent."""
     path = os.path.join(_FONTS_DIR, "segoeuib.ttf" if text_prop.GetBold() else "segoeui.ttf")

@@ -158,29 +158,18 @@ class AdvanceDesignApiClient:
             label="OpenProject",
         )
 
-    def close_project(self) -> bool:
+    def _close(self, path: str, label: str) -> bool:
         try:
-            self._post(
-                "/api/Model/management/CloseProject",
-                json_payload={},
-                timeout=15,
-                label="CloseProject",
-            )
+            self._post(path, json_payload={}, timeout=15, label=label)
             return True
         except (ApiUnavailableError, RuntimeError, requests.exceptions.RequestException):
             return False
 
+    def close_project(self) -> bool:
+        return self._close("/api/Model/management/CloseProject", "CloseProject")
+
     def close_session(self) -> bool:
-        try:
-            self._post(
-                "/api/Model/management/CloseSession",
-                json_payload={},
-                timeout=15,
-                label="CloseSession",
-            )
-            return True
-        except (ApiUnavailableError, RuntimeError, requests.exceptions.RequestException):
-            return False
+        return self._close("/api/Model/management/CloseSession", "CloseSession")
 
     def launch_analysis(self, timeout=None) -> tuple:
         """Lance le calcul éléments finis et bloque jusqu'à sa fin.
@@ -201,17 +190,20 @@ class AdvanceDesignApiClient:
         payload = _check(resp, "LaunchAnalysis", tolerate_failure=True)
         return payload.get("data", False), _diagnostics(payload.get("details", {}) or {})
 
+    def _query_ids(self, payload: list, label: str) -> list:
+        return self._post(
+            "/api/Model/elements/GetElementsID",
+            json_payload=payload,
+            timeout=30,
+            label=label,
+        ).get("data", [])
+
     def get_element_ids(self, element_type: str) -> list:
         payload = [{
             "$type": "QueryElementsModel",
             "elementType": element_type
         }]
-        return self._post(
-            "/api/Model/elements/GetElementsID",
-            json_payload=payload,
-            timeout=30,
-            label=f"GetElementsID({element_type})",
-        ).get("data", [])
+        return self._query_ids(payload, f"GetElementsID({element_type})")
 
     def get_element_ids_for_types(self, element_types: list) -> list:
         """Récupère les EIDs pour plusieurs types d'éléments en une seule requête HTTP.
@@ -233,64 +225,33 @@ class AdvanceDesignApiClient:
             {"$type": "QueryElementsModel", "elementType": et}
             for et in element_types
         ]
-        return self._post(
-            "/api/Model/elements/GetElementsID",
-            json_payload=payload,
-            timeout=30,
-            label=f"GetElementsID({', '.join(element_types)})",
-        ).get("data", [])
+        return self._query_ids(payload, f"GetElementsID({', '.join(element_types)})")
+
+    def _post_list(self, path: str, ids: list, timeout: int, label: str) -> list:
+        """POST d'une liste d'identifiants ; liste vide : pas d'appel reseau."""
+        if not ids:
+            return []
+        return self._post(path, json_payload=ids, timeout=timeout, label=label).get("data", [])
 
     def get_elements_objects(self, ids: list) -> list:
-        if not ids:
-            return []
-        return self._post(
-            "/api/Model/elements/GetElementsObject",
-            json_payload=ids,
-            timeout=60,
-            label="GetElementsObject",
-        ).get("data", [])
+        return self._post_list("/api/Model/elements/GetElementsObject", ids, 60, "GetElementsObject")
 
     def get_materials(self, ids: list) -> list:
-        if not ids:
-            return []
-        return self._post(
-            "/api/Model/materials/GetMaterials",
-            json_payload=ids,
-            timeout=30,
-            label="GetMaterials",
-        ).get("data", [])
+        return self._post_list("/api/Model/materials/GetMaterials", ids, 30, "GetMaterials")
 
     def get_sections(self, ids: list) -> list:
-        if not ids:
-            return []
-        return self._post(
-            "/api/Model/sections/GetSections",
-            json_payload=ids,
-            timeout=30,
-            label="GetSections",
-        ).get("data", [])
+        return self._post_list("/api/Model/sections/GetSections", ids, 30, "GetSections")
 
     def get_informational_ids(self, info_type: str) -> list:
         payload = [{
             "$type": "QueryInfoModel",
             "informationalElementType": info_type
         }]
-        return self._post(
-            "/api/Model/elements/GetElementsID",
-            json_payload=payload,
-            timeout=30,
-            label=f"GetElementsID({info_type})",
-        ).get("data", [])
+        return self._query_ids(payload, f"GetElementsID({info_type})")
 
     def get_informational_elements_objects(self, ids: list) -> list:
-        if not ids:
-            return []
-        return self._post(
-            "/api/Model/elements/GetInformationalElementsObject",
-            json_payload=ids,
-            timeout=60,
-            label="GetInformationalElementsObject",
-        ).get("data", [])
+        return self._post_list(
+            "/api/Model/elements/GetInformationalElementsObject", ids, 60, "GetInformationalElementsObject")
 
     def get_analysis_model_status(self) -> dict:
         try:
