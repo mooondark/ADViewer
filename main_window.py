@@ -32,7 +32,7 @@ except ImportError as e:
     raise RuntimeError("Le module 'requests' est requis. Installez les dépendances de l'application avant l'exécution.") from e
 
 try:
-    from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF, QEvent
+    from PySide6.QtCore import Qt, QThread, Signal, Slot, QTranslator, QLibraryInfo, QSize, QTimer, QPoint, QRectF, QEvent, QEventLoop
     from PySide6.QtGui import QAction, QActionGroup, QTextCursor, QColor, QIcon, QPixmap, QPainter, QPen, QKeySequence, QShortcut, QPainterPath, QBrush, QPolygonF, QCursor
     from PySide6.QtWidgets import (
         QApplication, QMainWindow, QWidget, QFileDialog, QFrame, QLabel, QGraphicsOpacityEffect,
@@ -1627,8 +1627,11 @@ class MainWindow(QMainWindow):
         cfg[mc.SECTION] = self.model_check.thresholds.to_section()
         cfg["units"] = display_units.get_state_ini()
 
-        with open(self._config_path(), "w", encoding="utf-8") as f:
+        path = self._config_path()
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
             cfg.write(f)
+        os.replace(tmp, path)  # une coupure pendant l'ecriture ne laisse jamais un config.ini tronque
 
     def _load_or_create_config(self):
         path = self._config_path()
@@ -6657,7 +6660,7 @@ class MainWindow(QMainWindow):
             btn.style().polish(btn)
         self._update_load_btn_state()
         if getattr(self, "ribbon", None) is not None:
-            self.ribbon.bridge.refresh()  # icones attenuees et etat actif
+            self.ribbon.bridge.refresh_icons()  # icones attenuees et etat actif
 
     def apply_language(self, code: str) -> None:
         if code not in LANGUAGES:
@@ -7009,13 +7012,18 @@ class MainWindow(QMainWindow):
 
         deadline = time.time() + 20.0
         host = self.host_edit.text().strip().rstrip("/") if self.host_edit is not None else ""
+        next_check = 0.0
         while time.time() < deadline:
-            try:
-                check_port(host)
-                self.log(tr_log("api_server_restarted"), "ok")
-                return True
-            except Exception:
-                time.sleep(0.5)
+            if time.time() >= next_check:
+                try:
+                    check_port(host)
+                    self.log(tr_log("api_server_restarted"), "ok")
+                    return True
+                except Exception:
+                    next_check = time.time() + 0.5
+            # la fenetre se redessine pendant l'attente ; clavier et souris sont ignores (pas de re-entrance)
+            QApplication.processEvents(QEventLoop.ExcludeUserInputEvents, 50)
+            QThread.msleep(20)
         self.log(tr_log("log_api_not_responding_after_restart"), "error")
         return False
 

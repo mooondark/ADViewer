@@ -81,7 +81,7 @@ Rectangle {
                                             width: 28; height: 28
                                             sourceSize: Qt.size(56, 56)
                                             smooth: true
-                                            source: !cell.plain ? "" : "image://ribbon/" + modelData.id + "?" + bridge.rev
+                                            source: !cell.plain ? "" : "image://ribbon/" + modelData.id + "?" + bridge.iconRev
                                         }
                                         Text {
                                             id: lbl

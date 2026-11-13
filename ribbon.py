@@ -28,6 +28,7 @@ class RibbonBridge(QObject):
         super().__init__(parent)
         self._buttons = {}
         self._rev = 0
+        self._icon_rev = 0
         self._theme = {}
         self._model = []
         for t_title, groups in spec:
@@ -40,7 +41,7 @@ class RibbonBridge(QObject):
                         for lab, act in btn:
                             k2 = f"b{len(self._buttons)}"
                             self._buttons[k2] = act
-                            act.changed.connect(self.refresh)
+                            act.changed.connect(self.refresh_icons)
                             opts.append({"id": k2, "label": lab})
                         # shortcut: largeur estimee au nombre de caracteres, a mesurer si la police change
                         i_model.append({"radios": opts, "w": 36 + 6.5 * max(len(o["label"]) for o in opts)})
@@ -48,17 +49,17 @@ class RibbonBridge(QObject):
                     key = f"b{len(self._buttons)}"
                     self._buttons[key] = btn
                     if isinstance(btn, QAction):
-                        btn.changed.connect(self.refresh)
+                        btn.changed.connect(self.refresh_icons)
                         i_model.append({"id": key, "label": label, "check": bool(kind)})
                         continue
                     btn.installEventFilter(self)
                     if isinstance(btn, QSlider):
-                        btn.valueChanged.connect(self.refresh)
+                        btn.valueChanged.connect(self.refresh)  # pas d'icone a recharger
                         i_model.append({"id": key, "label": label, "slider": True,
                                         "min": btn.minimum(), "max": btn.maximum()})
                         continue
                     if btn.isCheckable():
-                        btn.toggled.connect(self.refresh)
+                        btn.toggled.connect(self.refresh_icons)  # l'icone peut changer (ex. Isoler)
                     i_model.append({"id": key, "label": label})
                 g_model.append({"title": g_title, "items": i_model})
             self._model.append({"title": t_title, "groups": g_model})
@@ -70,8 +71,15 @@ class RibbonBridge(QObject):
 
     @Slot()
     def refresh(self, *_):
+        """Etat (coche, actif, valeur) : les icones ne sont pas rechargees."""
         self._rev += 1
         self.changed.emit()
+
+    @Slot()
+    def refresh_icons(self, *_):
+        """Etat et icones (thème, etat de l'API, bouton a bascule)."""
+        self._icon_rev += 1
+        self.refresh()
 
     def set_colors(self, panel, fg, dim, accent, border):
         a = QColor(accent)
@@ -80,10 +88,11 @@ class RibbonBridge(QObject):
             "active": QColor(a.red(), a.green(), a.blue(), 70).name(QColor.HexArgb),
             "hover": QColor(a.red(), a.green(), a.blue(), 35).name(QColor.HexArgb),
         }
-        self.refresh()
+        self.refresh_icons()
 
     model = Property("QVariantList", lambda s: s._model, constant=True)
     rev = Property(int, lambda s: s._rev, notify=changed)
+    iconRev = Property(int, lambda s: s._icon_rev, notify=changed)
     theme = Property("QVariantMap", lambda s: s._theme, notify=changed)
 
     @Slot(str, int, result=bool)
