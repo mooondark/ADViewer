@@ -6,7 +6,8 @@ import os
 import sys
 
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication, QCheckBox
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -276,6 +277,167 @@ def test_reset_between_loads_restarts_the_api_only_when_results_are_open(window,
     monkeypatch.setattr(session, "reset_api_session", lambda: resets.append(1))
     assert window._reset_api_between_model_loads_if_needed() is True
     assert restarts == [1] and resets == [1] and window.project_session is None
+
+
+# --- configuration : valeurs par defaut et lectures du viewer -------------------
+
+def test_is_checked_uses_the_default_only_for_a_missing_widget(window):
+    assert window._is_checked(None) is False and window._is_checked(None, True) is True
+    box = QCheckBox()
+    box.setChecked(True)
+    assert window._is_checked(box) is True and window._is_checked(box, False) is True
+    box.setChecked(False)
+    assert window._is_checked(box, True) is False
+
+
+def test_config_general_falls_back_to_the_defaults_when_widgets_are_missing(window, monkeypatch):
+    for name in ("chk_grid", "minimap_btn", "act_minimap_bottom_right", "act_minimap_size_small"):
+        monkeypatch.setattr(window, name, None)
+    general = window._config_general()
+    assert general["grid_visible"] == "true" and general["minimap_visible"] == "false"
+    assert (general["minimap_corner"], general["minimap_size"]) == ("bottom_left", "large")
+
+
+def test_config_reads_the_grid_steps_and_the_clip_colors_from_the_viewer(window, monkeypatch):
+    monkeypatch.setattr(window.viewer, "get_grid_step", lambda: (3.5, 7.5))
+    monkeypatch.setattr(window.viewer, "get_clip_box_style", lambda: ((0.1, 0.2, 0.3), (0.4, 0.5, 0.6)))
+    general, colors = window._config_general(), window._config_colors()
+    assert (general["grid_step_x"], general["grid_step_y"]) == ("3.5", "7.5")
+    assert colors["clip_box_color"] == "0.100000,0.200000,0.300000"
+    assert colors["clip_edge_color"] == "0.400000,0.500000,0.600000"
+
+
+# --- ruban : widgets pilotes, icones, theme --------------------------------------
+
+def test_ribbon_sits_first_and_reparents_then_hides_the_driven_widgets(window):
+    assert window._root_layout.itemAt(0).widget() is window.ribbon
+    for widget in (window.fit_btn, window.transparency_slider, window.transparency_value_label,
+                   window.profiles_transparency_value_label):
+        assert widget.parent() is window and widget.isHidden()
+
+
+def _opaque_colors(icon):
+    img = icon.pixmap(64, 64).toImage().convertToFormat(QImage.Format_ARGB32)
+    return {img.pixelColor(x, y).rgb() & 0xFFFFFF for x in range(img.width()) for y in range(img.height())
+            if img.pixelColor(x, y).alpha() > 200}
+
+
+def test_embedded_svg_icons_are_black_in_the_light_theme_and_white_in_the_dark_theme(window, monkeypatch):
+    monkeypatch.setattr(window, "theme_name", "light")
+    assert _opaque_colors(window._file_svg_icon("help_about")) == {0x000000}
+    monkeypatch.setattr(window, "theme_name", "dark")
+    assert _opaque_colors(window._file_svg_icon("help_about")) == {0xFFFFFF}
+
+
+def _max_alpha(button):
+    img = button.icon().pixmap(48, 48).toImage().convertToFormat(QImage.Format_ARGB32)
+    return max(img.pixelColor(x, y).alpha() for x in range(img.width()) for y in range(img.height()))
+
+
+def test_api_icons_are_dimmed_when_the_action_is_not_available(window):
+    window._update_api_button_state()                      # API arretee : seul Arreter est disponible
+    assert _max_alpha(window.api_on_btn) < 120 and _max_alpha(window.api_restart_btn) < 120
+    assert _max_alpha(window.api_off_btn) > 200
+    window.api_server_process = _Process()                 # API demarree : Demarrer n'est plus disponible
+    window._update_api_button_state()
+    assert _max_alpha(window.api_on_btn) > 200 and _max_alpha(window.api_restart_btn) > 200
+    assert _max_alpha(window.api_off_btn) < 120
+
+
+# --- API : demarrage, redemarrage, reinitialisation ------------------------------
+
+@pytest.fixture
+def logs(window, monkeypatch):
+    out = []
+    monkeypatch.setattr(window, "log", lambda text, level="info": out.append((text, level)))
+    return out
+
+
+class _Popen:
+    """Remplace subprocess.Popen : enregistre les appels, ou leve `error`."""
+
+    def __init__(self, error=None):
+        self.calls, self.error = [], error
+
+    def __call__(self, cmd, **kwargs):
+        if self.error:
+            raise self.error
+        self.calls.append((cmd, kwargs))
+        return _Process()
+
+
+def _exe(tmp_path):
+    exe = tmp_path / "api.exe"
+    exe.write_text("")
+    return exe
+
+
+def test_start_api_does_nothing_when_it_is_already_running(window, monkeypatch, tmp_path):
+    popen = _Popen()
+    monkeypatch.setattr(mw.subprocess, "Popen", popen)
+    window.api_server_exe = str(_exe(tmp_path))
+    window.api_server_process = _Process()
+    window.start_api_server()
+    assert popen.calls == []
+
+
+def test_start_api_runs_in_the_executable_folder_and_names_the_error_class(window, monkeypatch, logs, tmp_path):
+    exe = _exe(tmp_path)
+    window.api_server_exe = str(exe)
+    popen = _Popen()
+    monkeypatch.setattr(mw.subprocess, "Popen", popen)
+    monkeypatch.setattr(window, "check_licence_after_api_start", lambda: None)
+    window.start_api_server()
+    assert popen.calls[0][1]["cwd"] == str(tmp_path)
+    window.api_server_process = None
+    monkeypatch.setattr(mw.subprocess, "Popen", _Popen(OSError()))          # message vide : on log le nom de la classe
+    monkeypatch.setattr(mw.QMessageBox, "critical", lambda *a: None)
+    window.start_api_server()
+    assert any("OSError" in text for text, level in logs if level == "error")
+
+
+def test_restart_api_with_an_unknown_executable_never_starts_a_process(window, monkeypatch, logs, tmp_path):
+    popen = _Popen()
+    monkeypatch.setattr(mw.subprocess, "Popen", popen)
+    for exe in ("", str(tmp_path / "nope.exe")):
+        window.api_server_exe = exe
+        assert window._restart_api_server() is False
+    assert popen.calls == []
+    assert [level for text, level in logs] == ["error", "error"]
+
+
+def test_restart_api_stops_the_old_process_quietly_and_marks_the_new_one(window, monkeypatch, logs, tmp_path):
+    exe = _exe(tmp_path)
+    window.api_server_exe = str(exe)
+    old = window.api_server_process = _Process()
+    popen = _Popen()
+    monkeypatch.setattr(mw.subprocess, "Popen", popen)
+    monkeypatch.setattr(mw, "wait_for_api", lambda host: True)
+    assert window._restart_api_server() is True
+    assert old.exit_code == 0 and window.api_server_process is not old        # l'ancien processus est arrete
+    assert mw.tr_log("api_server_stopped") not in [text for text, level in logs]   # sans message d'arret
+    assert window.api_server_started_by_viewer is True
+    assert popen.calls[0][1]["cwd"] == str(tmp_path)
+
+
+def test_restart_api_names_the_error_class_when_the_message_is_empty(window, monkeypatch, logs, tmp_path):
+    window.api_server_exe = str(_exe(tmp_path))
+    monkeypatch.setattr(mw.subprocess, "Popen", _Popen(OSError()))
+    assert window._restart_api_server() is False
+    assert any("OSError" in text for text, level in logs if level == "error")
+
+
+@pytest.mark.parametrize("keep_open, has_results, restarts", [(False, False, 0), (True, False, 0),
+                                                             (False, True, 0), (True, True, 1)])
+def test_reset_between_loads_needs_both_an_open_session_and_results(window, monkeypatch, keep_open, has_results, restarts):
+    calls = []
+    monkeypatch.setattr(window, "_restart_api_server", lambda: calls.append(1) or True)
+    session = mw.ProjectSessionManager("http://x")
+    session.keep_open, session.has_results = keep_open, has_results
+    monkeypatch.setattr(session, "reset_api_session", lambda: None)
+    window.project_session = session
+    assert window._reset_api_between_model_loads_if_needed() is True
+    assert len(calls) == restarts
 
 
 # --- reglages : ces tests reconstruisent les actions, donc a placer en dernier
