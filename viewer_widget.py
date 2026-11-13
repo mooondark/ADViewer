@@ -2243,6 +2243,7 @@ class VTKViewerWidget(QFrame):
         text_prop = actor.GetTextProperty()
         text_prop.SetFontSize(16)
         text_prop.BoldOn()
+        _cfg.apply_vtk_font(text_prop)
         is_dark_theme = tuple(_cfg.VTK_BG) == tuple(_cfg._DARK_VTK_BG)
         text_prop.SetColor(*((1.0, 1.0, 1.0) if is_dark_theme else color))
         actor._diagram_original_color = tuple(color)
@@ -2912,7 +2913,7 @@ class VTKViewerWidget(QFrame):
         actor.SetPickable(False)
         actor.SetVisibility(False)
         tp = actor.GetTextProperty()
-        tp.SetFontFamilyToArial()
+        _cfg.apply_vtk_font(tp)
         tp.SetFontSize(12)
         tp.SetJustificationToLeft()
         tp.SetVerticalJustificationToTop()
@@ -3017,6 +3018,8 @@ class VTKViewerWidget(QFrame):
         axes.GetYAxisCaptionActor2D().SetHeight(0.10)
         axes.GetZAxisCaptionActor2D().SetWidth(0.10)
         axes.GetZAxisCaptionActor2D().SetHeight(0.10)
+        for caption in (axes.GetXAxisCaptionActor2D(), axes.GetYAxisCaptionActor2D(), axes.GetZAxisCaptionActor2D()):
+            _cfg.apply_vtk_font(caption.GetCaptionTextProperty())
 
         widget = vtk.vtkOrientationMarkerWidget()
         widget.SetOrientationMarker(axes)

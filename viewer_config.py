@@ -70,6 +70,19 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
+_FONTS_DIR = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts")
+
+
+def apply_vtk_font(text_prop):
+    """Segoe UI (fichier systeme, non embarque) pour les textes VTK ; Arial si absent."""
+    path = os.path.join(_FONTS_DIR, "segoeuib.ttf" if text_prop.GetBold() else "segoeui.ttf")
+    if os.path.isfile(path):
+        text_prop.SetFontFamily(4)  # VTK_FONT_FILE (constante non exposee par vtkmodules)
+        text_prop.SetFontFile(path)
+    else:
+        text_prop.SetFontFamilyToArial()
+
+
 def load_app_icon(*candidates):
     for candidate in candidates:
         if not candidate:

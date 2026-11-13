@@ -149,7 +149,7 @@ class FlightControlsOverlay:
         actor.SetPickable(False)
         actor.SetVisibility(False)
         tp = actor.GetTextProperty()
-        tp.SetFontFamilyToArial()
+        _cfg.apply_vtk_font(tp)
         tp.SetFontSize(12)
         tp.SetJustificationToRight()
         tp.SetVerticalJustificationToTop()
