@@ -6,10 +6,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtCore import QEvent, QSize
+from PySide6.QtGui import QAction, QActionGroup, QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QApplication, QPushButton, QSlider
 
-from ribbon import RibbonBridge
+from ribbon import RibbonBridge, _IconProvider
 
 _app = QApplication.instance() or QApplication([])
 
@@ -99,3 +100,40 @@ def test_slider_drag_does_not_reload_icons_but_a_toggle_does():
     icon_rev = bridge.iconRev
     bridge.set_colors("#fff", "#000", "#555", "#2f6fdb", "#ccc")
     assert bridge.iconRev > icon_rev
+
+
+def test_icon_provider_returns_the_icon_of_the_button_named_before_the_query():
+    def button(color):
+        pm = QPixmap(48, 48)
+        pm.fill(QColor(color))
+        btn = QPushButton()
+        btn.setIcon(QIcon(pm))
+        return btn
+
+    provider = _IconProvider({"b0": button("#ff0000"), "b1": button("#0000ff"), "5": button("#00ff00")})
+    pm = provider.requestPixmap("b1?5", QSize(), QSize())
+    assert pm.size() == QSize(48, 48)
+    assert pm.toImage().pixelColor(5, 5) == QColor("#0000ff")
+
+
+def test_radio_column_is_wide_enough_for_its_longest_label():
+    def width(*labels):
+        parent = QPushButton()
+        group = QActionGroup(parent)
+        acts = [QAction(label, parent, checkable=True) for label in labels]
+        for act in acts:
+            group.addAction(act)
+        bridge = RibbonBridge([("t", [("g", [("", [(a.text(), a) for a in acts], "radios")])])])
+        return bridge.model[0]["groups"][0]["items"][0]["w"]
+
+    assert width("Left", "Right") >= 36 + 6 * len("Right")
+    assert width("Perspective", "Orthogonal") >= 36 + 6 * len("Perspective")
+
+
+def test_event_filter_watches_enabled_and_tooltip_changes_but_never_swallows_events():
+    bridge, keys, _p = _build()
+    button = bridge._buttons[keys["plain"]]
+    for kind, refreshes in ((QEvent.EnabledChange, True), (QEvent.ToolTipChange, True), (QEvent.User, False)):
+        rev = bridge.rev
+        assert bridge.eventFilter(button, QEvent(kind)) is False
+        assert (bridge.rev > rev) is refreshes
