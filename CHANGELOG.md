@@ -2,21 +2,23 @@
 
 **⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
 
-## À paraître
+## 2.24
 
 ### FR
-- Nouveau : grille sous le modèle, avec case « Afficher la grille » et pas X/Y réglables (Réglages > Vue 3D > Grille).
+- Nouveau : grille sous le modèle, avec case « Afficher la grille » et pas X/Y réglables (onglet Paramètres > Vue 3D > Grille).
 - Info-bulles et menus : coins arrondis et ombre.
 - Unités : « m² » et « cm² » affichés avec l'exposant.
-- Ruban en haut de la fenêtre (onglets Accueil, Vue, Sélection, Outils, Contrôle, Aide) : il remplace les menus Fichier, Contrôle modèle et Aide, le volet Projet et les boutons de la carte Actions (curseurs de transparence inclus).
+- Ruban en haut de la fenêtre (onglets Accueil, Vue, Sélection, Outils, Contrôle, Paramètres, Aide) : il remplace tous les menus (Fichier, Paramètres, Contrôle modèle, Aide), le volet Projet et les boutons de la carte Actions (curseurs de transparence inclus).
+- Démarrage de l'application en fenêtre maximisée.
 - Titre de la fenêtre : le nom du fichier .fto ouvert est affiché entre parenthèses.
 - Correction : le message « Lecture du maillage FEM... » s'affichait sous forme de clé brute pendant le chargement.
 
 ### EN
-- New: grid under the model, with a "Show grid" checkbox and X/Y steps (Settings > 3D view > Grid).
+- New: grid under the model, with a "Show grid" checkbox and X/Y steps (Settings tab > 3D view > Grid).
 - Tooltips and menus: rounded corners and shadow.
 - Units: "m²" and "cm²" shown with the superscript.
-- Ribbon at the top of the window (Home, View, Selection, Tools, Check, Help tabs): it replaces the File, Model check and Help menus, the Project pane and the Actions card buttons (transparency sliders included).
+- Ribbon at the top of the window (Home, View, Selection, Tools, Check, Settings, Help tabs): it replaces all the menus (File, Settings, Model check, Help), the Project pane and the Actions card buttons (transparency sliders included).
+- The application starts maximized.
 - Window title: the name of the open .fto file is shown in parentheses.
 - Fix: the "Reading FEM mesh..." message was shown as a raw key while loading.
 

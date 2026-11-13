@@ -35,6 +35,16 @@ class RibbonBridge(QObject):
             for g_title, items in groups:
                 i_model = []
                 for label, btn, *kind in items:
+                    if kind and kind[0] == "radios":  # btn = [(libelle, QAction), ...] : colonne de radios
+                        opts = []
+                        for lab, act in btn:
+                            k2 = f"b{len(self._buttons)}"
+                            self._buttons[k2] = act
+                            act.changed.connect(self.refresh)
+                            opts.append({"id": k2, "label": lab})
+                        # shortcut: largeur estimee au nombre de caracteres, a mesurer si la police change
+                        i_model.append({"radios": opts, "w": 36 + 6.5 * max(len(o["label"]) for o in opts)})
+                        continue
                     key = f"b{len(self._buttons)}"
                     self._buttons[key] = btn
                     if isinstance(btn, QAction):

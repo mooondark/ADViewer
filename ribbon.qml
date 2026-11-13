@@ -59,17 +59,19 @@ Rectangle {
                                     id: cell
                                     property bool isSlider: !!modelData.slider
                                     property bool isCheck: !!modelData.check
-                                    width: isSlider ? 170 : (isCheck ? chkText.implicitWidth + 44 : Math.max(54, Math.min(lblM.width, 80) + 14))
+                                    property bool isRadios: !!modelData.radios
+                                    property bool plain: !isSlider && !isCheck && !isRadios
+                                    width: isSlider ? 170 : (isRadios ? modelData.w : isCheck ? chkText.implicitWidth + 44 : Math.max(54, Math.min(lblM.width, 80) + 14))
                                     height: 70
-                                    TextMetrics { id: lblM; text: cell.isSlider || cell.isCheck ? "" : modelData.label; font.family: "Segoe UI"; font.pixelSize: 12 }
+                                    TextMetrics { id: lblM; text: !cell.plain ? "" : modelData.label; font.family: "Segoe UI"; font.pixelSize: 12 }
 
                                     // --- bouton ---
                                     Rectangle {
                                         id: btn
-                                        visible: !cell.isSlider && !cell.isCheck
+                                        visible: cell.plain
                                         anchors.fill: parent
-                                        property bool on: cell.isSlider || cell.isCheck ? false : bridge.checked(modelData.id, bridge.rev)
-                                        property bool ok: cell.isSlider || cell.isCheck ? true : bridge.enabled(modelData.id, bridge.rev)
+                                        property bool on: !cell.plain ? false : bridge.checked(modelData.id, bridge.rev)
+                                        property bool ok: !cell.plain ? true : bridge.enabled(modelData.id, bridge.rev)
                                         radius: 8
                                         opacity: ok ? 1 : 0.35
                                         color: on ? th.active : (ma.containsMouse && ok ? th.hover : "transparent")
@@ -79,16 +81,16 @@ Rectangle {
                                             width: 28; height: 28
                                             sourceSize: Qt.size(56, 56)
                                             smooth: true
-                                            source: cell.isSlider || cell.isCheck ? "" : "image://ribbon/" + modelData.id + "?" + bridge.rev
+                                            source: !cell.plain ? "" : "image://ribbon/" + modelData.id + "?" + bridge.rev
                                         }
                                         Text {
                                             id: lbl
                                             anchors.horizontalCenter: parent.horizontalCenter
                                             y: 36
-                                            width: Math.min(lblM.width + 2, 80)
+                                            width: Math.min(lblM.width + 6, 80)
                                             wrapMode: Text.WordWrap
                                             horizontalAlignment: Text.AlignHCenter
-                                            text: cell.isSlider || cell.isCheck ? "" : modelData.label
+                                            text: !cell.plain ? "" : modelData.label
                                             font.family: "Segoe UI"; font.pixelSize: 12
                                             color: btn.on ? th.accent : th.fg
                                         }
@@ -96,12 +98,43 @@ Rectangle {
                                             id: ma
                                             anchors.fill: parent
                                             hoverEnabled: true
-                                            enabled: btn.ok && !cell.isSlider && !cell.isCheck
+                                            enabled: btn.ok && cell.plain
                                             onClicked: bridge.trigger(modelData.id)
                                         }
                                         ToolTip.visible: ma.containsMouse
                                         ToolTip.delay: 600
-                                        ToolTip.text: cell.isSlider || cell.isCheck ? "" : bridge.tip(modelData.id, bridge.rev)
+                                        ToolTip.text: !cell.plain ? "" : bridge.tip(modelData.id, bridge.rev)
+                                    }
+
+                                    // --- colonne de boutons radio ---
+                                    Column {
+                                        visible: cell.isRadios
+                                        y: 9
+                                        Repeater {
+                                            model: cell.isRadios ? modelData.radios : []
+                                            delegate: Rectangle {
+                                                property bool on: bridge.checked(modelData.id, bridge.rev)
+                                                property bool ok: bridge.enabled(modelData.id, bridge.rev)
+                                                width: cell.width; height: 26; radius: 8
+                                                opacity: ok ? 1 : 0.35
+                                                color: rMa.containsMouse && ok ? th.hover : "transparent"
+                                                Rectangle {
+                                                    x: 8; anchors.verticalCenter: parent.verticalCenter
+                                                    width: 16; height: 16; radius: 8
+                                                    color: "transparent"
+                                                    border.color: parent.on ? th.accent : th.dim
+                                                    border.width: 1.5
+                                                    Rectangle { anchors.centerIn: parent; width: 8; height: 8; radius: 4; color: th.accent; visible: parent.parent.on }
+                                                }
+                                                Text {
+                                                    x: 32; anchors.verticalCenter: parent.verticalCenter
+                                                    text: modelData.label
+                                                    font.family: "Segoe UI"; font.pixelSize: 12
+                                                    color: th.fg
+                                                }
+                                                MouseArea { id: rMa; anchors.fill: parent; hoverEnabled: true; enabled: parent.ok; onClicked: bridge.trigger(modelData.id) }
+                                            }
+                                        }
                                     }
 
                                     // --- case a cocher ---

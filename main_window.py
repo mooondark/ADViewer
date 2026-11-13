@@ -2513,6 +2513,194 @@ class MainWindow(QMainWindow):
             'IDAgMSAwIDAgMzBNNjUgMjYzaDE1OU02NSAyOTdoODEiLz4KICA8L2c+Cjwvc3Zn'
             'Pgo='
         ),
+        "settings_styles": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTMuMDIwNyA1'
+            'LjgyODM5TDE1Ljg0OTEgMi45OTk5NkwyMC43OTg4IDcuOTQ5NzFMMTcuOTcwNCAx'
+            'MC43NzgxTTEzLjAyMDcgNS44MjgzOUwzLjQxNDA1IDE1LjQzNUMzLjIyNjUyIDE1'
+            'LjYyMjUgMy4xMjExNiAxNS44NzY5IDMuMTIxMTYgMTYuMTQyMVYyMC42Nzc2SDcu'
+            'NjU2NjlDNy45MjE5MSAyMC42Nzc2IDguMTc2MjYgMjAuNTcyMyA4LjM2MzggMjAu'
+            'Mzg0N0wxNy45NzA0IDEwLjc3ODFNMTMuMDIwNyA1LjgyODM5TDE3Ljk3MDQgMTAu'
+            'Nzc4MSIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tl'
+            'LWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3Zn'
+            'Pg=='
+        ),
+        "settings_units": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTYgN1YyLjZD'
+            'MTYgMi4yNjg2MyAxNS43MzE0IDIgMTUuNCAySDguNkM4LjI2ODYzIDIgOCAyLjI2'
+            'ODYzIDggMi42VjIxLjRDOCAyMS43MzE0IDguMjY4NjMgMjIgOC42IDIySDE1LjRD'
+            'MTUuNzMxNCAyMiAxNiAyMS43MzE0IDE2IDIxLjRWMTdNMTYgN0gxM00xNiA3VjEy'
+            'TTE2IDEySDEzTTE2IDEyVjE3TTE2IDE3SDEzIiBzdHJva2U9IiMwMDAwMDAiIHN0'
+            'cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1s'
+            'aW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+        ),
+        "settings_png": (
+            'PHN2ZyBmaWxsPSIjMDAwMDAwIiBoZWlnaHQ9IjgwMCIgd2lkdGg9IjgwMCIgeG1s'
+            'bnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNTEy'
+            'IDUxMiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CiAgPHBhdGggZD0iTTM0Ni43NDcg'
+            'MEg0Ny42Mjh2NTEyaDQxNi43NDRWMTE3LjYyNXptMTAuNDYyIDYwLjk3OSA0Ni4x'
+            'ODQgNDYuMTg0aC00Ni4xODR6bTcxLjQ0MiA0MTUuM0g4My4zNDl2LTM1LjcyMWgz'
+            'NDUuMzAyem0wLTcxLjQ0Mkg4My4zNDl2LTE1NC43OWgzNDUuMzAyem0wLTE5MC41'
+            'MTFIODMuMzQ5VjM1LjcyMWgyMzguMTR2MTA3LjE2M2gxMDcuMTYzeiIvPgogIDxw'
+            'YXRoIGQ9Ik0yNjUuOTY2IDI4Ni41NDF2NDQuNjg3bC0zNS40NzEtNDQuNjg3aC0x'
+            'My43MTd2NzYuMDg2aDE3LjU3M3YtNDMuNTA4bDM1LjA0NCA0My41MDhoMTQuMTQ3'
+            'di03Ni4wODZ6bS04OC44MzggMGgtMzIuNDY5djc2LjA4NmgxNy41NzN2LTI0LjUz'
+            'OWgxNS40MzFjMTMuMzUyIDAgMjQuMzI2LTExLjE4MSAyNC4zMjYtMjUuODI2LjAw'
+            'MS0xMi43NDItMTAuODI0LTI1LjcyMS0yNC44NjEtMjUuNzIxbS0uNTM0IDM2LjIy'
+            'aC0xNC4zNnYtMjAuNzg4aDEzLjcxN2M1LjAyIDAgOC4yNTIgNC4xNyA4LjI1MiAx'
+            'MC4yODgtLjAwMSA1LjkzNy0yLjkzNSAxMC41LTcuNjA5IDEwLjVtMTY0LjM4NC4x'
+            'MDZ2MTIuNzU0aDE0Ljc5djIuMzU4cS04LjI1MiA5LjUzOS0xOC41NCA5LjUzOWMt'
+            'MTIuMDE3IDAtMjAuMjUzLTEwLjA0NS0yMC4yNTMtMjIuODI2IDAtMTMuNDE0IDgu'
+            'NjgzLTIzLjA0MSAxOS41MDQtMjMuMDQxIDcuMzM3IDAgMTMuODg2IDMuMzc2IDE4'
+            'LjAwMyAxMC44MjNsMTMuMDc0LTkuODU5Yy01LjMyMi05Ljk3OS0xNS40NjctMTYu'
+            'NjA5LTMwLjQzNS0xNi42MDktMjAuMzE5IDAtMzcuOTM2IDE1Ljg5NS0zNy45MzYg'
+            'MzguMDQyIDAgMjEuOTEgMTUuNjA3IDM5LjExNiAzNi41NDMgMzkuMTE2cTExLjM1'
+            'OSAwIDIwLjAzOS04LjAzN2guMDAxdjcuNWgxNC41NzR2LTM5Ljc1OXoiLz4KPC9z'
+            'dmc+Cg=='
+        ),
+        "settings_calc_ef": (
+            'PHN2ZyBmaWxsPSIjMDAwMDAwIiB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmll'
+            'd0JveD0iMCAwIDI0IDI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z'
+            'dmciPgogIDxwYXRoIGQ9Ik0yMyA0YTEgMSAwIDAgMC0xLTFIMmExIDEgMCAwIDAt'
+            'MSAxdjE2YTEgMSAwIDAgMCAxIDFoMjBhMSAxIDAgMCAwIDEtMVpNOC41MjEgMTlh'
+            'MjQgMjQgMCAwIDAgLjk4Ni0zLjEzM2MxLjgyMS42MTIgMy41MDUgMS4yNzIgNS40'
+            'IDEuNzI0QTIwIDIwIDAgMCAxIDE0LjM1NiAxOVpNMyA5LjUwOGE0LjU3IDQuNTcg'
+            'MCAwIDEgNC40MjctMS40MzkgMTMuOCAxMy44IDAgMCAxIC41IDUuMjY2QTYuNTMg'
+            'Ni41MyAwIDAgMCAzIDE0LjEyWk0xNC4zNTcgNWEyMi40IDIyLjQgMCAwIDEgMS4x'
+            'NzYgMy40ODNjLTIuMjM4LS41MTItNC4wOTMtMS4zNDctNi41LTIuMDU4QTI5IDI5'
+            'IDAgMCAwIDguNTIxIDVabS00LjQ4NiA4Ljg3OGExNC42IDE0LjYgMCAwIDAtLjIz'
+            'Ny01LjE3MSA0NCA0NCAwIDAgMCA2LjI4NCAxLjg5MyAxMy41IDEzLjUgMCAwIDEt'
+            'LjQyOCA1LjA3OGMtMS45MzEtLjQ0OC0zLjgzOC0xLjIxNS01LjYxOS0xLjhtOC4w'
+            'NzQtMy4wNTRhMTAuMyAxMC4zIDAgMCAwIDMuMDU1LS4zdjUuMTM5YTkuMSA5LjEg'
+            'MCAwIDEtMy41MjYuMzM3IDE1LjUgMTUuNSAwIDAgMCAuNDcxLTUuMTc2TTIxIDgu'
+            'NDU4YTkgOSAwIDAgMS0zLjM0NC4zNTRBMjMuMyAyMy4zIDAgMCAwIDE2LjUyMSA1'
+            'SDIxWk02LjM1NyA1Yy4xMS4yNTIuMjQ1LjU3OS4zOTMuOTcyQTYuMzcgNi4zNyAw'
+            'IDAgMCAzIDYuOTE3VjVaTTMgMTYuNzExQTQuNTggNC41OCAwIDAgMSA3LjU4MyAx'
+            'NS4zIDIyLjUgMjIuNSAwIDAgMSA2LjM1NyAxOUgzWk0xNi41MjEgMTlxLjE4NC0u'
+            'NDY4LjM4NC0xLjA1MkExMC45IDEwLjkgMCAwIDAgMjEgMTcuNzI1VjE5WiIvPgo8'
+            'L3N2Zz4='
+        ),
+        "settings_clip_margin": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMjAgMjBINFYx'
+            'NkgyMFYyMFoiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0'
+            'cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8'
+            'cGF0aCBkPSJNMiAxMkgyMiIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9'
+            'IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJv'
+            'dW5kIi8+CjxwYXRoIGQ9Ik03IDRINFY3IiBzdHJva2U9IiMwMDAwMDAiIHN0cm9r'
+            'ZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5l'
+            'am9pbj0icm91bmQiLz4KPHBhdGggZD0iTTExIDRIMTMiIHN0cm9rZT0iIzAwMDAw'
+            'MCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ry'
+            'b2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTcgNEgyMFY3IiBzdHJv'
+            'a2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0i'
+            'cm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+'
+        ),
+        "settings_grid": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMjEgMy42VjEy'
+            'SDEyVjNIMjAuNEMyMC43MzE0IDMgMjEgMy4yNjg2MyAyMSAzLjZaIiBzdHJva2U9'
+            'IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41Ii8+CjxwYXRoIGQ9Ik0yMSAyMC40'
+            'VjEySDEyVjIxSDIwLjRDMjAuNzMxNCAyMSAyMSAyMC43MzE0IDIxIDIwLjRaIiBz'
+            'dHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41Ii8+CjxwYXRoIGQ9Ik0z'
+            'IDEyVjMuNkMzIDMuMjY4NjMgMy4yNjg2MyAzIDMuNiAzSDEyVjEySDNaIiBzdHJv'
+            'a2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41Ii8+CjxwYXRoIGQ9Ik0zIDEy'
+            'VjIwLjRDMyAyMC43MzE0IDMuMjY4NjMgMjEgMy42IDIxSDEyVjEySDNaIiBzdHJv'
+            'a2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41Ii8+Cjwvc3ZnPg=='
+        ),
+        "settings_api_server": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0t'
+            'IFVwbG9hZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0'
+            'b3I6IFNWRyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8IURPQ1RZUEUgc3ZnIFBVQkxJ'
+            'QyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9H'
+            'cmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIGZpbGw9IiMwMDAw'
+            'MDAiIGhlaWdodD0iODAwcHgiIHdpZHRoPSI4MDBweCIgdmVyc2lvbj0iMS4xIiBp'
+            'ZD0iQ2FwYV8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHht'
+            'bG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiAKCSB2aWV3'
+            'Qm94PSIwIDAgMzgwIDM4MCIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxnPgoJPHBh'
+            'dGggZD0iTTkxLjQyNSwxNTcuNDM1Yy0xLjA2NS0yLjI5Ny0zLjM2Ni0zLjc2Ny01'
+            'Ljg5Ny0zLjc2N2MtMC4wMDUsMC0wLjAxLDAtMC4wMTUsMGMtMi41MzcsMC4wMDYt'
+            'NC44MzksMS40ODctNS44OTUsMy43OTQKCQlMNDcuNDAyLDIyNy44M2MtMS40OTQs'
+            'My4yNjQtMC4wNiw3LjEyMiwzLjIwNCw4LjYxNmMwLjg3NywwLjQwMSwxLjc5Nyww'
+            'LjU5MSwyLjcwMiwwLjU5MWMyLjQ2NCwwLDQuODIxLTEuNDA5LDUuOTE0LTMuNzk2'
+            'CgkJbDguMDgtMTcuNjQ5aDM2Ljc1bDguMTkzLDE3LjY3N2MxLjUxLDMuMjU3LDUu'
+            'MzczLDQuNjc0LDguNjMxLDMuMTY0YzMuMjU3LTEuNTEsNC42NzMtNS4zNzQsMy4x'
+            'NjQtOC42MzFMOTEuNDI1LDE1Ny40MzV6CgkJIE03My4yNTQsMjAyLjU5MmwxMi4z'
+            'MTEtMjYuODg4bDEyLjQ2MiwyNi44ODhINzMuMjU0eiIvPgoJPHBhdGggZD0iTTE2'
+            'Ni40OTYsMTUyLjg2NUgxMzUuMDdjLTMuNTksMC02LjUsMi45MS02LjUsNi41djcx'
+            'LjE3YzAsMy41OSwyLjkxLDYuNSw2LjUsNi41YzMuNTksMCw2LjUtMi45MSw2LjUt'
+            'Ni41VjIwMy41aDI0LjkyNgoJCWMxMy45NiwwLDI1LjMxNi0xMS4zNTcsMjUuMzE2'
+            'LTI1LjMxNkMxOTEuODEzLDE2NC4yMjMsMTgwLjQ1NiwxNTIuODY1LDE2Ni40OTYs'
+            'MTUyLjg2NXogTTE2Ni40OTYsMTkwLjVIMTQxLjU3di0yNC42MzVoMjQuOTI2CgkJ'
+            'YzYuNzkyLDAsMTIuMzE2LDUuNTI2LDEyLjMxNiwxMi4zMThDMTc4LjgxMywxODQu'
+            'OTc1LDE3My4yODgsMTkwLjUsMTY2LjQ5NiwxOTAuNXoiLz4KCTxwYXRoIGQ9Ik0y'
+            'MDMuMzEzLDE1Mi44NjVjLTMuNTksMC02LjUsMi45MS02LjUsNi41djcxLjE3YzAs'
+            'My41OSwyLjkxLDYuNSw2LjUsNi41czYuNS0yLjkxLDYuNS02LjV2LTcxLjE3CgkJ'
+            'QzIwOS44MTMsMTU1Ljc3NSwyMDYuOTAyLDE1Mi44NjUsMjAzLjMxMywxNTIuODY1'
+            'eiIvPgoJPHBhdGggZD0iTTM2OC4zMTcsNDYuNDg3SDExLjY4NEM1LjI0MSw0Ni40'
+            'ODcsMCw1MS43MywwLDU4LjE3M3YyNjMuNjU2YzAsNi40NDIsNS4yNDEsMTEuNjg0'
+            'LDExLjY4NCwxMS42ODRoMzU2LjYzNAoJCWM2LjQ0MiwwLDExLjY4My01LjI0Miwx'
+            'MS42ODMtMTEuNjg0VjU4LjE3M0MzODAsNTEuNzMsMzc0Ljc2LDQ2LjQ4NywzNjgu'
+            'MzE3LDQ2LjQ4N3ogTTI4MC45NDksMjU5LjI2OAoJCWM1LjE2Mi0xMi4xOTIsMTcu'
+            'MDUzLTIwLjA3LDMwLjI5NS0yMC4wN2M0LjQxMSwwLDguNzIxLDAuODc4LDEyLjgx'
+            'MywyLjYxYzE2LjY5Niw3LjA3MiwyNC41MjksMjYuNDA4LDE3LjQ2MSw0My4xMDUK'
+            'CQljLTUuMTY3LDEyLjE5MS0xNy4wNTgsMjAuMDY4LTMwLjI5NCwyMC4wNjhjMCww'
+            'LDAsMC0wLjAwMSwwYy00LjQxMSwwLTguNzIxLTAuODc4LTEyLjgxLTIuNjExCgkJ'
+            'Yy04LjA4OS0zLjQyNC0xNC4zNjEtOS43OTMtMTcuNjU5LTE3LjkzNUMyNzcuNDU1'
+            'LDI3Ni4yOTQsMjc3LjUyNCwyNjcuMzU2LDI4MC45NDksMjU5LjI2OHogTTMyMC44'
+            'NjgsNzkuNzcxCgkJYzYuODQ0LDAsMTIuMzg3LDUuNTQ3LDEyLjM4NywxMi4zODdj'
+            'MCw2Ljg0Mi01LjU0MywxMi4zODctMTIuMzg3LDEyLjM4N2MtNi44MzksMC0xMi4z'
+            'ODUtNS41NDUtMTIuMzg1LTEyLjM4NwoJCUMzMDguNDgzLDg1LjMxOCwzMTQuMDI5'
+            'LDc5Ljc3MSwzMjAuODY4LDc5Ljc3MXogTTI4My43MTUsNzkuNzcxYzYuODM5LDAs'
+            'MTIuMzg2LDUuNTQ3LDEyLjM4NiwxMi4zODcKCQljMCw2Ljg0Mi01LjU0NywxMi4z'
+            'ODctMTIuMzg2LDEyLjM4N2MtNi44MzksMC0xMi4zODctNS41NDUtMTIuMzg3LTEy'
+            'LjM4N0MyNzEuMzI4LDg1LjMxOCwyNzYuODc2LDc5Ljc3MSwyODMuNzE1LDc5Ljc3'
+            'MXoKCQkgTTI0Ni41NjEsNzkuNzcxYzYuODM5LDAsMTIuMzgxLDUuNTQ3LDEyLjM4'
+            'MSwxMi4zODdjMCw2Ljg0Mi01LjU0MiwxMi4zODctMTIuMzgxLDEyLjM4N2MtNi44'
+            'NDQsMC0xMi4zODctNS41NDUtMTIuMzg3LTEyLjM4NwoJCUMyMzQuMTc1LDg1LjMx'
+            'OCwyMzkuNzE4LDc5Ljc3MSwyNDYuNTYxLDc5Ljc3MXogTTIxLjI3LDMxNC4wMVYx'
+            'NDEuNDI0SDM1OC43M3Y2Ny4yNzRjLTEuNTM3LTIuMjAyLTMuNjc3LTQuMDItNi4z'
+            'MjctNS4xNDMKCQlsLTIwLjYxNC04LjcyNmMtMS44MzUtMC43NzgtMy43NzEtMS4x'
+            'NzItNS43NTQtMS4xNzJjLTUuOTU2LDAtMTEuMzAzLDMuNTQtMTMuNjIzLDkuMDJs'
+            'LTEuMjUzLDIuOTU5CgkJYy05LjIyNywwLjEyOS0xOC4zODEsMi4yNTUtMjYuNzI4'
+            'LDYuMTkzbC0yLjQyNi0yLjEwN2MtMS4xNzQtMS4wMTgtMi40OTktMS44NDEtMy45'
+            'MzItMi40NDdjLTEuODQxLTAuNzc5LTMuNzgyLTEuMTc0LTUuNzcxLTEuMTc0CgkJ'
+            'Yy00LjI3NiwwLTguMzQxLDEuODU4LTExLjE1NCw1LjA5OWwtMTQuNjcxLDE2Ljkx'
+            'NWMtMi41ODMsMi45ODYtMy44NTUsNi43OTQtMy41ODEsMTAuNzM1YzAuMjg1LDMu'
+            'OTQxLDIuMDg0LDcuNTM1LDUuMDY0LDEwLjExNQoJCWwyLjQxNywyLjA5OGMtMi43'
+            'NTUsOC44NDktMy41NjMsMTguMTc5LTIuMzY1LDI3LjM0NGwtMi43NDksMS42NTRj'
+            'LTYuOTgxLDQuMi05LjI0MiwxMy4zMDItNS4wMzksMjAuMjkzTDI0OS4wNDQsMzE1'
+            'SDIyLjI2CgkJQzIxLjcxNCwzMTUsMjEuMjcsMzE0LjU1NiwyMS4yNywzMTQuMDF6'
+            'Ii8+CjwvZz4KPC9zdmc+'
+        ),
+        "settings_api_url": (
+            'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IS0tIFVwbG9h'
+            'ZGVkIHRvOiBTVkcgUmVwbywgd3d3LnN2Z3JlcG8uY29tLCBHZW5lcmF0b3I6IFNW'
+            'RyBSZXBvIE1peGVyIFRvb2xzIC0tPgo8c3ZnIHdpZHRoPSI4MDBweCIgaGVpZ2h0'
+            'PSI4MDBweCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0i'
+            'aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTMgMTZIMTgi'
+            'IHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5l'
+            'Y2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJN'
+            'NiA4TDEwIDEyTDYgMTYiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIx'
+            'LjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3Vu'
+            'ZCIvPgo8cGF0aCBkPSJNMiAxOFY2QzIgNC44OTU0MyAyLjg5NTQzIDQgNCA0SDIw'
+            'QzIxLjEwNDYgNCAyMiA0Ljg5NTQzIDIyIDZWMThDMjIgMTkuMTA0NiAyMS4xMDQ2'
+            'IDIwIDIwIDIwSDRDMi44OTU0MyAyMCAyIDE5LjEwNDYgMiAxOFoiIHN0cm9rZT0i'
+            'IzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3Vu'
+            'ZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4='
+        ),
     }
 
     def _make_view_icon(self, kind: str) -> QIcon:
@@ -2786,32 +2974,20 @@ class MainWindow(QMainWindow):
         if save and not self._suspend_config_save:
             self.save_config()
 
-    def _build_menu(self):
-        menu_bar = self.menuBar()
-        menu_bar.clear()
+    def _build_settings_actions(self):
+        # Actions de l'ancien menu Parametres ; affichees dans le ruban (onglet Parametres)
 
-        # ── Menu Paramètres ──
-        settings_menu = menu_bar.addMenu(tr_ui("menu_settings"))
+        self.act_line_widths = QAction(tr_ui("menu_styles"), self)
+        self.act_line_widths.triggered.connect(self.open_settings_dialog)
 
-        act_line_widths = QAction(tr_ui("menu_styles"), self)
-        act_line_widths.triggered.connect(self.open_settings_dialog)
-        settings_menu.addAction(act_line_widths)
+        self.act_png_export = QAction(tr_ui("menu_png_export"), self)
+        self.act_png_export.triggered.connect(self.open_png_export_dialog)
 
-        act_png_export = QAction(tr_ui("menu_png_export"), self)
-        act_png_export.triggered.connect(self.open_png_export_dialog)
-        settings_menu.addAction(act_png_export)
+        self.act_units = QAction(tr_ui("menu_units"), self)
+        self.act_units.triggered.connect(self.open_units_dialog)
 
-        act_units = QAction(tr_ui("menu_units"), self)
-        act_units.triggered.connect(self.open_units_dialog)
-        settings_menu.addAction(act_units)
-
-        act_calc_ef = QAction(tr_ui("menu_calc_ef"), self)
-        act_calc_ef.triggered.connect(self.open_calc_ef_dialog)
-        settings_menu.addAction(act_calc_ef)
-
-        # Sous-menu Thème
-        theme_menu = QMenu(tr_ui("menu_theme"), self)
-        settings_menu.addMenu(theme_menu)
+        self.act_calc_ef = QAction(tr_ui("menu_calc_ef"), self)
+        self.act_calc_ef.triggered.connect(self.open_calc_ef_dialog)
 
         theme_group = QActionGroup(self)
         theme_group.setExclusive(True)
@@ -2819,30 +2995,21 @@ class MainWindow(QMainWindow):
         self.act_theme_dark = QAction(tr_ui("theme_dark"), self, checkable=True)
         self.act_theme_dark.triggered.connect(lambda checked: checked and self.apply_theme("dark"))
         theme_group.addAction(self.act_theme_dark)
-        theme_menu.addAction(self.act_theme_dark)
 
         self.act_theme_light = QAction(tr_ui("theme_light"), self, checkable=True)
         self.act_theme_light.triggered.connect(lambda checked: checked and self.apply_theme("light"))
         theme_group.addAction(self.act_theme_light)
-        theme_menu.addAction(self.act_theme_light)
-
-        # Sous-menu Language
-        language_menu = QMenu(tr_ui("menu_language"), self)
-        settings_menu.addMenu(language_menu)
 
         language_group = QActionGroup(self)
         language_group.setExclusive(True)
 
+        self.act_languages = []
         for code, (label, _module) in LANGUAGES.items():
             act = QAction(label, self, checkable=True)
+            self.act_languages.append(act)
             act.setChecked(code == get_language())
             act.triggered.connect(lambda checked, c=code: checked and self.apply_language(c))
             language_group.addAction(act)
-            language_menu.addAction(act)
-
-        # Sous-menu Vue 3D
-        view3d_menu = QMenu(tr_ui("menu_view3d"), self)
-        settings_menu.addMenu(view3d_menu)
 
         projection_group = QActionGroup(self)
         projection_group.setExclusive(True)
@@ -2850,29 +3017,19 @@ class MainWindow(QMainWindow):
         self.act_view_projection_perspective = QAction(tr_ui("view_projection_perspective"), self, checkable=True)
         self.act_view_projection_perspective.triggered.connect(lambda checked: checked and self.apply_view_projection("perspective"))
         projection_group.addAction(self.act_view_projection_perspective)
-        view3d_menu.addAction(self.act_view_projection_perspective)
 
         self.act_view_projection_orthogonal = QAction(tr_ui("view_projection_orthogonal"), self, checkable=True)
         self.act_view_projection_orthogonal.triggered.connect(lambda checked: checked and self.apply_view_projection("orthogonal"))
         projection_group.addAction(self.act_view_projection_orthogonal)
-        view3d_menu.addAction(self.act_view_projection_orthogonal)
 
-        view3d_menu.addSeparator()
-        act_scene_light = QAction(tr_ui("menu_scene_light"), self)
-        act_scene_light.triggered.connect(self.open_scene_light_dialog)
-        view3d_menu.addAction(act_scene_light)
+        self.act_scene_light = QAction(tr_ui("menu_scene_light"), self)
+        self.act_scene_light.triggered.connect(self.open_scene_light_dialog)
 
-        act_clip_margin = QAction(tr_ui("menu_clip_box"), self)
-        act_clip_margin.triggered.connect(self.open_clip_margin_dialog)
-        view3d_menu.addAction(act_clip_margin)
+        self.act_clip_margin = QAction(tr_ui("menu_clip_box"), self)
+        self.act_clip_margin.triggered.connect(self.open_clip_margin_dialog)
 
-        act_grid = QAction(tr_ui("menu_grid"), self)
-        act_grid.triggered.connect(self.open_grid_dialog)
-        view3d_menu.addAction(act_grid)
-
-        # Sous-menu Minicarte
-        minimap_menu = QMenu(tr_ui("menu_minimap"), self)
-        settings_menu.addMenu(minimap_menu)
+        self.act_grid = QAction(tr_ui("menu_grid"), self)
+        self.act_grid.triggered.connect(self.open_grid_dialog)
 
         minimap_group = QActionGroup(self)
         minimap_group.setExclusive(True)
@@ -2881,14 +3038,10 @@ class MainWindow(QMainWindow):
         self.act_minimap_bottom_left.setChecked(True)
         self.act_minimap_bottom_left.triggered.connect(lambda checked: checked and self.apply_minimap_corner("bottom_left"))
         minimap_group.addAction(self.act_minimap_bottom_left)
-        minimap_menu.addAction(self.act_minimap_bottom_left)
 
         self.act_minimap_bottom_right = QAction(tr_ui("minimap_position_bottom_right"), self, checkable=True)
         self.act_minimap_bottom_right.triggered.connect(lambda checked: checked and self.apply_minimap_corner("bottom_right"))
         minimap_group.addAction(self.act_minimap_bottom_right)
-        minimap_menu.addAction(self.act_minimap_bottom_right)
-
-        minimap_menu.addSeparator()
 
         minimap_size_group = QActionGroup(self)
         minimap_size_group.setExclusive(True)
@@ -2897,25 +3050,19 @@ class MainWindow(QMainWindow):
         self.act_minimap_size_large.setChecked(True)
         self.act_minimap_size_large.triggered.connect(lambda checked: checked and self.apply_minimap_size("large"))
         minimap_size_group.addAction(self.act_minimap_size_large)
-        minimap_menu.addAction(self.act_minimap_size_large)
 
         self.act_minimap_size_small = QAction(tr_ui("minimap_size_small"), self, checkable=True)
         self.act_minimap_size_small.triggered.connect(lambda checked: checked and self.apply_minimap_size("small"))
         minimap_size_group.addAction(self.act_minimap_size_small)
-        minimap_menu.addAction(self.act_minimap_size_small)
 
-        # Sous-menu Configuration
-        configuration_menu = QMenu(tr_ui("menu_configuration"), self)
-        settings_menu.addMenu(configuration_menu)
+        self.act_api_server = QAction(tr_ui("menu_api_server"), self)
+        self.act_api_server.triggered.connect(self.open_configuration_dialog)
 
-        act_api_server = QAction(tr_ui("menu_api_server"), self)
-        act_api_server.triggered.connect(self.open_configuration_dialog)
-        configuration_menu.addAction(act_api_server)
+        self.act_api_url = QAction(tr_ui("menu_api_url"), self)
+        self.act_api_url.triggered.connect(self.open_api_url_dialog)
 
-        act_api_url = QAction(tr_ui("menu_api_url"), self)
-        act_api_url.triggered.connect(self.open_api_url_dialog)
-        configuration_menu.addAction(act_api_url)
-
+    def _build_menu(self):
+        self.menuBar().hide()  # plus de menu : tout est dans le ruban
         self.apply_view_projection(self.view_projection_mode, save=False)
 
     def _create_main_layout(self):
@@ -2988,6 +3135,7 @@ class MainWindow(QMainWindow):
         r = lambda key: tr_ui(key)
         mc = self.model_check
         self.model_check.build_actions()
+        self._build_settings_actions()
         self.act_close = QAction(tr_ui("menu_close"), self)
         self.act_close.triggered.connect(self.close_current_project)
         self.act_export_ifc = QAction(tr_ui("menu_export_ifc"), self)
@@ -3072,6 +3220,35 @@ class MainWindow(QMainWindow):
                     (r("mc_ribbon_toggle"), mc.act_toggle, "check"),
                 ]),
             ]),
+            (r("menu_settings"), [
+                (r("ribbon_group_interface"), [
+                    (r("menu_styles"), self.act_line_widths),
+                    (r("menu_units"), self.act_units),
+                    ("", [(r("theme_light"), self.act_theme_light), (r("theme_dark"), self.act_theme_dark)], "radios"),
+                    ("", [(label, act) for act, (label, _m) in zip(self.act_languages, LANGUAGES.values())], "radios"),
+                ]),
+                (r("menu_view3d"), [
+                    ("", [(r("view_projection_perspective"), self.act_view_projection_perspective),
+                          (r("view_projection_orthogonal"), self.act_view_projection_orthogonal)], "radios"),
+                    (r("ribbon_lighting"), self.act_scene_light),
+                    (r("menu_clip_box"), self.act_clip_margin),
+                    (r("menu_grid"), self.act_grid),
+                ]),
+                (r("menu_minimap"), [
+                    ("", [(r("minimap_position_bottom_left"), self.act_minimap_bottom_left),
+                          (r("minimap_position_bottom_right"), self.act_minimap_bottom_right)], "radios"),
+                    ("", [(r("minimap_size_large"), self.act_minimap_size_large),
+                          (r("minimap_size_small"), self.act_minimap_size_small)], "radios"),
+                ]),
+                (r("ribbon_group_export_calc"), [
+                    (r("menu_png_export"), self.act_png_export),
+                    (r("menu_calc_ef"), self.act_calc_ef),
+                ]),
+                (r("menu_configuration"), [
+                    (r("ribbon_api_server"), self.act_api_server),
+                    (r("ribbon_api_url"), self.act_api_url),
+                ]),
+            ]),
             (r("menu_help"), [
                 (r("menu_help"), [
                     (r("menu_controls"), self.act_help_controls),
@@ -3083,7 +3260,7 @@ class MainWindow(QMainWindow):
         for _t, groups in spec:
             for _g, items in groups:
                 for item in items:
-                    if not isinstance(item[1], QAction):
+                    if isinstance(item[1], QWidget):
                         item[1].setParent(self)
                         item[1].hide()
         for lbl in (self.transparency_value_label, self.profiles_transparency_value_label):
@@ -3107,10 +3284,20 @@ class MainWindow(QMainWindow):
 
     def _refresh_action_icons(self):
         mc = self.model_check
+        if getattr(self, "act_scene_light", None) is not None:
+            self.act_scene_light.setIcon(self._make_view_icon("light_bulb"))
         for act, name in ((mc.act_run, "model_check_run"), (mc.act_report, "model_check_report"),
                           (mc.act_clear, "model_check_clear"), (mc.act_settings, "model_check_settings"),
                           (getattr(self, "browse_fto_btn", None), "file_open"),
                           (getattr(self, "act_close", None), "file_close"),
+                          (getattr(self, "act_line_widths", None), "settings_styles"),
+                          (getattr(self, "act_units", None), "settings_units"),
+                          (getattr(self, "act_png_export", None), "settings_png"),
+                          (getattr(self, "act_calc_ef", None), "settings_calc_ef"),
+                          (getattr(self, "act_clip_margin", None), "settings_clip_margin"),
+                          (getattr(self, "act_grid", None), "settings_grid"),
+                          (getattr(self, "act_api_server", None), "settings_api_server"),
+                          (getattr(self, "act_api_url", None), "settings_api_url"),
                           (getattr(self, "act_export_ifc", None), "export_ifc"),
                           (getattr(self, "act_help_controls", None), "help_controls"),
                           (getattr(self, "act_help_update", None), "help_update"),
@@ -7816,7 +8003,7 @@ def main():
 
     install_qt_translators(app, get_language())
 
-    w.show()
+    w.showMaximized()
     sys.exit(app.exec())
 
 
