@@ -1,6 +1,6 @@
 # Changelog ADViewer
 
-**⚠ Pour l'affichage correct des combinaisons (ID et nom complet), la version 2027.1 beta est nécessaire**
+**⚠ La version minimale de l'API est 1.27.1 (version 2027.1) pour utiliser le viewer**
 
 ## À paraître
 
