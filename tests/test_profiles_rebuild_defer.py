@@ -53,6 +53,23 @@ def test_non_profile_mode_clears_actor_regardless_of_synchronous():
     assert cleared == [("_profiles_actor", None)]
 
 
+def test_trigger_during_running_build_is_deferred_not_parallel():
+    from main_window import MainWindow
+
+    class _Worker:
+        def wait(self):
+            pass
+
+    h = MainWindow.__new__(MainWindow)
+    h._profiles_worker = _Worker()
+    h._profiles_pending_mode = None
+    h._trigger_profiles_build("profiles_full")
+    h._trigger_profiles_build("profiles_hidden")
+    assert isinstance(h._profiles_worker, _Worker)  # aucun 2e worker
+    assert h._finish_profiles_worker() == "profiles_hidden"  # derniere demande seule rejouee
+    assert h._profiles_worker is None and h._profiles_pending_mode is None
+
+
 if __name__ == "__main__":
     _tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for _fn in _tests:

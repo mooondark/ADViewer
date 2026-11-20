@@ -1538,6 +1538,7 @@ class MainWindow(QMainWindow):
         self._loads_worker = None   # BuildLoadsWorker en cours
         self._loads_dirty = {"punctual": True, "linear": True, "planar": True}   # types a (re)construire
         self._profiles_worker = None   # BuildProfilesWorker en cours
+        self._profiles_pending_mode = None   # reconstruction demandee pendant un build
         self._loads_debounce_timer = None   # QTimer pour debounce des changements rapides
         self.results_sections_state = {
             "linear_section": True,
@@ -7346,6 +7347,11 @@ class MainWindow(QMainWindow):
         """Construit le solide des profils en arriere-plan (BuildProfilesWorker)
         pour ne pas geler l'UI et animer la barre de progression element par
         element - seule l'entree dans un mode Profiles est couteuse."""
+        # Un seul worker a la fois : une demande pendant une construction est
+        # memorisee et rejouee une fois (avec l'etat le plus recent) a la fin.
+        if self._profiles_worker is not None:
+            self._profiles_pending_mode = mode
+            return
         line_indexes = self.viewer._filtered_line_indexes()
         filtered_lines = self.viewer._select_items_by_indexes(self.viewer._model_data.get("lines", []), line_indexes)
         filtered_line_sections = self.viewer._select_items_by_indexes(
@@ -7368,6 +7374,11 @@ class MainWindow(QMainWindow):
 
     def _on_profiles_build_ready(self, base_pd):
         mode = self._profiles_worker._mode if self._profiles_worker is not None else None
+        pending = self._finish_profiles_worker()
+        if pending is not None:
+            # Resultat perime (visibilite modifiee pendant la construction)
+            self._trigger_profiles_build(pending)
+            return
         if self.viewer is not None and mode is not None:
             self.viewer._display_mode = mode
             self.viewer._apply_profiles_build_result(base_pd)
@@ -7381,14 +7392,22 @@ class MainWindow(QMainWindow):
         self._update_transparency_controls_state()
         if mode is not None:
             self.log(tr_log(_DISPLAY_MODE_LOG_MAP.get(mode, "mode_wireframe")), "info")
+
+    def _finish_profiles_worker(self):
+        """Attend la fin du thread (evite de detruire un QThread actif), libere
+        le worker et renvoie le mode d'une demande en attente (ou None)."""
+        if self._profiles_worker is not None:
+            self._profiles_worker.wait()
         self._profiles_worker = None
+        pending, self._profiles_pending_mode = self._profiles_pending_mode, None
+        return pending
 
     def _on_profiles_build_error(self, error_text: str):
         self.log(tr_log("log_profiles_build_error", details=error_text.splitlines()[0]), "error")
+        self._finish_profiles_worker()
         if self.load_progress_container is not None:
             self.load_progress_container.setVisible(False)
         self.cmb_display_mode.setEnabled(True)
-        self._profiles_worker = None
 
     def on_transparency_changed(self, value: int):
         if self.transparency_value_label:

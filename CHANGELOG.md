@@ -6,9 +6,11 @@
 
 ### FR
 - Police : les textes de la vue 3D (informations, mode Navigation, étiquettes de diagrammes, repère) passent en Segoe UI, comme le reste de l'interface (Arial si la police est absente).
+- Correction : en mode Profilés, cocher/décocher rapidement des systèmes lançait plusieurs constructions de géométrie en parallèle (barres de progression multiples, blocage possible) ; une seule tourne désormais, avec le dernier état.
 
 ### EN
 - Font: 3D view texts (information, Navigation mode, diagram labels, axes) now use Segoe UI like the rest of the interface (Arial if the font is missing).
+- Fix: in Profiles mode, quickly checking/unchecking systems started several geometry builds in parallel (multiple progress bars, possible freeze); only one runs now, using the latest state.
 
 ## 2.24
 
