@@ -89,7 +89,9 @@ def test_mesh_matches_golden():
     assert set(stats) == set(GOLDEN)
     for e, (cells, vol) in GOLDEN.items():
         assert stats[e][0] == cells, (e, stats[e])
-        assert abs(stats[e][1] - vol) <= 1e-9 + 1e-7 * abs(vol), (e, stats[e])
+        # tolerance : bruit float32 d'un autre decoupage (valide) des capuchons
+        # concaves ; une normale inversee changerait le volume bien davantage
+        assert abs(stats[e][1] - vol) <= 1e-8 + 1e-6 * abs(vol), (e, stats[e])
 
 
 def test_section_colors_follow_element():

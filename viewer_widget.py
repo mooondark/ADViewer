@@ -15,7 +15,9 @@ import hashlib
 from functools import partial
 from typing import NamedTuple
 
+import numpy as np
 import vtk
+from vtk.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkRenderingCore import vtkBillboardTextActor3D
 from PySide6.QtCore import Qt, Signal, QSize, QTimer
@@ -50,7 +52,7 @@ from viewer_config import (
 )
 
 from ad_model_data import _build_ad_local_axes, _cross_vector3, _normalize_vector3, _rotate_vector_around_axis
-from section_geometry import profile_polygon, rotate_poly2, translate_polygon2
+from section_geometry import profile_polygon
 from load_lines import LoadLines, TIP_RATIO, resultant as _resultant
 
 _PROFILE_MODES = ("profiles_hidden", "profiles_full", "profiles_wire")
@@ -1680,116 +1682,206 @@ class VTKViewerWidget(QFrame):
         out.ShallowCopy(append.GetOutput())
         return out if out.GetNumberOfCells() > 0 else None
 
-    def _build_one_profile_polydata(self, start, end, section, source_idx: int):
-        """Solide filaire : profil de base (ou 2 elements d'un profil compose)
-        extrude de start a end, plus les coins de jarret (section['haunches'])."""
-        ang = float(section.get("angle_rad") or 0.0)  # deja en radians (API AD)
-        off = section.get("offset") or [0.0, 0.0]
-        ox, oy = float(off[0]), float(off[1])
-        u_axis, v_axis = self._section_frame(start, end)
-
-        def _xform(loop):
-            return translate_polygon2(rotate_poly2(loop, ang), dx=ox, dy=oy)
-
-        def _loops(contour):
-            return [_xform(loop) for loop in [contour["outer"]] + list(contour.get("holes") or [])]
-
-        # x -> u (largeur / axe local y), y -> v (hauteur / axe local z)
-        def _mk_to3d(base):
-            def to3d(p2):
-                w, d = float(p2[0]), float(p2[1])
-                return (base[0] + w * u_axis[0] + d * v_axis[0],
-                        base[1] + w * u_axis[1] + d * v_axis[1],
-                        base[2] + w * u_axis[2] + d * v_axis[2])
-            return to3d
-
-        def _at(t):
-            return _mk_to3d((start[0] + (end[0] - start[0]) * t,
-                             start[1] + (end[1] - start[1]) * t,
-                             start[2] + (end[2] - start[2]) * t))
-
-        # pieces : (loops_a, to3d_a, loops_b, to3d_b) — un solide loft par piece
-        pieces = []
+    @staticmethod
+    def _profile_pieces(section, contour_cache):
+        """Pieces (loops_a, t_a, loops_b, t_b) d'un filaire : profil de base (ou
+        elements d'un profil compose) de t=0 a t=1, plus les coins de jarret.
+        Boucles 2D NON transformees (ni rotation ni excentrement) : la
+        transformation est appliquee par instance dans _build_profiles_polydata."""
         combined = section.get("combined")
         if combined:
             combined_end = section.get("combined_end") or combined
             if len(combined_end) != len(combined):
                 combined_end = combined
-            for pa, pb in zip(combined, combined_end):
-                pieces.append(([_xform(pa)], _at(0.0), [_xform(pb)], _at(1.0)))
-        else:
-            contour0 = profile_polygon(section.get("dims"))
-            if not contour0 or len(contour0.get("outer") or []) < 3:
-                return None
-            dims_end = section.get("dims_end")
-            contour1 = profile_polygon(dims_end) if dims_end else contour0
-            if (not contour1
-                    or len(contour1.get("outer") or []) != len(contour0["outer"])
-                    or len(contour1.get("holes") or []) != len(contour0.get("holes") or [])):
-                contour1 = contour0
-            pieces.append((_loops(contour0), _at(0.0), _loops(contour1), _at(1.0)))
-            for h in section.get("haunches") or []:
-                pieces.append(([_xform(h["poly_start"])], _at(float(h["t_start"])),
-                               [_xform(h["poly_end"])], _at(float(h["t_end"]))))
+            return [([pa], 0.0, [pb], 1.0) for pa, pb in zip(combined, combined_end)]
 
-        if len(pieces) == 1:
-            # Cas majoritaire (pas de profil compose, pas de jarret) : pas besoin
-            # de vtkAppendPolyData pour fusionner une seule piece avec elle-meme.
-            loops_a, to3d_a, loops_b, to3d_b = pieces[0]
-            pd = self._loft_solid_polydata(loops_a, to3d_a, loops_b, to3d_b, source_idx)
-            return pd if (pd is not None and pd.GetNumberOfCells() > 0) else None
+        def _contour(dims):
+            key = repr(dims)
+            if key not in contour_cache:
+                contour_cache[key] = profile_polygon(dims)
+            return contour_cache[key]
 
-        append = vtk.vtkAppendPolyData()
-        added = False
-        for loops_a, to3d_a, loops_b, to3d_b in pieces:
-            pd = self._loft_solid_polydata(loops_a, to3d_a, loops_b, to3d_b, source_idx)
-            if pd is not None:
-                append.AddInputData(pd)
-                added = True
-        if not added:
+        def _loops(contour):
+            return [contour["outer"]] + list(contour.get("holes") or [])
+
+        contour0 = _contour(section.get("dims"))
+        if not contour0 or len(contour0.get("outer") or []) < 3:
+            return []
+        dims_end = section.get("dims_end")
+        contour1 = _contour(dims_end) if dims_end else contour0
+        if (not contour1
+                or len(contour1.get("outer") or []) != len(contour0["outer"])
+                or len(contour1.get("holes") or []) != len(contour0.get("holes") or [])):
+            contour1 = contour0
+        pieces = [(_loops(contour0), 0.0, _loops(contour1), 1.0)]
+        for h in section.get("haunches") or []:
+            pieces.append(([h["poly_start"]], float(h["t_start"]), [h["poly_end"]], float(h["t_end"])))
+        return pieces
+
+    def _profile_template(self, loops_a, loops_b):
+        """Gabarit d'une piece : (pts2d (P,2), side (P,) [True = station b],
+        conn (K,), sizes (C,)), ou None sans cellule. Points : boucles de a puis
+        de b. Cellules : capuchon a, capuchon b, parois - meme ordre et meme sens
+        que l'ancienne construction par element, dont vtkPolyDataNormals
+        (ConsistencyOn) herite l'orientation."""
+        pts, side, index = [], [], []
+        for s, loops in enumerate((loops_a, loops_b)):
+            ids_s = []
+            for loop in loops:
+                ids = []
+                for x, y in loop:
+                    ids.append(len(pts))
+                    pts.append((float(x), float(y)))
+                    side.append(bool(s))
+                ids_s.append(ids)
+            index.append(ids_s)
+
+        conn, sizes = [], []
+        for s, loops in enumerate((loops_a, loops_b)):
+            if _poly2_area(loops[0]) < 1e-9:
+                continue  # contour ecrase (cote contact d'un jarret) : pas de capuchon
+            # vtkPoints est en float32 : les points du decoupage se retrouvent
+            # par leurs coordonnees arrondies en float32.
+            lookup = {}
+            for k, loop in enumerate(loops):
+                for i, (x, y) in enumerate(loop):
+                    lookup.setdefault((float(np.float32(x)), float(np.float32(y))), index[s][k][i])
+            cap = self._build_surface_polydata_with_openings(
+                [(float(x), float(y), 0.0) for x, y in loops[0]],
+                [[(float(x), float(y), 0.0) for x, y in loop] for loop in loops[1:]],
+            )
+            if cap is None:
+                continue
+            for c in range(cap.GetNumberOfCells()):
+                ids = cap.GetCell(c).GetPointIds()
+                n = ids.GetNumberOfIds()
+                for m in range(n):
+                    p = cap.GetPoint(ids.GetId(m))
+                    conn.append(lookup[(p[0], p[1])])
+                sizes.append(n)
+
+        for k in range(min(len(loops_a), len(loops_b))):
+            ra, rb = index[0][k], index[1][k]
+            n = min(len(ra), len(rb))
+            if n < 3:
+                continue
+            for i in range(n):
+                j = (i + 1) % n
+                conn.extend((ra[i], ra[j], rb[j], rb[i]))
+                sizes.append(4)
+
+        if not sizes:
             return None
-        append.Update()
-        out = vtk.vtkPolyData()
-        out.ShallowCopy(append.GetOutput())
-        return out if out.GetNumberOfCells() > 0 else None
+        return (np.asarray(pts, dtype=np.float64), np.asarray(side, dtype=bool),
+                np.asarray(conn, dtype=np.int64), np.asarray(sizes, dtype=np.int64))
 
     def _build_profiles_polydata(self, lines, line_sections, element_indexes=None, progress_cb=None):
         """progress_cb(done, total), si fourni, est appele a chaque palier de
         pourcentage franchi (utilise par BuildProfilesWorker pour la barre de
-        progression lors du switch vers un mode Profiles)."""
-        append = vtk.vtkAppendPolyData()
-        appended = False
+        progression lors du switch vers un mode Profiles).
+
+        Construction en bloc : un gabarit (points 2D + connectivite) par forme
+        de piece, puis passage en 3D vectorise (numpy) de toutes les pieces qui
+        le partagent. Repere, angle, excentrement et stations restent calcules
+        en scalaire, et le passage 3D garde l'ordre d'operations
+        (base + x*u) + y*v : coordonnees identiques bit a bit a l'ancienne
+        construction par element (la soudure a tolerance 0 en depend)."""
         mapped_indexes = list(element_indexes or [])
         sections = list(line_sections or [])
         total = len(lines or [])
         last_pct = -1
+        contour_cache, templates, groups = {}, {}, {}
+        params, src, rgbs = [], [], []   # par instance (piece d'un element), dans l'ordre
         for idx, seg in enumerate(lines or []):
             if not seg or len(seg) != 2:
                 continue
             section = sections[idx] if idx < len(sections) else None
             if not isinstance(section, dict):
                 continue
-            source_idx = mapped_indexes[idx] if idx < len(mapped_indexes) else idx
-            pd = self._build_one_profile_polydata(seg[0], seg[1], section, int(source_idx))
-            if pd is not None and pd.GetNumberOfCells() > 0:
-                if self._color_by_section:
-                    rgb = self._get_section_color(self._line_section_name(int(source_idx)))
-                    colors = vtk.vtkUnsignedCharArray()
-                    colors.SetName("section_colors")
-                    colors.SetNumberOfComponents(3)
-                    for _ in range(pd.GetNumberOfCells()):
-                        colors.InsertNextTuple3(*rgb)
-                    pd.GetCellData().SetScalars(colors)
-                append.AddInputData(pd)
-                appended = True
+            source_idx = int(mapped_indexes[idx] if idx < len(mapped_indexes) else idx)
+            start, end = seg
+            ang = float(section.get("angle_rad") or 0.0)  # deja en radians (API AD)
+            ca, sa = (1.0, 0.0) if abs(ang) < 1e-12 else (math.cos(ang), math.sin(ang))
+            off = section.get("offset") or [0.0, 0.0]
+            ox, oy = float(off[0]), float(off[1])
+            u_axis, v_axis = self._section_frame(start, end)
+            first = len(params)
+            for loops_a, t_a, loops_b, t_b in self._profile_pieces(section, contour_cache):
+                key = repr((loops_a, loops_b))
+                if key not in templates:
+                    templates[key] = self._profile_template(loops_a, loops_b)
+                if templates[key] is None:
+                    continue
+                base_a = [start[k] + (end[k] - start[k]) * t_a for k in range(3)]
+                base_b = [start[k] + (end[k] - start[k]) * t_b for k in range(3)]
+                groups.setdefault(key, []).append(len(params))
+                params.append((ca, sa, ox, oy, *u_axis, *v_axis, *base_a, *base_b))
+                src.append(source_idx)
+            if self._color_by_section and len(params) > first:
+                rgb = self._get_section_color(self._line_section_name(source_idx))
+                rgbs.extend([rgb] * (len(params) - first))
             if progress_cb is not None and total:
                 pct = (idx + 1) * 100 // total
                 if pct != last_pct:
                     last_pct = pct
                     progress_cb(idx + 1, total)
-        if not appended:
+        if not params:
             return None
-        append.Update()
+
+        par = np.asarray(params, dtype=np.float64)
+        src = np.asarray(src, dtype=np.int32)
+        inst_tpl = [None] * len(params)
+        for key, ids in groups.items():
+            for i in ids:
+                inst_tpl[i] = templates[key]
+        n_pts = np.array([t[0].shape[0] for t in inst_tpl], dtype=np.int64)
+        n_conn = np.array([t[2].size for t in inst_tpl], dtype=np.int64)
+        n_cells = np.array([t[3].size for t in inst_tpl], dtype=np.int64)
+        pt_start = np.cumsum(n_pts) - n_pts
+        conn_start = np.cumsum(n_conn) - n_conn
+        cell_start = np.cumsum(n_cells) - n_cells
+
+        points = np.empty((int(n_pts.sum()), 3), dtype=np.float64)
+        conn_all = np.empty(int(n_conn.sum()), dtype=np.int64)
+        sizes_all = np.empty(int(n_cells.sum()), dtype=np.int64)
+        elem_all = np.empty(int(n_cells.sum()), dtype=np.int32)
+        rgb_src = np.asarray(rgbs).astype(np.uint8) if self._color_by_section else None
+        rgb_all = np.empty((int(n_cells.sum()), 3), dtype=np.uint8) if self._color_by_section else None
+        for key, ids in groups.items():
+            ids = np.asarray(ids, dtype=np.int64)
+            pts2d, side, conn, sizes = templates[key]
+            p = par[ids]
+            ca, sa, ox, oy = p[:, 0:1], p[:, 1:2], p[:, 2:3], p[:, 3:4]
+            u, v, base_a, base_b = p[:, 4:7], p[:, 7:10], p[:, 10:13], p[:, 13:16]
+            x, y = pts2d[:, 0], pts2d[:, 1]
+            xr = (x * ca - y * sa) + ox                     # (M, P)
+            yr = (x * sa + y * ca) + oy
+            base = np.where(side[None, :, None], base_b[:, None, :], base_a[:, None, :])
+            pts3 = (base + xr[..., None] * u[:, None, :]) + yr[..., None] * v[:, None, :]
+            points[(pt_start[ids][:, None] + np.arange(len(pts2d))).ravel()] = pts3.reshape(-1, 3)
+            conn_all[(conn_start[ids][:, None] + np.arange(conn.size)).ravel()] = \
+                (conn[None, :] + pt_start[ids][:, None]).ravel()
+            cpos = (cell_start[ids][:, None] + np.arange(sizes.size)).ravel()
+            sizes_all[cpos] = np.tile(sizes, len(ids))
+            elem_all[cpos] = np.repeat(src[ids], sizes.size)
+            if rgb_all is not None:
+                rgb_all[cpos] = np.repeat(rgb_src[ids], sizes.size, axis=0)
+
+        vtk_points = vtk.vtkPoints()
+        vtk_points.SetData(numpy_to_vtk(points.astype(np.float32), deep=True))  # float32 comme vtkPoints par defaut
+        polys = vtk.vtkCellArray()
+        offsets = np.concatenate(([0], np.cumsum(sizes_all))).astype(np.int64)
+        polys.SetData(numpy_to_vtkIdTypeArray(offsets, deep=True), numpy_to_vtkIdTypeArray(conn_all, deep=True))
+        merged = vtk.vtkPolyData()
+        merged.SetPoints(vtk_points)
+        merged.SetPolys(polys)
+        elem_ids = numpy_to_vtk(elem_all, deep=True, array_type=vtk.VTK_INT)
+        elem_ids.SetName(self.ELEMENT_INDEX_ARRAY)
+        merged.GetCellData().AddArray(elem_ids)
+        if rgb_all is not None:
+            colors = numpy_to_vtk(rgb_all, deep=True, array_type=vtk.VTK_UNSIGNED_CHAR)
+            colors.SetName("section_colors")
+            merged.GetCellData().SetScalars(colors)
 
         # Capuchons et parois sont construits comme des morceaux de polydata
         # distincts (points non partages, meme aux aretes communes) : sans
@@ -1801,7 +1893,7 @@ class VTKViewerWidget(QFrame):
         # solide connecte, sur lequel ConsistencyOn peut alors se propager
         # correctement.
         clean = vtk.vtkCleanPolyData()
-        clean.SetInputConnection(append.GetOutputPort())
+        clean.SetInputData(merged)
         clean.PointMergingOn()
         clean.SetTolerance(0.0)
         clean.Update()

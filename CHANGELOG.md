@@ -7,10 +7,12 @@
 ### FR
 - Police : les textes de la vue 3D (informations, mode Navigation, étiquettes de diagrammes, repère) passent en Segoe UI, comme le reste de l'interface (Arial si la police est absente).
 - Correction : en mode Profilés, cocher/décocher rapidement des systèmes lançait plusieurs constructions de géométrie en parallèle (barres de progression multiples, blocage possible) ; une seule tourne désormais, avec le dernier état.
+- Performances : la préparation des modes Profilés et Filaire 3D est environ 30 fois plus rapide sur les gros modèles (passage dans le mode, masquage, isolation, filtres).
 
 ### EN
 - Font: 3D view texts (information, Navigation mode, diagram labels, axes) now use Segoe UI like the rest of the interface (Arial if the font is missing).
 - Fix: in Profiles mode, quickly checking/unchecking systems started several geometry builds in parallel (multiple progress bars, possible freeze); only one runs now, using the latest state.
+- Performance: preparing the Profiles and 3D wireframe modes is about 30 times faster on large models (switching mode, hiding, isolating, filtering).
 
 ## 2.24
 
