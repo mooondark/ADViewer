@@ -1786,6 +1786,8 @@ class VTKViewerWidget(QFrame):
         en scalaire, et le passage 3D garde l'ordre d'operations
         (base + x*u) + y*v : coordonnees identiques bit a bit a l'ancienne
         construction par element (la soudure a tolerance 0 en depend)."""
+        # lu une seule fois : l'option peut changer pendant BuildProfilesWorker
+        color_by_section = self._color_by_section
         mapped_indexes = list(element_indexes or [])
         sections = list(line_sections or [])
         total = len(lines or [])
@@ -1817,7 +1819,7 @@ class VTKViewerWidget(QFrame):
                 groups.setdefault(key, []).append(len(params))
                 params.append((ca, sa, ox, oy, *u_axis, *v_axis, *base_a, *base_b))
                 src.append(source_idx)
-            if self._color_by_section and len(params) > first:
+            if color_by_section and len(params) > first:
                 rgb = self._get_section_color(self._line_section_name(source_idx))
                 rgbs.extend([rgb] * (len(params) - first))
             if progress_cb is not None and total:
@@ -1845,8 +1847,8 @@ class VTKViewerWidget(QFrame):
         conn_all = np.empty(int(n_conn.sum()), dtype=np.int64)
         sizes_all = np.empty(int(n_cells.sum()), dtype=np.int64)
         elem_all = np.empty(int(n_cells.sum()), dtype=np.int32)
-        rgb_src = np.asarray(rgbs).astype(np.uint8) if self._color_by_section else None
-        rgb_all = np.empty((int(n_cells.sum()), 3), dtype=np.uint8) if self._color_by_section else None
+        rgb_src = np.asarray(rgbs).astype(np.uint8) if color_by_section else None
+        rgb_all = np.empty((int(n_cells.sum()), 3), dtype=np.uint8) if color_by_section else None
         for key, ids in groups.items():
             ids = np.asarray(ids, dtype=np.int64)
             pts2d, side, conn, sizes = templates[key]

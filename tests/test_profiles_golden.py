@@ -109,6 +109,27 @@ def test_section_colors_follow_element():
         assert tuple(int(sc.GetComponent(c, k)) for k in range(3)) == w._get_section_color(f"S{e % 3}")
 
 
+class _FlagFlipsDuringBuild(VTKViewerWidget):
+    """_color_by_section passe de True a False apres la 1re lecture, comme si
+    l'utilisateur decochait "Couleur par section" pendant BuildProfilesWorker."""
+    _reads = 0
+
+    @property
+    def _color_by_section(self):
+        self._reads += 1
+        return self._reads == 1
+
+
+def test_color_flag_toggled_during_build_does_not_crash():
+    lines, secs = _model()
+    w = _FlagFlipsDuringBuild.__new__(_FlagFlipsDuringBuild)
+    w._line_section_name = lambda idx: "S"
+    w._get_section_color = lambda name: (10, 20, 30)
+    pd = w._build_profiles_polydata(lines, secs, element_indexes=[100 + i for i in range(len(lines))])
+    sc = pd.GetCellData().GetScalars()
+    assert sc is not None and sc.GetNumberOfTuples() == pd.GetNumberOfCells()
+
+
 def test_no_valid_element_returns_none():
     w = _widget()
     assert w._build_profiles_polydata([], [], element_indexes=[]) is None
