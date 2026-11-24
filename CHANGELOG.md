@@ -2,7 +2,7 @@
 
 **⚠ La version minimale de l'API est 1.27.1 (version 2027.1) pour utiliser le viewer**
 
-## À paraître
+## 2.25
 
 ### FR
 - Police : les textes de la vue 3D (informations, mode Navigation, étiquettes de diagrammes, repère) passent en Segoe UI, comme le reste de l'interface (Arial si la police est absente).
