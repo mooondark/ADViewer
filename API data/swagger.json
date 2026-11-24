@@ -2205,7 +2205,7 @@
                   "$ref": "#/components/schemas/eModelSettingsCategory"
                 }
               ],
-              "description": "One group of general model settings - what `GetModelSettings` and\r\n`ResetModelSettings` name, and what the runtime type of a\r\n`ModelSettingsBase` object belongs to.\r\n\r\n\r\n\r\nA category is a group of settings that the desktop application edits in one dialog and\r\nthat the API therefore reads, writes and resets as one object. It is NOT the same thing\r\nas the `$type` of the settings object: the category says WHICH settings, the\r\n`$type` says which SHAPE they have - one category can have several shapes, as the\r\ncombination generation settings have one per combination standard.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - None</b>: Not a settings group. It is the value an omitted parameter takes, so a request carrying it is refused rather than silently answered with a default group.</li>\r\n<li><b>1 - CombinationsGeneration</b>: The settings the automatic (\"simplified\") combination generation runs with - the general options the Combinations options dialog of the desktop application edits.</li>\r\n<li><b>2 - SteelEc3Calculation</b>: The general options of the Expert steel (Eurocode 3) design calculation - what the Calculation Settings dialog of the desktop application edits, tab by tab: which verifications are performed, the partial safety factors, the imperfection and buckling options, the optimisation criteria, the profile sort order, the angle-verification bolt factors and the calculation sequence.</li>\r\n<li><b>3 - SteelAiscCalculation</b>: The general options of the Expert steel design calculation of a model designed to a NORTH-AMERICAN code - AISC 360, AISC 360-16 and the four CAN/CSA S16 editions. The same Calculation Settings dialog as</li>\r\n</ul>\r\n"
+              "description": "One group of general model settings - what `GetModelSettings` and\r\n`ResetModelSettings` name, and what the runtime type of a\r\n`ModelSettingsBase` object belongs to.\r\n\r\n\r\n\r\nA category is a group of settings that the desktop application edits in one dialog and\r\nthat the API therefore reads, writes and resets as one object. It is NOT the same thing\r\nas the `$type` of the settings object: the category says WHICH settings, the\r\n`$type` says which SHAPE they have - one category can have several shapes, as the\r\ncombination generation settings have one per combination standard.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - None</b>: Not a settings group. It is the value an omitted parameter takes, so a request carrying it is refused rather than silently answered with a default group.</li>\r\n<li><b>1 - CombinationsGeneration</b>: The settings the automatic (\"simplified\") combination generation runs with - the general options the Combinations options dialog of the desktop application edits.</li>\r\n<li><b>2 - SteelEc3Calculation</b>: The general options of the Expert steel (Eurocode 3) design calculation - what the Calculation Settings dialog of the desktop application edits, tab by tab: which verifications are performed, the partial safety factors, the imperfection and buckling options, the optimisation criteria, the profile sort order, the angle-verification bolt factors and the calculation sequence.</li>\r\n<li><b>3 - SteelAiscCalculation</b>: The general options of the Expert steel design calculation of a model designed to a NORTH-AMERICAN code - AISC 360, AISC 360-16 and the four CAN/CSA S16 editions. The same Calculation Settings dialog as</li>\r\n<li><b>4 - Tolerances</b>: The model tolerances: the minimum distance between two points, the tolerance for vertical elements and the climatic roof coplanarity tolerance (Advanced CAD properties, General page), the mesh tolerance (Mesh options) and the composite tolerance for parallel components (Composite calculation settings, Verification page). Independent of the design codes.</li>\r\n<li><b>5 - Structure</b>: The structure options of the Structure dialog: the work space - a plane (2D, XZ) structure, a grid or a 3D structure. Independent of the design codes; the 3D work space requires the 3D module of the licence.</li>\r\n</ul>\r\n"
             }
           }
         ],
@@ -2275,9 +2275,15 @@
                   },
                   {
                     "$ref": "#/components/schemas/AiscSteelCalculationSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StructureSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ToleranceSettings"
                   }
                 ],
-                "description": "Base class of the GENERAL SETTINGS of a model: the options that apply to the model as a\r\nwhole rather than to any one object of it, and that in the AD model live on\r\n`som.ModelProperties`.\r\n\r\n\r\n\r\nThese are NOT properties of an element, a load case or a combination. They are what the\r\ndesktop application edits in its option dialogs - which project situations the combination\r\ngeneration produces, which coefficients it applies, and, as they are added, the general\r\noptions of the Expert design calculations. They are read, written and reset through THREE\r\ngeneric functions, whatever the group:\r\n\r\n- `GetModelSettings(category)` returns the settings of one group,\r\n\r\n- `SetModelSettings(settings)` writes them, and\r\n\r\n- `ResetModelSettings(category)` puts back what the model's standard prescribes.\r\n\r\n\r\n\r\nTHE OBJECT DECIDES WHAT IS WRITTEN. `SetModelSettings` takes this base class, so it is\r\nthe runtime type of the object - its `$type` - that says which group of model settings\r\nthe call writes, exactly as `CreateInformationalElement` takes\r\nAD.API.InformationalElementBase and the object decides what is created. There is no\r\nfunction per group of settings, and adding a group adds no function.\r\n\r\n\r\n\r\nTWO LEVELS OF DERIVATION. Under this base, one class per group of settings\r\n(AD.API.CombinationsGenerationSettings, AD.API.SteelCalculationSettings and\r\nAD.API.AiscSteelCalculationSettings today) - and under that class, as many classes as\r\nthe group has shapes. The combination generation has five, one per combination standard,\r\nbecause the standards share no field; each of the two steel groups has one, because the\r\ncodes inside a family share every page of the dialog. So the class hierarchy reads: what\r\nsettings (level 2), in which variant (level 3).\r\n\r\n\r\n\r\nTWO STEEL GROUPS, NOT ONE GROUP WITH TWO SHAPES. The Eurocode and the North-American\r\nfamilies do not answer the same question - the second has no Partial safety factors page at\r\nall and a Verification page of three controls instead of thirteen - so they are separate\r\ncategories with separate group classes. The five pages they do share are the same DTO\r\nclasses, held by both group classes.\r\n\r\n\r\n\r\nPARTIAL BY DESIGN. In every group, the properties are optional and what a request does not\r\ncarry keeps the value the model has, so a single switch can be changed without restating\r\nthe rest. What each group refuses, what it recomputes rather than stores, and what it\r\nreports as a warning instead of an error is documented on that group's own class."
+                "description": "Base class of the GENERAL SETTINGS of a model: the options that apply to the model as a\r\nwhole rather than to any one object of it, and that in the AD model live on\r\n`som.ModelProperties`.\r\n\r\n\r\n\r\nThese are NOT properties of an element, a load case or a combination. They are what the\r\ndesktop application edits in its option dialogs - which project situations the combination\r\ngeneration produces, which coefficients it applies, and, as they are added, the general\r\noptions of the Expert design calculations. They are read, written and reset through THREE\r\ngeneric functions, whatever the group:\r\n\r\n- `GetModelSettings(category)` returns the settings of one group,\r\n\r\n- `SetModelSettings(settings)` writes them, and\r\n\r\n- `ResetModelSettings(category)` puts back what the model's standard prescribes.\r\n\r\n\r\n\r\nTHE OBJECT DECIDES WHAT IS WRITTEN. `SetModelSettings` takes this base class, so it is\r\nthe runtime type of the object - its `$type` - that says which group of model settings\r\nthe call writes, exactly as `CreateInformationalElement` takes\r\nAD.API.InformationalElementBase and the object decides what is created. There is no\r\nfunction per group of settings, and adding a group adds no function.\r\n\r\n\r\n\r\nTWO LEVELS OF DERIVATION. Under this base, one class per group of settings\r\n(AD.API.CombinationsGenerationSettings, AD.API.SteelCalculationSettings,\r\nAD.API.AiscSteelCalculationSettings, AD.API.ToleranceSettings and AD.API.StructureSettings today) - and under that class, as many classes as\r\nthe group has shapes. The combination generation has five, one per combination standard,\r\nbecause the standards share no field; each of the two steel groups has one, because the\r\ncodes inside a family share every page of the dialog. So the class hierarchy reads: what\r\nsettings (level 2), in which variant (level 3).\r\n\r\n\r\n\r\nTWO STEEL GROUPS, NOT ONE GROUP WITH TWO SHAPES. The Eurocode and the North-American\r\nfamilies do not answer the same question - the second has no Partial safety factors page at\r\nall and a Verification page of three controls instead of thirteen - so they are separate\r\ncategories with separate group classes. The five pages they do share are the same DTO\r\nclasses, held by both group classes.\r\n\r\n\r\n\r\nPARTIAL BY DESIGN. In every group, the properties are optional and what a request does not\r\ncarry keeps the value the model has, so a single switch can be changed without restating\r\nthe rest. What each group refuses, what it recomputes rather than stores, and what it\r\nreports as a warning instead of an error is documented on that group's own class."
               }
             },
             "text/json": {
@@ -2312,9 +2318,15 @@
                   },
                   {
                     "$ref": "#/components/schemas/AiscSteelCalculationSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StructureSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ToleranceSettings"
                   }
                 ],
-                "description": "Base class of the GENERAL SETTINGS of a model: the options that apply to the model as a\r\nwhole rather than to any one object of it, and that in the AD model live on\r\n`som.ModelProperties`.\r\n\r\n\r\n\r\nThese are NOT properties of an element, a load case or a combination. They are what the\r\ndesktop application edits in its option dialogs - which project situations the combination\r\ngeneration produces, which coefficients it applies, and, as they are added, the general\r\noptions of the Expert design calculations. They are read, written and reset through THREE\r\ngeneric functions, whatever the group:\r\n\r\n- `GetModelSettings(category)` returns the settings of one group,\r\n\r\n- `SetModelSettings(settings)` writes them, and\r\n\r\n- `ResetModelSettings(category)` puts back what the model's standard prescribes.\r\n\r\n\r\n\r\nTHE OBJECT DECIDES WHAT IS WRITTEN. `SetModelSettings` takes this base class, so it is\r\nthe runtime type of the object - its `$type` - that says which group of model settings\r\nthe call writes, exactly as `CreateInformationalElement` takes\r\nAD.API.InformationalElementBase and the object decides what is created. There is no\r\nfunction per group of settings, and adding a group adds no function.\r\n\r\n\r\n\r\nTWO LEVELS OF DERIVATION. Under this base, one class per group of settings\r\n(AD.API.CombinationsGenerationSettings, AD.API.SteelCalculationSettings and\r\nAD.API.AiscSteelCalculationSettings today) - and under that class, as many classes as\r\nthe group has shapes. The combination generation has five, one per combination standard,\r\nbecause the standards share no field; each of the two steel groups has one, because the\r\ncodes inside a family share every page of the dialog. So the class hierarchy reads: what\r\nsettings (level 2), in which variant (level 3).\r\n\r\n\r\n\r\nTWO STEEL GROUPS, NOT ONE GROUP WITH TWO SHAPES. The Eurocode and the North-American\r\nfamilies do not answer the same question - the second has no Partial safety factors page at\r\nall and a Verification page of three controls instead of thirteen - so they are separate\r\ncategories with separate group classes. The five pages they do share are the same DTO\r\nclasses, held by both group classes.\r\n\r\n\r\n\r\nPARTIAL BY DESIGN. In every group, the properties are optional and what a request does not\r\ncarry keeps the value the model has, so a single switch can be changed without restating\r\nthe rest. What each group refuses, what it recomputes rather than stores, and what it\r\nreports as a warning instead of an error is documented on that group's own class."
+                "description": "Base class of the GENERAL SETTINGS of a model: the options that apply to the model as a\r\nwhole rather than to any one object of it, and that in the AD model live on\r\n`som.ModelProperties`.\r\n\r\n\r\n\r\nThese are NOT properties of an element, a load case or a combination. They are what the\r\ndesktop application edits in its option dialogs - which project situations the combination\r\ngeneration produces, which coefficients it applies, and, as they are added, the general\r\noptions of the Expert design calculations. They are read, written and reset through THREE\r\ngeneric functions, whatever the group:\r\n\r\n- `GetModelSettings(category)` returns the settings of one group,\r\n\r\n- `SetModelSettings(settings)` writes them, and\r\n\r\n- `ResetModelSettings(category)` puts back what the model's standard prescribes.\r\n\r\n\r\n\r\nTHE OBJECT DECIDES WHAT IS WRITTEN. `SetModelSettings` takes this base class, so it is\r\nthe runtime type of the object - its `$type` - that says which group of model settings\r\nthe call writes, exactly as `CreateInformationalElement` takes\r\nAD.API.InformationalElementBase and the object decides what is created. There is no\r\nfunction per group of settings, and adding a group adds no function.\r\n\r\n\r\n\r\nTWO LEVELS OF DERIVATION. Under this base, one class per group of settings\r\n(AD.API.CombinationsGenerationSettings, AD.API.SteelCalculationSettings,\r\nAD.API.AiscSteelCalculationSettings, AD.API.ToleranceSettings and AD.API.StructureSettings today) - and under that class, as many classes as\r\nthe group has shapes. The combination generation has five, one per combination standard,\r\nbecause the standards share no field; each of the two steel groups has one, because the\r\ncodes inside a family share every page of the dialog. So the class hierarchy reads: what\r\nsettings (level 2), in which variant (level 3).\r\n\r\n\r\n\r\nTWO STEEL GROUPS, NOT ONE GROUP WITH TWO SHAPES. The Eurocode and the North-American\r\nfamilies do not answer the same question - the second has no Partial safety factors page at\r\nall and a Verification page of three controls instead of thirteen - so they are separate\r\ncategories with separate group classes. The five pages they do share are the same DTO\r\nclasses, held by both group classes.\r\n\r\n\r\n\r\nPARTIAL BY DESIGN. In every group, the properties are optional and what a request does not\r\ncarry keeps the value the model has, so a single switch can be changed without restating\r\nthe rest. What each group refuses, what it recomputes rather than stores, and what it\r\nreports as a warning instead of an error is documented on that group's own class."
               }
             },
             "application/*+json": {
@@ -2349,9 +2361,15 @@
                   },
                   {
                     "$ref": "#/components/schemas/AiscSteelCalculationSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StructureSettings"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ToleranceSettings"
                   }
                 ],
-                "description": "Base class of the GENERAL SETTINGS of a model: the options that apply to the model as a\r\nwhole rather than to any one object of it, and that in the AD model live on\r\n`som.ModelProperties`.\r\n\r\n\r\n\r\nThese are NOT properties of an element, a load case or a combination. They are what the\r\ndesktop application edits in its option dialogs - which project situations the combination\r\ngeneration produces, which coefficients it applies, and, as they are added, the general\r\noptions of the Expert design calculations. They are read, written and reset through THREE\r\ngeneric functions, whatever the group:\r\n\r\n- `GetModelSettings(category)` returns the settings of one group,\r\n\r\n- `SetModelSettings(settings)` writes them, and\r\n\r\n- `ResetModelSettings(category)` puts back what the model's standard prescribes.\r\n\r\n\r\n\r\nTHE OBJECT DECIDES WHAT IS WRITTEN. `SetModelSettings` takes this base class, so it is\r\nthe runtime type of the object - its `$type` - that says which group of model settings\r\nthe call writes, exactly as `CreateInformationalElement` takes\r\nAD.API.InformationalElementBase and the object decides what is created. There is no\r\nfunction per group of settings, and adding a group adds no function.\r\n\r\n\r\n\r\nTWO LEVELS OF DERIVATION. Under this base, one class per group of settings\r\n(AD.API.CombinationsGenerationSettings, AD.API.SteelCalculationSettings and\r\nAD.API.AiscSteelCalculationSettings today) - and under that class, as many classes as\r\nthe group has shapes. The combination generation has five, one per combination standard,\r\nbecause the standards share no field; each of the two steel groups has one, because the\r\ncodes inside a family share every page of the dialog. So the class hierarchy reads: what\r\nsettings (level 2), in which variant (level 3).\r\n\r\n\r\n\r\nTWO STEEL GROUPS, NOT ONE GROUP WITH TWO SHAPES. The Eurocode and the North-American\r\nfamilies do not answer the same question - the second has no Partial safety factors page at\r\nall and a Verification page of three controls instead of thirteen - so they are separate\r\ncategories with separate group classes. The five pages they do share are the same DTO\r\nclasses, held by both group classes.\r\n\r\n\r\n\r\nPARTIAL BY DESIGN. In every group, the properties are optional and what a request does not\r\ncarry keeps the value the model has, so a single switch can be changed without restating\r\nthe rest. What each group refuses, what it recomputes rather than stores, and what it\r\nreports as a warning instead of an error is documented on that group's own class."
+                "description": "Base class of the GENERAL SETTINGS of a model: the options that apply to the model as a\r\nwhole rather than to any one object of it, and that in the AD model live on\r\n`som.ModelProperties`.\r\n\r\n\r\n\r\nThese are NOT properties of an element, a load case or a combination. They are what the\r\ndesktop application edits in its option dialogs - which project situations the combination\r\ngeneration produces, which coefficients it applies, and, as they are added, the general\r\noptions of the Expert design calculations. They are read, written and reset through THREE\r\ngeneric functions, whatever the group:\r\n\r\n- `GetModelSettings(category)` returns the settings of one group,\r\n\r\n- `SetModelSettings(settings)` writes them, and\r\n\r\n- `ResetModelSettings(category)` puts back what the model's standard prescribes.\r\n\r\n\r\n\r\nTHE OBJECT DECIDES WHAT IS WRITTEN. `SetModelSettings` takes this base class, so it is\r\nthe runtime type of the object - its `$type` - that says which group of model settings\r\nthe call writes, exactly as `CreateInformationalElement` takes\r\nAD.API.InformationalElementBase and the object decides what is created. There is no\r\nfunction per group of settings, and adding a group adds no function.\r\n\r\n\r\n\r\nTWO LEVELS OF DERIVATION. Under this base, one class per group of settings\r\n(AD.API.CombinationsGenerationSettings, AD.API.SteelCalculationSettings,\r\nAD.API.AiscSteelCalculationSettings, AD.API.ToleranceSettings and AD.API.StructureSettings today) - and under that class, as many classes as\r\nthe group has shapes. The combination generation has five, one per combination standard,\r\nbecause the standards share no field; each of the two steel groups has one, because the\r\ncodes inside a family share every page of the dialog. So the class hierarchy reads: what\r\nsettings (level 2), in which variant (level 3).\r\n\r\n\r\n\r\nTWO STEEL GROUPS, NOT ONE GROUP WITH TWO SHAPES. The Eurocode and the North-American\r\nfamilies do not answer the same question - the second has no Partial safety factors page at\r\nall and a Verification page of three controls instead of thirteen - so they are separate\r\ncategories with separate group classes. The five pages they do share are the same DTO\r\nclasses, held by both group classes.\r\n\r\n\r\n\r\nPARTIAL BY DESIGN. In every group, the properties are optional and what a request does not\r\ncarry keeps the value the model has, so a single switch can be changed without restating\r\nthe rest. What each group refuses, what it recomputes rather than stores, and what it\r\nreports as a warning instead of an error is documented on that group's own class."
               }
             }
           }
@@ -2398,7 +2416,7 @@
                   "$ref": "#/components/schemas/eModelSettingsCategory"
                 }
               ],
-              "description": "One group of general model settings - what `GetModelSettings` and\r\n`ResetModelSettings` name, and what the runtime type of a\r\n`ModelSettingsBase` object belongs to.\r\n\r\n\r\n\r\nA category is a group of settings that the desktop application edits in one dialog and\r\nthat the API therefore reads, writes and resets as one object. It is NOT the same thing\r\nas the `$type` of the settings object: the category says WHICH settings, the\r\n`$type` says which SHAPE they have - one category can have several shapes, as the\r\ncombination generation settings have one per combination standard.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - None</b>: Not a settings group. It is the value an omitted parameter takes, so a request carrying it is refused rather than silently answered with a default group.</li>\r\n<li><b>1 - CombinationsGeneration</b>: The settings the automatic (\"simplified\") combination generation runs with - the general options the Combinations options dialog of the desktop application edits.</li>\r\n<li><b>2 - SteelEc3Calculation</b>: The general options of the Expert steel (Eurocode 3) design calculation - what the Calculation Settings dialog of the desktop application edits, tab by tab: which verifications are performed, the partial safety factors, the imperfection and buckling options, the optimisation criteria, the profile sort order, the angle-verification bolt factors and the calculation sequence.</li>\r\n<li><b>3 - SteelAiscCalculation</b>: The general options of the Expert steel design calculation of a model designed to a NORTH-AMERICAN code - AISC 360, AISC 360-16 and the four CAN/CSA S16 editions. The same Calculation Settings dialog as</li>\r\n</ul>\r\n"
+              "description": "One group of general model settings - what `GetModelSettings` and\r\n`ResetModelSettings` name, and what the runtime type of a\r\n`ModelSettingsBase` object belongs to.\r\n\r\n\r\n\r\nA category is a group of settings that the desktop application edits in one dialog and\r\nthat the API therefore reads, writes and resets as one object. It is NOT the same thing\r\nas the `$type` of the settings object: the category says WHICH settings, the\r\n`$type` says which SHAPE they have - one category can have several shapes, as the\r\ncombination generation settings have one per combination standard.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - None</b>: Not a settings group. It is the value an omitted parameter takes, so a request carrying it is refused rather than silently answered with a default group.</li>\r\n<li><b>1 - CombinationsGeneration</b>: The settings the automatic (\"simplified\") combination generation runs with - the general options the Combinations options dialog of the desktop application edits.</li>\r\n<li><b>2 - SteelEc3Calculation</b>: The general options of the Expert steel (Eurocode 3) design calculation - what the Calculation Settings dialog of the desktop application edits, tab by tab: which verifications are performed, the partial safety factors, the imperfection and buckling options, the optimisation criteria, the profile sort order, the angle-verification bolt factors and the calculation sequence.</li>\r\n<li><b>3 - SteelAiscCalculation</b>: The general options of the Expert steel design calculation of a model designed to a NORTH-AMERICAN code - AISC 360, AISC 360-16 and the four CAN/CSA S16 editions. The same Calculation Settings dialog as</li>\r\n<li><b>4 - Tolerances</b>: The model tolerances: the minimum distance between two points, the tolerance for vertical elements and the climatic roof coplanarity tolerance (Advanced CAD properties, General page), the mesh tolerance (Mesh options) and the composite tolerance for parallel components (Composite calculation settings, Verification page). Independent of the design codes.</li>\r\n<li><b>5 - Structure</b>: The structure options of the Structure dialog: the work space - a plane (2D, XZ) structure, a grid or a 3D structure. Independent of the design codes; the 3D work space requires the 3D module of the licence.</li>\r\n</ul>\r\n"
             }
           }
         ],
@@ -4525,7 +4543,7 @@
                 "$ref": "#/components/schemas/ImposedCpeType_Wind_EN1991_1_4_API"
               }
             ],
-            "description": "Imposed CPE type\r\n\r\nUnit: -\r\n\r\nDefault: e_CPE_MODE_default",
+            "description": "Imposed CPE type (e_CPE_MODE_default, e_CPE_MODE_FORCE, e_CPE_MODE_1, e_CPE_MODE_1_10)\r\n\r\nUnit: -\r\n\r\nDefault: e_CPE_MODE_default",
             "default": "e_CPE_MODE_default"
           },
           "pitchType": {
@@ -4534,8 +4552,8 @@
                 "$ref": "#/components/schemas/PitchType_Wind_EN1991_1_4_API"
               }
             ],
-            "description": "Pitch type\r\n\r\nUnit: -\r\n\r\nDefault: PITCH_TYPE_MONO",
-            "default": "PITCH_TYPE_MONO"
+            "description": "Pitch type (PITCH_TYPE_POSITIVE_SLOPE, PITCH_TYPE_NEGATIVE_SLOPE, PITCH_TYPE_MAX_CPE = per zone the minimum Cpe of both pitch sets).\r\nPITCH_TYPE_MONO / PITCH_TYPE_DUO are obsolete aliases of positive / negative slope; a read returns the new names\r\n\r\nUnit: -\r\n\r\nDefault: PITCH_TYPE_POSITIVE_SLOPE",
+            "default": "PITCH_TYPE_POSITIVE_SLOPE"
           }
         },
         "additionalProperties": false,
@@ -4672,7 +4690,7 @@
                 "$ref": "#/components/schemas/ExternalPressureArticle_WindCBN_API"
               }
             ],
-            "description": "External pressure article used for low buildings\r\n\r\nUnit: -\r\n\r\nDefault: cp_zones_cornersenvelope_using_4_1_7_6__2",
+            "description": "External pressure article used for low buildings (cp_zones_cornersenvelope_using_4_1_7_6__2, cp_zones_nocorners_4_1_7_5__2and3)\r\n\r\nUnit: -\r\n\r\nDefault: cp_zones_cornersenvelope_using_4_1_7_6__2",
             "default": "cp_zones_cornersenvelope_using_4_1_7_6__2",
             "nullable": true
           }
@@ -4745,7 +4763,7 @@
                 "$ref": "#/components/schemas/CsCdCalcMode_Wind_EN1991_1_4_API"
               }
             ],
-            "description": "Cs*Cd calculation mode\r\n\r\nUnit: -\r\n\r\nDefault: CS_CD_AUTO",
+            "description": "Cs*Cd calculation mode (CS_CD_AUTO, CS_CD_IMPOSED, CS_CD_NO = no structural factor)\r\n\r\nUnit: -\r\n\r\nDefault: CS_CD_AUTO",
             "default": "CS_CD_AUTO"
           },
           "csCdVal": {
@@ -4794,7 +4812,7 @@
                 "$ref": "#/components/schemas/CorrelationCoefficientType_Wind_EN1991_1_4_API"
               }
             ],
-            "description": "Correlation coefficient type\r\n\r\nUnit: -\r\n\r\nDefault: CORREL_AUTO",
+            "description": "Correlation coefficient type (CORREL_AUTO, CORREL_IMPOSED, CORREL_NO = no correlation coefficient)\r\n\r\nUnit: -\r\n\r\nDefault: CORREL_AUTO",
             "default": "CORREL_AUTO"
           },
           "correlationCoefficientKdc": {
@@ -5825,7 +5843,7 @@
           "eWindComputingProbabilityCoeffImposed"
         ],
         "type": "string",
-        "description": "Computing probability coefficient mode for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - eWindComputingProbabilityCoeffByKParameter</b>: </li>\r\n<li><b>1 - eWindComputingProbabilityCoeffByAdjustmentFactor</b>: </li>\r\n<li><b>2 - eWindComputingProbabilityCoeffImposed</b>: </li>\r\n</ul>\r\n"
+        "description": "Computing probability coefficient mode for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - eWindComputingProbabilityCoeffByKParameter</b>: </li>\r\n<li><b>1 - eWindComputingProbabilityCoeffByAdjustmentFactor</b>: Obsolete: not a model option. Applied as eWindComputingProbabilityCoeffImposed</li>\r\n<li><b>2 - eWindComputingProbabilityCoeffImposed</b>: </li>\r\n</ul>\r\n"
       },
       "ComputingType_Wind_EN1991_1_4_API": {
         "enum": [
@@ -6052,18 +6070,20 @@
       "CorrelationCoefficientType_Wind_EN1991_1_4_API": {
         "enum": [
           "CORREL_AUTO",
-          "CORREL_IMPOSED"
+          "CORREL_IMPOSED",
+          "CORREL_NO"
         ],
         "type": "string",
-        "description": "Correlation coefficient type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - CORREL_AUTO</b>: </li>\r\n<li><b>1 - CORREL_IMPOSED</b>: </li>\r\n</ul>\r\n"
+        "description": "Correlation coefficient type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - CORREL_AUTO</b>: </li>\r\n<li><b>1 - CORREL_IMPOSED</b>: </li>\r\n<li><b>2 - CORREL_NO</b>: No correlation coefficient (model e_Option_No)</li>\r\n</ul>\r\n"
       },
       "CsCdCalcMode_Wind_EN1991_1_4_API": {
         "enum": [
           "CS_CD_AUTO",
-          "CS_CD_IMPOSED"
+          "CS_CD_IMPOSED",
+          "CS_CD_NO"
         ],
         "type": "string",
-        "description": "Cs/Cd calculation mode for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - CS_CD_AUTO</b>: </li>\r\n<li><b>1 - CS_CD_IMPOSED</b>: </li>\r\n</ul>\r\n"
+        "description": "Cs/Cd calculation mode for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - CS_CD_AUTO</b>: </li>\r\n<li><b>1 - CS_CD_IMPOSED</b>: </li>\r\n<li><b>2 - CS_CD_NO</b>: No structural factor Cs*Cd (model GRCG_CNV3D_CSCD_NON)</li>\r\n</ul>\r\n"
       },
       "CsaCrossSectionClass": {
         "enum": [
@@ -6610,7 +6630,7 @@
           "XY"
         ],
         "type": "string",
-        "description": "Direction Choice for Seismic EN 1998-1 Effect<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - X</b>: </li>\r\n<li><b>1 - Y</b>: </li>\r\n<li><b>2 - Z</b>: </li>\r\n<li><b>3 - XY</b>: </li>\r\n</ul>\r\n"
+        "description": "Direction Choice for Seismic EN 1998-1 Effect<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - X</b>: </li>\r\n<li><b>1 - Y</b>: </li>\r\n<li><b>2 - Z</b>: </li>\r\n<li><b>3 - XY</b>: Not available: the seismic effect takes one direction (X, Y or Z). Applied as X</li>\r\n</ul>\r\n"
       },
       "DirectionChoice_API": {
         "enum": [
@@ -6620,7 +6640,7 @@
           "XY"
         ],
         "type": "string",
-        "description": "Direction Choice for Seismic CBN Effect<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - X</b>: </li>\r\n<li><b>1 - Y</b>: </li>\r\n<li><b>2 - Z</b>: </li>\r\n<li><b>3 - XY</b>: </li>\r\n</ul>\r\n"
+        "description": "Direction Choice for Seismic CBN Effect<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - X</b>: </li>\r\n<li><b>1 - Y</b>: </li>\r\n<li><b>2 - Z</b>: </li>\r\n<li><b>3 - XY</b>: Not available: the seismic effect takes one direction (X, Y or Z). Applied as X</li>\r\n</ul>\r\n"
       },
       "DirectionConfigEN1998": {
         "type": "object",
@@ -6631,7 +6651,7 @@
                 "$ref": "#/components/schemas/DirectionChoiceEN1998_API"
               }
             ],
-            "description": "Direction choice (X, Y, Z, or XY)\r\n\r\nDefault: X (0)",
+            "description": "Direction choice (X, Y or Z; XY is not available and is applied as X)\r\n\r\nDefault: X (0)",
             "default": "X"
           },
           "signChoice": {
@@ -6662,7 +6682,7 @@
                 "$ref": "#/components/schemas/DirectionChoice_API"
               }
             ],
-            "description": "Direction choice (X, Y, Z, XY)\r\n\r\nDefault: DirectionChoice_API.X",
+            "description": "Direction choice (X, Y or Z; XY is not available and is applied as X)\r\n\r\nDefault: DirectionChoice_API.X",
             "default": "X"
           },
           "signChoice": {
@@ -6693,7 +6713,7 @@
                 "$ref": "#/components/schemas/DirectionChoice_API"
               }
             ],
-            "description": "Direction choice (X, Y, Z, XY)\r\n\r\nDefault: DirectionChoice_API.X",
+            "description": "Direction choice (X, Y or Z; XY is not available and is applied as X)\r\n\r\nDefault: DirectionChoice_API.X",
             "default": "X"
           },
           "signChoice": {
@@ -7706,10 +7726,12 @@
           "eq6_25",
           "eq6_26",
           "VERIF_NOT_NECCESSARY",
-          "eq8_59"
+          "eq8_59",
+          "eq8_58",
+          "eq8_57"
         ],
         "type": "string",
-        "description": "The EN 1993-1-3 formula a cold-formed verification applied<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - noRef</b>: No formula recorded. Either the check did not run, or it is one of those whose clause offers a single expression and the engine leaves the field alone. Native: noRef.</li>\r\n<li><b>1 - eq6_1</b>: Equation (6.1) - design resistance to axial tension. Native: eq6_1.</li>\r\n<li><b>2 - eq6_2</b>: Equation (6.2) - resistance to axial compression on the EFFECTIVE area, used when that area is smaller than the gross one. Native: eq6_2.</li>\r\n<li><b>3 - eq6_3</b>: Equation (6.3) - resistance to axial compression on the gross area with the average yield strength, used when the effective area equals the gross one. Native: eq6_3.</li>\r\n<li><b>4 - eq6_4</b>: Equation (6.4) - design moment resistance, effective section. Native: eq6_4.</li>\r\n<li><b>5 - eq6_5</b>: Equation (6.5) - design moment resistance, partially plastic. Native: eq6_5.</li>\r\n<li><b>6 - eq6_6</b>: Equation (6.6) - design moment resistance, elastic-plastic. Native: eq6_6.</li>\r\n<li><b>7 - eq6_7</b>: Equation (6.7) - design moment resistance, elastic. Native: eq6_7.</li>\r\n<li><b>8 - eq6_8</b>: Equation (6.8) - reduced moment resistance for a stiffened web. Native: eq6_8.</li>\r\n<li><b>9 - eq6_11a</b>: Equation (6.11a) - shear buckling strength. Native: eq6_11a.</li>\r\n<li><b>10 - eq6_11b</b>: Equation (6.11b) - shear buckling strength. Native: eq6_11b.</li>\r\n<li><b>11 - eq6_11c</b>: Equation (6.11c) - shear buckling strength. Native: eq6_11c.</li>\r\n<li><b>12 - eq6_23</b>: Equation (6.23) - combined tension and bending. Native: eq6_23.</li>\r\n<li><b>13 - eq6_24</b>: Equation (6.24) - combined tension and bending. Native: eq6_24.</li>\r\n<li><b>14 - eq6_25</b>: Equation (6.25) - combined compression and bending. Native: eq6_25.</li>\r\n<li><b>15 - eq6_26</b>: Equation (6.26) - combined compression and bending. Native: eq6_26.</li>\r\n<li><b>16 - VERIF_NOT_NECCESSARY</b>: The verification was not necessary. Native: VERIF_NOT_NECCESSARY - the native spelling, kept as is.</li>\r\n<li><b>17 - eq8_59</b>: Equation (8.59) of EN 1993-1-3:2024 (2nd generation) - total shear stress checked against the shear buckling strength fbv instead of fya/sqrt(3). Native: eq8_59.</li>\r\n</ul>\r\n"
+        "description": "The EN 1993-1-3 formula a cold-formed verification applied<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - noRef</b>: No formula recorded. Either the check did not run, or it is one of those whose clause offers a single expression and the engine leaves the field alone. Native: noRef.</li>\r\n<li><b>1 - eq6_1</b>: Equation (6.1) - design resistance to axial tension. Native: eq6_1.</li>\r\n<li><b>2 - eq6_2</b>: Equation (6.2) - resistance to axial compression on the EFFECTIVE area, used when that area is smaller than the gross one. Native: eq6_2.</li>\r\n<li><b>3 - eq6_3</b>: Equation (6.3) - resistance to axial compression on the gross area with the average yield strength, used when the effective area equals the gross one. Native: eq6_3.</li>\r\n<li><b>4 - eq6_4</b>: Equation (6.4) - design moment resistance, effective section. Native: eq6_4.</li>\r\n<li><b>5 - eq6_5</b>: Equation (6.5) - design moment resistance, partially plastic. Native: eq6_5.</li>\r\n<li><b>6 - eq6_6</b>: Equation (6.6) - design moment resistance, elastic-plastic. Native: eq6_6.</li>\r\n<li><b>7 - eq6_7</b>: Equation (6.7) - design moment resistance, elastic. Native: eq6_7.</li>\r\n<li><b>8 - eq6_8</b>: Equation (6.8) - reduced moment resistance for a stiffened web. Native: eq6_8.</li>\r\n<li><b>9 - eq6_11a</b>: Equation (6.11a) - shear buckling strength. Native: eq6_11a.</li>\r\n<li><b>10 - eq6_11b</b>: Equation (6.11b) - shear buckling strength. Native: eq6_11b.</li>\r\n<li><b>11 - eq6_11c</b>: Equation (6.11c) - shear buckling strength. Native: eq6_11c.</li>\r\n<li><b>12 - eq6_23</b>: Equation (6.23) - combined tension and bending. Native: eq6_23.</li>\r\n<li><b>13 - eq6_24</b>: Equation (6.24) - combined tension and bending. Native: eq6_24.</li>\r\n<li><b>14 - eq6_25</b>: Equation (6.25) - combined compression and bending. Native: eq6_25.</li>\r\n<li><b>15 - eq6_26</b>: Equation (6.26) - combined compression and bending. Native: eq6_26.</li>\r\n<li><b>16 - VERIF_NOT_NECCESSARY</b>: The verification was not necessary. Native: VERIF_NOT_NECCESSARY - the native spelling, kept as is.</li>\r\n<li><b>17 - eq8_59</b>: Equation (8.59) of EN 1993-1-3:2024 (2nd generation) - total shear stress checked against the shear buckling strength fbv instead of fya/sqrt(3). Native: eq8_59.</li>\r\n<li><b>18 - eq8_58</b>: Equation (8.58) of EN 1993-1-3:2024 (2nd generation) - total direct stress checked against the basic yield strength fyb instead of fya (6.11a): 5.2.2(4) does not allow fya for 8.1.10. Native: eq8_58.</li>\r\n<li><b>19 - eq8_57</b>: Equation (8.57) of EN 1993-1-3:2024 (2nd generation) - combined axial force, bending moment and shear force of I-shaped sections (8.1.9). Native: eq8_57.</li>\r\n</ul>\r\n"
       },
       "Ec3CrossSectionClass": {
         "enum": [
@@ -8418,10 +8440,12 @@
           "Af1",
           "Af2",
           "hw_over_tw",
-          "hw_over_tw_lim"
+          "hw_over_tw_lim",
+          "alpha_LT_table8_2",
+          "alpha_LT_table8_5"
         ],
         "type": "string",
-        "description": "A physical quantity reported by an EN 1993 2nd generation verification<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - noName</b>: No name</li>\r\n<li><b>1 - left</b>: Left term of an inequality equation</li>\r\n<li><b>2 - right</b>: Right term of an inequality equation</li>\r\n<li><b>3 - a_ratio</b>: [adim] Ratio flange area to gross-section area -> chapter 8.2.9.1(5) & (6) Native: a.</li>\r\n<li><b>4 - a_f</b>: [adim] Ratio web area to gross-section area -> chapter 8.2.9.1(5) & (6)</li>\r\n<li><b>5 - a_w</b>: [adim] Ratio flange area to gross-section area -> chapter 8.2.9.1(5) & (6)</li>\r\n<li><b>6 - A</b>: [dim^2] Cross-sectional area</li>\r\n<li><b>7 - Aeff</b>: [dim^2] Cross-sectional effective area (class 4)</li>\r\n<li><b>8 - Ac</b>: [dim^2] area of the equivalent compression flange ( Stability 8.3.2.4 (4))</li>\r\n<li><b>9 - Anet</b>: [dim^2] Net cross-sectional area</li>\r\n<li><b>10 - Av</b>: [dim^2] Shear area</li>\r\n<li><b>11 - Avy</b>: [dim^2] Shear area along y-y axis</li>\r\n<li><b>12 - Avz</b>: [dim^2] Shear area along z-z axis</li>\r\n<li><b>13 - BEd</b>: [bi-moment] Design bi-moment(N * m^2)</li>\r\n<li><b>14 - BRk</b>: [bi-moment] Characteristic value of the bi-moment resistance (N * m^2)</li>\r\n<li><b>15 - BRd</b>: [bi-moment] Design value of the bi-moment resistance (N * m^2) = BRk / gM0</li>\r\n<li><b>16 - b</b>: [dim] (top) flange width</li>\r\n<li><b>17 - b_inf</b>: [dim] bottom flange width</li>\r\n<li><b>18 - b_min</b>: [dim] minimum flange width Min(b, b_inf) -- Annex C.2 bimoment modulus (simply-symmetric I/H)</li>\r\n<li><b>19 - bLT</b>: [adim] factor for the effective length for lateral torsional buckling (Table 4.1 from CEN/TS 1993-1-101:2022)</li>\r\n<li><b>20 - C1</b>: [adim] Coefficient C1 for lateral torsional buckling</li>\r\n<li><b>21 - C2</b>: [adim] Coefficient C2 for lateral torsional buckling</li>\r\n<li><b>22 - C3</b>: [adim] Coefficient C3 for lateral torsional buckling</li>\r\n<li><b>23 - Class_1</b>: [string] Cross-section class 1</li>\r\n<li><b>24 - Class_2</b>: [string] Cross-section class 2</li>\r\n<li><b>25 - Class_3</b>: [string] Cross-section class 3</li>\r\n<li><b>26 - Class_4</b>: [string] Cross-section class 4</li>\r\n<li><b>27 - Class_1_imposed</b>: [string] Cross-section class 1</li>\r\n<li><b>28 - Class_2_imposed</b>: [string] Cross-section class 2</li>\r\n<li><b>29 - Class_3_imposed</b>: [string] Cross-section class 3</li>\r\n<li><b>30 - Class_4_imposed</b>: [string] Cross-section class 4</li>\r\n<li><b>31 - Class_Unkn</b>: [string] Cross-section class Unknown</li>\r\n<li><b>32 - cLT</b>: [adim] factor for the effective length for lateral torsional buckling (Table 4.1 from CEN/TS 1993-1-101:2022)</li>\r\n<li><b>33 - Cmy</b>: [adim] Uniform moment factor Cmy (Table 8.9)</li>\r\n<li><b>34 - Cmz</b>: [adim] Uniform moment factor Cmz (Table 8.9)</li>\r\n<li><b>35 - CmLT</b>: [adim] Uniform moment factor CmLT (Table 8.9)</li>\r\n<li><b>36 - Curve_UNKN</b>: [string] Unknown buckling curve</li>\r\n<li><b>37 - Curve_A</b>: [string] Buckling curve A</li>\r\n<li><b>38 - Curve_A0</b>: [string] Buckling curve A0</li>\r\n<li><b>39 - Curve_B</b>: [string] Buckling curve A</li>\r\n<li><b>40 - Curve_C</b>: [string] Buckling curve A</li>\r\n<li><b>41 - Curve_D</b>: [string] Buckling curve A</li>\r\n<li><b>42 - Defl_iTronID</b>: [adim] troncon ID ( used in super elem deflection)</li>\r\n<li><b>43 - Defl_iLocation</b>: [adim] see EC3_DEFLECTION_LOCATION (0 = extermity, 1 = span, 2 = envelope)</li>\r\n<li><b>44 - Defl_Defl_Val</b>: [dim] effective deflection value</li>\r\n<li><b>45 - Defl_All_Coeff</b>: [dim] defl coef ( L/200 => coef = 200)</li>\r\n<li><b>46 - Defl_Eff_Coeff</b>: [dim] resulted coef ( e.g., L/133 => coef = 133)</li>\r\n<li><b>47 - Defl_Length</b>: [dim] element / troncon length</li>\r\n<li><b>48 - DeltaMy</b>: [moment] Moments due to the shift of the centroid axis according to 8.2.2.5 for Class 4 sections;</li>\r\n<li><b>49 - DeltaMz</b>: [moment] Moments due to the shift of the centroid axis according to 8.2.2.5 for Class 4 sections;</li>\r\n<li><b>50 - dz</b>: [dim] distance of lateral supports to shear center</li>\r\n<li><b>51 - dLT</b>: [adim] factor for the effective length for lateral torsional buckling (Table 4.1 from CEN/TS 1993-1-101:2022)</li>\r\n<li><b>52 - eLT</b>: [adim] factor for the effective length for lateral torsional buckling (Table 4.1 from CEN/TS 1993-1-101:2022)</li>\r\n<li><b>53 - E</b>: [stress] Modulus of elasticity</li>\r\n<li><b>54 - fM</b>: [adim] Factor that accounts for the effect of the bending moment distribution between discrete lateral restraints</li>\r\n<li><b>55 - f_LT_fi</b>: [adim] Moment-distribution correction factor f for LTB in fire, EC3-1-2 (7.24) / (7.36)</li>\r\n<li><b>56 - fy</b>: [stress] Yield strength</li>\r\n<li><b>57 - fyRed</b>: [stress] Reduced yield strength for shear ( eq 8.36 )</li>\r\n<li><b>58 - fyRed1</b>: [stress] Reduced yield strength for the section part affected by shear, combined with torsion bimoment ( eq 8.38 )</li>\r\n<li><b>59 - fyRed2</b>: [stress] Reduced yield strength for the rest of the section, combined with torsion bimoment ( eq 8.39 )</li>\r\n<li><b>60 - fu</b>: [stress] Ultimate strength</li>\r\n<li><b>61 - G</b>: [stress] Shear modulus</li>\r\n<li><b>62 - nu</b>: [adim] Poisson's ratio</li>\r\n<li><b>63 - h</b>: [dim] overall cross section height</li>\r\n<li><b>64 - hw</b>: [dim] web height</li>\r\n<li><b>65 - It</b>: [dim^4] Torsional constant</li>\r\n<li><b>66 - Iy</b>: [dim^4] Second moment of area about y-y axis</li>\r\n<li><b>67 - Iz</b>: [dim^4] Second moment of area about z-z axis</li>\r\n<li><b>68 - Iw</b>: [dim^6] Warping constant</li>\r\n<li><b>69 - k</b>: [adim] factor for design ultimate resistance to tension ( eq 8.15 )</li>\r\n<li><b>70 - ka</b>: [adim] Interaction factor (My effect) k_alpha (eq C.6)</li>\r\n<li><b>71 - kw_bi</b>: [adim] Interaction factor (bi-moment effect) kw (eq C.3)</li>\r\n<li><b>72 - kw</b>: [adim] lateral torsional buckling factor kw</li>\r\n<li><b>73 - kz</b>: [adim] lateral torsional buckling factor kz</li>\r\n<li><b>74 - kyy</b>: [adim] Interaction factor (Table 8.7) - see kyy_AnnexC1 for the mono-symmetric Table C.1 variant</li>\r\n<li><b>75 - kyz</b>: [adim] Interaction factor (Table 8.7)</li>\r\n<li><b>76 - kzw</b>: [adim] Interaction factor (Mz effect) kzw (eq C.4)</li>\r\n<li><b>77 - kzy</b>: [adim] Interaction factor (Table 8.8)</li>\r\n<li><b>78 - kzz</b>: [adim] Interaction factor (Table 8.8)</li>\r\n<li><b>79 - ky_theta</b>: [adim] Reduction factor for the yield strength of steel at temperature Theta_a, reached at time t, EC3-1-2 eq (7.5)</li>\r\n<li><b>80 - ky_theta_com</b>: [adim] Reduction factor for the yield strength at the max temperature in the compression flange Î¸a,com, EC3-1-2 (7.18)</li>\r\n<li><b>81 - kE_theta_com</b>: [adim] Reduction factor for the slope of the linear elastic range at Î¸a,com, EC3-1-2 (7.21)</li>\r\n<li><b>82 - K1</b>: [adim] Adaptation factor for fire design</li>\r\n<li><b>83 - K2</b>: [adim] Adaptation factor for fire design</li>\r\n<li><b>84 - l_cr_y</b>: [dim] Effective buckling length about y-y axis</li>\r\n<li><b>85 - l_cr_z</b>: [dim] Effective buckling length about z-z axis</li>\r\n<li><b>86 - l_cr_t</b>: [dim] Effective buckling length for torsional buckling</li>\r\n<li><b>87 - l_cr_tf</b>: [dim] Effective buckling length for torsional - flexural buckling</li>\r\n<li><b>88 - l_cr_LT</b>: [dim] Effective buckling length for lateral torsional buckling</li>\r\n<li><b>89 - l_cr_LT_sup</b>: [dim] Effective buckling length for lateral torsional buckling at superior flange</li>\r\n<li><b>90 - l_cr_LT_inf</b>: [dim] Effective buckling length for lateral torsional buckling at inferior flange</li>\r\n<li><b>91 - L</b>: [dim] Member length</li>\r\n<li><b>92 - LTB_Method_General</b>: [string] General cases (8.3.2.3(2))</li>\r\n<li><b>93 - LTB_Method_Doubly_Sym_I_H</b>: [string] Doubley symmetric I- and H- sections (8.3.2.3(3))</li>\r\n<li><b>94 - LTB_Method_Simplified</b>: [string] Simplified method (buckling of the compression flange)</li>\r\n<li><b>95 - Curve_L1</b>: [string] LTB curve L1 (EC3-1-2 Table 7.2)</li>\r\n<li><b>96 - Curve_L2</b>: [string] LTB curve L2 (EC3-1-2 Table 7.2)</li>\r\n<li><b>97 - Curve_L3</b>: [string] LTB curve L3 (EC3-1-2 Table 7.2)</li>\r\n<li><b>98 - Mcr</b>: [moment] Critical bending moment for lateral torsional buckling</li>\r\n<li><b>99 - Mcrit_y</b>: [moment] Critical bending moment around y-y computed by Advanced Stabiliy</li>\r\n<li><b>100 - Mcrit_z</b>: [moment] Critical bending moment around z-z computed by Advanced Stabiliy</li>\r\n<li><b>101 - Mcrit_max</b>: [moment] Maximum Critical bending moment computed by Advanced Stabiliy</li>\r\n<li><b>102 - MEd</b>: [moment] Bending Moment around y-y or around z-z</li>\r\n<li><b>103 - MyEd</b>: [moment] Bending Moment around y-y</li>\r\n<li><b>104 - MyEd_fi</b>: [moment] Fire Bending Moment around y-y</li>\r\n<li><b>105 - MzEd</b>: [moment] Bending Moment around z-z</li>\r\n<li><b>106 - MzEd_fi</b>: [moment] Fire Bending Moment around z-z</li>\r\n<li><b>107 - McRd</b>: [moment] Bending Design resistance around y-y or around z-z</li>\r\n<li><b>108 - MfiRd_theta</b>: [moment] Fire design bending resistance at steel temperature Theta_a</li>\r\n<li><b>109 - MbRd_fi_t</b>: [moment] Design LTB resistance moment in fire at time t, EC3-1-2 (7.18) / (7.28) / (7.31)</li>\r\n<li><b>110 - MNRd</b>: [moment] Design plastic bending moment resistance around y-y or around z-z reduced due to the axial force NEd</li>\r\n<li><b>111 - MPlRd</b>: [moment] Plastic bending resistance around y-y or around z-z</li>\r\n<li><b>112 - MycRd</b>: [moment] Bending Design resistance around y-y</li>\r\n<li><b>113 - MzcRd</b>: [moment] Bending Design resistance around z-z</li>\r\n<li><b>114 - MyRk</b>: [moment] Characteristic value of the bending moment resistance around y-y</li>\r\n<li><b>115 - MzRk</b>: [moment] Characteristic value of the bending moment resistance around z-z</li>\r\n<li><b>116 - MyNRd</b>: [moment] Design plastic bending moment resistance around y-y reduced due to the axial force NEd</li>\r\n<li><b>117 - MyVNRd</b>: [moment] Design plastic bending moment resistance around y-y reduced due to the axial and shear force</li>\r\n<li><b>118 - MzNRd</b>: [moment] Design plastic bending moment resistance around z-z reduced due to the axial force NEd</li>\r\n<li><b>119 - MzVNRd</b>: [moment] Design plastic bending moment resistance around z-z reduced due to the axial and shear force</li>\r\n<li><b>120 - MyelN</b>: [moment] Bending design resistance considering axial force for oval sections ( eq 48-1 Richel ) -> see #87534</li>\r\n<li><b>121 - MzelN</b>: [moment] Bending design resistance considering axial force for oval sections ( eq 48-1 Richel ) -> see #87534</li>\r\n<li><b>122 - MyPlRd</b>: [moment] Plastic bending resistance</li>\r\n<li><b>123 - MyPlVRd</b>: [moment] Plastic bending resistance reduced accounting for shear effect</li>\r\n<li><b>124 - MzPlRd</b>: [moment] Plastic bending resistance</li>\r\n<li><b>125 - MzPlVRd</b>: [moment] Plastic bending resistance reduced accounting for shear effect</li>\r\n<li><b>126 - MVRd</b>: [moment] Design plastic bending moment resistance reduced due to the shear force VEd -> chap. 8.2.8 (2)</li>\r\n<li><b>127 - MVepRd</b>: [moment] Design plastic bending moment resistance reduced due to the shear force VEd using elasto-plastic modulus-> chap. 8.2.8 (2)</li>\r\n<li><b>128 - MepyRd</b>: [moment] Elasto-plastic bending moment resistance about y-y (Annex B.1)</li>\r\n<li><b>129 - MepzRd</b>: [moment] Elasto-plastic bending moment resistance about z-z (Annex B.1)</li>\r\n<li><b>130 - MNepyRd</b>: [moment] Elasto-plastic bending moment resistance about y-y reduced due to axial force (Annex B.9)</li>\r\n<li><b>131 - MNepzRd</b>: [moment] Elasto-plastic bending moment resistance about z-z reduced due to axial force (Annex B.9)</li>\r\n<li><b>132 - MyVRd</b>: [moment] Design plastic bending moment y-y resistance reduced due to the shear force VEd -> chap. 8.2.8 (2)</li>\r\n<li><b>133 - MzVRd</b>: [moment] Design plastic bending moment z-z resistance reduced due to the shear force VEd -> chap. 8.2.8 (2)</li>\r\n<li><b>134 - MBRd</b>: [moment] Bending moment resistance reduced by torsion bimoment (eq 8.29) - McBRd / MyBRd</li>\r\n<li><b>135 - MNBRd</b>: [moment] Bending moment resistance reduced by torsion bimoment and axial force (eq 8.48 applied to MBRd)</li>\r\n<li><b>136 - MBVRd</b>: [moment] Bending moment resistance reduced by torsion bimoment and shear force (eq 8.38/8.39 applied to MBRd)</li>\r\n<li><b>137 - MBVNRd</b>: [moment] Bending moment resistance reduced by torsion bimoment, shear and axial force</li>\r\n<li><b>138 - MRk</b>: [moment]</li>\r\n<li><b>139 - n</b>: [adim] Axial force to axial resistance ratio chapter 8.2.9.1(5) & (6)</li>\r\n<li><b>140 - NEd</b>: [force] Axial force</li>\r\n<li><b>141 - NEd_t</b>: [force] Tension Axial force</li>\r\n<li><b>142 - NEd_c</b>: [force] Compression Axial force</li>\r\n<li><b>143 - NbRd</b>: [force] Design buckling resistance for members under compression</li>\r\n<li><b>144 - Ncr_y</b>: [force] Critical buckling load for axial compression about y-y</li>\r\n<li><b>145 - Ncr_z</b>: [force] Critical buckling load for axial compression about z-z</li>\r\n<li><b>146 - Ncr_t</b>: [force] Critical buckling load for axial compression due to torsional buckling</li>\r\n<li><b>147 - Ncr_tf</b>: [force] Critical buckling load for axial compression due to torsional - flexural buckling</li>\r\n<li><b>148 - Ncr_AdvStab</b>: [force] Critical buckling load computed by Advanced Stabiliy</li>\r\n<li><b>149 - NcRd</b>: [force] Axial compression resistance</li>\r\n<li><b>150 - NPlRd</b>: [force] Plastic axial resistance</li>\r\n<li><b>151 - NVRd</b>: [force] Plastic axial resistance affected by shear</li>\r\n<li><b>152 - NRk</b>: [force] Characteristic value of the resistance to compression according to 8.2.2.6.</li>\r\n<li><b>153 - NRd_fi_theta</b>: [force] Design resistance of a tension member with a uniform temperature EC3-1-2 7.4.1(1) & eq (7.5)</li>\r\n<li><b>154 - NtRd</b>: [force] Axial tension resistance</li>\r\n<li><b>155 - NuRd</b>: [force] Design ultimate resistance of net cross-section considering holes</li>\r\n<li><b>156 - ny</b>: [adim] Axial force ratio for buckling y-y (8.91)</li>\r\n<li><b>157 - nz</b>: [adim] Axial force ratio for buckling z-z (8.91)</li>\r\n<li><b>158 - r_int</b>: [dim] inner radius for curved sections or web to flange radius</li>\r\n<li><b>159 - r_ext</b>: [dim] inner and outer radius for curved sections of end of flange radius</li>\r\n<li><b>160 - Veff1Rd</b>: [force] Resistance to block tearing ( used for axial tension members with holes) according to EN1993-1-8 2nd gen. (eq. 5.19)</li>\r\n<li><b>161 - VEd</b>: [force] Shear Force along y or z</li>\r\n<li><b>162 - VyEd</b>: [force] Shear Force along y</li>\r\n<li><b>163 - VzEd</b>: [force] Shear Force along z</li>\r\n<li><b>164 - VcRd</b>: [force] Shear Design resistance along y or z</li>\r\n<li><b>165 - VPlRd</b>: [force] Plastic Shear design resistance along y or z</li>\r\n<li><b>166 - VyPlRd</b>: [force] Plastic Shear design resistance along y</li>\r\n<li><b>167 - VzPlRd</b>: [force] Plastic Shear design resistance along z</li>\r\n<li><b>168 - tf</b>: [dim] (top) flange thickness</li>\r\n<li><b>169 - tf_inf</b>: [dim] bottom flange thickness</li>\r\n<li><b>170 - tw</b>: [dim] web thickness</li>\r\n<li><b>171 - tf_max</b>: [dim] maximum flange thickness</li>\r\n<li><b>172 - tf_min</b>: [dim] minimum flange thickness</li>\r\n<li><b>173 - TEd</b>: [force] Torsion</li>\r\n<li><b>174 - TtEd</b>: [force] Design value of internal St. Venant torsion moment</li>\r\n<li><b>175 - TwEd</b>: [force] Design value of internal warping torsion moment</li>\r\n<li><b>176 - TRd</b>: [force] Design torsion resistance</li>\r\n<li><b>177 - VplTRd</b>: [force] Reduced plastic shear resistance accounting for torsion (Vpl,T,Rd)</li>\r\n<li><b>178 - Wpl</b>: [dim^3] Plastic section modulus (class 1 or 2)</li>\r\n<li><b>179 - Wply</b>: [dim^3] Plastic section modulus about y-y axis (class 1 or 2)</li>\r\n<li><b>180 - Wplz</b>: [dim^3] Plastic section modulus about z-z axis (class 1 or 2)</li>\r\n<li><b>181 - Wel</b>: [dim^3] Elastic section modulus (class 3)</li>\r\n<li><b>182 - Wely</b>: [dim^3] Elastic section modulus about y-y axis (class 3)</li>\r\n<li><b>183 - Welz</b>: [dim^3] Elastic section modulus about z-z axis (class 3)</li>\r\n<li><b>184 - Wep</b>: [dim^3] Elastic plastic section modulus (class 3)</li>\r\n<li><b>185 - Wepy</b>: [dim^3] Elastic plastic section modulus about y-y axis (class 3)</li>\r\n<li><b>186 - Wepz</b>: [dim^3] Elastic plastic section modulus about z-z axis (class 3)</li>\r\n<li><b>187 - WplyV</b>: [dim^3] Plastic section modulus y-y reduced by shear</li>\r\n<li><b>188 - WplzV</b>: [dim^3] Plastic section modulus z-z reduced by shear</li>\r\n<li><b>189 - WelyV</b>: [dim^3] Elastic section modulus y-y reduced by shear</li>\r\n<li><b>190 - WelzV</b>: [dim^3] Elastic section modulus z-z reduced by shear</li>\r\n<li><b>191 - WepyV</b>: [dim^3] Elasto-plastic section modulus y-y reduced by shear</li>\r\n<li><b>192 - WepzV</b>: [dim^3] Elasto-plastic section modulus z-z reduced by shear</li>\r\n<li><b>193 - WplB</b>: [dim^3] Plastic section modulus for bimoment resistance (Annex C.2)</li>\r\n<li><b>194 - WelB</b>: [dim^3] Elastic section modulus for bimoment resistance (Annex C.2)</li>\r\n<li><b>195 - Weff</b>: [dim^3] Effective section modulus (class 4)</li>\r\n<li><b>196 - Weffy</b>: [dim^3] Effective section modulus about y-y axis (class 4)</li>\r\n<li><b>197 - Weffz</b>: [dim^3] Effective section modulus about z-z axis (class 4)</li>\r\n<li><b>198 - Weff_over_Wel</b>: [adim] Weff,y / Wel,y ratio governing the Table 7.2 LTB curve</li>\r\n<li><b>199 - WR</b>: [adim] Utilization ratio</li>\r\n<li><b>200 - WR_N</b>: [adim] Utilization ratio contribution from axial force (N)</li>\r\n<li><b>201 - WR_My</b>: [adim] Utilization ratio contribution from bending moment about y-y (My)</li>\r\n<li><b>202 - WR_Mz</b>: [adim] Utilization ratio contribution from bending moment about z-z (Mz)</li>\r\n<li><b>203 - WR_BEd</b>: [adim] Utilization ratio contribution from bimoment (BEd)</li>\r\n<li><b>204 - zg</b>: [dim] distance between shear center and centroid in z direction</li>\r\n<li><b>205 - zj</b>: [dim] warping lever arm</li>\r\n<li><b>206 - alpha</b>: [adim] Alpha coefficient</li>\r\n<li><b>207 - alpha_LT</b>: [adim] Imperfection factor alpha for lateral torsiuonal buckling curves Table 8.5 ( 2nd gen)</li>\r\n<li><b>208 - alpha_y</b>: [adim] Imperfection factor alpha for buckling curves Table 8.2 ( 2nd gen)</li>\r\n<li><b>209 - alpha_z</b>: [adim] Imperfection factor alpha for buckling curves Table 8.2 ( 2nd gen)</li>\r\n<li><b>210 - alpha_t</b>: [adim] Imperfection factor alpha for buckling curves Table 8.2 ( 2nd gen)</li>\r\n<li><b>211 - alpha_tf</b>: [adim] Imperfection factor alpha for buckling curves Table 8.2 ( 2nd gen)</li>\r\n<li><b>212 - beta</b>: [adim] Beta coefficient</li>\r\n<li><b>213 - beta_ep_y</b>: [adim] Interpolation factor for elasto-plastic section modulus about y-y (Annex B.3)</li>\r\n<li><b>214 - beta_ep_z</b>: [adim] Interpolation factor for elasto-plastic section modulus about z-z (Annex B.4)</li>\r\n<li><b>215 - epsilon</b>: [adim] Material parameter epsilon = sqrt(235/fy) (Annex B, section classification)</li>\r\n<li><b>216 - c_f</b>: [dim] Flange outstand c used in Annex B beta_ep width-to-thickness check (I/H and RHS)</li>\r\n<li><b>217 - c_w</b>: [dim] Web clear depth c used in Annex B beta_ep width-to-thickness check (I/H and RHS)</li>\r\n<li><b>218 - de</b>: [dim] Equivalent diameter for CHS/EHS (Annex B.7)</li>\r\n<li><b>219 - beta_c</b>: [adim] Beta coefficient for the modified relative slenderness of the equivalent compression flange 8.3.2.4 (5)</li>\r\n<li><b>220 - chi_LT</b>: [adim] Reduction factor for lateral torsional buckling - general method</li>\r\n<li><b>221 - chi_c_z</b>: [adim] Reduction factor for lateral torsional buckling - simplified compression flange method</li>\r\n<li><b>222 - chi_y</b>: [adim] Reduction factor for buckling about y-y axis</li>\r\n<li><b>223 - chi_z</b>: [adim] Reduction factor for buckling about z-z axis</li>\r\n<li><b>224 - chi_t</b>: [adim] Reduction factor for torsional buckling</li>\r\n<li><b>225 - chi_tf</b>: [adim] Reduction factor for torsional flexural buckling</li>\r\n<li><b>226 - chi_min</b>: [adim] Minimum reduction factor for torsional flexural buckling</li>\r\n<li><b>227 - chi_fi_theta</b>: [adim] Reduction factor for fire design</li>\r\n<li><b>228 - chi_LT_fi</b>: [adim] Reduction factor for LTB in the fire design situation, EC3-1-2 (7.19) / (7.32)</li>\r\n<li><b>229 - chi_LT_fi_mod</b>: [adim] Modified reduction factor for LTB in fire, EC3-1-2 (7.23)</li>\r\n<li><b>230 - crit_load_factor</b>: [adim] Critical Load Factor computed by Advanced Stabiliy</li>\r\n<li><b>231 - etaV</b>: [adim] Shear factor etaV for combined bending and shear see Chapter 8.2.8(3)</li>\r\n<li><b>232 - gM0</b>: [adim] Partial safety factor</li>\r\n<li><b>233 - gM1</b>: [adim] Partial safety factor</li>\r\n<li><b>234 - gM2</b>: [adim] Partal safety factor</li>\r\n<li><b>235 - gM_fi</b>: [adim] Partial safety factor for fire design</li>\r\n<li><b>236 - i_y</b>: [dim] Radius of gyration about y-y axis Native: iy.</li>\r\n<li><b>237 - i_z</b>: [dim] Radius of gyration about z-z axis Native: iz.</li>\r\n<li><b>238 - y0</b>: [dim] Distance from the shear centre to the centroid in y direction</li>\r\n<li><b>239 - z0</b>: [dim] Distance from the shear centre to the centroid in z direction</li>\r\n<li><b>240 - i0_sqr</b>: [dim^2] Polar radius of gyration for torsion ^ 2</li>\r\n<li><b>241 - ip_sqr</b>: [dim^2] Polar radius of gyration for torsion ^ 2</li>\r\n<li><b>242 - kc</b>: [adim] Slenderness correction factor for moment distribution between restraints, see Table 8.6</li>\r\n<li><b>243 - kc_fire</b>: [adim] Correction factor kc for the fire design situation, EC3-1-2 Table 7.1 (distinct from kc, EC3-1-1 Table 8.6)</li>\r\n<li><b>244 - lambda_bar_c_z</b>: [adim] Non-dimensional relative slenderness of the equivalent compression flange</li>\r\n<li><b>245 - lambda_bar_c_z_mod</b>: [adim] Non-dimensional modified relative slenderness of the equivalent compression flange</li>\r\n<li><b>246 - lambda_bar_max</b>: [adim] Non-dimensional slenderness for buckling about y-y axis</li>\r\n<li><b>247 - lambda_bar_y</b>: [adim] Non-dimensional slenderness for buckling about y-y axis</li>\r\n<li><b>248 - lambda_bar_z</b>: [adim] Non-dimensional slenderness for buckling about z-z axis</li>\r\n<li><b>249 - lambda_bar_t</b>: [adim] Non-dimensional slenderness for torsional buckling</li>\r\n<li><b>250 - lambda_bar_tf</b>: [adim] Non-dimensional slenderness for torsional-flexural buckling</li>\r\n<li><b>251 - lambda_bar_LT</b>: [adim] Non-dimensional slenderness for lateral torsional LTB buckling</li>\r\n<li><b>252 - lambda_bar_LT0</b>: [adim] Non-dimensional slenderness limit for lateral torsional LTB buckling</li>\r\n<li><b>253 - lambda_bar_LT0_lim</b>: [adim] Non-dimensional slenderness limit for lateral torsional LTB buckling</li>\r\n<li><b>254 - lambda_bar_LT_theta_com</b>: [adim] Relative slenderness for LTB at Î¸a,com, EC3-1-2 (7.21) / (7.34)</li>\r\n<li><b>255 - miu_y</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term miu_y</li>\r\n<li><b>256 - miu_z</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term miu_z</li>\r\n<li><b>257 - w_y</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term w_y</li>\r\n<li><b>258 - w_z</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term w_z</li>\r\n<li><b>259 - n_pl</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term n_pl</li>\r\n<li><b>260 - a_LT</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term a_LT</li>\r\n<li><b>261 - phi_c_z</b>: [adim] Reduction factor for lateral torsional buckling</li>\r\n<li><b>262 - phi_LT</b>: [adim] Reduction factor for lateral torsional buckling</li>\r\n<li><b>263 - phi_LT_theta_com</b>: [adim] Phi parameter for LTB in fire, EC3-1-2 (7.20) / (7.33)</li>\r\n<li><b>264 - phi_y</b>: [adim] Reduction factor for buckling about y-y axis</li>\r\n<li><b>265 - phi_z</b>: [adim] Reduction factor for buckling about z-z axis</li>\r\n<li><b>266 - phi_t</b>: [adim] Reduction factor for torsional buckling</li>\r\n<li><b>267 - phi_tf</b>: [adim] Reduction factor for torsional-flexural buckling</li>\r\n<li><b>268 - rho</b>: [adim] 8.2.8(4) eq 8.37 reduction factor for computing fy,red</li>\r\n<li><b>269 - sigma_x</b>: [stress] Normal stress in x longitudinal direction</li>\r\n<li><b>270 - sigma_N</b>: [stress] Normal stress from axial force</li>\r\n<li><b>271 - sigma_My</b>: [stress] Normal stress from y-y bending moment</li>\r\n<li><b>272 - sigma_Mz</b>: [stress] Normal stress from z-z bending moment</li>\r\n<li><b>273 - sigma_Mw</b>: [stress] Normal stress from warping moment</li>\r\n<li><b>274 - tau</b>: [stress] Shear stress</li>\r\n<li><b>275 - tau_Vy</b>: [stress] Shear stress from shear force on Y</li>\r\n<li><b>276 - tau_Vz</b>: [stress] Shear stress from shear force on Z</li>\r\n<li><b>277 - tau_t</b>: [stress] Shear stress from torsional moment ( also denoted Tau_Mxp )</li>\r\n<li><b>278 - tau_w</b>: [stress] Shear stress from warping moment ( also denoted Tau_Mxs )</li>\r\n<li><b>279 - sigma_VM</b>: [stress] Equivalent stress (von Mises)</li>\r\n<li><b>280 - flexural_buckling_yy</b>: [none] Flexural buckling yy</li>\r\n<li><b>281 - flexural_buckling_zz</b>: [none] Flexural buckling zz</li>\r\n<li><b>282 - torsional_buckling</b>: [none] Torsional buckling</li>\r\n<li><b>283 - kyy_AnnexC1</b>: [adim] Interaction factor from Table C.1 (mono-symmetric sections, Annex C.1)</li>\r\n<li><b>284 - kTau</b>: [adim] Plate shear buckling coefficient k_tau (Annex A.5)</li>\r\n<li><b>285 - kTau_st</b>: [adim] Plate shear buckling coefficient k_tau, stiffened web variant</li>\r\n<li><b>286 - sigma_E</b>: [stress] Critical stress for plate buckling (6.6)</li>\r\n<li><b>287 - lambda_bar_w</b>: [adim] Relative slenderness for shear buckling of the web (7.3)/(7.4)</li>\r\n<li><b>288 - chi_w</b>: [adim] Web shear buckling reduction factor (Table 7.1)</li>\r\n<li><b>289 - VbwRd</b>: [force] Contribution from the web to shear buckling resistance (7.2)</li>\r\n<li><b>290 - VbfRd</b>: [force] Contribution from the flanges to shear buckling resistance (7.7)</li>\r\n<li><b>291 - VbRd</b>: [force] Design resistance for shear buckling (7.1)</li>\r\n<li><b>292 - eta_shear</b>: [adim] eta factor, EN 1993-1-5 5.1 NOTE 2 / Sec.7.1(2)</li>\r\n<li><b>293 - eta_1_sb</b>: [adim] eta1, bending-axial utilization for shear buckling interaction (6.31)/(6.32)</li>\r\n<li><b>294 - eta_3_bar</b>: [adim] eta3_bar, shear utilization for shear buckling interaction (Sec.9.1(1))</li>\r\n<li><b>295 - mu_sb</b>: [adim] mu exponent for shear buckling interaction (9.4)</li>\r\n<li><b>296 - MfRk</b>: [moment] Characteristic value of the plastic moment of resistance of the effective flanges (Sec.7.1(1))</li>\r\n<li><b>297 - MfplRd</b>: [moment] Design plastic moment of resistance of the effective flanges Mf,Rd (Sec.7.1(1))</li>\r\n<li><b>298 - MeffRd</b>: [moment] Effective bending resistance Meff,Rd (9.2)</li>\r\n<li><b>299 - kNEd</b>: [adim] Axial force reduction factor for the flange contribution to shear buckling</li>\r\n<li><b>300 - c_hinge</b>: [dim] Flange hinge length c (7.8)</li>\r\n<li><b>301 - a_panel</b>: [dim] Shear buckling panel length a</li>\r\n<li><b>302 - Af1</b>: [dim^2] Area of the first (top) flange</li>\r\n<li><b>303 - Af2</b>: [dim^2] Area of the second (bottom) flange</li>\r\n<li><b>304 - hw_over_tw</b>: [adim] Web slenderness hw/tw</li>\r\n<li><b>305 - hw_over_tw_lim</b>: [adim] Web slenderness limit for the shear buckling check to be required (Sec.7.1(2))</li>\r\n</ul>\r\n"
+        "description": "A physical quantity reported by an EN 1993 2nd generation verification<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - noName</b>: No name</li>\r\n<li><b>1 - left</b>: Left term of an inequality equation</li>\r\n<li><b>2 - right</b>: Right term of an inequality equation</li>\r\n<li><b>3 - a_ratio</b>: [adim] Ratio flange area to gross-section area -> chapter 8.2.9.1(5) & (6) Native: a.</li>\r\n<li><b>4 - a_f</b>: [adim] Ratio web area to gross-section area -> chapter 8.2.9.1(5) & (6)</li>\r\n<li><b>5 - a_w</b>: [adim] Ratio flange area to gross-section area -> chapter 8.2.9.1(5) & (6)</li>\r\n<li><b>6 - A</b>: [dim^2] Cross-sectional area</li>\r\n<li><b>7 - Aeff</b>: [dim^2] Cross-sectional effective area (class 4)</li>\r\n<li><b>8 - Ac</b>: [dim^2] area of the equivalent compression flange ( Stability 8.3.2.4 (4))</li>\r\n<li><b>9 - Anet</b>: [dim^2] Net cross-sectional area</li>\r\n<li><b>10 - Av</b>: [dim^2] Shear area</li>\r\n<li><b>11 - Avy</b>: [dim^2] Shear area along y-y axis</li>\r\n<li><b>12 - Avz</b>: [dim^2] Shear area along z-z axis</li>\r\n<li><b>13 - BEd</b>: [bi-moment] Design bi-moment(N * m^2)</li>\r\n<li><b>14 - BRk</b>: [bi-moment] Characteristic value of the bi-moment resistance (N * m^2)</li>\r\n<li><b>15 - BRd</b>: [bi-moment] Design value of the bi-moment resistance (N * m^2) = BRk / gM0</li>\r\n<li><b>16 - b</b>: [dim] (top) flange width</li>\r\n<li><b>17 - b_inf</b>: [dim] bottom flange width</li>\r\n<li><b>18 - b_min</b>: [dim] minimum flange width Min(b, b_inf) -- Annex C.2 bimoment modulus (simply-symmetric I/H)</li>\r\n<li><b>19 - bLT</b>: [adim] factor for the effective length for lateral torsional buckling (Table 4.1 from CEN/TS 1993-1-101:2022)</li>\r\n<li><b>20 - C1</b>: [adim] Coefficient C1 for lateral torsional buckling</li>\r\n<li><b>21 - C2</b>: [adim] Coefficient C2 for lateral torsional buckling</li>\r\n<li><b>22 - C3</b>: [adim] Coefficient C3 for lateral torsional buckling</li>\r\n<li><b>23 - Class_1</b>: [string] Cross-section class 1</li>\r\n<li><b>24 - Class_2</b>: [string] Cross-section class 2</li>\r\n<li><b>25 - Class_3</b>: [string] Cross-section class 3</li>\r\n<li><b>26 - Class_4</b>: [string] Cross-section class 4</li>\r\n<li><b>27 - Class_1_imposed</b>: [string] Cross-section class 1</li>\r\n<li><b>28 - Class_2_imposed</b>: [string] Cross-section class 2</li>\r\n<li><b>29 - Class_3_imposed</b>: [string] Cross-section class 3</li>\r\n<li><b>30 - Class_4_imposed</b>: [string] Cross-section class 4</li>\r\n<li><b>31 - Class_Unkn</b>: [string] Cross-section class Unknown</li>\r\n<li><b>32 - cLT</b>: [adim] factor for the effective length for lateral torsional buckling (Table 4.1 from CEN/TS 1993-1-101:2022)</li>\r\n<li><b>33 - Cmy</b>: [adim] Uniform moment factor Cmy (Table 8.9)</li>\r\n<li><b>34 - Cmz</b>: [adim] Uniform moment factor Cmz (Table 8.9)</li>\r\n<li><b>35 - CmLT</b>: [adim] Uniform moment factor CmLT (Table 8.9)</li>\r\n<li><b>36 - Curve_UNKN</b>: [string] Unknown buckling curve</li>\r\n<li><b>37 - Curve_A</b>: [string] Buckling curve A</li>\r\n<li><b>38 - Curve_A0</b>: [string] Buckling curve A0</li>\r\n<li><b>39 - Curve_B</b>: [string] Buckling curve A</li>\r\n<li><b>40 - Curve_C</b>: [string] Buckling curve A</li>\r\n<li><b>41 - Curve_D</b>: [string] Buckling curve A</li>\r\n<li><b>42 - Defl_iTronID</b>: [adim] troncon ID ( used in super elem deflection)</li>\r\n<li><b>43 - Defl_iLocation</b>: [adim] see EC3_DEFLECTION_LOCATION (0 = extermity, 1 = span, 2 = envelope)</li>\r\n<li><b>44 - Defl_Defl_Val</b>: [dim] effective deflection value</li>\r\n<li><b>45 - Defl_All_Coeff</b>: [dim] defl coef ( L/200 => coef = 200)</li>\r\n<li><b>46 - Defl_Eff_Coeff</b>: [dim] resulted coef ( e.g., L/133 => coef = 133)</li>\r\n<li><b>47 - Defl_Length</b>: [dim] element / troncon length</li>\r\n<li><b>48 - DeltaMy</b>: [moment] Moments due to the shift of the centroid axis according to 8.2.2.5 for Class 4 sections;</li>\r\n<li><b>49 - DeltaMz</b>: [moment] Moments due to the shift of the centroid axis according to 8.2.2.5 for Class 4 sections;</li>\r\n<li><b>50 - dz</b>: [dim] distance of lateral supports to shear center</li>\r\n<li><b>51 - dLT</b>: [adim] factor for the effective length for lateral torsional buckling (Table 4.1 from CEN/TS 1993-1-101:2022)</li>\r\n<li><b>52 - eLT</b>: [adim] factor for the effective length for lateral torsional buckling (Table 4.1 from CEN/TS 1993-1-101:2022)</li>\r\n<li><b>53 - E</b>: [stress] Modulus of elasticity</li>\r\n<li><b>54 - fM</b>: [adim] Factor that accounts for the effect of the bending moment distribution between discrete lateral restraints</li>\r\n<li><b>55 - f_LT_fi</b>: [adim] Moment-distribution correction factor f for LTB in fire, EC3-1-2 (7.24) / (7.36)</li>\r\n<li><b>56 - fy</b>: [stress] Yield strength</li>\r\n<li><b>57 - fyRed</b>: [stress] Reduced yield strength for shear ( eq 8.36 )</li>\r\n<li><b>58 - fyRed1</b>: [stress] Reduced yield strength for the section part affected by shear, combined with torsion bimoment ( eq 8.38 )</li>\r\n<li><b>59 - fyRed2</b>: [stress] Reduced yield strength for the rest of the section, combined with torsion bimoment ( eq 8.39 )</li>\r\n<li><b>60 - fu</b>: [stress] Ultimate strength</li>\r\n<li><b>61 - G</b>: [stress] Shear modulus</li>\r\n<li><b>62 - nu</b>: [adim] Poisson's ratio</li>\r\n<li><b>63 - h</b>: [dim] overall cross section height</li>\r\n<li><b>64 - hw</b>: [dim] web height</li>\r\n<li><b>65 - It</b>: [dim^4] Torsional constant</li>\r\n<li><b>66 - Iy</b>: [dim^4] Second moment of area about y-y axis</li>\r\n<li><b>67 - Iz</b>: [dim^4] Second moment of area about z-z axis</li>\r\n<li><b>68 - Iw</b>: [dim^6] Warping constant</li>\r\n<li><b>69 - k</b>: [adim] factor for design ultimate resistance to tension ( eq 8.15 )</li>\r\n<li><b>70 - ka</b>: [adim] Interaction factor (My effect) k_alpha (eq C.6)</li>\r\n<li><b>71 - kw_bi</b>: [adim] Interaction factor (bi-moment effect) kw (eq C.3)</li>\r\n<li><b>72 - kw</b>: [adim] lateral torsional buckling factor kw</li>\r\n<li><b>73 - kz</b>: [adim] lateral torsional buckling factor kz</li>\r\n<li><b>74 - kyy</b>: [adim] Interaction factor (Table 8.7) - see kyy_AnnexC1 for the mono-symmetric Table C.1 variant</li>\r\n<li><b>75 - kyz</b>: [adim] Interaction factor (Table 8.7)</li>\r\n<li><b>76 - kzw</b>: [adim] Interaction factor (Mz effect) kzw (eq C.4)</li>\r\n<li><b>77 - kzy</b>: [adim] Interaction factor (Table 8.8)</li>\r\n<li><b>78 - kzz</b>: [adim] Interaction factor (Table 8.8)</li>\r\n<li><b>79 - ky_theta</b>: [adim] Reduction factor for the yield strength of steel at temperature Theta_a, reached at time t, EC3-1-2 eq (7.5)</li>\r\n<li><b>80 - ky_theta_com</b>: [adim] Reduction factor for the yield strength at the max temperature in the compression flange Î¸a,com, EC3-1-2 (7.18)</li>\r\n<li><b>81 - kE_theta_com</b>: [adim] Reduction factor for the slope of the linear elastic range at Î¸a,com, EC3-1-2 (7.21)</li>\r\n<li><b>82 - K1</b>: [adim] Adaptation factor for fire design</li>\r\n<li><b>83 - K2</b>: [adim] Adaptation factor for fire design</li>\r\n<li><b>84 - l_cr_y</b>: [dim] Effective buckling length about y-y axis</li>\r\n<li><b>85 - l_cr_z</b>: [dim] Effective buckling length about z-z axis</li>\r\n<li><b>86 - l_cr_t</b>: [dim] Effective buckling length for torsional buckling</li>\r\n<li><b>87 - l_cr_tf</b>: [dim] Effective buckling length for torsional - flexural buckling</li>\r\n<li><b>88 - l_cr_LT</b>: [dim] Effective buckling length for lateral torsional buckling</li>\r\n<li><b>89 - l_cr_LT_sup</b>: [dim] Effective buckling length for lateral torsional buckling at superior flange</li>\r\n<li><b>90 - l_cr_LT_inf</b>: [dim] Effective buckling length for lateral torsional buckling at inferior flange</li>\r\n<li><b>91 - L</b>: [dim] Member length</li>\r\n<li><b>92 - LTB_Method_General</b>: [string] General cases (8.3.2.3(2))</li>\r\n<li><b>93 - LTB_Method_Doubly_Sym_I_H</b>: [string] Doubley symmetric I- and H- sections (8.3.2.3(3))</li>\r\n<li><b>94 - LTB_Method_Simplified</b>: [string] Simplified method (buckling of the compression flange)</li>\r\n<li><b>95 - Curve_L1</b>: [string] LTB curve L1 (EC3-1-2 Table 7.2)</li>\r\n<li><b>96 - Curve_L2</b>: [string] LTB curve L2 (EC3-1-2 Table 7.2)</li>\r\n<li><b>97 - Curve_L3</b>: [string] LTB curve L3 (EC3-1-2 Table 7.2)</li>\r\n<li><b>98 - Mcr</b>: [moment] Critical bending moment for lateral torsional buckling</li>\r\n<li><b>99 - Mcrit_y</b>: [moment] Critical bending moment around y-y computed by Advanced Stabiliy</li>\r\n<li><b>100 - Mcrit_z</b>: [moment] Critical bending moment around z-z computed by Advanced Stabiliy</li>\r\n<li><b>101 - Mcrit_max</b>: [moment] Maximum Critical bending moment computed by Advanced Stabiliy</li>\r\n<li><b>102 - MEd</b>: [moment] Bending Moment around y-y or around z-z</li>\r\n<li><b>103 - MyEd</b>: [moment] Bending Moment around y-y</li>\r\n<li><b>104 - MyEd_fi</b>: [moment] Fire Bending Moment around y-y</li>\r\n<li><b>105 - MzEd</b>: [moment] Bending Moment around z-z</li>\r\n<li><b>106 - MzEd_fi</b>: [moment] Fire Bending Moment around z-z</li>\r\n<li><b>107 - McRd</b>: [moment] Bending Design resistance around y-y or around z-z</li>\r\n<li><b>108 - MfiRd_theta</b>: [moment] Fire design bending resistance at steel temperature Theta_a</li>\r\n<li><b>109 - MbRd_fi_t</b>: [moment] Design LTB resistance moment in fire at time t, EC3-1-2 (7.18) / (7.28) / (7.31)</li>\r\n<li><b>110 - MNRd</b>: [moment] Design plastic bending moment resistance around y-y or around z-z reduced due to the axial force NEd</li>\r\n<li><b>111 - MPlRd</b>: [moment] Plastic bending resistance around y-y or around z-z</li>\r\n<li><b>112 - MycRd</b>: [moment] Bending Design resistance around y-y</li>\r\n<li><b>113 - MzcRd</b>: [moment] Bending Design resistance around z-z</li>\r\n<li><b>114 - MyRk</b>: [moment] Characteristic value of the bending moment resistance around y-y</li>\r\n<li><b>115 - MzRk</b>: [moment] Characteristic value of the bending moment resistance around z-z</li>\r\n<li><b>116 - MyNRd</b>: [moment] Design plastic bending moment resistance around y-y reduced due to the axial force NEd</li>\r\n<li><b>117 - MyVNRd</b>: [moment] Design plastic bending moment resistance around y-y reduced due to the axial and shear force</li>\r\n<li><b>118 - MzNRd</b>: [moment] Design plastic bending moment resistance around z-z reduced due to the axial force NEd</li>\r\n<li><b>119 - MzVNRd</b>: [moment] Design plastic bending moment resistance around z-z reduced due to the axial and shear force</li>\r\n<li><b>120 - MyelN</b>: [moment] Bending design resistance considering axial force for oval sections ( eq 48-1 Richel ) -> see #87534</li>\r\n<li><b>121 - MzelN</b>: [moment] Bending design resistance considering axial force for oval sections ( eq 48-1 Richel ) -> see #87534</li>\r\n<li><b>122 - MyPlRd</b>: [moment] Plastic bending resistance</li>\r\n<li><b>123 - MyPlVRd</b>: [moment] Plastic bending resistance reduced accounting for shear effect</li>\r\n<li><b>124 - MzPlRd</b>: [moment] Plastic bending resistance</li>\r\n<li><b>125 - MzPlVRd</b>: [moment] Plastic bending resistance reduced accounting for shear effect</li>\r\n<li><b>126 - MVRd</b>: [moment] Design plastic bending moment resistance reduced due to the shear force VEd -> chap. 8.2.8 (2)</li>\r\n<li><b>127 - MVepRd</b>: [moment] Design plastic bending moment resistance reduced due to the shear force VEd using elasto-plastic modulus-> chap. 8.2.8 (2)</li>\r\n<li><b>128 - MepyRd</b>: [moment] Elasto-plastic bending moment resistance about y-y (Annex B.1)</li>\r\n<li><b>129 - MepzRd</b>: [moment] Elasto-plastic bending moment resistance about z-z (Annex B.1)</li>\r\n<li><b>130 - MNepyRd</b>: [moment] Elasto-plastic bending moment resistance about y-y reduced due to axial force (Annex B.9)</li>\r\n<li><b>131 - MNepzRd</b>: [moment] Elasto-plastic bending moment resistance about z-z reduced due to axial force (Annex B.9)</li>\r\n<li><b>132 - MyVRd</b>: [moment] Design plastic bending moment y-y resistance reduced due to the shear force VEd -> chap. 8.2.8 (2)</li>\r\n<li><b>133 - MzVRd</b>: [moment] Design plastic bending moment z-z resistance reduced due to the shear force VEd -> chap. 8.2.8 (2)</li>\r\n<li><b>134 - MBRd</b>: [moment] Bending moment resistance reduced by torsion bimoment (eq 8.29) - McBRd / MyBRd</li>\r\n<li><b>135 - MNBRd</b>: [moment] Bending moment resistance reduced by torsion bimoment and axial force (eq 8.48 applied to MBRd)</li>\r\n<li><b>136 - MBVRd</b>: [moment] Bending moment resistance reduced by torsion bimoment and shear force (eq 8.38/8.39 applied to MBRd)</li>\r\n<li><b>137 - MBVNRd</b>: [moment] Bending moment resistance reduced by torsion bimoment, shear and axial force</li>\r\n<li><b>138 - MRk</b>: [moment]</li>\r\n<li><b>139 - n</b>: [adim] Axial force to axial resistance ratio chapter 8.2.9.1(5) & (6)</li>\r\n<li><b>140 - NEd</b>: [force] Axial force</li>\r\n<li><b>141 - NEd_t</b>: [force] Tension Axial force</li>\r\n<li><b>142 - NEd_c</b>: [force] Compression Axial force</li>\r\n<li><b>143 - NbRd</b>: [force] Design buckling resistance for members under compression</li>\r\n<li><b>144 - Ncr_y</b>: [force] Critical buckling load for axial compression about y-y</li>\r\n<li><b>145 - Ncr_z</b>: [force] Critical buckling load for axial compression about z-z</li>\r\n<li><b>146 - Ncr_t</b>: [force] Critical buckling load for axial compression due to torsional buckling</li>\r\n<li><b>147 - Ncr_tf</b>: [force] Critical buckling load for axial compression due to torsional - flexural buckling</li>\r\n<li><b>148 - Ncr_AdvStab</b>: [force] Critical buckling load computed by Advanced Stabiliy</li>\r\n<li><b>149 - NcRd</b>: [force] Axial compression resistance</li>\r\n<li><b>150 - NPlRd</b>: [force] Plastic axial resistance</li>\r\n<li><b>151 - NVRd</b>: [force] Plastic axial resistance affected by shear</li>\r\n<li><b>152 - NRk</b>: [force] Characteristic value of the resistance to compression according to 8.2.2.6.</li>\r\n<li><b>153 - NRd_fi_theta</b>: [force] Design resistance of a tension member with a uniform temperature EC3-1-2 7.4.1(1) & eq (7.5)</li>\r\n<li><b>154 - NtRd</b>: [force] Axial tension resistance</li>\r\n<li><b>155 - NuRd</b>: [force] Design ultimate resistance of net cross-section considering holes</li>\r\n<li><b>156 - ny</b>: [adim] Axial force ratio for buckling y-y (8.91)</li>\r\n<li><b>157 - nz</b>: [adim] Axial force ratio for buckling z-z (8.91)</li>\r\n<li><b>158 - r_int</b>: [dim] inner radius for curved sections or web to flange radius</li>\r\n<li><b>159 - r_ext</b>: [dim] inner and outer radius for curved sections of end of flange radius</li>\r\n<li><b>160 - Veff1Rd</b>: [force] Resistance to block tearing ( used for axial tension members with holes) according to EN1993-1-8 2nd gen. (eq. 5.19)</li>\r\n<li><b>161 - VEd</b>: [force] Shear Force along y or z</li>\r\n<li><b>162 - VyEd</b>: [force] Shear Force along y</li>\r\n<li><b>163 - VzEd</b>: [force] Shear Force along z</li>\r\n<li><b>164 - VcRd</b>: [force] Shear Design resistance along y or z</li>\r\n<li><b>165 - VPlRd</b>: [force] Plastic Shear design resistance along y or z</li>\r\n<li><b>166 - VyPlRd</b>: [force] Plastic Shear design resistance along y</li>\r\n<li><b>167 - VzPlRd</b>: [force] Plastic Shear design resistance along z</li>\r\n<li><b>168 - tf</b>: [dim] (top) flange thickness</li>\r\n<li><b>169 - tf_inf</b>: [dim] bottom flange thickness</li>\r\n<li><b>170 - tw</b>: [dim] web thickness</li>\r\n<li><b>171 - tf_max</b>: [dim] maximum flange thickness</li>\r\n<li><b>172 - tf_min</b>: [dim] minimum flange thickness</li>\r\n<li><b>173 - TEd</b>: [force] Torsion</li>\r\n<li><b>174 - TtEd</b>: [force] Design value of internal St. Venant torsion moment</li>\r\n<li><b>175 - TwEd</b>: [force] Design value of internal warping torsion moment</li>\r\n<li><b>176 - TRd</b>: [force] Design torsion resistance</li>\r\n<li><b>177 - VplTRd</b>: [force] Reduced plastic shear resistance accounting for torsion (Vpl,T,Rd)</li>\r\n<li><b>178 - Wpl</b>: [dim^3] Plastic section modulus (class 1 or 2)</li>\r\n<li><b>179 - Wply</b>: [dim^3] Plastic section modulus about y-y axis (class 1 or 2)</li>\r\n<li><b>180 - Wplz</b>: [dim^3] Plastic section modulus about z-z axis (class 1 or 2)</li>\r\n<li><b>181 - Wel</b>: [dim^3] Elastic section modulus (class 3)</li>\r\n<li><b>182 - Wely</b>: [dim^3] Elastic section modulus about y-y axis (class 3)</li>\r\n<li><b>183 - Welz</b>: [dim^3] Elastic section modulus about z-z axis (class 3)</li>\r\n<li><b>184 - Wep</b>: [dim^3] Elastic plastic section modulus (class 3)</li>\r\n<li><b>185 - Wepy</b>: [dim^3] Elastic plastic section modulus about y-y axis (class 3)</li>\r\n<li><b>186 - Wepz</b>: [dim^3] Elastic plastic section modulus about z-z axis (class 3)</li>\r\n<li><b>187 - WplyV</b>: [dim^3] Plastic section modulus y-y reduced by shear</li>\r\n<li><b>188 - WplzV</b>: [dim^3] Plastic section modulus z-z reduced by shear</li>\r\n<li><b>189 - WelyV</b>: [dim^3] Elastic section modulus y-y reduced by shear</li>\r\n<li><b>190 - WelzV</b>: [dim^3] Elastic section modulus z-z reduced by shear</li>\r\n<li><b>191 - WepyV</b>: [dim^3] Elasto-plastic section modulus y-y reduced by shear</li>\r\n<li><b>192 - WepzV</b>: [dim^3] Elasto-plastic section modulus z-z reduced by shear</li>\r\n<li><b>193 - WplB</b>: [dim^3] Plastic section modulus for bimoment resistance (Annex C.2)</li>\r\n<li><b>194 - WelB</b>: [dim^3] Elastic section modulus for bimoment resistance (Annex C.2)</li>\r\n<li><b>195 - Weff</b>: [dim^3] Effective section modulus (class 4)</li>\r\n<li><b>196 - Weffy</b>: [dim^3] Effective section modulus about y-y axis (class 4)</li>\r\n<li><b>197 - Weffz</b>: [dim^3] Effective section modulus about z-z axis (class 4)</li>\r\n<li><b>198 - Weff_over_Wel</b>: [adim] Weff,y / Wel,y ratio governing the Table 7.2 LTB curve</li>\r\n<li><b>199 - WR</b>: [adim] Utilization ratio</li>\r\n<li><b>200 - WR_N</b>: [adim] Utilization ratio contribution from axial force (N)</li>\r\n<li><b>201 - WR_My</b>: [adim] Utilization ratio contribution from bending moment about y-y (My)</li>\r\n<li><b>202 - WR_Mz</b>: [adim] Utilization ratio contribution from bending moment about z-z (Mz)</li>\r\n<li><b>203 - WR_BEd</b>: [adim] Utilization ratio contribution from bimoment (BEd)</li>\r\n<li><b>204 - zg</b>: [dim] distance between shear center and centroid in z direction</li>\r\n<li><b>205 - zj</b>: [dim] warping lever arm</li>\r\n<li><b>206 - alpha</b>: [adim] Alpha coefficient</li>\r\n<li><b>207 - alpha_LT</b>: [adim] Imperfection factor alpha for lateral torsiuonal buckling curves Table 8.5 ( 2nd gen)</li>\r\n<li><b>208 - alpha_y</b>: [adim] Imperfection factor alpha for buckling curves Table 8.2 ( 2nd gen)</li>\r\n<li><b>209 - alpha_z</b>: [adim] Imperfection factor alpha for buckling curves Table 8.2 ( 2nd gen)</li>\r\n<li><b>210 - alpha_t</b>: [adim] Imperfection factor alpha for buckling curves Table 8.2 ( 2nd gen)</li>\r\n<li><b>211 - alpha_tf</b>: [adim] Imperfection factor alpha for buckling curves Table 8.2 ( 2nd gen)</li>\r\n<li><b>212 - beta</b>: [adim] Beta coefficient</li>\r\n<li><b>213 - beta_ep_y</b>: [adim] Interpolation factor for elasto-plastic section modulus about y-y (Annex B.3)</li>\r\n<li><b>214 - beta_ep_z</b>: [adim] Interpolation factor for elasto-plastic section modulus about z-z (Annex B.4)</li>\r\n<li><b>215 - epsilon</b>: [adim] Material parameter epsilon = sqrt(235/fy) (Annex B, section classification)</li>\r\n<li><b>216 - c_f</b>: [dim] Flange outstand c used in Annex B beta_ep width-to-thickness check (I/H and RHS)</li>\r\n<li><b>217 - c_w</b>: [dim] Web clear depth c used in Annex B beta_ep width-to-thickness check (I/H and RHS)</li>\r\n<li><b>218 - de</b>: [dim] Equivalent diameter for CHS/EHS (Annex B.7)</li>\r\n<li><b>219 - beta_c</b>: [adim] Beta coefficient for the modified relative slenderness of the equivalent compression flange 8.3.2.4 (5)</li>\r\n<li><b>220 - chi_LT</b>: [adim] Reduction factor for lateral torsional buckling - general method</li>\r\n<li><b>221 - chi_c_z</b>: [adim] Reduction factor for lateral torsional buckling - simplified compression flange method</li>\r\n<li><b>222 - chi_y</b>: [adim] Reduction factor for buckling about y-y axis</li>\r\n<li><b>223 - chi_z</b>: [adim] Reduction factor for buckling about z-z axis</li>\r\n<li><b>224 - chi_t</b>: [adim] Reduction factor for torsional buckling</li>\r\n<li><b>225 - chi_tf</b>: [adim] Reduction factor for torsional flexural buckling</li>\r\n<li><b>226 - chi_min</b>: [adim] Minimum reduction factor for torsional flexural buckling</li>\r\n<li><b>227 - chi_fi_theta</b>: [adim] Reduction factor for fire design</li>\r\n<li><b>228 - chi_LT_fi</b>: [adim] Reduction factor for LTB in the fire design situation, EC3-1-2 (7.19) / (7.32)</li>\r\n<li><b>229 - chi_LT_fi_mod</b>: [adim] Modified reduction factor for LTB in fire, EC3-1-2 (7.23)</li>\r\n<li><b>230 - crit_load_factor</b>: [adim] Critical Load Factor computed by Advanced Stabiliy</li>\r\n<li><b>231 - etaV</b>: [adim] Shear factor etaV for combined bending and shear see Chapter 8.2.8(3)</li>\r\n<li><b>232 - gM0</b>: [adim] Partial safety factor</li>\r\n<li><b>233 - gM1</b>: [adim] Partial safety factor</li>\r\n<li><b>234 - gM2</b>: [adim] Partal safety factor</li>\r\n<li><b>235 - gM_fi</b>: [adim] Partial safety factor for fire design</li>\r\n<li><b>236 - i_y</b>: [dim] Radius of gyration about y-y axis Native: iy.</li>\r\n<li><b>237 - i_z</b>: [dim] Radius of gyration about z-z axis Native: iz.</li>\r\n<li><b>238 - y0</b>: [dim] Distance from the shear centre to the centroid in y direction</li>\r\n<li><b>239 - z0</b>: [dim] Distance from the shear centre to the centroid in z direction</li>\r\n<li><b>240 - i0_sqr</b>: [dim^2] Polar radius of gyration for torsion ^ 2</li>\r\n<li><b>241 - ip_sqr</b>: [dim^2] Polar radius of gyration for torsion ^ 2</li>\r\n<li><b>242 - kc</b>: [adim] Slenderness correction factor for moment distribution between restraints, see Table 8.6</li>\r\n<li><b>243 - kc_fire</b>: [adim] Correction factor kc for the fire design situation, EC3-1-2 Table 7.1 (distinct from kc, EC3-1-1 Table 8.6)</li>\r\n<li><b>244 - lambda_bar_c_z</b>: [adim] Non-dimensional relative slenderness of the equivalent compression flange</li>\r\n<li><b>245 - lambda_bar_c_z_mod</b>: [adim] Non-dimensional modified relative slenderness of the equivalent compression flange</li>\r\n<li><b>246 - lambda_bar_max</b>: [adim] Non-dimensional slenderness for buckling about y-y axis</li>\r\n<li><b>247 - lambda_bar_y</b>: [adim] Non-dimensional slenderness for buckling about y-y axis</li>\r\n<li><b>248 - lambda_bar_z</b>: [adim] Non-dimensional slenderness for buckling about z-z axis</li>\r\n<li><b>249 - lambda_bar_t</b>: [adim] Non-dimensional slenderness for torsional buckling</li>\r\n<li><b>250 - lambda_bar_tf</b>: [adim] Non-dimensional slenderness for torsional-flexural buckling</li>\r\n<li><b>251 - lambda_bar_LT</b>: [adim] Non-dimensional slenderness for lateral torsional LTB buckling</li>\r\n<li><b>252 - lambda_bar_LT0</b>: [adim] Non-dimensional slenderness limit for lateral torsional LTB buckling</li>\r\n<li><b>253 - lambda_bar_LT0_lim</b>: [adim] Non-dimensional slenderness limit for lateral torsional LTB buckling</li>\r\n<li><b>254 - lambda_bar_LT_theta_com</b>: [adim] Relative slenderness for LTB at Î¸a,com, EC3-1-2 (7.21) / (7.34)</li>\r\n<li><b>255 - miu_y</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term miu_y</li>\r\n<li><b>256 - miu_z</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term miu_z</li>\r\n<li><b>257 - w_y</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term w_y</li>\r\n<li><b>258 - w_z</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term w_z</li>\r\n<li><b>259 - n_pl</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term n_pl</li>\r\n<li><b>260 - a_LT</b>: [adim] Stability kij factors computation CEN/TS method - auxiliary term a_LT</li>\r\n<li><b>261 - phi_c_z</b>: [adim] Reduction factor for lateral torsional buckling</li>\r\n<li><b>262 - phi_LT</b>: [adim] Reduction factor for lateral torsional buckling</li>\r\n<li><b>263 - phi_LT_theta_com</b>: [adim] Phi parameter for LTB in fire, EC3-1-2 (7.20) / (7.33)</li>\r\n<li><b>264 - phi_y</b>: [adim] Reduction factor for buckling about y-y axis</li>\r\n<li><b>265 - phi_z</b>: [adim] Reduction factor for buckling about z-z axis</li>\r\n<li><b>266 - phi_t</b>: [adim] Reduction factor for torsional buckling</li>\r\n<li><b>267 - phi_tf</b>: [adim] Reduction factor for torsional-flexural buckling</li>\r\n<li><b>268 - rho</b>: [adim] 8.2.8(4) eq 8.37 reduction factor for computing fy,red</li>\r\n<li><b>269 - sigma_x</b>: [stress] Normal stress in x longitudinal direction</li>\r\n<li><b>270 - sigma_N</b>: [stress] Normal stress from axial force</li>\r\n<li><b>271 - sigma_My</b>: [stress] Normal stress from y-y bending moment</li>\r\n<li><b>272 - sigma_Mz</b>: [stress] Normal stress from z-z bending moment</li>\r\n<li><b>273 - sigma_Mw</b>: [stress] Normal stress from warping moment</li>\r\n<li><b>274 - tau</b>: [stress] Shear stress</li>\r\n<li><b>275 - tau_Vy</b>: [stress] Shear stress from shear force on Y</li>\r\n<li><b>276 - tau_Vz</b>: [stress] Shear stress from shear force on Z</li>\r\n<li><b>277 - tau_t</b>: [stress] Shear stress from torsional moment ( also denoted Tau_Mxp )</li>\r\n<li><b>278 - tau_w</b>: [stress] Shear stress from warping moment ( also denoted Tau_Mxs )</li>\r\n<li><b>279 - sigma_VM</b>: [stress] Equivalent stress (von Mises)</li>\r\n<li><b>280 - flexural_buckling_yy</b>: [none] Flexural buckling yy</li>\r\n<li><b>281 - flexural_buckling_zz</b>: [none] Flexural buckling zz</li>\r\n<li><b>282 - torsional_buckling</b>: [none] Torsional buckling</li>\r\n<li><b>283 - kyy_AnnexC1</b>: [adim] Interaction factor from Table C.1 (mono-symmetric sections, Annex C.1)</li>\r\n<li><b>284 - kTau</b>: [adim] Plate shear buckling coefficient k_tau (Annex A.5)</li>\r\n<li><b>285 - kTau_st</b>: [adim] Plate shear buckling coefficient k_tau, stiffened web variant</li>\r\n<li><b>286 - sigma_E</b>: [stress] Critical stress for plate buckling (6.6)</li>\r\n<li><b>287 - lambda_bar_w</b>: [adim] Relative slenderness for shear buckling of the web (7.3)/(7.4)</li>\r\n<li><b>288 - chi_w</b>: [adim] Web shear buckling reduction factor (Table 7.1)</li>\r\n<li><b>289 - VbwRd</b>: [force] Contribution from the web to shear buckling resistance (7.2)</li>\r\n<li><b>290 - VbfRd</b>: [force] Contribution from the flanges to shear buckling resistance (7.7)</li>\r\n<li><b>291 - VbRd</b>: [force] Design resistance for shear buckling (7.1)</li>\r\n<li><b>292 - eta_shear</b>: [adim] eta factor, EN 1993-1-5 5.1 NOTE 2 / Sec.7.1(2)</li>\r\n<li><b>293 - eta_1_sb</b>: [adim] eta1, bending-axial utilization for shear buckling interaction (6.31)/(6.32)</li>\r\n<li><b>294 - eta_3_bar</b>: [adim] eta3_bar, shear utilization for shear buckling interaction (Sec.9.1(1))</li>\r\n<li><b>295 - mu_sb</b>: [adim] mu exponent for shear buckling interaction (9.4)</li>\r\n<li><b>296 - MfRk</b>: [moment] Characteristic value of the plastic moment of resistance of the effective flanges (Sec.7.1(1))</li>\r\n<li><b>297 - MfplRd</b>: [moment] Design plastic moment of resistance of the effective flanges Mf,Rd (Sec.7.1(1))</li>\r\n<li><b>298 - MeffRd</b>: [moment] Effective bending resistance Meff,Rd (9.2)</li>\r\n<li><b>299 - kNEd</b>: [adim] Axial force reduction factor for the flange contribution to shear buckling</li>\r\n<li><b>300 - c_hinge</b>: [dim] Flange hinge length c (7.8)</li>\r\n<li><b>301 - a_panel</b>: [dim] Shear buckling panel length a</li>\r\n<li><b>302 - Af1</b>: [dim^2] Area of the first (top) flange</li>\r\n<li><b>303 - Af2</b>: [dim^2] Area of the second (bottom) flange</li>\r\n<li><b>304 - hw_over_tw</b>: [adim] Web slenderness hw/tw</li>\r\n<li><b>305 - hw_over_tw_lim</b>: [adim] Web slenderness limit for the shear buckling check to be required (Sec.7.1(2))</li>\r\n<li><b>306 - alpha_LT_table8_2</b>: [adim] Imperfection factor alpha_LT of the general LTB method: buckling curve of Table 8.4, alpha from Table 8.2 (#298109)</li>\r\n<li><b>307 - alpha_LT_table8_5</b>: [adim] Imperfection factor alpha_LT of the doubly symmetric I/H and compressed flange LTB methods, Table 8.5 (#298109)</li>\r\n</ul>\r\n"
       },
       "Ec3G2VerificationId": {
         "enum": [
@@ -8855,7 +8879,7 @@
                 "$ref": "#/components/schemas/InternalPressure_Wind_EN1991_1_4_API"
               }
             ],
-            "description": "Internal pressure type\r\n\r\nUnit: -\r\n\r\nDefault: WIND_SURPRESSION",
+            "description": "Internal pressure type (WIND_SURPRESSION, WIND_DEPRESSION; WIND_PRESSURE_COEFF is obsolete and applied as WIND_SURPRESSION)\r\n\r\nUnit: -\r\n\r\nDefault: WIND_SURPRESSION",
             "default": "WIND_SURPRESSION",
             "nullable": true
           },
@@ -8912,7 +8936,7 @@
                 "$ref": "#/components/schemas/InternalPressure_Wind_EN1991_1_4_API"
               }
             ],
-            "description": "Internal pressure type\r\n\r\nUnit: -\r\n\r\nDefault: WIND_SURPRESSION",
+            "description": "Internal pressure type (WIND_SURPRESSION, WIND_DEPRESSION; WIND_PRESSURE_COEFF is obsolete and applied as WIND_SURPRESSION)\r\n\r\nUnit: -\r\n\r\nDefault: WIND_SURPRESSION",
             "default": "WIND_SURPRESSION"
           },
           "isAutomatic": {
@@ -9221,7 +9245,7 @@
                     "$ref": "#/components/schemas/SupportElasticStiffness"
                   }
                 ],
-                "description": "Stiffness associated with degrees of freedom.\r\n\r\nUnit: no unit \r\n\r\nDefault value : optional nullable object",
+                "description": "Stiffness associated with degrees of freedom, PER METRE of support length, in global axes.\r\n\r\nUnit: N/m² (translational, N/m per m), N·m/rad/m (rotational) \r\n\r\nDefault value : optional nullable object",
                 "nullable": true
               },
               "dampingRatio": {
@@ -9262,7 +9286,7 @@
                     "$ref": "#/components/schemas/SupportElasticStiffness"
                   }
                 ],
-                "description": "Stiffness associated with degrees of freedom.\r\n\r\nUnit: no unit \r\n\r\nDefault value : optional nullable object",
+                "description": "Stiffness associated with degrees of freedom, PER SQUARE METRE of support area, in global axes.\r\n\r\nUnit: N/m³ (translational, N/m per m²), N·m/rad/m² (rotational) \r\n\r\nDefault value : optional nullable object",
                 "nullable": true
               },
               "dampingRatio": {
@@ -9378,19 +9402,19 @@
               },
               "rx": {
                 "type": "number",
-                "description": "Action application point RX (degree)\r\n\r\nUnit: degree \r\n\r\nDefault value : 0.0",
+                "description": "Imposed rotation about the global X axis (rad)\r\n\r\nUnit: rad \r\n\r\nDefault value : 0.0",
                 "format": "double",
                 "default": 0
               },
               "ry": {
                 "type": "number",
-                "description": "Action application point RY (degree)\r\n\r\nUnit: degree \r\n\r\nDefault value : 0.0",
+                "description": "Imposed rotation about the global Y axis (rad)\r\n\r\nUnit: rad \r\n\r\nDefault value : 0.0",
                 "format": "double",
                 "default": 0
               },
               "rz": {
                 "type": "number",
-                "description": "Action application point RZ (degree)\r\n\r\nUnit: degree \r\n\r\nDefault value : 0.0",
+                "description": "Imposed rotation about the global Z axis (rad)\r\n\r\nUnit: rad \r\n\r\nDefault value : 0.0",
                 "format": "double",
                 "default": 0
               }
@@ -10463,7 +10487,7 @@
                     "$ref": "#/components/schemas/SupportElasticStiffness"
                   }
                 ],
-                "description": "Stiffness associated with degrees of freedom.\r\n\r\nUnit: no unit \r\n\r\nDefault value : optional nullable object",
+                "description": "Stiffness associated with degrees of freedom, PER METRE of support length, in global axes.\r\n\r\nUnit: N/m² (translational, N/m per m), N·m/rad/m (rotational) \r\n\r\nDefault value : optional nullable object",
                 "nullable": true
               },
               "dampingRatio": {
@@ -10516,7 +10540,7 @@
                     "$ref": "#/components/schemas/SupportElasticStiffness"
                   }
                 ],
-                "description": "Stiffness associated with degrees of freedom.\r\n\r\nUnit: no unit \r\n\r\nDefault value : optional nullable object",
+                "description": "Stiffness associated with degrees of freedom, PER SQUARE METRE of support area, in global axes.\r\n\r\nUnit: N/m³ (translational, N/m per m²), N·m/rad/m² (rotational) \r\n\r\nDefault value : optional nullable object",
                 "nullable": true
               },
               "dampingRatio": {
@@ -11098,7 +11122,7 @@
                 "$ref": "#/components/schemas/ExposureCoefficient_SnowNF_EC1_API"
               }
             ],
-            "description": "Exposure coefficient (Ce)\r\n\r\nUnit: -\r\n\r\nDefault: GRCG_SNOWNF_NE_1991_1_3_UNDER_WIND_08",
+            "description": "Exposure coefficient (Ce). GRCG_SNOWNF_NE_1991_1_3_COEXP_NORMAL_1 is an obsolete duplicate of GRCG_SNOWNF_NE_1991_1_3_NORMAL_TOPO_1;\r\nGRCG_SNOWNF_EC1_COEXP_OTHER = user Ce, taken from GreenhouseParameters.ExpCoeffCe (EN 13031 greenhouse norms only;\r\nunder EN 1991-1-3 it gives Ce = 0; on Update send ExpCoeffCe in the same request)\r\n\r\nUnit: -\r\n\r\nDefault: GRCG_SNOWNF_NE_1991_1_3_UNDER_WIND_08",
             "default": "GRCG_SNOWNF_NE_1991_1_3_UNDER_WIND_08"
           },
           "coefficientTermicEuGen": {
@@ -11447,10 +11471,11 @@
           "GRCG_SNOWNF_NE_1991_1_3_UNDER_WIND_08",
           "GRCG_SNOWNF_NE_1991_1_3_NORMAL_TOPO_1",
           "GRCG_SNOWNF_NE_1991_1_3_OVER_WIND_12",
-          "GRCG_SNOWNF_NE_1991_1_3_COEXP_NORMAL_1"
+          "GRCG_SNOWNF_NE_1991_1_3_COEXP_NORMAL_1",
+          "GRCG_SNOWNF_EC1_COEXP_OTHER"
         ],
         "type": "string",
-        "description": "Exposure coefficient for Snow NF EC1<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - GRCG_SNOWNF_NE_1991_1_3_UNDER_WIND_08</b>: </li>\r\n<li><b>1 - GRCG_SNOWNF_NE_1991_1_3_NORMAL_TOPO_1</b>: </li>\r\n<li><b>2 - GRCG_SNOWNF_NE_1991_1_3_OVER_WIND_12</b>: </li>\r\n<li><b>3 - GRCG_SNOWNF_NE_1991_1_3_COEXP_NORMAL_1</b>: </li>\r\n</ul>\r\n"
+        "description": "Exposure coefficient for Snow NF EC1<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - GRCG_SNOWNF_NE_1991_1_3_UNDER_WIND_08</b>: </li>\r\n<li><b>1 - GRCG_SNOWNF_NE_1991_1_3_NORMAL_TOPO_1</b>: </li>\r\n<li><b>2 - GRCG_SNOWNF_NE_1991_1_3_OVER_WIND_12</b>: Sheltered, Ce = 1.2 (model GRCG_SNOWNF_NE_1991_1_3_COEXP_PROTECTED_12; the API name is historical)</li>\r\n<li><b>3 - GRCG_SNOWNF_NE_1991_1_3_COEXP_NORMAL_1</b>: Obsolete duplicate of GRCG_SNOWNF_NE_1991_1_3_NORMAL_TOPO_1 (Ce = 1.0)</li>\r\n<li><b>4 - GRCG_SNOWNF_EC1_COEXP_OTHER</b>: User Ce, taken from GreenhouseParameters.ExpCoeffCe (model GRCG_SNOWNF_EC1_COEXP_OTHER). Only the EN 13031 greenhouse norms read ExpCoeffCe; under EN 1991-1-3 this option gives Ce = 0. On Update, send ExpCoeffCe in the same request: a value equal to the stored one is reset to 1.0 when the exposure changes</li>\r\n</ul>\r\n"
       },
       "Exposure_SnowASCE722_API": {
         "enum": [
@@ -11463,10 +11488,11 @@
       },
       "ExternalPressureArticle_WindCBN_API": {
         "enum": [
-          "cp_zones_cornersenvelope_using_4_1_7_6__2"
+          "cp_zones_cornersenvelope_using_4_1_7_6__2",
+          "cp_zones_nocorners_4_1_7_5__2and3"
         ],
         "type": "string",
-        "description": "External pressure article for low buildings Wind CBN<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - cp_zones_cornersenvelope_using_4_1_7_6__2</b>: </li>\r\n</ul>\r\n"
+        "description": "External pressure article for low buildings Wind CBN<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - cp_zones_cornersenvelope_using_4_1_7_6__2</b>: </li>\r\n<li><b>1 - cp_zones_nocorners_4_1_7_5__2and3</b>: Zones without corners, Cp per 4.1.7.5 (2) and (3)</li>\r\n</ul>\r\n"
       },
       "FamilySupportLinear": {
         "allOf": [
@@ -11950,7 +11976,7 @@
           "GREENHOUSE_CLASS_C"
         ],
         "type": "string",
-        "description": "Greenhouse Class for Snow NF EC1<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - GREENHOUSE_CLASS_A</b>: </li>\r\n<li><b>1 - GREENHOUSE_CLASS_B</b>: </li>\r\n<li><b>2 - GREENHOUSE_CLASS_C</b>: </li>\r\n</ul>\r\n"
+        "description": "Greenhouse Class for Snow NF EC1<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - GREENHOUSE_CLASS_A</b>: </li>\r\n<li><b>1 - GREENHOUSE_CLASS_B</b>: </li>\r\n<li><b>2 - GREENHOUSE_CLASS_C</b>: Obsolete: the model has no class C. Applied as GREENHOUSE_CLASS_B</li>\r\n</ul>\r\n"
       },
       "GreenhouseClass_Wind_EN1991_1_4_API": {
         "enum": [
@@ -12020,7 +12046,7 @@
                 "$ref": "#/components/schemas/GreenhouseClass_SnowNF_EC1_API"
               }
             ],
-            "description": "Greenhouse class\r\n\r\nUnit: -\r\n\r\nDefault: GREENHOUSE_CLASS_B",
+            "description": "Greenhouse class (A or B; class C is obsolete and applied as B)\r\n\r\nUnit: -\r\n\r\nDefault: GREENHOUSE_CLASS_B",
             "default": "GREENHOUSE_CLASS_B"
           },
           "surfaceMaterialCm": {
@@ -12029,7 +12055,7 @@
                 "$ref": "#/components/schemas/SurfaceMaterialCm_SnowNF_EC1_API"
               }
             ],
-            "description": "Surface material Cm\r\n\r\nUnit: -\r\n\r\nDefault: GREENHOUSE_MATERIAL_CM_1_2_PLUS",
+            "description": "Surface material Cm (1.333, 1.2+, 1.2 or 1.0; GREENHOUSE_MATERIAL_CM_0_8 is obsolete and applied as 1.0)\r\n\r\nUnit: -\r\n\r\nDefault: GREENHOUSE_MATERIAL_CM_1_2_PLUS",
             "default": "GREENHOUSE_MATERIAL_CM_1_2_PLUS"
           }
         },
@@ -12111,7 +12137,7 @@
                 "$ref": "#/components/schemas/ComputingProbabilityCoeff_Wind_EN1991_1_4_API"
               }
             ],
-            "description": "Computing probability coefficient mode\r\n\r\nUnit: -\r\n\r\nDefault: eWindComputingProbabilityCoeffByKParameter",
+            "description": "Computing probability coefficient mode (by K parameter or imposed; eWindComputingProbabilityCoeffByAdjustmentFactor is obsolete and applied as Imposed)\r\n\r\nUnit: -\r\n\r\nDefault: eWindComputingProbabilityCoeffByKParameter",
             "default": "eWindComputingProbabilityCoeffByKParameter"
           },
           "probabilityCoeffCp": {
@@ -12161,7 +12187,7 @@
                 "$ref": "#/components/schemas/HaunchPosition_API"
               }
             ],
-            "description": "Haunch position\r\n\r\nDefault value: HaunchPosition_API.no_haunch",
+            "description": "Side of the section the haunch deepens (no_haunch, haut_et_bas = top and bottom, haut = top, bas = bottom). Not a position along the element: HaunchStart / HaunchEnd decide the end.\r\n\r\nDefault value: HaunchPosition_API.no_haunch",
             "default": "no_haunch"
           },
           "lengthType": {
@@ -12170,7 +12196,7 @@
                 "$ref": "#/components/schemas/HaunchLengthSizeType_API"
               }
             ],
-            "description": "Length type\r\n\r\nDefault value: HaunchLengthSizeType_API.ratio",
+            "description": "Length type: ratio (LengthRatio x element length), valeur_axe_local (LengthValue along the element) or valeur_projete (LengthValue as a projected length). valeur is not read by the analysis.\r\n\r\nDefault value: HaunchLengthSizeType_API.ratio",
             "default": "ratio"
           },
           "lengthRatio": {
@@ -12181,7 +12207,7 @@
           },
           "lengthValue": {
             "type": "number",
-            "description": "Length value\r\n\r\nUnit: m\r\n\r\nDefault value: 0.5",
+            "description": "Length value, used when LengthType is valeur_axe_local or valeur_projete\r\n\r\nUnit: m\r\n\r\nDefault value: 0.5",
             "format": "double",
             "default": 0.5
           },
@@ -12209,7 +12235,7 @@
                 "$ref": "#/components/schemas/HaunchLengthSizeType_API"
               }
             ],
-            "description": "Height type\r\n\r\nDefault value: HaunchLengthSizeType_API.ratio",
+            "description": "Height type: ratio (HeightRatio x depth of the element section) or valeur_axe_local (HeightValue). The other values are not read by the analysis.\r\n\r\nDefault value: HaunchLengthSizeType_API.ratio",
             "default": "ratio"
           },
           "heightRatio": {
@@ -12220,7 +12246,7 @@
           },
           "heightValue": {
             "type": "number",
-            "description": "Height value\r\n\r\nUnit: m\r\n\r\nDefault value: 0.2",
+            "description": "Height value, used when HeightType is valeur_axe_local\r\n\r\nUnit: m\r\n\r\nDefault value: 0.2",
             "format": "double",
             "default": 0.2
           }
@@ -12744,10 +12770,12 @@
       "ImposedCpeType_Wind_EN1991_1_4_API": {
         "enum": [
           "e_CPE_MODE_default",
-          "e_CPE_MODE_FORCE"
+          "e_CPE_MODE_FORCE",
+          "e_CPE_MODE_1",
+          "e_CPE_MODE_1_10"
         ],
         "type": "string",
-        "description": "Imposed CPE type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - e_CPE_MODE_default</b>: </li>\r\n<li><b>1 - e_CPE_MODE_FORCE</b>: </li>\r\n</ul>\r\n"
+        "description": "Imposed CPE type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - e_CPE_MODE_default</b>: </li>\r\n<li><b>1 - e_CPE_MODE_FORCE</b>: Forces Cpe,10 (model cpe_mode_10)</li>\r\n<li><b>2 - e_CPE_MODE_1</b>: Forces Cpe,1 (model cpe_mode_1)</li>\r\n<li><b>3 - e_CPE_MODE_1_10</b>: Cpe,1 and Cpe,10 (model cpe_mode_1_10)</li>\r\n</ul>\r\n"
       },
       "InformationalElementBase": {
         "required": [
@@ -13168,7 +13196,7 @@
           "WIND_PRESSURE_COEFF"
         ],
         "type": "string",
-        "description": "Internal pressure type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - WIND_SURPRESSION</b>: </li>\r\n<li><b>1 - WIND_DEPRESSION</b>: </li>\r\n<li><b>2 - WIND_PRESSURE_COEFF</b>: </li>\r\n</ul>\r\n"
+        "description": "Internal pressure type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - WIND_SURPRESSION</b>: </li>\r\n<li><b>1 - WIND_DEPRESSION</b>: </li>\r\n<li><b>2 - WIND_PRESSURE_COEFF</b>: Obsolete: not a model option. Applied as WIND_SURPRESSION</li>\r\n</ul>\r\n"
       },
       "IsoLoadedAreas_Wind_EN1991_1_4_API": {
         "enum": [
@@ -13176,7 +13204,7 @@
           "WINDEC1_ISOLA_ISOLATED_ELEMENTS"
         ],
         "type": "string",
-        "description": "ISO loaded areas for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - WINDEC1_ISOLA_EXPOSED_AREA</b>: </li>\r\n<li><b>1 - WINDEC1_ISOLA_ISOLATED_ELEMENTS</b>: </li>\r\n</ul>\r\n"
+        "description": "ISO loaded areas for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - WINDEC1_ISOLA_EXPOSED_AREA</b>: </li>\r\n<li><b>1 - WINDEC1_ISOLA_ISOLATED_ELEMENTS</b>: All areas (model GR_WINDEC1_ISO_COEFF_ALL_AREAS)</li>\r\n</ul>\r\n"
       },
       "Language_Code": {
         "enum": [
@@ -13930,7 +13958,7 @@
         "properties": {
           "loadCaseActionType": {
             "type": "integer",
-            "description": "/// Load case action type (Base,leading(0)/Accompanying(1)/Base,leading or Accompanying(2)) or (Favorable(0)/Unfavorable(1)/Favorable or Unfavorable(2) ) \r\n\r\nUnit : - \r\n\r\nDefault value : eADActionTypeBaseAndAcco (2)",
+            "description": "/// Load case action type (Base,leading(0)/Accompanying(1)/Base,leading or Accompanying(2)) or (Favorable(0)/Unfavorable(1)/Favorable or Unfavorable(2) ) \r\n\r\nUnit : - \r\n\r\n2nd generation Eurocode, dead loads only (permanent water included): Fav (VC1) and Stab (VC2) (3) / Fav (VC1) and Stab (VC2) or Unfav (4) - stored as 0 / 2 on another load or under another standard \r\n\r\nDefault value : eADActionTypeBaseAndAcco (2)",
             "format": "int32",
             "default": 2
           },
@@ -14196,7 +14224,7 @@
           },
           "loadCaseActionType": {
             "type": "integer",
-            "description": "Load case action type (Base,leading(0)/Accompanying(1)/Base,leading or Accompanying(2)) or (Favorable(0)/Unfavorable(1)/Favorable or Unfavorable(2) ) \r\n\r\nUnit : - \r\n\r\nDefault value : eADActionTypeBaseAndAcco (2)",
+            "description": "Load case action type (Base,leading(0)/Accompanying(1)/Base,leading or Accompanying(2)) or (Favorable(0)/Unfavorable(1)/Favorable or Unfavorable(2) ) \r\n\r\nUnit : - \r\n\r\n2nd generation Eurocode, dead loads only (permanent water included): Fav (VC1) and Stab (VC2) (3) / Fav (VC1) and Stab (VC2) or Unfav (4) - stored as 0 / 2 on another load or under another standard \r\n\r\nDefault value : eADActionTypeBaseAndAcco (2)",
             "format": "int32",
             "default": 2
           },
@@ -16644,7 +16672,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Base class of the GENERAL SETTINGS of a model: the options that apply to the model as a\r\nwhole rather than to any one object of it, and that in the AD model live on\r\n`som.ModelProperties`.\r\n\r\n\r\n\r\nThese are NOT properties of an element, a load case or a combination. They are what the\r\ndesktop application edits in its option dialogs - which project situations the combination\r\ngeneration produces, which coefficients it applies, and, as they are added, the general\r\noptions of the Expert design calculations. They are read, written and reset through THREE\r\ngeneric functions, whatever the group:\r\n\r\n- `GetModelSettings(category)` returns the settings of one group,\r\n\r\n- `SetModelSettings(settings)` writes them, and\r\n\r\n- `ResetModelSettings(category)` puts back what the model's standard prescribes.\r\n\r\n\r\n\r\nTHE OBJECT DECIDES WHAT IS WRITTEN. `SetModelSettings` takes this base class, so it is\r\nthe runtime type of the object - its `$type` - that says which group of model settings\r\nthe call writes, exactly as `CreateInformationalElement` takes\r\nAD.API.InformationalElementBase and the object decides what is created. There is no\r\nfunction per group of settings, and adding a group adds no function.\r\n\r\n\r\n\r\nTWO LEVELS OF DERIVATION. Under this base, one class per group of settings\r\n(AD.API.CombinationsGenerationSettings, AD.API.SteelCalculationSettings and\r\nAD.API.AiscSteelCalculationSettings today) - and under that class, as many classes as\r\nthe group has shapes. The combination generation has five, one per combination standard,\r\nbecause the standards share no field; each of the two steel groups has one, because the\r\ncodes inside a family share every page of the dialog. So the class hierarchy reads: what\r\nsettings (level 2), in which variant (level 3).\r\n\r\n\r\n\r\nTWO STEEL GROUPS, NOT ONE GROUP WITH TWO SHAPES. The Eurocode and the North-American\r\nfamilies do not answer the same question - the second has no Partial safety factors page at\r\nall and a Verification page of three controls instead of thirteen - so they are separate\r\ncategories with separate group classes. The five pages they do share are the same DTO\r\nclasses, held by both group classes.\r\n\r\n\r\n\r\nPARTIAL BY DESIGN. In every group, the properties are optional and what a request does not\r\ncarry keeps the value the model has, so a single switch can be changed without restating\r\nthe rest. What each group refuses, what it recomputes rather than stores, and what it\r\nreports as a warning instead of an error is documented on that group's own class.",
+        "description": "Base class of the GENERAL SETTINGS of a model: the options that apply to the model as a\r\nwhole rather than to any one object of it, and that in the AD model live on\r\n`som.ModelProperties`.\r\n\r\n\r\n\r\nThese are NOT properties of an element, a load case or a combination. They are what the\r\ndesktop application edits in its option dialogs - which project situations the combination\r\ngeneration produces, which coefficients it applies, and, as they are added, the general\r\noptions of the Expert design calculations. They are read, written and reset through THREE\r\ngeneric functions, whatever the group:\r\n\r\n- `GetModelSettings(category)` returns the settings of one group,\r\n\r\n- `SetModelSettings(settings)` writes them, and\r\n\r\n- `ResetModelSettings(category)` puts back what the model's standard prescribes.\r\n\r\n\r\n\r\nTHE OBJECT DECIDES WHAT IS WRITTEN. `SetModelSettings` takes this base class, so it is\r\nthe runtime type of the object - its `$type` - that says which group of model settings\r\nthe call writes, exactly as `CreateInformationalElement` takes\r\nAD.API.InformationalElementBase and the object decides what is created. There is no\r\nfunction per group of settings, and adding a group adds no function.\r\n\r\n\r\n\r\nTWO LEVELS OF DERIVATION. Under this base, one class per group of settings\r\n(AD.API.CombinationsGenerationSettings, AD.API.SteelCalculationSettings,\r\nAD.API.AiscSteelCalculationSettings, AD.API.ToleranceSettings and AD.API.StructureSettings today) - and under that class, as many classes as\r\nthe group has shapes. The combination generation has five, one per combination standard,\r\nbecause the standards share no field; each of the two steel groups has one, because the\r\ncodes inside a family share every page of the dialog. So the class hierarchy reads: what\r\nsettings (level 2), in which variant (level 3).\r\n\r\n\r\n\r\nTWO STEEL GROUPS, NOT ONE GROUP WITH TWO SHAPES. The Eurocode and the North-American\r\nfamilies do not answer the same question - the second has no Partial safety factors page at\r\nall and a Verification page of three controls instead of thirteen - so they are separate\r\ncategories with separate group classes. The five pages they do share are the same DTO\r\nclasses, held by both group classes.\r\n\r\n\r\n\r\nPARTIAL BY DESIGN. In every group, the properties are optional and what a request does not\r\ncarry keeps the value the model has, so a single switch can be changed without restating\r\nthe rest. What each group refuses, what it recomputes rather than stores, and what it\r\nreports as a warning instead of an error is documented on that group's own class.",
         "discriminator": {
           "propertyName": "$type",
           "mapping": {
@@ -16657,7 +16685,9 @@
             "GreenhouseCombinationsGenerationSettings": "#/components/schemas/GreenhouseCombinationsGenerationSettings",
             "SteelCalculationSettings": "#/components/schemas/SteelCalculationSettings",
             "Ec3SteelCalculationSettings": "#/components/schemas/Ec3SteelCalculationSettings",
-            "AiscSteelCalculationSettings": "#/components/schemas/AiscSteelCalculationSettings"
+            "AiscSteelCalculationSettings": "#/components/schemas/AiscSteelCalculationSettings",
+            "StructureSettings": "#/components/schemas/StructureSettings",
+            "ToleranceSettings": "#/components/schemas/ToleranceSettings"
           }
         }
       },
@@ -16695,6 +16725,12 @@
               },
               {
                 "$ref": "#/components/schemas/AiscSteelCalculationSettings"
+              },
+              {
+                "$ref": "#/components/schemas/StructureSettings"
+              },
+              {
+                "$ref": "#/components/schemas/ToleranceSettings"
               }
             ],
             "description": "The result payload of the operation.\r\nMay be `null` or default when AD.API.Srv.Models.ApiResponseDetails.Success is `false`.",
@@ -17594,10 +17630,13 @@
       "PitchType_Wind_EN1991_1_4_API": {
         "enum": [
           "PITCH_TYPE_MONO",
-          "PITCH_TYPE_DUO"
+          "PITCH_TYPE_DUO",
+          "PITCH_TYPE_POSITIVE_SLOPE",
+          "PITCH_TYPE_NEGATIVE_SLOPE",
+          "PITCH_TYPE_MAX_CPE"
         ],
         "type": "string",
-        "description": "Pitch type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - PITCH_TYPE_MONO</b>: </li>\r\n<li><b>1 - PITCH_TYPE_DUO</b>: </li>\r\n</ul>\r\n"
+        "description": "Pitch type for Wind EN 1991-1-4: which pitch-angle Cpe set is used on multi-span roofs<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - PITCH_TYPE_MONO</b>: Obsolete name, kept for compatibility. Applied as PITCH_TYPE_POSITIVE_SLOPE (model GRCG_CNV3D_PITCH_POS)</li>\r\n<li><b>1 - PITCH_TYPE_DUO</b>: Obsolete name, kept for compatibility. Applied as PITCH_TYPE_NEGATIVE_SLOPE (model GRCG_CNV3D_PITCH_NEG)</li>\r\n<li><b>2 - PITCH_TYPE_POSITIVE_SLOPE</b>: Cpe of the positive pitch angle (model GRCG_CNV3D_PITCH_POS)</li>\r\n<li><b>3 - PITCH_TYPE_NEGATIVE_SLOPE</b>: Cpe of the negative pitch angle (model GRCG_CNV3D_PITCH_NEG)</li>\r\n<li><b>4 - PITCH_TYPE_MAX_CPE</b>: Per zone, the minimum Cpe of the positive and negative pitch angles (model GRCG_CNV3D_PITCH_MAX_CPE)</li>\r\n</ul>\r\n"
       },
       "PlacementType_Wind_EN1991_1_4_API": {
         "enum": [
@@ -27254,30 +27293,30 @@
                 "$ref": "#/components/schemas/SectionOffsetOption_API"
               }
             ],
-            "description": "Offset option, Options available for defining the eccentricity of a cross-section in relation to its local axis.  With predefined eccentricity types, z and y denote an eccentricity of half the section size.\r\n\r\nDefault value: SectionOffsetOption_API.center_alignment",
+            "description": "Offset option: how the section is offset from the element axis. center_alignment = no offset; the other predefined options place an edge of the section on the axis, the offset being computed from the section (DeltaY1/DeltaZ1/DeltaY2/DeltaZ2 are then ignored); autre = the user offset given by DeltaY1/DeltaZ1/DeltaY2/DeltaZ2. The analysis takes the offset into account only when ConsideredInFEM is true.\r\n\r\nDefault value: SectionOffsetOption_API.center_alignment",
             "default": "center_alignment"
           },
           "deltaY1": {
             "type": "number",
-            "description": "Delta Y at start\r\n\r\nUnit: m\r\n\r\nDefault value: 0.0",
+            "description": "Offset along the local y axis at the start (GeomPtStart), used only when Option is autre\r\n\r\nUnit: m\r\n\r\nDefault value: 0.0",
             "format": "double",
             "default": 0
           },
           "deltaZ1": {
             "type": "number",
-            "description": "Delta Z at start\r\n\r\nUnit: m\r\n\r\nDefault value: 0.0",
+            "description": "Offset along the local z axis at the start (GeomPtStart), used only when Option is autre\r\n\r\nUnit: m\r\n\r\nDefault value: 0.0",
             "format": "double",
             "default": 0
           },
           "deltaY2": {
             "type": "number",
-            "description": "Delta Y at end\r\n\r\nUnit: m\r\n\r\nDefault value: 0.0",
+            "description": "Offset along the local y axis at the end (GeomPtEnd), used only when Option is autre\r\n\r\nUnit: m\r\n\r\nDefault value: 0.0",
             "format": "double",
             "default": 0
           },
           "deltaZ2": {
             "type": "number",
-            "description": "Delta Z at end\r\n\r\nUnit: m\r\n\r\nDefault value: 0.0",
+            "description": "Offset along the local z axis at the end (GeomPtEnd), used only when Option is autre\r\n\r\nUnit: m\r\n\r\nDefault value: 0.0",
             "format": "double",
             "default": 0
           },
@@ -29750,6 +29789,40 @@
         "additionalProperties": false,
         "description": "Structure parameters for IBC seismic load case family"
       },
+      "StructureSettings": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ModelSettingsBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "workspace": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/eStructureWorkspace"
+                  }
+                ],
+                "description": "The work space of the structure: `planeWorkspace` (2D, global XZ plane: TX, TZ, RY),\r\n`gridWorkspace` (global XY plane loaded along Z: TZ, RX, RY) or `spaceWorkspace` (3D).\r\n\"Plane / Grid / 3D\" of the Structure dialog.\r\n\r\n`spaceWorkspace` is refused when the 3D module is not licensed - the dialog\r\ndisables it. Default: `spaceWorkspace` (`planeWorkspace` without the 3D module).",
+                "nullable": true
+              },
+              "bendingStiffStructure": {
+                "type": "boolean",
+                "description": "The bending stiffness of the structure - \"Bending stiff / Truss\" of the Structure dialog:\r\n`true` for a structure rigid in bending (frames), `false` for a truss. The FE analysis\r\nand the steel / concrete design read it from the analysis model. Default: `true`.",
+                "nullable": true
+              },
+              "referenceTemperature": {
+                "type": "number",
+                "description": "The reference temperature of the structure, in degrees Celsius - \"Reference temperature\" of the\r\nStructure dialog: the temperature at which the structure has no thermal strain, from which the\r\nFE analysis measures the uniform temperature of the thermal loads. Any finite value; NaN and\r\nInfinity are refused. Default: 0.",
+                "format": "double",
+                "nullable": true
+              }
+            },
+            "additionalProperties": false
+          }
+        ],
+        "description": "The STRUCTURE options of the model - what the Structure dialog of the desktop application edits\r\n(Model properties, Structure): the work space of the structure, its bending stiffness and the reference\r\ntemperature of the thermal loads.\r\n\r\n\r\n\r\nONE GROUP OF MODEL SETTINGS. This class is the `Structure` group of\r\nAD.API.ModelSettingsBase: read it with `GetModelSettings(eModelSettingsCategory.Structure)`,\r\nwrite it with `SetModelSettings`, and put back the Advance Design default with\r\n`ResetModelSettings(eModelSettingsCategory.Structure)` - the values a new model carries: a 3D\r\nstructure (a plane structure when the 3D module is not licensed), rigid in bending, with a reference\r\ntemperature of 0 degrees Celsius. It does not depend on any design code.\r\n\r\n\r\n\r\nPARTIAL. On a Set, a property left null keeps the value the model has. A Get fills every property.\r\n\r\n\r\n\r\nWHAT A SET DOES BESIDES THE WORK SPACE - what the desktop dialog does when it is closed with OK:\r\n\r\n- the default view of the model follows the work space (front view for a plane structure,\r\ntop view for a grid, perspective view for a structure that becomes 3D; a structure that already is\r\n3D keeps its view);\r\n\r\n- for a plane or grid structure, the imposed displacements template is reset to the degrees of\r\nfreedom of the work space (Bug #174424);\r\n\r\n- the analysis models that are open take the new values at once; the others take them the\r\nnext time they are built - `LaunchAnalysis` always rebuilds the analysis model.\r\n\r\n\r\n\r\nWHEN TO CALL IT. Right after `NewProject`, before creating the model: in a plane structure the\r\nout-of-plane degrees of freedom do not exist, which is what a 2D frame or truss modelled in the XZ\r\nplane needs - in 3D, such a model is a mechanism out of its plane and its analysis fails."
+      },
       "StructureTypeIBC": {
         "type": "object",
         "properties": {
@@ -29846,43 +29919,43 @@
         "properties": {
           "ktx": {
             "type": "number",
-            "description": "Translational stiffness along X [N/m].\r\n\r\nUnit: N/m \r\n\r\nDefault value : 0.0",
+            "description": "Translational stiffness along X [N/m].\r\n\r\nUnit: N/m on a punctual support, N/m² (per metre) on a linear support, N/m³ (per m²) on a planar support \r\n\r\nDefault value : 0.0",
             "format": "double",
             "default": 0
           },
           "kty": {
             "type": "number",
-            "description": "Translational stiffness along Y [N/m].\r\n\r\nUnit: N/m \r\n\r\nDefault value : 0.0",
+            "description": "Translational stiffness along Y [N/m].\r\n\r\nUnit: N/m on a punctual support, N/m² (per metre) on a linear support, N/m³ (per m²) on a planar support \r\n\r\nDefault value : 0.0",
             "format": "double",
             "default": 0
           },
           "ktz": {
             "type": "number",
-            "description": "Translational stiffness along Z [N/m].\r\n\r\nUnit: N/m \r\n\r\nDefault value : 0.0",
+            "description": "Translational stiffness along Z [N/m].\r\n\r\nUnit: N/m on a punctual support, N/m² (per metre) on a linear support, N/m³ (per m²) on a planar support \r\n\r\nDefault value : 0.0",
             "format": "double",
             "default": 0
           },
           "krx": {
             "type": "number",
-            "description": "Rotational stiffness about X [N·m/rad].\r\n\r\nUnit: N·m/rad \r\n\r\nDefault value : 0.0",
+            "description": "Rotational stiffness about X [N·m/rad].\r\n\r\nUnit: N·m/rad on a punctual support, N·m/rad per metre on a linear support, N·m/rad per m² on a planar support \r\n\r\nDefault value : 0.0",
             "format": "double",
             "default": 0
           },
           "kry": {
             "type": "number",
-            "description": "Rotational stiffness about Y [N·m/rad].\r\n\r\nUnit: N·m/rad \r\n\r\nDefault value : 0.0",
+            "description": "Rotational stiffness about Y [N·m/rad].\r\n\r\nUnit: N·m/rad on a punctual support, N·m/rad per metre on a linear support, N·m/rad per m² on a planar support \r\n\r\nDefault value : 0.0",
             "format": "double",
             "default": 0
           },
           "krz": {
             "type": "number",
-            "description": "Rotational stiffness about Z [N·m/rad].\r\n\r\nUnit: N·m/rad \r\n\r\nDefault value : 0.0",
+            "description": "Rotational stiffness about Z [N·m/rad].\r\n\r\nUnit: N·m/rad on a punctual support, N·m/rad per metre on a linear support, N·m/rad per m² on a planar support \r\n\r\nDefault value : 0.0",
             "format": "double",
             "default": 0
           }
         },
         "additionalProperties": false,
-        "description": "Stiffness associated with degrees of freedom.\r\n\r\nTranslational: [N/m], Rotational: [N·m/rad]."
+        "description": "Stiffness associated with degrees of freedom, in global axes.\r\n\r\nThe unit depends on the support that carries it: on a punctual support a translational stiffness is in N/m and a\r\nrotational one in N·m/rad; on a linear support both are PER METRE of support length (N/m², N·m/rad/m); on a planar\r\nsupport both are PER SQUARE METRE of support area (N/m³, N·m/rad/m²).\r\n\r\nExample: a linear support with KTZ = 1e6 under a 10 kN/m load, or a planar support with KTZ = 1e6 under a 10 kPa\r\nload, settles 0.01 m."
       },
       "SupportStresses": {
         "type": "object",
@@ -30002,10 +30075,12 @@
         "enum": [
           "GREENHOUSE_MATERIAL_CM_1_2_PLUS",
           "GREENHOUSE_MATERIAL_CM_1_0",
-          "GREENHOUSE_MATERIAL_CM_0_8"
+          "GREENHOUSE_MATERIAL_CM_0_8",
+          "GREENHOUSE_MATERIAL_CM_1_333",
+          "GREENHOUSE_MATERIAL_CM_1_2"
         ],
         "type": "string",
-        "description": "Surface Material Cm for Snow NF EC1<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - GREENHOUSE_MATERIAL_CM_1_2_PLUS</b>: </li>\r\n<li><b>1 - GREENHOUSE_MATERIAL_CM_1_0</b>: </li>\r\n<li><b>2 - GREENHOUSE_MATERIAL_CM_0_8</b>: </li>\r\n</ul>\r\n"
+        "description": "Surface Material Cm for Snow NF EC1<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - GREENHOUSE_MATERIAL_CM_1_2_PLUS</b>: </li>\r\n<li><b>1 - GREENHOUSE_MATERIAL_CM_1_0</b>: Cm = 1.0 (model GREENHOUSE_MATERIAL_CM_1)</li>\r\n<li><b>2 - GREENHOUSE_MATERIAL_CM_0_8</b>: Obsolete: the model has no Cm = 0.8. Applied as GREENHOUSE_MATERIAL_CM_1_0 (Cm = 1.0)</li>\r\n<li><b>3 - GREENHOUSE_MATERIAL_CM_1_333</b>: Cm = 1.333 (model GREENHOUSE_MATERIAL_CM_1_333)</li>\r\n<li><b>4 - GREENHOUSE_MATERIAL_CM_1_2</b>: Cm = 1.2 (model GREENHOUSE_MATERIAL_CM_1_2)</li>\r\n</ul>\r\n"
       },
       "SystemSelection": {
         "type": "object",
@@ -30190,6 +30265,50 @@
         ],
         "type": "string",
         "description": "National annex of Eurocode 5. Mirrors `REG_TIMBER_CODE_EUROCODE_*`.\r\n\r\n\r\n\r\nAccepted only together with AD.API.TimberDesignCode`eurocode`, and never with\r\nthe value `italy`.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - france</b>: France.</li>\r\n<li><b>1 - uk</b>: United Kingdom. Macro</li>\r\n<li><b>2 - germany</b>: Germany.</li>\r\n<li><b>3 - romania</b>: Romania.</li>\r\n<li><b>4 - general</b>: The general Eurocode annex - no national deviations. Macro</li>\r\n<li><b>5 - czech</b>: Czech Republic.</li>\r\n<li><b>6 - italy</b>: Italy. NOT writable: Italy is a timber standard here, not an annex.</li>\r\n<li><b>7 - poland</b>: Poland.</li>\r\n<li><b>8 - slovakia</b>: Slovakia.</li>\r\n<li><b>9 - spain</b>: Spain.</li>\r\n<li><b>10 - portugal</b>: Portugal.</li>\r\n</ul>\r\n"
+      },
+      "ToleranceSettings": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ModelSettingsBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "cadDistanceTolerance": {
+                "type": "number",
+                "description": "The minimum distance between two points, in m: two points closer than this are the same\r\npoint. \"Minimum distance between 2 points\" of the Advanced CAD properties.\r\n\r\nRange: 1e-12 to 0.05. Default: 1e-8.\r\n\r\nApplies to the whole server process.",
+                "format": "double",
+                "nullable": true
+              },
+              "verticalAngularTolerance": {
+                "type": "number",
+                "description": "The tolerance for vertical elements, in rad: a linear element whose axis is within this\r\nangle of the global Z axis is vertical - a column, with its local z along global X - rather\r\nthan a beam. \"Tolerance for vertical elements\" of the Advanced CAD properties.\r\n\r\nRange: greater than 0.01, up to pi/6 (0.5235988). Default: pi/60 (3 deg, 0.0523599).\r\n\r\nThe lower bound is EXCLUSIVE although the dialog accepts 0.01: the desktop replaces any\r\nstored value of 0.01 or less by 3 deg the next time the model is opened.\r\n\r\nApplies to the whole server process.",
+                "format": "double",
+                "nullable": true
+              },
+              "climaticRoofAngularTolerance": {
+                "type": "number",
+                "description": "The angular tolerance for the coplanarity of roof planes in the climatic (wind) load\r\ngeneration, in rad. \"Climatic wind roof angular tolerance for coplanarity\" of the Advanced\r\nCAD properties.\r\n\r\nRange: 0 to 5 deg (0.0872665). Default: pi/60 (3 deg, 0.0523599).",
+                "format": "double",
+                "nullable": true
+              },
+              "meshTolerance": {
+                "type": "number",
+                "description": "The mesh tolerance, in m: the distance tolerance the mesh, the finite element solve and the\r\nverifications run with. \"Mesh tolerance\" of the Mesh options.\r\n\r\nRange: 1e-12 to 0.05. Default: 1e-3.",
+                "format": "double",
+                "nullable": true
+              },
+              "parallelComponentsTolerance": {
+                "type": "number",
+                "description": "The tolerance for parallel components of the composite design, in rad: the angle under\r\nwhich a beam or a floor deck is considered parallel to a composite beam. \"Tolerance for\r\nparallel components\" of the Composite calculation settings, Verification page.\r\n\r\nRange: 0 to 50 deg (0.8726646). Default: 10 deg (0.1745329).",
+                "format": "double",
+                "nullable": true
+              }
+            },
+            "additionalProperties": false
+          }
+        ],
+        "description": "The model TOLERANCES - the geometric tolerances the desktop application lets the user set:\r\nthe minimum distance between two points, the tolerance for vertical elements and the climatic\r\nroof coplanarity tolerance (Advanced CAD properties, General page), the mesh tolerance (Mesh\r\noptions) and the composite tolerance for parallel components (Composite calculation settings,\r\nVerification page).\r\n\r\n\r\n\r\nONE GROUP OF MODEL SETTINGS. This class is the `Tolerances` group of\r\nAD.API.ModelSettingsBase: read it with `GetModelSettings(eModelSettingsCategory.Tolerances)`,\r\nwrite it with `SetModelSettings`, and put back the Advance Design defaults with\r\n`ResetModelSettings(eModelSettingsCategory.Tolerances)` - the very values a new model\r\ncarries. It does not depend on any design code.\r\n\r\n\r\n\r\nUNITS. SI throughout: distances in metres, angles in RADIANS.\r\n\r\n\r\n\r\nPARTIAL. On a Set, a property left null keeps the value the model has. A Get fills every\r\nproperty. One value that is not finite or is outside its range refuses the whole call, the\r\nproperty is named in the error, and nothing is written. The ranges are the dialogs' own.\r\n\r\n\r\n\r\nTWO OF THEM APPLY TO THE WHOLE SERVER PROCESS. `CadDistanceTolerance` and\r\n`VerticalAngularTolerance` are, besides model values, the tolerances every geometric\r\noperation of the session runs with: when two points are the same point, when a linear element\r\nis vertical (which decides its default local axes). As in the desktop application, the session\r\ntakes them from the model when `NewProject` or `OpenProject` opens it, and\r\n`SetModelSettings` / `ResetModelSettings` of this group change them at once. They\r\napply to the whole server process, which holds one project at a time. The other three are read\r\nfrom the model by the operations that use them (the climatic generation, the mesh / solve /\r\nverification, the composite design) and need nothing more.\r\n\r\n\r\n\r\nWHEN TO CALL IT. Before creating the geometry the tolerances should govern, and before\r\n`LaunchAnalysis`. The values are written to the descriptive model and to the analysis\r\nmodels that are open; an analysis model that is not open receives them from the descriptive\r\nmodel the next time it is built."
       },
       "TopographicCategoryNTC_API": {
         "enum": [
@@ -30601,7 +30720,7 @@
                 "$ref": "#/components/schemas/InternalPressure_Wind_EN1991_1_4_API"
               }
             ],
-            "description": "Internal pressure type\r\n\r\nUnit: -\r\n\r\nDefault: WIND_SURPRESSION",
+            "description": "Internal pressure type (WIND_SURPRESSION, WIND_DEPRESSION; WIND_PRESSURE_COEFF is obsolete and applied as WIND_SURPRESSION)\r\n\r\nUnit: -\r\n\r\nDefault: WIND_SURPRESSION",
             "default": "WIND_SURPRESSION"
           },
           "isAutomatic": {
@@ -30645,7 +30764,7 @@
           "WINDEC1_EFF_TYPE_ISOL_PRESSURE"
         ],
         "type": "string",
-        "description": "Wind effort type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - WINDEC1_EFF_TYPE_ISOL_BOTH</b>: </li>\r\n<li><b>1 - WINDEC1_EFF_TYPE_ISOL_FRICTION</b>: </li>\r\n<li><b>2 - WINDEC1_EFF_TYPE_ISOL_PRESSURE</b>: </li>\r\n</ul>\r\n"
+        "description": "Wind effort type for Wind EN 1991-1-4<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - WINDEC1_EFF_TYPE_ISOL_BOTH</b>: </li>\r\n<li><b>1 - WINDEC1_EFF_TYPE_ISOL_FRICTION</b>: Friction force coefficient Cf (model GR_WINDEC1_EFF_TYPE_ISOL_CF)</li>\r\n<li><b>2 - WINDEC1_EFF_TYPE_ISOL_PRESSURE</b>: Net pressure coefficient Cp,net (model GR_WINDEC1_EFF_TYPE_ISOL_CPNET)</li>\r\n</ul>\r\n"
       },
       "WindExposureCw_SnowCBN_API": {
         "enum": [
@@ -30922,10 +31041,12 @@
           "None",
           "CombinationsGeneration",
           "SteelEc3Calculation",
-          "SteelAiscCalculation"
+          "SteelAiscCalculation",
+          "Tolerances",
+          "Structure"
         ],
         "type": "string",
-        "description": "One group of general model settings - what `GetModelSettings` and\r\n`ResetModelSettings` name, and what the runtime type of a\r\n`ModelSettingsBase` object belongs to.\r\n\r\n\r\n\r\nA category is a group of settings that the desktop application edits in one dialog and\r\nthat the API therefore reads, writes and resets as one object. It is NOT the same thing\r\nas the `$type` of the settings object: the category says WHICH settings, the\r\n`$type` says which SHAPE they have - one category can have several shapes, as the\r\ncombination generation settings have one per combination standard.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - None</b>: Not a settings group. It is the value an omitted parameter takes, so a request carrying it is refused rather than silently answered with a default group.</li>\r\n<li><b>1 - CombinationsGeneration</b>: The settings the automatic (\"simplified\") combination generation runs with - the general options the Combinations options dialog of the desktop application edits.</li>\r\n<li><b>2 - SteelEc3Calculation</b>: The general options of the Expert steel (Eurocode 3) design calculation - what the Calculation Settings dialog of the desktop application edits, tab by tab: which verifications are performed, the partial safety factors, the imperfection and buckling options, the optimisation criteria, the profile sort order, the angle-verification bolt factors and the calculation sequence.</li>\r\n<li><b>3 - SteelAiscCalculation</b>: The general options of the Expert steel design calculation of a model designed to a NORTH-AMERICAN code - AISC 360, AISC 360-16 and the four CAN/CSA S16 editions. The same Calculation Settings dialog as</li>\r\n</ul>\r\n"
+        "description": "One group of general model settings - what `GetModelSettings` and\r\n`ResetModelSettings` name, and what the runtime type of a\r\n`ModelSettingsBase` object belongs to.\r\n\r\n\r\n\r\nA category is a group of settings that the desktop application edits in one dialog and\r\nthat the API therefore reads, writes and resets as one object. It is NOT the same thing\r\nas the `$type` of the settings object: the category says WHICH settings, the\r\n`$type` says which SHAPE they have - one category can have several shapes, as the\r\ncombination generation settings have one per combination standard.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - None</b>: Not a settings group. It is the value an omitted parameter takes, so a request carrying it is refused rather than silently answered with a default group.</li>\r\n<li><b>1 - CombinationsGeneration</b>: The settings the automatic (\"simplified\") combination generation runs with - the general options the Combinations options dialog of the desktop application edits.</li>\r\n<li><b>2 - SteelEc3Calculation</b>: The general options of the Expert steel (Eurocode 3) design calculation - what the Calculation Settings dialog of the desktop application edits, tab by tab: which verifications are performed, the partial safety factors, the imperfection and buckling options, the optimisation criteria, the profile sort order, the angle-verification bolt factors and the calculation sequence.</li>\r\n<li><b>3 - SteelAiscCalculation</b>: The general options of the Expert steel design calculation of a model designed to a NORTH-AMERICAN code - AISC 360, AISC 360-16 and the four CAN/CSA S16 editions. The same Calculation Settings dialog as</li>\r\n<li><b>4 - Tolerances</b>: The model tolerances: the minimum distance between two points, the tolerance for vertical elements and the climatic roof coplanarity tolerance (Advanced CAD properties, General page), the mesh tolerance (Mesh options) and the composite tolerance for parallel components (Composite calculation settings, Verification page). Independent of the design codes.</li>\r\n<li><b>5 - Structure</b>: The structure options of the Structure dialog: the work space - a plane (2D, XZ) structure, a grid or a 3D structure. Independent of the design codes; the 3D work space requires the 3D module of the licence.</li>\r\n</ul>\r\n"
       },
       "ePermanentLoadSituation": {
         "enum": [
@@ -31061,6 +31182,15 @@
         ],
         "type": "string",
         "description": "Whether the partial safety factors are taken from the design code or imposed by the user.\r\nShared with the native `enumSafetyFactorsOption`; the model field is\r\n`SteelSafetyFactorsOption`.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - eSafetyFactorsAuto</b>: The design code and its national annex decide. The default. The gamma values then become READ ONLY: a value sent for one of them is dropped and reported as a warning.</li>\r\n<li><b>1 - eSafetyFactorsImposed</b>: The gamma values of the request are stored as sent.</li>\r\n</ul>\r\n"
+      },
+      "eStructureWorkspace": {
+        "enum": [
+          "planeWorkspace",
+          "gridWorkspace",
+          "spaceWorkspace"
+        ],
+        "type": "string",
+        "description": "The work space of the structure - \"Plane / Grid / 3D\" of the Structure dialog\r\n(eModelSettingsCategory::Structure). The FE model has the degrees of freedom of its work space\r\nonly: a plane structure is a 2D model in the global XZ plane.<p>Possible values:</p>\r\n<ul>\r\n<li><b>0 - planeWorkspace</b>: Plane structure: a 2D model in the global XZ plane - the out-of-plane degrees of freedom (TY, RX, RZ) do not exist.</li>\r\n<li><b>1 - gridWorkspace</b>: Grid structure: a 2D model in the global XY plane, loaded along Z - only TZ, RX and RY exist.</li>\r\n<li><b>2 - spaceWorkspace</b>: 3D structure: all six degrees of freedom. Requires the 3D module of the licence.</li>\r\n</ul>\r\n"
       },
       "eThermalLoadCategory": {
         "enum": [
