@@ -17,7 +17,7 @@ from typing import NamedTuple
 
 import numpy as np
 import vtk
-from vtk.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray
+from vtk.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray, vtk_to_numpy
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkRenderingCore import vtkBillboardTextActor3D
 from PySide6.QtCore import Qt, Signal, QSize, QTimer
@@ -2020,6 +2020,7 @@ class VTKViewerWidget(QFrame):
             "cell_id": cell_id,
             "key": actor_key,
             "depth": depth,
+            "pos": pos,
         }
 
     def _get_pick_hit_stack(self, x: int, y: int, max_layers: int = 12):
@@ -2632,6 +2633,26 @@ class VTKViewerWidget(QFrame):
         du mode."""
         self._set_rect_mode("_zoom_window_mode", "_zoom_win_pt1", active, self.zoomWindowModeChanged)
 
+    def _rect_depth(self, x0, y0, x1, y1):
+        """Profondeur ecran mediane de la geometrie dessinee dans le rectangle, None
+        si rien. Le fond vaut 1 et les surcouches 2D (texte, rectangle pointille) 0 ;
+        le repere d'angle a son propre tampon de profondeur."""
+        width, height = self.render_window.GetSize()
+        x0, y0 = max(0, int(x0)), max(0, int(y0))
+        x1, y1 = min(width - 1, int(x1)), min(height - 1, int(y1))
+        if x1 < x0 or y1 < y0:
+            return None
+        buffer = vtk.vtkFloatArray()
+        self.render_window.GetZbufferData(x0, y0, x1, y1, buffer)
+        z = vtk_to_numpy(buffer).reshape(y1 - y0 + 1, x1 - x0 + 1).copy()
+        widget = self.orientation_widget
+        if widget is not None and widget.GetEnabled():
+            vx0, vy0, vx1, vy1 = widget.GetViewport()
+            z[max(0, int(vy0 * height) - y0):max(0, math.ceil(vy1 * height) + 1 - y0),
+              max(0, int(vx0 * width) - x0):max(0, math.ceil(vx1 * width) + 1 - x0)] = 1.0
+        drawn = z[(z > 0.0) & (z < 1.0)]
+        return float(np.median(drawn)) if drawn.size else None
+
     def _zoom_to_rect(self, p0, p1):
         """Recadre la camera sur le rectangle ecran (p0, p1). Portage de la
         logique caméra de vtkInteractorStyleRubberBandZoom : translation pour
@@ -2655,6 +2676,19 @@ class VTKViewerWidget(QFrame):
         ren.SetWorldPoint(fp[0], fp[1], fp[2], 1.0)
         ren.WorldToDisplay()
         depth = ren.GetDisplayPoint()[2]
+        if not cam.GetParallelProjection():
+            # En perspective, decalage et echelle dependent de la profondeur : viser
+            # celle de la geometrie dessinee (a defaut, celle du point focal).
+            drawn = self._rect_depth(x0, y0, x1, y1)
+            if drawn is None:
+                # Les faces translucides n'ecrivent pas de profondeur : pointer au centre.
+                hit = self._get_pick_hit(round((x0 + x1) / 2.0), round((y0 + y1) / 2.0))
+                if hit is not None:
+                    ren.SetWorldPoint(*hit["pos"], 1.0)
+                    ren.WorldToDisplay()
+                    drawn = ren.GetDisplayPoint()[2]
+            if drawn is not None:
+                depth = drawn
 
         def _unproject(dx, dy):
             ren.SetDisplayPoint(float(dx), float(dy), depth)
@@ -2667,14 +2701,19 @@ class VTKViewerWidget(QFrame):
         wr = _unproject((x0 + x1) / 2.0, (y0 + y1) / 2.0)
         wc = _unproject(size[0] / 2.0, size[1] / 2.0)
         tr = (wr[0] - wc[0], wr[1] - wc[1], wr[2] - wc[2])
-        cam.SetFocalPoint(fp[0] + tr[0], fp[1] + tr[1], fp[2] + tr[2])
+        # Point focal a la profondeur visee : Dolly(factor) agrandit alors d'exactement factor.
+        cam.SetFocalPoint(*wr)
         cam.SetPosition(pos[0] + tr[0], pos[1] + tr[1], pos[2] + tr[2])
 
         factor = size[0] / w if w > h else size[1] / h
         if cam.GetParallelProjection():
             cam.Zoom(factor)
         else:
-            cam.Dolly(factor)
+            # Pas plus pres que 0,5 % de la taille de la scene : le plan proche (~0,1 %
+            # du plan lointain) couperait la zone visee.
+            bounds = ren.ComputeVisiblePropBounds()
+            closest = max(0.005 * math.dist(bounds[0::2], bounds[1::2]), 1e-6)
+            cam.Dolly(min(factor, max(1.0, cam.GetDistance() / closest)))
         ren.ResetCameraClippingRange()
         self.render_window.Render()
         self._update_view_overlay()
