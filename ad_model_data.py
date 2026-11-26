@@ -2693,6 +2693,30 @@ def extract_model_geometry(host: str, fto_path: str, progress_callback=None, ses
                 result["project_kept_open"] = False
 
 
+# Lignes du journal en fin de chargement : cle du message et champs du modele
+_ID_COUNT_LOGS = (
+    ("ids_linear", "linear_ids_count"),
+    ("ids_planar", "planar_ids_count"),
+    ("ids_load_area", "load_area_ids_count"),
+    ("ids_support_punctual", "punctual_support_ids_count"),
+    ("ids_punctual_loads", "punctual_load_ids_count"),
+    ("ids_linear_loads", "linear_load_ids_count"),
+    ("ids_planar_loads", "planar_load_ids_count"),
+    ("ids_support_linear", "linear_support_ids_count"),
+    ("ids_support_planar", "planar_support_ids_count"),
+)
+_RESOLVED_LOGS = (
+    ("resolved_materials", "materials_resolved_count", "materials_eids_count"),
+    ("resolved_linear_sections", "linear_sections_resolved_count", "linear_section_eids_count"),
+)
+_LOADED_LOGS = (
+    ("loaded_geometry", {"linear": "linear_count", "planar": "planar_count",
+                         "load_areas": "load_area_count", "openings": "openings_count"}),
+    ("loaded_supports", {"punctual": "punctual_support_count", "linear": "linear_support_count",
+                         "planar": "planar_support_count"}),
+)
+
+
 class LoadModelWorker(QThread):
     log = Signal(str, str)
     progress = Signal(int, str)
@@ -2712,26 +2736,8 @@ class LoadModelWorker(QThread):
 
     def run(self):
         try:
-            self._emit_progress(2, tr_log("checking_api"))
-            self.log.emit(tr_log("checking_api"), "info")
-            check_port(self.host)
-            self._emit_progress(6, tr_log("api_ok"))
-            self.log.emit(tr_log("api_ok"), "ok")
-            status = licence_problem(self.host)
-            if status:
-                self.log.emit(status.get("message") or status.get("status") or "", "error")
-                self.error.emit(tr_err("licence_open_failed"))
-                return
-            try:
-                api_version = get_api_version(self.host)
-            except Exception:
-                api_version = ""
-            if api_version:
-                separator = ": " if get_language() == "en" else " : "
-                self.log.emit(f"{tr_ui('status_section_api_version')}{separator}{api_version}", "info")
-            refusal = api_version_refusal(api_version, "api_version_refused_load")
-            if refusal:
-                self.version_refused.emit(refusal)
+            api_version = self._check_api()
+            if api_version is None:
                 return
             self.log.emit(tr_log("normalized_path", path=self.fto_path), "info")
             self.log.emit(tr_log("opening_project_reading"), "info")
@@ -2745,69 +2751,58 @@ class LoadModelWorker(QThread):
                 api_version=api_version,
             )
 
-            if model_data.get("project_kept_open"):
-                self.log.emit(tr_log("project_kept_open_for_results"), "ok")
-            elif model_data.get("project_closed", False):
-                self.log.emit(tr_log("project_closed_after_read"), "ok")
-
-            self._emit_progress(97, tr_log("progress_finalizing"))
-            self.log.emit(tr_log("ids_linear", count=model_data["linear_ids_count"]), "info")
-            self.log.emit(tr_log("ids_planar", count=model_data["planar_ids_count"]), "info")
-            self.log.emit(tr_log("ids_load_area", count=model_data["load_area_ids_count"]), "info")
-            self.log.emit(tr_log("ids_support_punctual", count=model_data["punctual_support_ids_count"]), "info")
-            self.log.emit(tr_log("ids_punctual_loads", count=model_data["punctual_load_ids_count"]), "info")
-            self.log.emit(tr_log("ids_linear_loads", count=model_data["linear_load_ids_count"]), "info")
-            self.log.emit(tr_log("ids_planar_loads", count=model_data["planar_load_ids_count"]), "info")
-            self.log.emit(tr_log("ids_support_linear", count=model_data["linear_support_ids_count"]), "info")
-            self.log.emit(tr_log("ids_support_planar", count=model_data["planar_support_ids_count"]), "info")
-            self.log.emit(
-                tr_log(
-                    "resolved_materials",
-                    resolved=model_data["materials_resolved_count"],
-                    total=model_data["materials_eids_count"],
-                ),
-                "info"
-            )
-            self.log.emit(
-                tr_log(
-                    "resolved_linear_sections",
-                    resolved=model_data["linear_sections_resolved_count"],
-                    total=model_data["linear_section_eids_count"],
-                ),
-                "info"
-            )
-
-            self.log.emit(
-                tr_log(
-                    "loaded_geometry",
-                    linear=model_data["linear_count"],
-                    planar=model_data["planar_count"],
-                    load_areas=model_data["load_area_count"],
-                    openings=model_data["openings_count"],
-                ),
-                "ok"
-            )
-            self.log.emit(
-                tr_log(
-                    "loaded_supports",
-                    punctual=model_data["punctual_support_count"],
-                    linear=model_data["linear_support_count"],
-                    planar=model_data["planar_support_count"],
-                ),
-                "ok"
-            )
-            self.log.emit(
-                tr_log("results_available") if model_data.get("has_analysis_results") else tr_log("results_unavailable"),
-                "ok" if model_data.get("has_analysis_results") else "error"
-            )
-
+            self._log_model_summary(model_data)
             self._emit_progress(100, tr_log("progress_load_done"))
             self.success.emit(model_data)
 
-        except ApiUnavailableError as e:
-            self.error.emit(str(e))
-        except ProjectAlreadyOpenError as e:
+        except (ApiUnavailableError, ProjectAlreadyOpenError) as e:
             self.error.emit(str(e))
         except Exception:
             self.error.emit(traceback.format_exc())
+
+    def _check_api(self):
+        """Version de l'API une fois l'acces, la licence et la version controles ;
+        None si le chargement est refuse (le signal correspondant est deja emis)."""
+        self._emit_progress(2, tr_log("checking_api"))
+        self.log.emit(tr_log("checking_api"), "info")
+        check_port(self.host)
+        self._emit_progress(6, tr_log("api_ok"))
+        self.log.emit(tr_log("api_ok"), "ok")
+        status = licence_problem(self.host)
+        if status:
+            self.log.emit(status.get("message") or status.get("status") or "", "error")
+            self.error.emit(tr_err("licence_open_failed"))
+            return None
+        api_version = self._read_api_version()
+        refusal = api_version_refusal(api_version, "api_version_refused_load")
+        if refusal:
+            self.version_refused.emit(refusal)
+            return None
+        return api_version
+
+    def _read_api_version(self) -> str:
+        try:
+            api_version = get_api_version(self.host)
+        except Exception:
+            return ""
+        if api_version:
+            separator = ": " if get_language() == "en" else " : "
+            self.log.emit(f"{tr_ui('status_section_api_version')}{separator}{api_version}", "info")
+        return api_version
+
+    def _log_model_summary(self, model_data: dict):
+        if model_data.get("project_kept_open"):
+            self.log.emit(tr_log("project_kept_open_for_results"), "ok")
+        elif model_data.get("project_closed", False):
+            self.log.emit(tr_log("project_closed_after_read"), "ok")
+
+        self._emit_progress(97, tr_log("progress_finalizing"))
+        for key, field in _ID_COUNT_LOGS:
+            self.log.emit(tr_log(key, count=model_data[field]), "info")
+        for key, resolved, total in _RESOLVED_LOGS:
+            self.log.emit(tr_log(key, resolved=model_data[resolved], total=model_data[total]), "info")
+        for key, fields in _LOADED_LOGS:
+            self.log.emit(tr_log(key, **{name: model_data[field] for name, field in fields.items()}), "ok")
+        available = model_data.get("has_analysis_results")
+        self.log.emit(tr_log("results_available" if available else "results_unavailable"), "ok" if available else "error")
 

@@ -987,6 +987,104 @@ def _pump_ui_events():
     QThread.msleep(20)
 
 
+def _field_text(edit) -> str:
+    return edit.text().strip() if edit is not None else ""
+
+
+def _api_host(text: str) -> str:
+    """Adresse d'API a utiliser : celle donnee sans "/" final, a defaut DEFAULT_HOST."""
+    return (text.strip().rstrip("/") or DEFAULT_HOST).rstrip("/")
+
+
+def _as_session(value):
+    return value if isinstance(value, ProjectSessionManager) else None
+
+
+def _session_file(session) -> str:
+    return normalize_windows_path(getattr(session, "fto_path", "") or "")
+
+
+def _session_holds_file(session, fto_path: str) -> bool:
+    """Vrai si le projet ouvert par la session est le fichier demande (ou si aucun
+    fichier n'est saisi) : il est alors reutilise sans etre rouvert."""
+    if session is None or not session.is_open:
+        return False
+    session_fto = _session_file(session)
+    return bool(session_fto) and (not fto_path or session_fto == fto_path)
+
+
+def _ifc_scope_message(element_ids) -> str:
+    if element_ids:
+        return tr_ui("export_ifc_scope_selection", count=len(element_ids))
+    return tr_ui("export_ifc_scope_full")
+
+
+def _ifc_export_job(reuse: bool, session, fto_path: str, typed_host: str, out_path: str, element_ids):
+    """(fonction d'export, arguments) : depuis le projet ouvert si reuse, sinon depuis le fichier."""
+    common = dict(
+        host=_api_host(getattr(session, "host", "") or typed_host),
+        out_path=out_path,
+        include_loads=False,
+        check_api_first=True,
+        element_ids=element_ids or None,
+    )
+    if reuse:
+        project_name = os.path.basename(fto_path) or "ViewerProject"
+        return ad_ifc_exporter.export_ifc_from_open_project, {**common, "project_name": project_name}
+    return ad_ifc_exporter.export_ifc_from_fto, {**common, "fto_path": fto_path, "close_project_on_exit": True}
+
+
+def _calculation_wanted(window) -> bool:
+    """Aucun calcul en cours, modele pas a jour (ou Ctrl pour forcer), puis confirmation."""
+    if window.calc_worker is not None and window.calc_worker.isRunning():
+        return False
+    if window._calc_done and not (QApplication.keyboardModifiers() & Qt.ControlModifier):
+        return False
+    answer = QMessageBox.question(
+        window,
+        tr_ui("calc_ef_confirm_title"),
+        tr_ui("calc_ef_confirm_text"),
+        QMessageBox.Yes | QMessageBox.No,
+        QMessageBox.No,
+    )
+    return answer == QMessageBox.Yes
+
+
+def _calc_file_ready(window, fto_path: str) -> bool:
+    """Controle le fichier a ouvrir pour le calcul et signale ce qui manque."""
+    if not fto_path:
+        msg = tr_ui("calc_ef_no_project")
+        window.log(msg, "warn")
+        QMessageBox.warning(window, tr_ui("calc_ef_dialog_title"), msg)
+        return False
+    if not os.path.isfile(fto_path):
+        window.log(tr_err("file_not_found", path=fto_path), "error")
+        return False
+    return True
+
+
+# Causes connues d'un echec de chargement : fragments (en minuscules) -> messages du journal
+_LOAD_ERROR_CAUSES = (
+    (("api non joignable", "impossible de contacter l'api", "api advance design ne répond pas"),
+     ("api_no_response", "api_check_advice")),
+    (("déjà ouvert", "deja ouvert", "verrouillé", "already open", "locked"), ("file_already_open_short",)),
+)
+_ENGINE_ERROR_FRAGMENTS = ("openproject échec api", "project_open_failed", "engine returned failure", "engine_error")
+
+
+def _known_load_error(text: str) -> tuple:
+    """Cles des messages qui expliquent l'echec d'un chargement, () si la cause est inconnue."""
+    if text == tr_err("licence_open_failed"):
+        return ("licence_open_failed",)
+    low = text.lower()
+    for fragments, keys in _LOAD_ERROR_CAUSES:
+        if any(fragment in low for fragment in fragments):
+            return keys
+    if all(fragment in low for fragment in _ENGINE_ERROR_FRAGMENTS):
+        return ("api_engine_not_initialized",)
+    return ()
+
+
 def wait_for_api(host, timeout=20.0, interval=0.5, check=check_port, pump=_pump_ui_events) -> bool:
     """Attend que l'API reponde : True des le premier succes, False apres `timeout` secondes."""
     deadline = time.time() + timeout
@@ -1137,36 +1235,46 @@ class LaunchAnalysisWorker(QThread):
 
             self.log.emit(tr_log("calc_ef_started"), "info")
             start = time.monotonic()
-            try:
-                data, diagnostics = launch_analysis(self.host, timeout=self.timeout_s or None)
-            except requests.Timeout:
-                elapsed = time.monotonic() - start
-                raise RuntimeError(tr_log(
-                    "calc_ef_timeout_exceeded",
-                    elapsed=_fmt_hms(elapsed),
-                    timeout=self.timeout_s,
-                ))
-            except requests.ConnectionError as e:
-                raise RuntimeError(tr_log("calc_ef_connection_lost", details=str(e)))
-
+            data, diagnostics = self._launch(start)
             elapsed = time.monotonic() - start
-            for severity, message in diagnostics:
-                if severity in ("error", "warning"):
-                    self.log.emit(message, "error" if severity == "error" else "warn")
-            # Le flag data est faux des qu'une erreur moteur, meme non bloquante, est signalee
-            try:
-                ok = bool(get_analysis_model_status(self.host).get("femIsCalculated"))
-            except Exception:
-                ok = bool(data)
-            self.success.emit(ok, elapsed)
+            self._log_diagnostics(diagnostics)
+            self.success.emit(self._is_calculated(data), elapsed)
         except Exception as e:
             self.error.emit(str(e))
         finally:
             if opened_here:
-                try:
-                    close_project(self.host)
-                except Exception:
-                    pass
+                self._close_quietly()
+
+    def _launch(self, start: float):
+        try:
+            return launch_analysis(self.host, timeout=self.timeout_s or None)
+        except requests.Timeout:
+            elapsed = time.monotonic() - start
+            raise RuntimeError(tr_log(
+                "calc_ef_timeout_exceeded",
+                elapsed=_fmt_hms(elapsed),
+                timeout=self.timeout_s,
+            ))
+        except requests.ConnectionError as e:
+            raise RuntimeError(tr_log("calc_ef_connection_lost", details=str(e)))
+
+    def _log_diagnostics(self, diagnostics):
+        for severity, message in diagnostics:
+            if severity in ("error", "warning"):
+                self.log.emit(message, "error" if severity == "error" else "warn")
+
+    def _is_calculated(self, data) -> bool:
+        # Le flag data est faux des qu'une erreur moteur, meme non bloquante, est signalee
+        try:
+            return bool(get_analysis_model_status(self.host).get("femIsCalculated"))
+        except Exception:
+            return bool(data)
+
+    def _close_quietly(self):
+        try:
+            close_project(self.host)
+        except Exception:
+            pass
 
 
 class IfcExportWorker(QThread):
@@ -5682,70 +5790,31 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, tr_ui("export_ifc_title"), msg)
             return
 
-        fto_path = normalize_windows_path(self.fto_edit.text().strip()) if self.fto_edit is not None else ""
-        base_dir = os.path.dirname(fto_path) if fto_path else ""
-        suggested_name = os.path.splitext(os.path.basename(fto_path))[0] + ".ifc" if fto_path else "export.ifc"
-
+        fto_path = normalize_windows_path(_field_text(self.fto_edit))
         out_path, _ = QFileDialog.getSaveFileName(
             self,
             tr_ui("export_ifc_title"),
-            os.path.join(base_dir, suggested_name) if base_dir else suggested_name,
+            os.path.splitext(fto_path)[0] + ".ifc" if fto_path else "export.ifc",
             tr_ui("export_ifc_filter"),
         )
         if not out_path:
             return
 
-        project_session = self.project_session if isinstance(self.project_session, ProjectSessionManager) else None
-        host = ""
-        if project_session is not None and getattr(project_session, "host", ""):
-            host = str(project_session.host).strip()
-        elif self.host_edit is not None:
-            host = self.host_edit.text().strip()
-        host = (host or DEFAULT_HOST).rstrip("/")
-
-        can_use_open_project = False
-        if project_session is not None and getattr(project_session, "is_open", False):
-            session_fto = normalize_windows_path(getattr(project_session, "fto_path", "") or "")
-            can_use_open_project = bool(session_fto) and (not fto_path or session_fto == fto_path)
-
-        if not can_use_open_project and not fto_path:
+        session = _as_session(self.project_session)
+        reuse = _session_holds_file(session, fto_path)
+        if not reuse and not fto_path:
             msg = tr_ui("export_ifc_no_project")
             self.log(msg, "warn")
             QMessageBox.warning(self, tr_ui("export_ifc_title"), msg)
             return
 
         selection_eids = self._viewer_selection_export_eids()
-        if selection_eids:
-            self.log(tr_ui("export_ifc_scope_selection", count=len(selection_eids)), "info")
-        else:
-            self.log(tr_ui("export_ifc_scope_full"), "info")
-
+        self.log(_ifc_scope_message(selection_eids), "info")
         self.log(tr_log("ifc_export_module_version", version=getattr(ad_ifc_exporter, "VERSION", "?")), "info")
         self.log(tr_log("ifc_export_started", path=out_path), "info")
         self._set_analysis_results_output_message(tr_ui("export_ifc_running"))
 
-        if can_use_open_project:
-            export_fn = ad_ifc_exporter.export_ifc_from_open_project
-            kwargs = dict(
-                host=host,
-                out_path=out_path,
-                include_loads=False,
-                project_name=os.path.basename(fto_path) if fto_path else "ViewerProject",
-                check_api_first=True,
-                element_ids=selection_eids or None,
-            )
-        else:
-            export_fn = ad_ifc_exporter.export_ifc_from_fto
-            kwargs = dict(
-                host=host,
-                fto_path=fto_path,
-                out_path=out_path,
-                include_loads=False,
-                check_api_first=True,
-                close_project_on_exit=True,
-                element_ids=selection_eids or None,
-            )
-
+        export_fn, kwargs = _ifc_export_job(reuse, session, fto_path, _field_text(self.host_edit), out_path, selection_eids)
         self._ifc_worker = IfcExportWorker(export_fn, kwargs)
         self._ifc_worker.log.connect(self.log)
         self._ifc_worker.success.connect(lambda: self._on_ifc_export_success(out_path))
@@ -6855,45 +6924,17 @@ class MainWindow(QMainWindow):
         self.log(tr_log("calc_ef_timeout_set", value=label), "info")
 
     def launch_analysis_from_viewer(self):
-        if self.calc_worker is not None and self.calc_worker.isRunning():
-            return
-        if self._calc_done and not (QApplication.keyboardModifiers() & Qt.ControlModifier):
+        if not _calculation_wanted(self):
             return
 
-        answer = QMessageBox.question(
-            self,
-            tr_ui("calc_ef_confirm_title"),
-            tr_ui("calc_ef_confirm_text"),
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        if answer != QMessageBox.Yes:
+        fto_path = normalize_windows_path(_field_text(self.fto_edit))
+        host = _api_host(_field_text(self.host_edit))
+        session = _as_session(self.project_session)
+        reuse = _session_holds_file(session, fto_path)
+        if not reuse and not _calc_file_ready(self, fto_path):
             return
 
-        fto_path = normalize_windows_path(self.fto_edit.text().strip()) if self.fto_edit is not None else ""
-        host = self.host_edit.text().strip().rstrip("/") if self.host_edit is not None else ""
-        host = (host or DEFAULT_HOST).rstrip("/")
-
-        session = self.project_session if isinstance(self.project_session, ProjectSessionManager) else None
-        reuse = False
-        if session is not None and getattr(session, "is_open", False):
-            session_fto = normalize_windows_path(getattr(session, "fto_path", "") or "")
-            reuse = bool(session_fto) and (not fto_path or session_fto == fto_path)
-
-        if not reuse:
-            if not fto_path:
-                msg = tr_ui("calc_ef_no_project")
-                self.log(msg, "warn")
-                QMessageBox.warning(self, tr_ui("calc_ef_dialog_title"), msg)
-                return
-            if not os.path.isfile(fto_path):
-                self.log(tr_err("file_not_found", path=fto_path), "error")
-                return
-
-        effective_fto = fto_path
-        if not effective_fto and session is not None:
-            effective_fto = normalize_windows_path(getattr(session, "fto_path", "") or "")
-        self._calc_launch_fto = effective_fto
+        self._calc_launch_fto = fto_path or _session_file(session)
         self._calc_reload_fto = ""
 
         if self.side_tabs is not None:
@@ -7889,38 +7930,10 @@ class MainWindow(QMainWindow):
     def on_model_error(self, error_text: str):
         self._reset_after_load_failure()
         text = error_text.strip()
-        low = text.lower()
-
-        if text == tr_err("licence_open_failed"):
-            self.log(text, "error")
-            return
-
-        if (
-            "api non joignable" in low
-            or "impossible de contacter l'api" in low
-            or "api advance design ne répond pas" in low
-        ):
-            self.log(tr_err("api_no_response"), "error")
-            self.log(tr_err("api_check_advice"), "error")
-            return
-
-        if (
-            "déjà ouvert" in low
-            or "deja ouvert" in low
-            or "verrouillé" in low
-            or "already open" in low
-            or "locked" in low
-        ):
-            self.log(tr_err("file_already_open_short"), "error")
-            return
-
-        if (
-            "openproject échec api" in low
-            and "project_open_failed" in low
-            and "engine returned failure" in low
-            and "engine_error" in low
-        ):
-            self.log(tr_err("api_engine_not_initialized"), "error")
+        known = _known_load_error(text)
+        for key in known:
+            self.log(tr_err(key), "error")
+        if known:
             return
 
         self._populate_results_case_combination_combo([])

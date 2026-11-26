@@ -108,6 +108,43 @@ def test_click_on_empty_space_orbits_then_clears_on_a_stationary_release():
     assert w.log[-2:] == ["orbit", "clear"]
 
 
+def test_pressing_a_clip_box_handle_stops_there():
+    w = _clicking_viewer([{"role": "lines", "index": 3}])
+    w._clip.on_left_press = lambda x, y: True
+    w._left_press_tag = 7
+    flags = []
+    w.interactor.GetCommand = lambda tag: types.SimpleNamespace(SetAbortFlag=lambda value: flags.append((tag, value)))
+    w._on_left_button_press(None, None)
+    assert flags == [(7, 1)] and w.picks == [] and w.log == ["focus"]
+
+
+@pytest.mark.parametrize("mode, first_point, action", [
+    ("_window_select_mode", "_win_pt1", "select"),
+    ("_zoom_window_mode", "_zoom_win_pt1", "zoom"),
+])
+def test_two_clicks_in_a_rectangle_mode_apply_it_then_leave_the_mode(mode, first_point, action):
+    w = _clicking_viewer([])
+    setattr(w, mode, True)
+    w.interactor.GetControlKey = lambda: 1
+    w._window_select_from_rect = lambda a, b, additive: w.log.append(("select", a, b, additive))
+    w._zoom_to_rect = lambda a, b: w.log.append(("zoom", a, b))
+    w._left_press_pos = (1, 1)
+    w._on_left_button_press(None, None)
+    assert getattr(w, first_point) == (40, 30) and w.log == ["focus"] and w._left_press_pos is None
+    w.interactor.GetEventPosition = lambda: (90, 80)
+    w._on_left_button_press(None, None)
+    done = ("select", (40, 30), (90, 80), True) if action == "select" else ("zoom", (40, 30), (90, 80))
+    assert w.log == ["focus", "focus", done, (f"{action} mode", False)]
+    assert w.picks == []
+
+
+def test_empty_click_does_not_start_an_orbit_in_flight_mode():
+    w = _clicking_viewer([])
+    w._flight.active = True
+    w._on_left_button_press(None, None)
+    assert "orbit" not in w.log and w._left_press_pos == (40, 30)
+
+
 def test_tab_does_nothing_in_rectangle_modes_or_on_empty_space():
     w = _viewer()
     w._pick_selection_candidates = lambda x, y: []

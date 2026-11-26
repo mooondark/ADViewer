@@ -61,6 +61,14 @@ _WIRE3D_FACE_OPACITY = 0.01  # > 0 : vtkCellPicker ignore les acteurs d'opacite 
 _ALL_DISPLAY_MODES = ("wireframe", "hidden_faces", "wire_hidden", "full") + _PROFILE_MODES
 _PICK_TOLERANCE = 0.0035        # tolerance de vtkCellPicker, en fraction de la diagonale de la fenetre
 _PRESELECT_MIN_CELLS = 5000     # au-dela, le clic ne teste que les cellules proches du pixel
+# Tirs d'un clic autour du pixel : le pixel, puis les 8 directions a 2, 4, 6 et 8 pixels
+_PICK_OFFSETS = (
+    (0, 0),
+    (2, 0), (-2, 0), (0, 2), (0, -2), (2, 2), (-2, 2), (2, -2), (-2, -2),
+    (4, 0), (-4, 0), (0, 4), (0, -4), (4, 4), (-4, 4), (4, -4), (-4, -4),
+    (6, 0), (-6, 0), (0, 6), (0, -6),
+    (8, 0), (-8, 0), (0, 8), (0, -8),
+)
 
 
 def _poly2_area(loop):
@@ -144,6 +152,22 @@ def _merge_window_selection(current, keys, additive: bool) -> list:
         return new_items
     have = {(it["role"], it["index"]) for it in current}
     return list(current) + [it for it in new_items if (it["role"], it["index"]) not in have]
+
+
+def _nearest_hits(ray_hits) -> list:
+    """Un candidat par element : le tir le plus proche du pixel, puis le plus proche
+    de la camera. ray_hits : ((dx, dy), touche ou None)."""
+    found = {}
+    for (dx, dy), hit in ray_hits:
+        if hit is None:
+            continue
+        key = (hit["role"], int(hit["index"]))
+        dist2 = dx * dx + dy * dy
+        current = found.get(key)
+        if current is None or (dist2, hit["depth"]) < (current["distance2"], current["depth"]):
+            hit["distance2"] = dist2
+            found[key] = hit
+    return list(found.values())
 
 
 def _cell_points(pd, pts, cid) -> list:
@@ -2038,61 +2062,56 @@ class VTKViewerWidget(QFrame):
             result[key] = {"actor": proxy, "role": info["role"], "source": actor, "cell_ids": np.flatnonzero(near)}
         return result
 
-    def _get_pick_hit(self, x: int, y: int, exclude_keys=None, actors=None):
+    def _cell_picker(self, actors, exclude_keys):
+        """(picker, acteurs testes) : cle de l'acteur -> (cle selectionnable, infos)."""
         picker = vtk.vtkCellPicker()
         picker.SetTolerance(_PICK_TOLERANCE)
         picker.PickFromListOn()
         picker.InitializePickList()
 
-        listed = {}   # cle de l'acteur teste -> (cle de l'element selectionnable, infos)
-        for key, info in (self._pickable_actors if actors is None else actors).items():
-            if exclude_keys and key in exclude_keys:
-                continue
+        listed = {}
+        for key, info in actors.items():
             actor = info["actor"]
-            if actor is not None and actor.GetVisibility():
+            if key not in (exclude_keys or ()) and actor is not None and actor.GetVisibility():
                 picker.AddPickList(actor)
                 listed[self._actor_key(actor)] = (key, info)
-        if not listed:
-            return None
+        return picker, listed
 
-        if not picker.Pick(x, y, 0, self.renderer):
+    def _element_index_at(self, actor, cell_id: int):
+        polydata = self._get_actor_polydata(actor)
+        arr = None if polydata is None else polydata.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
+        if arr is None or cell_id >= arr.GetNumberOfTuples():
             return None
+        return int(arr.GetTuple1(cell_id))
 
+    def _picked_element(self, picker, listed):
+        """Element sous le tir reussi du picker, None si la cellule n'en designe aucun."""
         actor = picker.GetActor()
-        cell_id = int(picker.GetCellId()) if hasattr(picker, "GetCellId") else -1
+        cell_id = int(picker.GetCellId())
         if actor is None or cell_id < 0:
             return None
-
         found = listed.get(self._actor_key(actor))
         if not found:
             return None
+        element_index = self._element_index_at(actor, cell_id)
+        if element_index is None:
+            return None
         actor_key, info = found
-
-        polydata = self._get_actor_polydata(actor)
-        if polydata is None:
-            return None
-
-        arr = polydata.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
-        if arr is None or cell_id >= arr.GetNumberOfTuples():
-            return None
-
-        element_index = int(arr.GetTuple1(cell_id))
         if "source" in info:   # maillage reduit : revenir a l'acteur et a la cellule d'origine
             actor, cell_id = info["source"], int(info["cell_ids"][cell_id])
-        pos = picker.GetPickPosition()
-        if not self._clip.accepts_point(pos):
+        return {"role": info["role"], "index": element_index, "actor": actor, "cell_id": cell_id, "key": actor_key}
+
+    def _get_pick_hit(self, x: int, y: int, exclude_keys=None, actors=None):
+        picker, listed = self._cell_picker(self._pickable_actors if actors is None else actors, exclude_keys)
+        if not listed or not picker.Pick(x, y, 0, self.renderer):
             return None
-        cam = self.renderer.GetActiveCamera().GetPosition() if self.renderer.GetActiveCamera() else (0.0, 0.0, 0.0)
-        depth = (pos[0] - cam[0]) ** 2 + (pos[1] - cam[1]) ** 2 + (pos[2] - cam[2]) ** 2
-        return {
-            "role": info["role"],
-            "index": element_index,
-            "actor": actor,
-            "cell_id": cell_id,
-            "key": actor_key,
-            "depth": depth,
-            "pos": pos,
-        }
+        hit = self._picked_element(picker, listed)
+        pos = picker.GetPickPosition()
+        if hit is None or not self._clip.accepts_point(pos):
+            return None
+        cam = self.renderer.GetActiveCamera().GetPosition()
+        depth = sum((p - c) ** 2 for p, c in zip(pos, cam))
+        return {**hit, "depth": depth, "pos": pos}
 
     def _get_pick_hit_stack(self, x: int, y: int, max_layers: int = 12, actors=None):
         """Pick avant-vers-arrière : renvoie tous les éléments sous le pixel,
@@ -2109,39 +2128,22 @@ class VTKViewerWidget(QFrame):
             exclude.add(hit["key"])
         return hits
 
-    def _pick_selection_candidates(self, x: int, y: int):
-        offsets = [
-            (0, 0),
-            (2, 0), (-2, 0), (0, 2), (0, -2),
-            (2, 2), (-2, 2), (2, -2), (-2, -2),
-            (4, 0), (-4, 0), (0, 4), (0, -4),
-            (4, 4), (-4, 4), (4, -4), (-4, -4),
-            (6, 0), (-6, 0), (0, 6), (0, -6),
-            (8, 0), (-8, 0), (0, 8), (0, -8),
-        ]
-        peel = self._display_mode in ("hidden_faces", "wire_hidden", "profiles_hidden", "profiles_wire")
-        found = {}
-        actors = self._preselect_pickable(x, y, max(abs(v) for offset in offsets for v in offset))
-        for dx, dy in offsets:
-            if peel and dx == 0 and dy == 0:
-                hits = self._get_pick_hit_stack(x, y, actors=actors)
+    def _ray_hits(self, x: int, y: int, peel: bool):
+        """((dx, dy), touche) pour chaque tir ; en mode peel, le tir central
+        traverse les elements empiles."""
+        actors = self._preselect_pickable(x, y, max(abs(v) for offset in _PICK_OFFSETS for v in offset))
+        for offset in _PICK_OFFSETS:
+            if peel and offset == (0, 0):
+                for hit in self._get_pick_hit_stack(x, y, actors=actors):
+                    yield offset, hit
             else:
-                hits = [self._get_pick_hit(x + dx, y + dy, actors=actors)]
-            for hit in hits:
-                if hit is None:
-                    continue
-                key = (hit["role"], int(hit["index"]))
-                dist2 = dx * dx + dy * dy
-                current = found.get(key)
-                if current is None or (dist2, hit["depth"]) < (current["distance2"], current["depth"]):
-                    hit["distance2"] = dist2
-                    found[key] = hit
+                yield offset, self._get_pick_hit(x + offset[0], y + offset[1], actors=actors)
 
-        results = list(found.values())
-        if peel:
-            results.sort(key=lambda item: (item["distance2"], item["depth"], item["role"], item["index"]))
-        else:
-            results.sort(key=lambda item: (item["distance2"], item["role"], item["index"]))
+    def _pick_selection_candidates(self, x: int, y: int):
+        peel = self._display_mode in ("hidden_faces", "wire_hidden", "profiles_hidden", "profiles_wire")
+        results = _nearest_hits(self._ray_hits(x, y, peel))
+        order = ("distance2", "depth", "role", "index") if peel else ("distance2", "role", "index")
+        results.sort(key=lambda item: tuple(item[name] for name in order))
         for index in self._anomaly_overlay.pick(x, y):
             results.append({"role": "anomaly", "index": int(index), "depth": 0.0, "distance2": 0})
         return results
@@ -2544,30 +2546,29 @@ class VTKViewerWidget(QFrame):
             self.vtk_widget.setFocus()
             self.interactor.GetCommand(self._left_press_tag).SetAbortFlag(1)
             return
-        if self._window_select_mode:
-            self.vtk_widget.setFocus()
-            x, y = self.interactor.GetEventPosition()
-            self._left_press_pos = None         # neutralise _on_left_button_release
-            if self._win_pt1 is None:
-                self._win_pt1 = (x, y)          # point 1
-                return
-            p1 = self._win_pt1                  # point 2 -> selection + fin du mode
-            additive = bool(self.interactor.GetControlKey())
-            self._window_select_from_rect(p1, (x, y), additive)
-            self.set_window_select_mode(False)
-            return
-        if self._zoom_window_mode:
-            self.vtk_widget.setFocus()
-            x, y = self.interactor.GetEventPosition()
-            self._left_press_pos = None
-            if self._zoom_win_pt1 is None:
-                self._zoom_win_pt1 = (x, y)     # point 1
-                return
-            self._zoom_to_rect(self._zoom_win_pt1, (x, y))   # point 2 -> zoom + fin
-            self.set_zoom_window_mode(False)
-            return
         self.vtk_widget.setFocus()
         x, y = self.interactor.GetEventPosition()
+        if self._window_select_mode or self._zoom_window_mode:
+            self._on_rectangle_click((x, y))
+        else:
+            self._on_selection_press(x, y)
+
+    def _on_rectangle_click(self, point):
+        """Selection ou zoom fenetre : point 1, puis point 2 -> action et fin du mode."""
+        self._left_press_pos = None         # neutralise _on_left_button_release
+        selecting = self._window_select_mode
+        first_attr = "_win_pt1" if selecting else "_zoom_win_pt1"
+        first = getattr(self, first_attr)
+        if first is None:
+            setattr(self, first_attr, point)
+        elif selecting:
+            self._window_select_from_rect(first, point, bool(self.interactor.GetControlKey()))
+            self.set_window_select_mode(False)
+        else:
+            self._zoom_to_rect(first, point)
+            self.set_zoom_window_mode(False)
+
+    def _on_selection_press(self, x: int, y: int):
         ctrl = bool(self.interactor.GetControlKey())
         self._left_press_pos = (x, y)
         self._left_press_ctrl = ctrl
@@ -2726,6 +2727,44 @@ class VTKViewerWidget(QFrame):
         drawn = z[(z > 0.0) & (z < 1.0)]
         return float(np.median(drawn)) if drawn.size else None
 
+    def _display_depth(self, point) -> float:
+        self.renderer.SetWorldPoint(point[0], point[1], point[2], 1.0)
+        self.renderer.WorldToDisplay()
+        return self.renderer.GetDisplayPoint()[2]
+
+    def _unproject(self, x: float, y: float, depth: float):
+        self.renderer.SetDisplayPoint(float(x), float(y), depth)
+        self.renderer.DisplayToWorld()
+        wx, wy, wz, ww = self.renderer.GetWorldPoint()
+        if ww != 0.0:
+            wx, wy, wz = wx / ww, wy / ww, wz / ww
+        return wx, wy, wz
+
+    def _zoom_target_depth(self, x0, y0, x1, y1) -> float:
+        """Profondeur ecran visee par le zoom : celle du point focal, ou en perspective
+        (decalage et echelle en dependent) celle de la geometrie du rectangle."""
+        camera = self.renderer.GetActiveCamera()
+        if not camera.GetParallelProjection():
+            drawn = self._rect_depth(x0, y0, x1, y1)
+            if drawn is not None:
+                return drawn
+            # Les faces translucides n'ecrivent pas de profondeur : pointer au centre.
+            hit = self._get_pick_hit(round((x0 + x1) / 2.0), round((y0 + y1) / 2.0))
+            if hit is not None:
+                return self._display_depth(hit["pos"])
+        return self._display_depth(camera.GetFocalPoint())
+
+    def _apply_zoom_factor(self, factor: float):
+        camera = self.renderer.GetActiveCamera()
+        if camera.GetParallelProjection():
+            camera.Zoom(factor)
+            return
+        # Pas plus pres que 0,5 % de la taille de la scene : le plan proche (~0,1 %
+        # du plan lointain) couperait la zone visee.
+        bounds = self.renderer.ComputeVisiblePropBounds()
+        closest = max(0.005 * math.dist(bounds[0::2], bounds[1::2]), 1e-6)
+        camera.Dolly(min(factor, max(1.0, camera.GetDistance() / closest)))
+
     def _zoom_to_rect(self, p0, p1):
         """Recadre la camera sur le rectangle ecran (p0, p1). Portage de la
         logique caméra de vtkInteractorStyleRubberBandZoom : translation pour
@@ -2738,55 +2777,19 @@ class VTKViewerWidget(QFrame):
             return
         ren = self.renderer
         cam = ren.GetActiveCamera()
-        if cam is None:
-            return
         size = ren.GetSize()
-        if not size or size[0] <= 0 or size[1] <= 0:
+        if min(size) <= 0:
             return
 
-        fp = cam.GetFocalPoint()
         pos = cam.GetPosition()
-        ren.SetWorldPoint(fp[0], fp[1], fp[2], 1.0)
-        ren.WorldToDisplay()
-        depth = ren.GetDisplayPoint()[2]
-        if not cam.GetParallelProjection():
-            # En perspective, decalage et echelle dependent de la profondeur : viser
-            # celle de la geometrie dessinee (a defaut, celle du point focal).
-            drawn = self._rect_depth(x0, y0, x1, y1)
-            if drawn is None:
-                # Les faces translucides n'ecrivent pas de profondeur : pointer au centre.
-                hit = self._get_pick_hit(round((x0 + x1) / 2.0), round((y0 + y1) / 2.0))
-                if hit is not None:
-                    ren.SetWorldPoint(*hit["pos"], 1.0)
-                    ren.WorldToDisplay()
-                    drawn = ren.GetDisplayPoint()[2]
-            if drawn is not None:
-                depth = drawn
-
-        def _unproject(dx, dy):
-            ren.SetDisplayPoint(float(dx), float(dy), depth)
-            ren.DisplayToWorld()
-            wx, wy, wz, ww = ren.GetWorldPoint()
-            if ww != 0.0:
-                wx, wy, wz = wx / ww, wy / ww, wz / ww
-            return wx, wy, wz
-
-        wr = _unproject((x0 + x1) / 2.0, (y0 + y1) / 2.0)
-        wc = _unproject(size[0] / 2.0, size[1] / 2.0)
-        tr = (wr[0] - wc[0], wr[1] - wc[1], wr[2] - wc[2])
+        depth = self._zoom_target_depth(x0, y0, x1, y1)
+        wr = self._unproject((x0 + x1) / 2.0, (y0 + y1) / 2.0, depth)
+        wc = self._unproject(size[0] / 2.0, size[1] / 2.0, depth)
         # Point focal a la profondeur visee : Dolly(factor) agrandit alors d'exactement factor.
         cam.SetFocalPoint(*wr)
-        cam.SetPosition(pos[0] + tr[0], pos[1] + tr[1], pos[2] + tr[2])
+        cam.SetPosition(*(p + r - c for p, r, c in zip(pos, wr, wc)))
 
-        factor = min(size[0] / max(w, 1), size[1] / max(h, 1))   # tout le rectangle reste visible
-        if cam.GetParallelProjection():
-            cam.Zoom(factor)
-        else:
-            # Pas plus pres que 0,5 % de la taille de la scene : le plan proche (~0,1 %
-            # du plan lointain) couperait la zone visee.
-            bounds = ren.ComputeVisiblePropBounds()
-            closest = max(0.005 * math.dist(bounds[0::2], bounds[1::2]), 1e-6)
-            cam.Dolly(min(factor, max(1.0, cam.GetDistance() / closest)))
+        self._apply_zoom_factor(min(size[0] / max(w, 1), size[1] / max(h, 1)))   # tout le rectangle reste visible
         ren.ResetCameraClippingRange()
         self.render_window.Render()
         self._update_view_overlay()
@@ -4656,49 +4659,48 @@ class VTKViewerWidget(QFrame):
         )
         self._apply_profiles_selection_colors()
 
+    def _profiles_color_target(self):
+        """(mapper, polydata, index des elements par cellule) des profils, None si rien a colorer."""
+        actor = self._profiles_actor
+        pd = self._profiles_base_pd
+        if actor is None or pd is None or actor.GetMapper() is None or not pd.GetNumberOfCells():
+            return None
+        idx_arr = pd.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
+        return None if idx_arr is None else (actor.GetMapper(), pd, idx_arr)
+
+    def _selection_cell_colors(self, idx_arr, base, selected):
+        """Tableau des couleurs par cellule : celles de base, selection surlignee."""
+        if base is not None:
+            rgb = vtk_to_numpy(base).copy()
+        else:
+            plain = _WIRE3D_COLOR if self._display_mode == "profiles_wire" else self.linear_color
+            rgb = np.tile(np.array([round(c * 255.0) for c in plain], dtype=np.uint8), (idx_arr.GetNumberOfTuples(), 1))
+        rgb[np.isin(vtk_to_numpy(idx_arr), list(selected))] = [round(c * 255.0) for c in self.selection_color]
+        colors = numpy_to_vtk(rgb, deep=1, array_type=vtk.VTK_UNSIGNED_CHAR)
+        colors.SetName("section_colors")
+        return colors
+
     def _apply_profiles_selection_colors(self):
         """Applique la couleur de selection aux cellules des elements filaires
         selectionnes, en mutant le tableau de scalaires du polydata cache (pas de
         reconstruction geometrique). Restaure les couleurs de base sinon. Ne
         declenche pas de rendu : l'appelant s'en charge."""
-        actor = self._profiles_actor
-        pd = self._profiles_base_pd
-        if actor is None or pd is None or actor.GetMapper() is None:
+        target = self._profiles_color_target()
+        if target is None:
             return
-        idx_arr = pd.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
-        n = pd.GetNumberOfCells()
-        if idx_arr is None or n == 0:
-            return
-        mapper = actor.GetMapper()
+        mapper, pd, idx_arr = target
         selected = {int(it["index"]) for it in self._selected_items if it.get("role") == "lines"}
-        wire3d = self._display_mode == "profiles_wire"
-        base = None if wire3d else self._profiles_base_colors  # couleurs de section, ou None (toujours None en Filaire 3D)
+        # Couleurs de section, ou None (toujours None en Filaire 3D)
+        base = None if self._display_mode == "profiles_wire" else self._profiles_base_colors
+        colors = self._selection_cell_colors(idx_arr, base, selected) if selected else base
 
-        if not selected:
-            if base is not None:
-                pd.GetCellData().SetScalars(base)
-                mapper.SetScalarModeToUseCellData()
-                mapper.SetColorModeToDirectScalars()
-                mapper.ScalarVisibilityOn()
-            else:
-                pd.GetCellData().SetScalars(None)
-                mapper.ScalarVisibilityOff()
-            pd.Modified()
-            return
-
-        sel_rgb = [round(c * 255.0) for c in self.selection_color]
-        if base is not None:
-            rgb = vtk_to_numpy(base).copy()
-        else:
-            lin_rgb = [round(c * 255.0) for c in (_WIRE3D_COLOR if wire3d else self.linear_color)]
-            rgb = np.tile(np.array(lin_rgb, dtype=np.uint8), (n, 1))
-        rgb[np.isin(vtk_to_numpy(idx_arr), list(selected))] = sel_rgb
-        colors = numpy_to_vtk(rgb, deep=1, array_type=vtk.VTK_UNSIGNED_CHAR)
-        colors.SetName("section_colors")
         pd.GetCellData().SetScalars(colors)
-        mapper.SetScalarModeToUseCellData()
-        mapper.SetColorModeToDirectScalars()
-        mapper.ScalarVisibilityOn()
+        if colors is None:
+            mapper.ScalarVisibilityOff()
+        else:
+            mapper.SetScalarModeToUseCellData()
+            mapper.SetColorModeToDirectScalars()
+            mapper.ScalarVisibilityOn()
         pd.Modified()
 
     # (role, cle des donnees du modele, attribut compteur) des elements hors filaires/surfaciques
