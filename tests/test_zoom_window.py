@@ -129,3 +129,43 @@ def test_zoom_window_on_an_empty_area_zooms_on_the_focal_plane():
     before = cam.GetDistance()
     w._zoom_to_rect((100, 100), (300, 150))
     assert cam.GetDistance() == pytest.approx(before / 2.0)
+
+
+def _at_focal_depth(w, x, y):
+    """Point monde sous le pixel (x, y), a la profondeur du point focal."""
+    ren = w.renderer
+    ren.SetWorldPoint(*ren.GetActiveCamera().GetFocalPoint(), 1.0)
+    ren.WorldToDisplay()
+    ren.SetDisplayPoint(float(x), float(y), ren.GetDisplayPoint()[2])
+    ren.DisplayToWorld()
+    wx, wy, wz, ww = ren.GetWorldPoint()
+    return wx / ww, wy / ww, wz / ww
+
+
+@pytest.mark.parametrize("parallel", [True, False], ids=["ortho", "perspective"])
+@pytest.mark.parametrize("view, rect", [
+    ((400, 300), (200, 190)),   # un peu plus large que haut, moins allonge que la vue
+    ((300, 400), (190, 200)),   # vue en hauteur, cas symetrique
+    ((400, 300), (300, 20)),    # tres allonge
+    ((400, 300), (20, 200)),    # tres haut
+    ((400, 300), (100, 0)),     # hauteur nulle
+])
+def test_zoom_window_keeps_the_whole_rectangle_in_view(parallel, view, rect):
+    w = _zoomable(parallel)
+    w._pickable_actors = {}
+    w._window.SetSize(*view)
+    w._window.Render()
+    (width, height), (rw, rh) = view, rect
+    x0, y0 = (width - rw) // 2 + 20, (height - rh) // 2 + 10
+    corners = [_at_focal_depth(w, x, y) for x, y in ((x0, y0), (x0 + rw, y0), (x0 + rw, y0 + rh), (x0, y0 + rh))]
+    w._zoom_to_rect((x0, y0), (x0 + rw, y0 + rh))
+    coord = vtk.vtkCoordinate()
+    coord.SetCoordinateSystemToWorld()
+    points = []
+    for corner in corners:
+        coord.SetValue(*corner)
+        points.append(coord.GetComputedDoubleDisplayValue(w.renderer))
+    xs, ys = [p[0] for p in points], [p[1] for p in points]
+    assert min(xs) >= -2 and max(xs) <= width + 2 and min(ys) >= -2 and max(ys) <= height + 2
+    # le rectangle remplit la vue dans sa dimension la plus contraignante
+    assert max((max(xs) - min(xs)) / width, (max(ys) - min(ys)) / height) == pytest.approx(1.0, abs=0.02)

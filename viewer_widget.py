@@ -2705,7 +2705,7 @@ class VTKViewerWidget(QFrame):
         cam.SetFocalPoint(*wr)
         cam.SetPosition(pos[0] + tr[0], pos[1] + tr[1], pos[2] + tr[2])
 
-        factor = size[0] / w if w > h else size[1] / h
+        factor = min(size[0] / max(w, 1), size[1] / max(h, 1))   # tout le rectangle reste visible
         if cam.GetParallelProjection():
             cam.Zoom(factor)
         else:
