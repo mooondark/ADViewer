@@ -42,3 +42,16 @@ def test_load_model_connects_the_refusal(monkeypatch, tmp_path):
     monkeypatch.setattr(mw, "LoadModelWorker", factory)
     mw.MainWindow.load_model(host)
     factory.return_value.version_refused.connect.assert_called_once_with(host.on_model_version_refused)
+
+
+def test_calculation_connects_the_refusal(monkeypatch, tmp_path):
+    fto = tmp_path / "m.fto"
+    fto.write_bytes(b"")
+    host = MagicMock(calc_worker=None, _calc_done=False, project_session=None)
+    host.fto_edit.text.return_value = str(fto)
+    host.host_edit.text.return_value = "http://h"
+    monkeypatch.setattr(mw.QMessageBox, "question", lambda *a: mw.QMessageBox.Yes)
+    factory = MagicMock()
+    monkeypatch.setattr(mw, "LaunchAnalysisWorker", factory)
+    mw.MainWindow.launch_analysis_from_viewer(host)
+    factory.return_value.version_refused.connect.assert_called_once_with(host._on_api_version_refused)

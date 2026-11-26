@@ -16,6 +16,7 @@ import main_window as mw
 
 def _run(monkeypatch, data, diagnostics, status):
     monkeypatch.setattr(mw, "check_port", lambda host: None)
+    monkeypatch.setattr(mw, "check_api_version", lambda host, consequence_key: "")
     monkeypatch.setattr(mw, "open_project", lambda host, path: None)
     monkeypatch.setattr(mw, "close_project", lambda host: None)
     monkeypatch.setattr(mw, "launch_analysis", lambda host, timeout=None: (data, diagnostics))
@@ -50,3 +51,20 @@ def test_status_not_calculated_is_a_failure_even_if_api_flag_true(monkeypatch):
 def test_unreadable_status_falls_back_to_api_flag(monkeypatch):
     _logs, results, _errors = _run(monkeypatch, True, [], RuntimeError("down"))
     assert results == [True]
+
+
+def test_refused_api_version_neither_opens_nor_calculates(monkeypatch):
+    calls = []
+    monkeypatch.setattr(mw, "check_port", lambda host: None)
+    monkeypatch.setattr(mw, "check_api_version", lambda host, consequence_key: consequence_key)
+    for name in ("open_project", "close_project", "launch_analysis"):
+        monkeypatch.setattr(mw, name, lambda *a, _name=name, **k: calls.append(_name))
+    for reuse in (False, True):
+        worker = mw.LaunchAnalysisWorker("http://h", r"C:\x.fto", 0, reuse_open_project=reuse)
+        refusals, results, errors = [], [], []
+        worker.version_refused.connect(refusals.append)
+        worker.success.connect(lambda ok, elapsed: results.append(ok))
+        worker.error.connect(errors.append)
+        worker.run()
+        assert refusals == ["api_version_refused_calc"]
+        assert calls == [] and results == [] and errors == []

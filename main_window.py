@@ -1113,6 +1113,7 @@ class LaunchAnalysisWorker(QThread):
     log = Signal(str, str)
     success = Signal(bool, float)   # (flag data API, secondes écoulées)
     error = Signal(str)
+    version_refused = Signal(str)
 
     def __init__(self, host: str, fto_path: str, timeout_s: int, reuse_open_project: bool):
         super().__init__()
@@ -1125,6 +1126,10 @@ class LaunchAnalysisWorker(QThread):
         opened_here = False
         try:
             check_port(self.host)
+            refusal = check_api_version(self.host, "api_version_refused_calc")
+            if refusal:
+                self.version_refused.emit(refusal)
+                return
             if not self.reuse_open_project:
                 self.log.emit(tr_log("opening_project_reading"), "info")
                 open_project(self.host, self.fto_path)
@@ -6891,6 +6896,7 @@ class MainWindow(QMainWindow):
         self.calc_worker.log.connect(self.log)
         self.calc_worker.success.connect(self._on_calc_success)
         self.calc_worker.error.connect(self._on_calc_error)
+        self.calc_worker.version_refused.connect(self._on_api_version_refused)
         self.calc_worker.finished.connect(self._on_calc_finished)
         self.calc_worker.start()
 
