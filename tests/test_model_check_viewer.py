@@ -94,10 +94,10 @@ def test_pick_candidates_append_anomalies_after_elements():
     w = _viewer([_anomaly([("lines", 1)])])
     w._display_mode = "full"
     w._anomaly_overlay.pick = lambda x, y, max_layers=6: [0]
-    w._get_pick_hit = lambda x, y, exclude_keys=None: {"role": "lines", "index": 7, "depth": 1.0}
+    w._get_pick_hit = lambda x, y, exclude_keys=None, actors=None: {"role": "lines", "index": 7, "depth": 1.0}
     out = w._pick_selection_candidates(10, 10)
     assert [(c["role"], c["index"]) for c in out] == [("lines", 7), ("anomaly", 0)]
-    w._get_pick_hit = lambda x, y, exclude_keys=None: None
+    w._get_pick_hit = lambda x, y, exclude_keys=None, actors=None: None
     assert [(c["role"], c["index"]) for c in w._pick_selection_candidates(10, 10)] == [("anomaly", 0)]
 
 

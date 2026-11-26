@@ -59,6 +59,8 @@ _PROFILE_MODES = ("profiles_hidden", "profiles_full", "profiles_wire")
 _WIRE3D_COLOR = (0.25, 0.25, 0.25)
 _WIRE3D_FACE_OPACITY = 0.01  # > 0 : vtkCellPicker ignore les acteurs d'opacite nulle
 _ALL_DISPLAY_MODES = ("wireframe", "hidden_faces", "wire_hidden", "full") + _PROFILE_MODES
+_PICK_TOLERANCE = 0.0035        # tolerance de vtkCellPicker, en fraction de la diagonale de la fenetre
+_PRESELECT_MIN_CELLS = 5000     # au-dela, le clic ne teste que les cellules proches du pixel
 
 
 def _poly2_area(loop):
@@ -1969,21 +1971,88 @@ class VTKViewerWidget(QFrame):
         mapper.Update()
         return mapper.GetInput()
 
-    def _get_pick_hit(self, x: int, y: int, exclude_keys=None):
+    def _preselect_pickable(self, x: int, y: int, reach: int):
+        """_pickable_actors ou chaque gros maillage de polygones est remplace par les
+        seules cellules qu'un tir a moins de reach pixels de (x, y) peut toucher :
+        vtkCellPicker teste sinon toutes les cellules une a une, a chaque tir."""
+        camera = self.renderer.GetActiveCamera()
+        width, height = self.renderer.GetSize()
+        composite = camera.GetCompositeProjectionTransformMatrix(self.renderer.GetTiledAspectRatio(), -1.0, 1.0)
+        matrix = np.array([[composite.GetElement(r, c) for c in range(4)] for r in range(4)])
+        focal_w = abs(matrix[3, :3] @ camera.GetFocalPoint() + matrix[3, 3])
+        tolerance = _PICK_TOLERANCE * math.hypot(width, height)   # pixels, a la profondeur du point focal
+        result = {}
+        for key, info in self._pickable_actors.items():
+            result[key] = info
+            actor = info["actor"]
+            if actor is None or not actor.GetVisibility():
+                continue
+            polydata = self._get_actor_polydata(actor)
+            if (polydata is None or polydata.GetNumberOfCells() <= _PRESELECT_MIN_CELLS
+                    or polydata.GetNumberOfPolys() != polydata.GetNumberOfCells()):
+                continue
+            index = polydata.GetCellData().GetArray(self.ELEMENT_INDEX_ARRAY)
+            if index is None:
+                continue
+
+            clip = vtk_to_numpy(polydata.GetPoints().GetData()) @ matrix[:, :3].T + matrix[:, 3]
+            behind = clip[:, 3] <= 1e-9
+            w = np.where(behind, 1.0, clip[:, 3])
+            sx = (clip[:, 0] / w * 0.5 + 0.5) * width
+            sy = (clip[:, 1] / w * 0.5 + 0.5) * height
+            # Plus pres que le point focal, la tolerance de VTK couvre plus de pixels.
+            # shortcut: marge x1,5 ; VTK accroche parfois un triangle tres allonge bien plus
+            # loin du curseur (vu a 38 px), ignore ici. Elargir si un element manque au Tab.
+            margin = reach + 2.0 + 1.5 * tolerance * np.maximum(1.0, focal_w / w)
+
+            offsets = vtk_to_numpy(polydata.GetPolys().GetOffsetsArray())
+            points = vtk_to_numpy(polydata.GetPolys().GetConnectivityArray())
+            starts = offsets[:-1]
+            near = ((np.minimum.reduceat((sx - margin)[points], starts) <= x)
+                    & (np.maximum.reduceat((sx + margin)[points], starts) >= x)
+                    & (np.minimum.reduceat((sy - margin)[points], starts) <= y)
+                    & (np.maximum.reduceat((sy + margin)[points], starts) >= y))
+            near |= np.logical_or.reduceat(behind[points], starts)
+
+            sizes = np.diff(offsets)
+            cells = vtk.vtkCellArray()
+            cells.SetData(
+                numpy_to_vtkIdTypeArray(np.concatenate(([0], np.cumsum(sizes[near]))).astype(np.int64), deep=1),
+                numpy_to_vtkIdTypeArray(points[np.repeat(near, sizes)].astype(np.int64), deep=1),
+            )
+            near_index = numpy_to_vtk(vtk_to_numpy(index)[near], deep=1, array_type=index.GetDataType())
+            near_index.SetName(self.ELEMENT_INDEX_ARRAY)
+            subset = vtk.vtkPolyData()
+            subset.SetPoints(polydata.GetPoints())
+            subset.SetPolys(cells)
+            subset.GetCellData().AddArray(near_index)
+
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(subset)
+            planes = actor.GetMapper().GetClippingPlanes()
+            if planes is not None:
+                mapper.SetClippingPlanes(planes)
+            proxy = vtk.vtkActor()
+            proxy.SetMapper(mapper)
+            proxy.SetProperty(actor.GetProperty())
+            result[key] = {"actor": proxy, "role": info["role"], "source": actor, "cell_ids": np.flatnonzero(near)}
+        return result
+
+    def _get_pick_hit(self, x: int, y: int, exclude_keys=None, actors=None):
         picker = vtk.vtkCellPicker()
-        picker.SetTolerance(0.0035)
+        picker.SetTolerance(_PICK_TOLERANCE)
         picker.PickFromListOn()
         picker.InitializePickList()
 
-        visible = False
-        for key, info in self._pickable_actors.items():
+        listed = {}   # cle de l'acteur teste -> (cle de l'element selectionnable, infos)
+        for key, info in (self._pickable_actors if actors is None else actors).items():
             if exclude_keys and key in exclude_keys:
                 continue
             actor = info["actor"]
             if actor is not None and actor.GetVisibility():
                 picker.AddPickList(actor)
-                visible = True
-        if not visible:
+                listed[self._actor_key(actor)] = (key, info)
+        if not listed:
             return None
 
         if not picker.Pick(x, y, 0, self.renderer):
@@ -1994,10 +2063,10 @@ class VTKViewerWidget(QFrame):
         if actor is None or cell_id < 0:
             return None
 
-        actor_key = self._actor_key(actor)
-        info = self._pickable_actors.get(actor_key)
-        if not info:
+        found = listed.get(self._actor_key(actor))
+        if not found:
             return None
+        actor_key, info = found
 
         polydata = self._get_actor_polydata(actor)
         if polydata is None:
@@ -2008,6 +2077,8 @@ class VTKViewerWidget(QFrame):
             return None
 
         element_index = int(arr.GetTuple1(cell_id))
+        if "source" in info:   # maillage reduit : revenir a l'acteur et a la cellule d'origine
+            actor, cell_id = info["source"], int(info["cell_ids"][cell_id])
         pos = picker.GetPickPosition()
         if not self._clip.accepts_point(pos):
             return None
@@ -2023,7 +2094,7 @@ class VTKViewerWidget(QFrame):
             "pos": pos,
         }
 
-    def _get_pick_hit_stack(self, x: int, y: int, max_layers: int = 12):
+    def _get_pick_hit_stack(self, x: int, y: int, max_layers: int = 12, actors=None):
         """Pick avant-vers-arrière : renvoie tous les éléments sous le pixel,
         du plus proche au plus lointain, en retirant l'acteur touché entre
         chaque passe. Permet d'atteindre un élément masqué par une face
@@ -2031,7 +2102,7 @@ class VTKViewerWidget(QFrame):
         hits = []
         exclude = set()
         for _ in range(max_layers):
-            hit = self._get_pick_hit(x, y, exclude_keys=exclude)
+            hit = self._get_pick_hit(x, y, exclude_keys=exclude, actors=actors)
             if hit is None:
                 break
             hits.append(hit)
@@ -2050,11 +2121,12 @@ class VTKViewerWidget(QFrame):
         ]
         peel = self._display_mode in ("hidden_faces", "wire_hidden", "profiles_hidden", "profiles_wire")
         found = {}
+        actors = self._preselect_pickable(x, y, max(abs(v) for offset in offsets for v in offset))
         for dx, dy in offsets:
             if peel and dx == 0 and dy == 0:
-                hits = self._get_pick_hit_stack(x, y)
+                hits = self._get_pick_hit_stack(x, y, actors=actors)
             else:
-                hits = [self._get_pick_hit(x + dx, y + dy)]
+                hits = [self._get_pick_hit(x + dx, y + dy, actors=actors)]
             for hit in hits:
                 if hit is None:
                     continue
@@ -2506,6 +2578,7 @@ class VTKViewerWidget(QFrame):
             self._selection_cycle_index = 0
             selected = candidates[0]
             self._select_item(selected["role"], selected["index"], additive=ctrl)
+            self._left_press_pos = None   # deja pointe : inutile de recommencer au relachement
             return
         # Zone vide : ne pas déselectionner ici — attendre le release
         # pour distinguer clic simple (déselectionner) de glisser (orbite).
@@ -4613,19 +4686,15 @@ class VTKViewerWidget(QFrame):
             pd.Modified()
             return
 
-        sel_rgb = tuple(float(round(c * 255.0)) for c in self.selection_color)
-        lin_rgb = tuple(float(round(c * 255.0)) for c in (_WIRE3D_COLOR if wire3d else self.linear_color))
-        colors = vtk.vtkUnsignedCharArray()
+        sel_rgb = [round(c * 255.0) for c in self.selection_color]
+        if base is not None:
+            rgb = vtk_to_numpy(base).copy()
+        else:
+            lin_rgb = [round(c * 255.0) for c in (_WIRE3D_COLOR if wire3d else self.linear_color)]
+            rgb = np.tile(np.array(lin_rgb, dtype=np.uint8), (n, 1))
+        rgb[np.isin(vtk_to_numpy(idx_arr), list(selected))] = sel_rgb
+        colors = numpy_to_vtk(rgb, deep=1, array_type=vtk.VTK_UNSIGNED_CHAR)
         colors.SetName("section_colors")
-        colors.SetNumberOfComponents(3)
-        colors.SetNumberOfTuples(n)
-        for i in range(n):
-            if int(idx_arr.GetTuple1(i)) in selected:
-                colors.SetTuple3(i, *sel_rgb)
-            elif base is not None:
-                colors.SetTuple3(i, base.GetComponent(i, 0), base.GetComponent(i, 1), base.GetComponent(i, 2))
-            else:
-                colors.SetTuple3(i, *lin_rgb)
         pd.GetCellData().SetScalars(colors)
         mapper.SetScalarModeToUseCellData()
         mapper.SetColorModeToDirectScalars()

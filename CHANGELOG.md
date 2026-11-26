@@ -10,6 +10,7 @@
 - Affichage : au lancement, le mode par défaut est "Profilés + Faces cachées", avec une transparence de 20 % et une transparence profilés de 0 %. Le mode réglé est conservé au chargement d'un modèle.
 - Correction : en projection perspective, le zoom fenêtre ne cadrait pas la zone désignée (décalage et facteur de zoom faux).
 - Correction : le zoom fenêtre coupait une partie du rectangle lorsque ses proportions différaient de celles de la vue.
+- Performances : en modes Profilés, la sélection d'un élément au clic est environ 20 fois plus rapide, ou davantage, sur les gros modèles.
 
 ### EN
 - API: model loading, finite element calculation and IFC export are refused, with a dialog box, when the API version is lower than 1.27.1, missing or unreadable.
@@ -17,6 +18,7 @@
 - Display: at startup the default mode is "Sections + hidden faces", with 20 % transparency and 0 % section transparency. The selected mode is kept when a model is loaded.
 - Fix: in perspective projection, window zoom did not frame the selected area (wrong offset and zoom factor).
 - Fix: window zoom cut off part of the rectangle when its proportions differed from those of the view.
+- Performance: in Sections modes, selecting an element by clicking is about 20 times faster, or more, on large models.
 
 ## 2.25
 

@@ -82,6 +82,32 @@ def test_tab_cycles_through_the_elements_under_the_cursor():
     assert _keys(w) == []
 
 
+def _clicking_viewer(candidates):
+    w = _viewer()
+    w.picks = []
+    w._pick_selection_candidates = lambda x, y: w.picks.append((x, y)) or list(candidates)
+    w._clip = types.SimpleNamespace(on_left_press=lambda x, y: False, on_left_release=lambda: False)
+    w.interactor.GetControlKey = lambda: 0
+    w.interactor_style = types.SimpleNamespace(OnLeftButtonDown=lambda: w.log.append("orbit"))
+    return w
+
+
+def test_click_on_an_element_picks_once_and_keeps_the_selection():
+    w = _clicking_viewer([{"role": "lines", "index": 3}])
+    w._on_left_button_press(None, None)
+    w._on_left_button_release(None, None)
+    assert len(w.picks) == 1
+    assert _keys(w) == [("lines", 3)] and "clear" not in w.log
+
+
+def test_click_on_empty_space_orbits_then_clears_on_a_stationary_release():
+    w = _clicking_viewer([])
+    w._on_left_button_press(None, None)
+    w._on_left_button_release(None, None)
+    assert len(w.picks) == 2
+    assert w.log[-2:] == ["orbit", "clear"]
+
+
 def test_tab_does_nothing_in_rectangle_modes_or_on_empty_space():
     w = _viewer()
     w._pick_selection_candidates = lambda x, y: []
