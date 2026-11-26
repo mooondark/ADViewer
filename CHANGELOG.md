@@ -2,23 +2,19 @@
 
 **⚠ La version minimale de l'API est 1.27.1 (version 2027.1) pour utiliser le viewer**
 
-## À paraître
+## 2.26
 
 ### FR
-- API : le chargement du modèle, le calcul éléments finis et l'export IFC sont refusés, avec une boîte de dialogue, si la version de l'API est inférieure à 1.27.1, absente ou illisible.
-- Correction : sans session de projet, l'export IFC ignorait l'adresse d'API saisie.
-- Affichage : au lancement, le mode par défaut est "Profilés + Faces cachées", avec une transparence de 20 % et une transparence profilés de 0 %. Le mode réglé est conservé au chargement d'un modèle.
-- Correction : en projection perspective, le zoom fenêtre ne cadrait pas la zone désignée (décalage et facteur de zoom faux).
-- Correction : le zoom fenêtre coupait une partie du rectangle lorsque ses proportions différaient de celles de la vue.
-- Performances : en modes Profilés, la sélection d'un élément au clic est environ 20 fois plus rapide, ou davantage, sur les gros modèles.
+- API : chargement, calcul éléments finis et export IFC refusés (avec message) sous la version 1.27.1.
+- Affichage : "Profilés + Faces cachées" par défaut (transparences 20 % et 0 %) ; le mode réglé est conservé au chargement.
+- Performances : sélection au clic en modes Profilés environ 20 fois plus rapide, ou davantage, sur les gros modèles.
+- Corrections : zoom fenêtre (perspective et rectangle coupé) ; adresse d'API saisie ignorée par l'export IFC sans session.
 
 ### EN
-- API: model loading, finite element calculation and IFC export are refused, with a dialog box, when the API version is lower than 1.27.1, missing or unreadable.
-- Fix: without a project session, IFC export ignored the entered API address.
-- Display: at startup the default mode is "Sections + hidden faces", with 20 % transparency and 0 % section transparency. The selected mode is kept when a model is loaded.
-- Fix: in perspective projection, window zoom did not frame the selected area (wrong offset and zoom factor).
-- Fix: window zoom cut off part of the rectangle when its proportions differed from those of the view.
-- Performance: in Sections modes, selecting an element by clicking is about 20 times faster, or more, on large models.
+- API: loading, finite element calculation and IFC export refused (with a message) below version 1.27.1.
+- Display: "Sections + hidden faces" by default (transparencies 20 % and 0 %); the selected mode is kept on load.
+- Performance: click selection in Sections modes about 20 times faster, or more, on large models.
+- Fixes: window zoom (perspective and clipped rectangle); typed API address ignored by IFC export without a session.
 
 ## 2.25
 
