@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import main_window as mw
+from viewer_config import tr_ui
 
 
 def _new_window(tmp_path):
@@ -488,3 +489,15 @@ def test_settings_actions_start_with_the_documented_defaults(window):
     assert window.act_minimap_bottom_left.isChecked() and window.act_minimap_size_large.isChecked()
     assert [a.isChecked() for a in window.act_languages] == [code == mw.get_language() for code in mw.LANGUAGES]
     assert [a.text() for a in window.act_languages] == [label for label, _m in mw.LANGUAGES.values()]
+
+
+# --- mode d'affichage et transparences par defaut ------------------------------
+def test_startup_uses_profiles_hidden_and_the_default_transparencies(window):
+    assert window.cmb_display_mode.currentData() == "profiles_hidden"
+    assert window.viewer._display_mode == "profiles_hidden"
+    assert (window.transparency_slider.value(), window.profiles_transparency_slider.value()) == (20, 0)
+    assert (window.viewer._transparency_percent, window.viewer._profiles_transparency_percent) == (20, 0)
+    assert window.transparency_value_label.text() == tr_ui("transparency_value", value=20)
+    assert window.profiles_transparency_value_label.text() == tr_ui("transparency_value", value=0)
+    assert window.transparency_slider.isEnabled() and window.profiles_transparency_slider.isEnabled()
+    assert window.chk_color_by_section.isEnabled() and window.chk_planar_thickness.isEnabled()

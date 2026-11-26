@@ -3551,7 +3551,7 @@ class MainWindow(QMainWindow):
         self.cmb_display_mode.addItem(tr_ui("display_profiles_hidden"), "profiles_hidden")
         self.cmb_display_mode.addItem(tr_ui("display_profiles_full"), "profiles_full")
         self.cmb_display_mode.addItem(tr_ui("display_profiles_wire"), "profiles_wire")
-        self.cmb_display_mode.setCurrentIndex(self.cmb_display_mode.findData("wire_hidden"))
+        self.cmb_display_mode.setCurrentIndex(self.cmb_display_mode.findData("profiles_hidden"))
         self.cmb_display_mode.currentIndexChanged.connect(self.on_display_mode_changed)
         action_card.layout.addWidget(self.cmb_display_mode)
 
