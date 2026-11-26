@@ -3767,18 +3767,6 @@ class VTKViewerWidget(QFrame):
         self._clip.apply_to_actor(actor)
         self.render_window.Render()
 
-    def reset_display_mode_default(self):
-        """Repasse au mode par defaut (wire_hidden) SANS reconstruire la
-        geometrie. A appeler avant le chargement d'un nouveau modele pour que
-        le rebuild suivant ne construise pas inutilement les solides profils."""
-        self._display_mode = "wire_hidden"
-        if self._profiles_actor is not None:
-            self._remove_actor(self._profiles_actor)
-            self._profiles_actor = None
-        self._profiles_base_pd = None
-        self._profiles_base_colors = None
-        self._apply_visibility_state()
-
     def set_display_mode(self, mode: str):
         if mode not in _ALL_DISPLAY_MODES:
             mode = "wireframe"

@@ -7670,17 +7670,6 @@ class MainWindow(QMainWindow):
             return
         self._close_project_session(tr_log("project_closed_before_new_load"))
 
-        # Modele precedent ferme : revenir au mode d'affichage par defaut AVANT
-        # de charger le nouveau modele, pour que le rendu du nouveau modele ne
-        # construise pas d'abord les solides profils (lent sur gros modeles).
-        if self.cmb_display_mode is not None:
-            self.cmb_display_mode.blockSignals(True)
-            self.cmb_display_mode.setCurrentIndex(self.cmb_display_mode.findData("wire_hidden"))
-            self.cmb_display_mode.blockSignals(False)
-            self._update_transparency_controls_state()
-        if self.viewer is not None:
-            self.viewer.reset_display_mode_default()
-
         self.set_loading(True)
         self.worker = LoadModelWorker(host, fto_path, expect_results=expect_results)
         self.worker.log.connect(self.log)

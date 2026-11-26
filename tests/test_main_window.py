@@ -4,6 +4,7 @@
 import configparser
 import os
 import sys
+from unittest.mock import MagicMock
 
 import pytest
 from PySide6.QtGui import QImage
@@ -11,6 +12,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import ad_model_data
 import main_window as mw
 from viewer_config import tr_ui
 
@@ -501,3 +503,106 @@ def test_startup_uses_profiles_hidden_and_the_default_transparencies(window):
     assert window.profiles_transparency_value_label.text() == tr_ui("transparency_value", value=0)
     assert window.transparency_slider.isEnabled() and window.profiles_transparency_slider.isEnabled()
     assert window.chk_color_by_section.isEnabled() and window.chk_planar_thickness.isEnabled()
+
+
+class _IdleLoadWorker:
+    def __init__(self, *args, **kwargs):
+        self.log = self.progress = self.success = self.error = self.version_refused = self.finished = MagicMock()
+        self.session_manager = None
+
+    def start(self):
+        pass
+
+    def isRunning(self):
+        return False
+
+
+def _set_mode(window, mode):
+    window.cmb_display_mode.blockSignals(True)
+    window.cmb_display_mode.setCurrentIndex(window.cmb_display_mode.findData(mode))
+    window.cmb_display_mode.blockSignals(False)
+    window.viewer.set_display_mode(mode)
+
+
+def _beams(count):
+    section_objects = {1: {"name": "IPE 300", "type": "I_SYMETRIC"}}
+    lines, sections = [], []
+    for i in range(count):
+        p1, p2 = {"x": 0.0, "y": float(i), "z": 0.0}, {"x": 4.0, "y": float(i), "z": 0.0}
+        element = {"generalBeamType": "Beam", "section": {"value": 1}, "sectionOrientationAngle": 0.0,
+                   "geomPtStart": p1, "geomPtEnd": p2}
+        sections.append(ad_model_data._build_line_section_render(element, p1, p2, section_objects))
+        lines.append([(p1["x"], p1["y"], p1["z"]), (p2["x"], p2["y"], p2["z"])])
+    return ad_model_data.build_model_data({"lines": lines, "line_sections": sections,
+                                           "line_properties": [{"section": "IPE 300"} for _ in lines]})
+
+
+@pytest.fixture
+def loader(window, monkeypatch, tmp_path):
+    """load(model) : load_model() reel sans thread, puis la reponse du worker."""
+    fto = tmp_path / "m.fto"
+    fto.write_bytes(b"")
+    monkeypatch.setattr(mw, "LoadModelWorker", _IdleLoadWorker)
+
+    def load(model=None, error=None):
+        window.fto_edit.setText(str(fto))
+        window.load_model()
+        if error is None:
+            window.on_model_loaded(model)
+        else:
+            window.on_model_error(error)
+        window.set_loading(False)
+
+    yield load
+    window.worker = None
+    window.transparency_slider.setValue(20)
+    window.profiles_transparency_slider.setValue(0)
+    _set_mode(window, "profiles_hidden")
+
+
+@pytest.mark.parametrize("mode", ["wireframe", "profiles_hidden", "profiles_full", "profiles_wire"])
+def test_loading_a_model_keeps_the_display_mode(window, loader, mode):
+    _set_mode(window, mode)
+    loader(_beams(1))
+    profiles = mode in mw._PROFILE_MODES
+    assert window.cmb_display_mode.currentData() == mode
+    assert window.viewer._display_mode == mode
+    assert (window.viewer._profiles_actor is not None) == profiles
+    assert window.chk_planar_thickness.isEnabled() == profiles
+    assert window.chk_color_by_section.isEnabled() == (mode != "profiles_wire")
+
+
+def test_a_failed_load_keeps_the_display_mode(window, loader):
+    _set_mode(window, "profiles_full")
+    loader(error="boom")
+    assert window.cmb_display_mode.currentData() == "profiles_full"
+    assert window.viewer._display_mode == "profiles_full"
+
+
+def test_a_second_load_shows_the_profiles_of_the_new_model(window, loader):
+    _set_mode(window, "profiles_hidden")
+    loader(_beams(1))
+    one = window.viewer._profiles_base_pd.GetNumberOfCells()
+    loader(_beams(2))
+    assert window.viewer._profiles_base_pd.GetNumberOfCells() == 2 * one > 0
+
+
+def test_a_model_without_linear_elements_loads_in_profile_mode(window, loader):
+    _set_mode(window, "profiles_hidden")
+    loader(_beams(0))
+    assert window.viewer._display_mode == "profiles_hidden"
+
+
+def test_loading_keeps_the_transparencies_set_by_the_user(window, loader):
+    window.transparency_slider.setValue(40)
+    window.profiles_transparency_slider.setValue(10)
+    loader(_beams(1))
+    assert (window.viewer._transparency_percent, window.viewer._profiles_transparency_percent) == (40, 10)
+
+
+def test_leaving_profiles_after_a_load_removes_the_profiles(window, loader):
+    _set_mode(window, "profiles_hidden")
+    loader(_beams(1))
+    assert window.viewer._profiles_actor is not None
+    window.cmb_display_mode.setCurrentIndex(window.cmb_display_mode.findData("wireframe"))
+    assert window.viewer._display_mode == "wireframe" and window.viewer._profiles_actor is None
