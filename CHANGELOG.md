@@ -5,13 +5,13 @@
 ## 2.26
 
 ### FR
-- API : chargement, calcul éléments finis et export IFC refusés (avec message) sous la version 1.27.1.
+- API : chargement, calcul éléments finis et export IFC refusés (avec message) si la version API < 1.27.1.
 - Affichage : "Profilés + Faces cachées" par défaut (transparences 20 % et 0 %) ; le mode réglé est conservé au chargement.
 - Performances : sélection au clic en modes Profilés environ 20 fois plus rapide, ou davantage, sur les gros modèles.
 - Corrections : zoom fenêtre (perspective et rectangle coupé) ; adresse d'API saisie ignorée par l'export IFC sans session.
 
 ### EN
-- API: loading, finite element calculation and IFC export refused (with a message) below version 1.27.1.
+- API: loading, finite element calculation and IFC export refused (with a message) if API version < 1.27.1.
 - Display: "Sections + hidden faces" by default (transparencies 20 % and 0 %); the selected mode is kept on load.
 - Performance: click selection in Sections modes about 20 times faster, or more, on large models.
 - Fixes: window zoom (perspective and clipped rectangle); typed API address ignored by IFC export without a session.
