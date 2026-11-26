@@ -2,6 +2,16 @@
 
 **⚠ La version minimale de l'API est 1.27.1 (version 2027.1) pour utiliser le viewer**
 
+## À paraître
+
+### FR
+- API : le chargement du modèle, le calcul éléments finis et l'export IFC sont refusés, avec une boîte de dialogue, si la version de l'API est inférieure à 1.27.1, absente ou illisible.
+- Correction : sans session de projet, l'export IFC ignorait l'adresse d'API saisie.
+
+### EN
+- API: model loading, finite element calculation and IFC export are refused, with a dialog box, when the API version is lower than 1.27.1, missing or unreadable.
+- Fix: without a project session, IFC export ignored the entered API address.
+
 ## 2.25
 
 ### FR

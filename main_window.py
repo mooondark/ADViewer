@@ -1174,6 +1174,7 @@ class IfcExportWorker(QThread):
     log = Signal(str, str)
     success = Signal()
     error = Signal(str)
+    version_refused = Signal(str)
 
     def __init__(self, export_fn, kwargs):
         super().__init__()
@@ -1182,6 +1183,11 @@ class IfcExportWorker(QThread):
 
     def run(self):
         try:
+            check_port(self.kwargs["host"])  # API injoignable : erreur, pas un refus de version
+            refusal = check_api_version(self.kwargs["host"], "api_version_refused_ifc")
+            if refusal:
+                self.version_refused.emit(refusal)
+                return
             self.export_fn(logger=lambda message, level="info": self.log.emit(str(message), level), **self.kwargs)
             self.success.emit()
         except Exception as e:
@@ -5693,8 +5699,8 @@ class MainWindow(QMainWindow):
         host = ""
         if project_session is not None and getattr(project_session, "host", ""):
             host = str(project_session.host).strip()
-        elif getattr(self, "api_edit", None) is not None:
-            host = str(self.api_edit.text() or "").strip()
+        elif self.host_edit is not None:
+            host = self.host_edit.text().strip()
         host = (host or DEFAULT_HOST).rstrip("/")
 
         can_use_open_project = False
@@ -5744,12 +5750,17 @@ class MainWindow(QMainWindow):
         self._ifc_worker.log.connect(self.log)
         self._ifc_worker.success.connect(lambda: self._on_ifc_export_success(out_path))
         self._ifc_worker.error.connect(self._on_ifc_export_error)
+        self._ifc_worker.version_refused.connect(self._on_ifc_version_refused)
         self._ifc_worker.start()
 
     def _on_ifc_export_success(self, out_path):
         success_message = tr_ui("export_ifc_success", path=normalize_windows_path(out_path))
         self._set_analysis_results_output_message(success_message)
         QMessageBox.information(self, tr_ui("export_ifc_title"), success_message)
+
+    def _on_ifc_version_refused(self, message: str):
+        self._set_analysis_results_output_message(message)
+        self._on_api_version_refused(message)
 
     def _on_ifc_export_error(self, details):
         self.log(tr_log("ifc_export_failed", details=details), "error")
