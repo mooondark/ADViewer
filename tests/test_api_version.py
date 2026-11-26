@@ -12,6 +12,7 @@ import requests
 
 import ad_api_client
 from ad_model_data import build_model_data
+from viewer_config import tr_err
 
 
 class _Resp:
@@ -143,17 +144,6 @@ def test_extract_model_geometry_does_not_refetch_a_provided_version():
     assert "api_version" in params and params["api_version"].default is None
 
 
-def test_loading_continues_without_version_line_when_version_unavailable():
-    from viewer_config import tr_log
-
-    def boom(host):
-        raise RuntimeError("down")
-
-    logs = _run_worker_logs(boom)
-    i = logs.index(tr_log("api_ok"))
-    assert logs[i + 1] == tr_log("normalized_path", path=r"C:\x.fto")
-
-
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
@@ -172,3 +162,50 @@ def test_licence_problem_only_when_can_run_is_false():
         raise requests.exceptions.ConnectionError("down")
 
     assert _with_get(down, lambda: _client().licence_problem()) is None
+
+
+def _refusal(version_text):
+    return tr_err("api_version_refused", version=version_text, minimum="1.27.1",
+                  consequence=tr_err("api_version_refused_load"))
+
+
+def test_supported_api_versions_are_accepted():
+    for version in ("1.27.1", "1.27.1.0", "1.27.10", "1.28", "2.0"):
+        assert ad_api_client.api_version_refusal(version, "api_version_refused_load") == "", version
+
+
+def test_old_api_version_is_refused_with_detected_and_minimum_version():
+    for version in ("1.27", "1.27.0", "1.27.0.9", "1.9.9"):
+        assert ad_api_client.api_version_refusal(version, "api_version_refused_load") == _refusal(version), version
+
+
+def test_missing_or_unreadable_api_version_is_refused_as_unknown():
+    for version in ("", None, "1.27.1-beta", "v1.28", "1..28", "abc"):
+        message = ad_api_client.api_version_refusal(version, "api_version_refused_load")
+        assert message == _refusal(tr_err("api_version_unknown")), version
+
+
+def test_api_without_get_version_route_is_refused_as_unknown():
+    message = _with_get(lambda url, timeout=None, **k: _Resp("Not Found", 404),
+                        lambda: ad_api_client.check_api_version("http://localhost:52000", "api_version_refused_load"))
+    assert message == _refusal(tr_err("api_version_unknown"))
+
+
+def test_loading_is_refused_before_opening_the_project(monkeypatch):
+    import ad_model_data
+
+    def down(host):
+        raise RuntimeError("down")
+
+    opened = []
+    monkeypatch.setattr(ad_model_data, "check_port", lambda host: None)
+    monkeypatch.setattr(ad_model_data, "licence_problem", lambda host: None)
+    monkeypatch.setattr(ad_model_data, "extract_model_geometry", lambda *a, **k: opened.append(a))
+    for get_version in (lambda host: "1.27.0", lambda host: "", down):
+        monkeypatch.setattr(ad_model_data, "get_api_version", get_version)
+        worker = ad_model_data.LoadModelWorker("http://localhost:52000", r"C:\x.fto")
+        refusals, errors = [], []
+        worker.version_refused.connect(refusals.append)
+        worker.error.connect(errors.append)
+        worker.run()
+        assert len(refusals) == 1 and errors == [] and opened == []

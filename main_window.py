@@ -7670,6 +7670,7 @@ class MainWindow(QMainWindow):
         self.worker.progress.connect(self.on_load_progress)
         self.worker.success.connect(self.on_model_loaded)
         self.worker.error.connect(self.on_model_error)
+        self.worker.version_refused.connect(self.on_model_version_refused)
         self.worker.finished.connect(lambda: self.set_loading(False))
         self.worker.start()
 
@@ -7852,7 +7853,16 @@ class MainWindow(QMainWindow):
         if detail:
             self.log(detail, "error")
 
-    def on_model_error(self, error_text: str):
+    def _on_api_version_refused(self, message: str):
+        for line in message.splitlines():
+            self.log(line, "error")
+        QMessageBox.warning(self, tr_ui("api_version_title"), message)
+
+    def on_model_version_refused(self, message: str):
+        self._reset_after_load_failure()
+        self._on_api_version_refused(message)
+
+    def _reset_after_load_failure(self):
         self.project_session = None
         self.current_model_has_analysis_results = False
         self.current_analysis_status = {}
@@ -7869,6 +7879,9 @@ class MainWindow(QMainWindow):
         self._fem_connectivity_by_eid = {}
         if self.viewer is not None:
             self.viewer.load_mesh([], [])
+
+    def on_model_error(self, error_text: str):
+        self._reset_after_load_failure()
         text = error_text.strip()
         low = text.lower()
 

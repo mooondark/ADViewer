@@ -14,6 +14,7 @@ Dépend de viewer_config pour :
   - normalize_windows_path (normalisation des chemins Windows)
 """
 
+import re
 import socket
 import urllib.parse
 
@@ -389,6 +390,34 @@ def get_analysis_model_status(host: str) -> dict:
 
 def get_api_version(host: str) -> str:
     return get_api_client(host).get_version()
+
+
+MIN_API_VERSION = "1.27.1"
+
+
+def api_version_refusal(version: str | None, consequence_key: str) -> str:
+    """Message de refus, "" si la version est acceptee."""
+    text = str(version or "").strip()
+    readable = re.fullmatch(r"\d+(\.\d+)*", text) is not None
+    if readable:
+        parts = [int(p) for p in text.split(".")]
+        parts += [0] * (3 - len(parts))
+        if parts >= [int(p) for p in MIN_API_VERSION.split(".")]:
+            return ""
+    return tr_err(
+        "api_version_refused",
+        version=text if readable else tr_err("api_version_unknown"),
+        minimum=MIN_API_VERSION,
+        consequence=tr_err(consequence_key),
+    )
+
+
+def check_api_version(host: str, consequence_key: str) -> str:
+    try:
+        version = get_api_version(host)
+    except Exception:
+        version = ""
+    return api_version_refusal(version, consequence_key)
 
 
 def get_status(host: str) -> dict | None:

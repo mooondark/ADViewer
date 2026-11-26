@@ -2698,6 +2698,7 @@ class LoadModelWorker(QThread):
     progress = Signal(int, str)
     success = Signal(dict)
     error = Signal(str)
+    version_refused = Signal(str)
 
     def __init__(self, host: str, fto_path: str, expect_results: bool = False):
         super().__init__()
@@ -2728,6 +2729,10 @@ class LoadModelWorker(QThread):
             if api_version:
                 separator = ": " if get_language() == "en" else " : "
                 self.log.emit(f"{tr_ui('status_section_api_version')}{separator}{api_version}", "info")
+            refusal = api_version_refusal(api_version, "api_version_refused_load")
+            if refusal:
+                self.version_refused.emit(refusal)
+                return
             self.log.emit(tr_log("normalized_path", path=self.fto_path), "info")
             self.log.emit(tr_log("opening_project_reading"), "info")
 
